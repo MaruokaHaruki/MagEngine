@@ -147,8 +147,6 @@ void MagFramework::Update() {
 	// ラインの更新
 	// カメラの更新
 	LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
-	// グリッドの描画
-	LineManager::GetInstance()->DrawGrid(10000.0f, 32, Vector4(1.0f, 1.0f, 1.0f, 1.0f));	//中心からxy平面を描画
 	// ラインの更新
 	LineManager::GetInstance()->Update();
 	//========================================

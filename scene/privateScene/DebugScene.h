@@ -64,7 +64,7 @@ private:
 	
 	//========================================
 	// 3dオブジェクト
-	std::unique_ptr<Object3d> object3d_;
+	std::unique_ptr<Object3d> objMonsterBall_;
 	//========================================
 	// パーティクル
 

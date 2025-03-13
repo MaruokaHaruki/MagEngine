@@ -36,16 +36,16 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	ModelManager::GetInstance()->LoadMedel("ball.obj");
 	//========================================
 	// 3Dオブジェクトクラス
-	object3d_ = std::make_unique<Object3d>();
+	objMonsterBall_ = std::make_unique<Object3d>();
 	//3Dオブジェクトの初期化
-	object3d_->Initialize(object3dSetup);
-	object3d_->SetModel("ball.obj");
+	objMonsterBall_->Initialize(object3dSetup);
+	objMonsterBall_->SetModel("ball.obj");
 
 	//========================================
 	// ライト情報の取得
-	lightColor = object3d_->GetDirectionalLight().color;
-	lightDirection = object3d_->GetDirectionalLight().direction;
-	lightIntensity = object3d_->GetDirectionalLight().intensity;
+	lightColor = objMonsterBall_->GetDirectionalLight().color;
+	lightDirection = objMonsterBall_->GetDirectionalLight().direction;
+	lightIntensity = objMonsterBall_->GetDirectionalLight().intensity;
 
 	///--------------------------------------------------------------
 	///						 パーティクル系
@@ -78,13 +78,13 @@ void DebugScene::Update() {
 	//========================================
 	// 3D更新 
 	//大きさのセット
-	object3d_->SetScale(Vector3{ transform.scale.x,transform.scale.y,transform.scale.z });
+	objMonsterBall_->SetScale(Vector3{ transform.scale.x,transform.scale.y,transform.scale.z });
 	//回転のセット
-	object3d_->SetRotation(Vector3{ transform.rotate.x,transform.rotate.y,transform.rotate.z });
+	objMonsterBall_->SetRotation(Vector3{ transform.rotate.x,transform.rotate.y,transform.rotate.z });
 	//座標のセット
-	object3d_->SetPosition(Vector3{ transform.translate.x,transform.translate.y,transform.translate.z });
+	objMonsterBall_->SetPosition(Vector3{ transform.translate.x,transform.translate.y,transform.translate.z });
 	//更新
-	object3d_->Update();
+	objMonsterBall_->Update();
 
 	//========================================
 	// パーティクル系
@@ -111,7 +111,7 @@ void DebugScene::Object2DDraw() {
 void DebugScene::Object3DDraw() {
 	//========================================
 	// 3D描画
-	object3d_->Draw();
+	objMonsterBall_->Draw();
 }
 
 ///=============================================================================
@@ -151,10 +151,10 @@ void DebugScene::ImGuiDraw() {
 	//ライトの強度
 	ImGui::SliderFloat("LightIntensity", &lightIntensity, 0.2f, 100.0f);
 	//ライトの設定
-	object3d_->SetDirectionalLight(lightColor, lightDirection, lightIntensity);
+	objMonsterBall_->SetDirectionalLight(lightColor, lightDirection, lightIntensity);
 	//光沢度の設定
 	ImGui::SliderFloat("Shininess", &lightIntensity, 1.0f, 100.0f);
-	object3d_->SetShininess(lightIntensity);
+	objMonsterBall_->SetShininess(lightIntensity);
 	ImGui::End();
 
 }
