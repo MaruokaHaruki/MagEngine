@@ -18,22 +18,33 @@ class CameraManager {
     ///--------------------------------------------------------------
 	///						 メンバ関数
 public:
-	/// \brief シングルトンインスタンスの取得
+	/**----------------------------------------------------------------------------
+	 * \brief  GetInstance インスタンスの取得
+	 * \return 
+	 */
     static CameraManager* GetInstance();
-
-    /// \brief デストラクタ
+    /**----------------------------------------------------------------------------
+	 * \brief  ~CameraManager デストラクタ
+     */
     ~CameraManager();
-
-	/// \brief 終了処理
+	/**----------------------------------------------------------------------------
+	 * \brief  Finalize 終了処理
+	 */
     void Finalize();
-
-	/// \brief 初期化
+	/**----------------------------------------------------------------------------
+	 * \brief  Initialize 初期化
+	 */
     void Initialize();
-
-	/// \brief カメラの追加
+	/**----------------------------------------------------------------------------
+	 * \brief  AddCamera カメラの追加
+	 * \param  name カメラ名
+	 */
     void AddCamera(const std::string& name);
-
-	/// \brief カメラの取得
+	/**----------------------------------------------------------------------------
+	 * \brief  GetCamera カメラの取得
+	 * \param  name カメラ名
+	 * \return 
+	 */
     Camera* GetCamera(const std::string& name) const;
 
 	/// \brief 現在のカメラの設定
@@ -63,9 +74,9 @@ private:
     //========================================
 	// カメラのコンテナ
     std::map<std::string, std::unique_ptr<Camera>> cameras_;
+	//========================================
 	//現在のカメラ名
     std::string currentCameraName_;
-
 	//過去のカメラ名
 	std::string previousCameraName_;
 };

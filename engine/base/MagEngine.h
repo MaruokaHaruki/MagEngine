@@ -8,28 +8,26 @@
  *********************************************************************/
 #pragma once
 //========================================
-// Framework
+// Engine
 #include "WinApp.h"
 #include "DirectXCore.h"
-#include "ImguiSetup.h"
-#include "SrvSetup.h"
 #include "Input.h"
 #include "MAudioG.h"
 #include "Camera.h"
-// 共通部
+// Setup
+#include "ImguiSetup.h"
+#include "SrvSetup.h"
 #include "SpriteSetup.h"
-#include "TextureManager.h"
 #include "ParticleSetup.h"
 #include "Object3dSetup.h"
+// Manager
 #include "ModelManager.h"
 #include "LineManager.h"
-// シーン
-#include "CameraManager.h"
-#include "SceneManager.h"
-#include "SceneFactory.h"
+#include "TextureManager.h"
 
 ///=============================================================================
 ///						エンジン基盤クラス
 class MagEngine {
+
 };
 
