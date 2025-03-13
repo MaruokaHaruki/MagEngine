@@ -1,68 +1,68 @@
 /*********************************************************************
- * \file   MaruRhythm.cpp
+ * \file   EngineApp.cpp
  * \brief
  *
  * \author Harukichimaru
  * \date   January 2025
  * \note
  *********************************************************************/
-#include "MaruRhythm.h"
+#include "EngineApp.h"
 
 ///=============================================================================
 ///						初期化
-void MaruRhythm::Initialize() {
+void EngineApp::Initialize() {
 	///--------------------------------------------------------------
 	///						 フレームワーク初期化
-	MRFramework::Initialize();
+	MagFramework ::Initialize();
 }
 
 ///=============================================================================
 ///						終了処理
-void MaruRhythm::Finalize() {
+void EngineApp::Finalize() {
 	CameraManager::GetInstance()->Finalize();///
 	//========================================
 	// フレームワークの終了処理
-	MRFramework::Finalize();
+	MagFramework ::Finalize();
 }
 
 ///=============================================================================
 ///						更新
-void MaruRhythm::Update() {
+void EngineApp::Update() {
 	//========================================
 	// 更新処理
-	MRFramework::Update();
+	MagFramework ::Update();
 
 	///--------------------------------------------------------------
 	///						更新処理
 
 	//========================================
 	// ImGuiの更新
-	MRFramework::ImGuiPreDraw();
+	MagFramework ::ImGuiPreDraw();
 	//↓この間に書け!!!
 	//↑
-	MRFramework::ImGuiPostDraw();
+	MagFramework ::ImGuiPostDraw();
 }
 
 ///=============================================================================
 ///						描画
-void MaruRhythm::Draw() {
+void EngineApp::Draw() {
 	//========================================
 	// ループ前処理
-	MRFramework::FrameworkPreDraw();
+	MagFramework ::FrameworkPreDraw();
 
 	//========================================
 	//3Dオブジェクト共通描画設定
-	MRFramework::Object3DCommonDraw();
+	MagFramework ::Object3DCommonDraw();
 
 	//========================================
 	// 2Dオブジェクト共通描画設定
-	MRFramework::Object2DCommonDraw();
+	MagFramework ::Object2DCommonDraw();
 
 	//========================================
 	//パーティクル共通描画設定
-	MRFramework::ParticleCommonDraw();
+	MagFramework ::ParticleCommonDraw();
 
 	//========================================
 	// ループ後処理
-	MRFramework::FrameworkPostDraw();
+	MagFramework ::FrameworkPostDraw();
 }

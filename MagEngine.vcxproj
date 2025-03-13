@@ -115,7 +115,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\LineSetup.cpp" />
     <ClCompile Include="engine\3d\LineManager.cpp" />
     <ClCompile Include="application\PlayerWepon.cpp" />
-    <ClCompile Include="engine\base\MagEngine.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -144,8 +143,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\model\ModelManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleSetup.cpp" />
-    <ClCompile Include="engine\base\framework\MaruRhythm.cpp" />
-    <ClCompile Include="engine\base\framework\MRFramework.cpp" />
+    <ClCompile Include="engine\base\framework\EngineApp.cpp" />
+    <ClCompile Include="engine\base\framework\MagFramework.cpp" />
     <ClCompile Include="scene\publicScene\TitleScene.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -153,7 +152,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\LineSetup.h" />
     <ClInclude Include="engine\3d\LineManager.h" />
     <ClInclude Include="application\PlayerWepon.h" />
-    <ClInclude Include="engine\base\MagEngine.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
@@ -200,8 +198,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\2d\particle\Particle.h" />
     <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
     <ClInclude Include="engine\base\imGui\ImguiSetup.h" />
-    <ClInclude Include="engine\base\framework\MaruRhythm.h" />
-    <ClInclude Include="engine\base\framework\MRFramework.h" />
+    <ClInclude Include="engine\base\framework\EngineApp.h" />
+    <ClInclude Include="engine\base\framework\MagFramework.h" />
     <ClInclude Include="scene\base\SceneManager.h" />
     <ClInclude Include="scene\base\BaseScene.h" />
     <ClInclude Include="scene\publicScene\GamePlayScene.h" />

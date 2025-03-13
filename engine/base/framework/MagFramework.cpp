@@ -1,17 +1,17 @@
 /*********************************************************************
- * \file   MRFramework.cpp
+ * \file   MagFramework .cpp
  * \brief
  *
  * \author Harukichimaru
  * \date   January 2025
  * \note
  *********************************************************************/
-#include "MRFramework.h"
+#include "MagFramework.h"
 #include "WinApp.h"
 
 ///=============================================================================
 ///						実行
-void MRFramework::Run() {
+void MagFramework::Run() {
 	//========================================
 	// 初期化
 	Initialize();
@@ -47,7 +47,7 @@ void MRFramework::Run() {
 
 ///=============================================================================
 ///						初期化
-void MRFramework::Initialize() {
+void MagFramework::Initialize() {
 	///--------------------------------------------------------------
 	///						 ウィンドウ生成
 	win_ = std::make_unique<WinApp>();
@@ -131,7 +131,7 @@ void MRFramework::Initialize() {
 
 ///=============================================================================
 ///						更新
-void MRFramework::Update() {
+void MagFramework::Update() {
 	//========================================
 	// デバックカメラの呼び出し1,2
 	if(Input::GetInstance()->PushKey(DIK_1)) {
@@ -166,7 +166,7 @@ void MRFramework::Update() {
 
 ///=============================================================================
 ///						終了処理
-void MRFramework::Finalize() {
+void MagFramework::Finalize() {
 	//========================================
 	// ImGuiの終了処理
 	imguiSetup_->Finalize();
@@ -192,7 +192,7 @@ void MRFramework::Finalize() {
 
 ///=============================================================================
 ///						フレームワーク共通前処理
-void MRFramework::FrameworkPreDraw() {
+void MagFramework::FrameworkPreDraw() {
 	//========================================
 	// ループ前処理
 	dxCore_->PreDraw();
@@ -204,7 +204,7 @@ void MRFramework::FrameworkPreDraw() {
 
 ///=============================================================================
 ///						フレームワーク共通後処理
-void MRFramework::FrameworkPostDraw() {
+void MagFramework::FrameworkPostDraw() {
 	//========================================
 	// ImGui描画
 	imguiSetup_->Draw();
@@ -215,7 +215,7 @@ void MRFramework::FrameworkPostDraw() {
 
 ///=============================================================================
 ///						ImGuiの更新前処理
-void MRFramework::ImGuiPreDraw() {
+void MagFramework::ImGuiPreDraw() {
 	//========================================
 	// imguiの初期化
 	imguiSetup_->Begin();
@@ -236,7 +236,7 @@ void MRFramework::ImGuiPreDraw() {
 
 ///=============================================================================
 ///						ImGuiの更新後処理
-void MRFramework::ImGuiPostDraw() {
+void MagFramework::ImGuiPostDraw() {
 	//========================================
 	// imguiの終了処理
 	imguiSetup_->End();
@@ -244,7 +244,7 @@ void MRFramework::ImGuiPostDraw() {
 
 ///=============================================================================
 ///						Object2D共通描画設定
-void MRFramework::Object2DCommonDraw() {
+void MagFramework::Object2DCommonDraw() {
 	//========================================
 	// スプライト共通描画設定
 	spriteSetup_->CommonDrawSetup();
@@ -254,7 +254,7 @@ void MRFramework::Object2DCommonDraw() {
 
 ///=============================================================================
 ///						particle共通描画設定
-void MRFramework::ParticleCommonDraw() {
+void MagFramework::ParticleCommonDraw() {
 	//========================================
 	// パーティクル共通描画設定
 	particleSetup_->CommonDrawSetup();
@@ -264,7 +264,7 @@ void MRFramework::ParticleCommonDraw() {
 
 ///=============================================================================
 ///						Object3D共通描画設定
-void MRFramework::Object3DCommonDraw() {
+void MagFramework::Object3DCommonDraw() {
 	//========================================
 	// 3D共通描画設定
 	object3dSetup_->CommonDrawSetup();

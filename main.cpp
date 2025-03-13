@@ -6,14 +6,14 @@
  * \date   November 2024
  * \note
  *********************************************************************/
-#include "MaruRhythm.h"
-#include "MRFramework.h"
+#include "EngineApp.h"
+#include "MagFramework.h"
 ///=============================================================================
 ///						Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//========================================
 	// フレームワークのインスタンスを生成
-	MRFramework *framework = new MaruRhythm();
+	MagFramework *framework = new EngineApp();
 	//========================================
 	// ゲームの実行
 	framework->Run();

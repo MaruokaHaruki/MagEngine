@@ -86,7 +86,7 @@
     <ClCompile Include="engine\utils\Logger.cpp">
       <Filter>engine\utils</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\framework\MaruRhythm.cpp">
+    <ClCompile Include="engine\base\framework\EngineApp.cpp">
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="engine\utils\WstringUtility.cpp">
@@ -116,7 +116,7 @@
     <ClCompile Include="scene\publicScene\TitleScene.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\framework\MRFramework.cpp">
+    <ClCompile Include="engine\base\framework\MagFramework.cpp">
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="application\Ground.cpp">
@@ -208,7 +208,7 @@
     <ClInclude Include="engine\utils\Logger.h">
       <Filter>engine\utils</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\framework\MaruRhythm.h">
+    <ClInclude Include="engine\base\framework\EngineApp.h">
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\structure\Transform.h">
@@ -283,7 +283,7 @@
     <ClInclude Include="scene\publicScene\TitleScene.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\framework\MRFramework.h">
+    <ClInclude Include="engine\base\framework\MagFramework.h">
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="application\Ground.h">

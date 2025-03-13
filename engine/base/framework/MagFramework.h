@@ -1,10 +1,10 @@
 /*********************************************************************
- * \file   MRFramework.h
- * \brief  
- * 
+ * \file   MagFramework .h
+ * \brief
+ *
  * \author Harukichimaru
  * \date   January 2025
- * \note   
+ * \note
  *********************************************************************/
 #pragma once
 //========================================
@@ -30,13 +30,13 @@
 
 ///=============================================================================
 ///						FrameWorkクラス
-class MRFramework {
+class MagFramework {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
 
 	/// \brief 仮想デストラクタ
-	virtual ~MRFramework() = default;
+	virtual ~MagFramework() = default;
 
 	/// \brief メインループ
 	void Run();

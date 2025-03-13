@@ -1,5 +1,5 @@
 /*********************************************************************
- * \file   MaruRhythm.h
+ * \file   EngineApp.h
  * \brief
  *
  * \author Harukichimaru
@@ -30,14 +30,12 @@
 #include "ParticleEmitter.h"
 #include "Object3d.h"
 #include "Model.h"
-
-
 #include "GamePlayScene.h"
-#include "MRFramework.h"
+#include "MagFramework.h"
 
 ///=============================================================================
-///						MaruRhythmクラス
-class MaruRhythm : public MRFramework {
+///						EngineAppクラス
+class EngineApp : public MagFramework {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
