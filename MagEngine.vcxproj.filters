@@ -238,7 +238,7 @@
     <ClInclude Include="engine\math\AffineTransformations.h">
       <Filter>engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\DirectionalLight.h">
+    <ClInclude Include="engine\math\structure\drawData\Light.h">
       <Filter>engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\imGui\ImguiSetup.h">

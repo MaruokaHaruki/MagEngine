@@ -8,7 +8,7 @@
  *********************************************************************/
 #pragma once
 #include "TransformationMatrix.h"
-#include "DirectionalLight.h"
+#include "Light.h"
 #include "Transform.h"
 #include "Model.h"
 #include "ModelManager.h"
@@ -186,20 +186,19 @@ private:
 	//---------------------------------------
 	//トランスフォーメーションマトリックス
 	Microsoft::WRL::ComPtr <ID3D12Resource> transfomationMatrixBuffer_;
-	//並行光源
-	Microsoft::WRL::ComPtr <ID3D12Resource> directionalLightBuffer_;
 	//カメラ
 	Microsoft::WRL::ComPtr <ID3D12Resource> cameraBuffer_;
-
+	//並行光源
+	Microsoft::WRL::ComPtr <ID3D12Resource> directionalLightBuffer_;
 
 	//---------------------------------------
 	// バッファリソース内のデータを指すポインタ
 	//トランスフォーメーションマトリックス
 	TransformationMatrix* transformationMatrixData_ = nullptr;
-	//並行光源
-	DirectionalLight* directionalLightData_ = nullptr;
 	//カメラ
 	CameraForGpu *cameraData_ = nullptr;
+	//並行光源
+	DirectionalLight* directionalLightData_ = nullptr;
 
 	//--------------------------------------
 	// Transform

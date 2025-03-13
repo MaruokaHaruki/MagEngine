@@ -64,7 +64,10 @@ private:
 	
 	//========================================
 	// 3dオブジェクト
+	// モンスターボール
 	std::unique_ptr<Object3d> objMonsterBall_;
+	// 地面
+	std::unique_ptr<Object3d> objTerrain_;
 	//========================================
 	// パーティクル
 
@@ -75,8 +78,13 @@ private:
 
 	//========================================
 	//ライト
+	// ライトカラー
 	Vector4 lightColor = { 1.0f,1.0f,1.0f,1.0f };
+	// ライト方向
 	Vector3 lightDirection = { 0.0f,0.0f,0.0f };
+	// ライト強度
 	float lightIntensity = 16.0f;
+	// 光沢
+	float lightShininess = 32.0f;
 };
 

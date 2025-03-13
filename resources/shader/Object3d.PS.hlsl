@@ -1,40 +1,33 @@
+/*********************************************************************
+ * \file   Object3d.PS.hlsl
+ * \brief
+ *
+ * \author Harukichimaru
+ * \date   March 2025
+ * \note
+ *********************************************************************/
 #include "Object3d.hlsli"
 
-//マテリアル
-struct Material
-{
-    float4 color;
-    int enableLighting;
-    float4x4 uvTransform;
-    float shininess;
-};
+///=============================================================================
+///						コンスタントバッファ
+
+// マテリアル
 ConstantBuffer<Material> gMaterial : register(b0);
 
-//平行光源
-struct DirectionalLight
-{
-    float4 color;
-    float3 direction;
-    float intensity;
-};
+// 平行光源
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 
-//カメラ
-struct Camera
-{
-    float3 worldPosition;
-};
+// カメラ
 ConstantBuffer<Camera> gCamera : register(b2);
 
-Texture2D<float4> gTexture : register(t0); //SRVのRegister
+//SRVのRegister
+Texture2D<float4> gTexture : register(t0);
 
-SamplerState gSampler : register(s0); //SamplerのRegister
+//SamplerのRegister
+SamplerState gSampler : register(s0); 
 
-struct PixelShaderOutput
-{
-    float4 color : SV_TARGET0;
-};
-
+///=============================================================================
+///						PixelShader
 PixelShaderOutput main(VertexShaderOutput input)
 {
     //TextureのSampling

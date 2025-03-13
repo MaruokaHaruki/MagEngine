@@ -1,19 +1,13 @@
 #include "Object3d.hlsli"
 
-struct TransformationMatrix{
-    float4x4 WVP;
-    float4x4 World;
-    float4x4 WorldInverseTranspose;
-};
+///=============================================================================
+///						コンスタントバッファ
 
+// 変換行列
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);
 
-struct VertexShaderInput{
-    float4 position : POSITION0;
-    float2 texcoord : TEXCOORD0;
-    float3 normal : NORMAL0;
-};
-
+///=============================================================================
+///						VertexShader
 VertexShaderOutput main(VertexShaderInput input){
     VertexShaderOutput output;
     output.texcoord = input.texcoord;

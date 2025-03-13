@@ -34,18 +34,24 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	//モデルの読み込み
 	ModelManager::GetInstance()->LoadMedel("axisPlus.obj");
 	ModelManager::GetInstance()->LoadMedel("ball.obj");
+	ModelManager::GetInstance()->LoadMedel("terrain.obj");
 	//========================================
 	// 3Dオブジェクトクラス
+	//モンスターボール
 	objMonsterBall_ = std::make_unique<Object3d>();
-	//3Dオブジェクトの初期化
 	objMonsterBall_->Initialize(object3dSetup);
 	objMonsterBall_->SetModel("ball.obj");
+	// 地面
+	objTerrain_ = std::make_unique<Object3d>();
+	objTerrain_->Initialize(object3dSetup);
+	objTerrain_->SetModel("terrain.obj");
 
 	//========================================
 	// ライト情報の取得
 	lightColor = objMonsterBall_->GetDirectionalLight().color;
 	lightDirection = objMonsterBall_->GetDirectionalLight().direction;
 	lightIntensity = objMonsterBall_->GetDirectionalLight().intensity;
+	lightShininess = objMonsterBall_->GetShininess();
 
 	///--------------------------------------------------------------
 	///						 パーティクル系
@@ -77,14 +83,20 @@ void DebugScene::Update() {
 
 	//========================================
 	// 3D更新 
-	//大きさのセット
+	// モンスターボール
 	objMonsterBall_->SetScale(Vector3{ transform.scale.x,transform.scale.y,transform.scale.z });
-	//回転のセット
 	objMonsterBall_->SetRotation(Vector3{ transform.rotate.x,transform.rotate.y,transform.rotate.z });
-	//座標のセット
 	objMonsterBall_->SetPosition(Vector3{ transform.translate.x,transform.translate.y,transform.translate.z });
-	//更新
 	objMonsterBall_->Update();
+	// 地面
+	objTerrain_->SetScale(Vector3{ 1.0f,1.0f,1.0f });
+	objTerrain_->SetRotation(Vector3{ 0.0f,0.0f,0.0f });
+	objTerrain_->SetPosition(Vector3{ 0.0f,0.0f,0.0f });
+	objTerrain_->Update();
+
+	// ライト情報の設定
+	objMonsterBall_->SetDirectionalLight(lightColor, lightDirection, lightIntensity);
+	objTerrain_->SetDirectionalLight(lightColor, lightDirection, lightIntensity);
 
 	//========================================
 	// パーティクル系
@@ -96,8 +108,6 @@ void DebugScene::Update() {
 		//audio_->PlayWavReverse("Duke_Ellington.wav", true, 1.0f, 1.0f);
 		//audio_->PlayWav("Duke_Ellington.wav", true, 1.0f, 1.0f);
 	}
-
-
 }
 
 ///=============================================================================
@@ -109,9 +119,10 @@ void DebugScene::Object2DDraw() {
 ///=============================================================================
 ///						3D描画
 void DebugScene::Object3DDraw() {
-	//========================================
-	// 3D描画
+	// モンスターボール
 	objMonsterBall_->Draw();
+	// 地面
+	objTerrain_->Draw();
 }
 
 ///=============================================================================
@@ -149,12 +160,8 @@ void DebugScene::ImGuiDraw() {
 	//ライトの方向
 	ImGui::SliderFloat3("LightDirection", &lightDirection.x, -1.0f, 1.0f);
 	//ライトの強度
-	ImGui::SliderFloat("LightIntensity", &lightIntensity, 0.2f, 100.0f);
-	//ライトの設定
-	objMonsterBall_->SetDirectionalLight(lightColor, lightDirection, lightIntensity);
+	ImGui::SliderFloat("LightIntensity", &lightIntensity, 0.01f, 10.0f);
 	//光沢度の設定
-	ImGui::SliderFloat("Shininess", &lightIntensity, 1.0f, 100.0f);
-	objMonsterBall_->SetShininess(lightIntensity);
+	ImGui::SliderFloat("Shininess", &lightShininess, 0.01f, 10.0f);
 	ImGui::End();
-
 }
