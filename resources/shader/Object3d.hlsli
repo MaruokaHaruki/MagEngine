@@ -53,25 +53,27 @@ struct Camera
 // DirectionalLight
 struct DirectionalLight
 {
-    float4 color;
-    float3 direction;
-    float intensity;
+    float4 color;       // ライトの色
+    float3 direction;   // ライトの方向
+    float intensity;    // ライトの強度
 };
 // PointLight
 struct PointLight
 {
-    float4 color;
-    float3 position;
-    float intensity;
+    float4 color;       // ライトの色
+    float3 position;    // ライトの位置
+    float intensity;    // ライトの強度
+    float radius;       // ライトの影響範囲
+    float decay;        // ライトの減衰率
 };
 // SpotLight
 struct SpotLight
 {
-    float4 color;
-    float3 position;
-    float intensity;
-    float3 direction;
-    float distance;
-    float decay;
-    float cosAngle;
+    float4 color;       // ライトの色
+    float3 position;    // ライトの位置
+    float intensity;    // ライトの強度
+    float3 direction;   // ライトの方向
+    float distance;     // ライトの影響範囲
+    float decay;        // ライトの減衰率
+    float cosAngle;     // スポットライトの角度
 };

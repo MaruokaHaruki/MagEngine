@@ -47,11 +47,12 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	objTerrain_->SetModel("terrain.obj");
 
 	//========================================
-	// ライト情報の取得
-	lightColor = objMonsterBall_->GetDirectionalLight().color;
-	lightDirection = objMonsterBall_->GetDirectionalLight().direction;
-	lightIntensity = objMonsterBall_->GetDirectionalLight().intensity;
-	lightShininess = objMonsterBall_->GetShininess();
+	// ライト情報の設定
+	// 平面光源
+	directionalLightColor = objMonsterBall_->GetDirectionalLight().color;
+	directionalLightDirection = objMonsterBall_->GetDirectionalLight().direction;
+	directionalLightIntensity = objMonsterBall_->GetDirectionalLight().intensity;
+	directionalLightShininess = objMonsterBall_->GetShininess();
 
 	///--------------------------------------------------------------
 	///						 パーティクル系
@@ -95,8 +96,10 @@ void DebugScene::Update() {
 	objTerrain_->Update();
 
 	// ライト情報の設定
-	objMonsterBall_->SetDirectionalLight(lightColor, lightDirection, lightIntensity);
-	objTerrain_->SetDirectionalLight(lightColor, lightDirection, lightIntensity);
+	objMonsterBall_->SetDirectionalLight(directionalLightColor, directionalLightDirection, directionalLightIntensity);
+	objMonsterBall_->SetPointLight(pointLightColor, pointLightPosition, pointLightIntensity,pointLightRadius,pointLightDecay);
+	objTerrain_->SetDirectionalLight(directionalLightColor, directionalLightDirection, directionalLightIntensity);
+	objTerrain_->SetPointLight(pointLightColor, pointLightPosition, pointLightIntensity, pointLightRadius, pointLightDecay);
 
 	//========================================
 	// パーティクル系
@@ -145,23 +148,24 @@ void DebugScene::ImGuiDraw() {
 	//ライトの設定
 	ImGui::Begin("3DObject");
 	ImGui::Text("TransformSetting");
-	//大きさ
 	ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 10.0f);
-	//回転
 	ImGui::SliderFloat3("Rotate", &transform.rotate.x, -180.0f, 180.0f);
-	//座標
 	ImGui::SliderFloat3("Translate", &transform.translate.x, -10.0f, 10.0f);
-	//セパレート
 	ImGui::Separator();
 	//ライトの設定
 	ImGui::Text("LightSetting");
-	//ライトの色
-	ImGui::ColorEdit4("LightColor", &lightColor.x);
-	//ライトの方向
-	ImGui::SliderFloat3("LightDirection", &lightDirection.x, -1.0f, 1.0f);
-	//ライトの強度
-	ImGui::SliderFloat("LightIntensity", &lightIntensity, 0.01f, 10.0f);
-	//光沢度の設定
-	ImGui::SliderFloat("Shininess", &lightShininess, 0.01f, 10.0f);
+	// 平面光源
+	ImGui::Text("DirectionalLight");
+	ImGui::ColorEdit4("DirectionalLightColor", &directionalLightColor.x);
+	ImGui::SliderFloat3("DirectionalLightDirection", &directionalLightDirection.x, -1.0f, 1.0f);
+	ImGui::SliderFloat("DirectionalLightIntensity", &directionalLightIntensity, 0.00f, 10.0f);
+	ImGui::SliderFloat("DirectionalShininess", &directionalLightShininess, 0.00f, 10.0f);
+	// ポイントライト
+	ImGui::Text("PointLight");
+	ImGui::ColorEdit4("PointLightColor", &pointLightColor.x);
+	ImGui::SliderFloat3("PointLightPosition", &pointLightPosition.x, 0.00f, 50.0f);
+	ImGui::SliderFloat("PointLightIntensity", &pointLightIntensity, 0.00f, 10.0f);
+	ImGui::SliderFloat("PointLightRadius", &pointLightRadius, 0.00f, 50.0f);
+	ImGui::SliderFloat("PointLightDecay", &pointLightDecay, 0.00f, 10.0f);
 	ImGui::End();
 }

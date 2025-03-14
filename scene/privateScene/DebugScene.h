@@ -77,14 +77,19 @@ private:
 	Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 	//========================================
-	//ライト
-	// ライトカラー
-	Vector4 lightColor = { 1.0f,1.0f,1.0f,1.0f };
-	// ライト方向
-	Vector3 lightDirection = { 0.0f,0.0f,0.0f };
-	// ライト強度
-	float lightIntensity = 16.0f;
-	// 光沢
-	float lightShininess = 32.0f;
+	// ライト
+	// 平面光源
+	Vector4 directionalLightColor = { 1.0f,1.0f,1.0f,1.0f };
+	Vector3 directionalLightDirection = { 0.0f,-1.0f,0.0f };
+	float directionalLightIntensity = 2.0f;
+	float directionalLightShininess = 2.0f;
+
+	// 点光源
+	Vector4 pointLightColor = { 1.0f,1.0f,1.0f,1.0f };
+	Vector3 pointLightPosition = { 0.0f,0.0f,0.0f };
+	float pointLightIntensity = 2.0f;
+	float pointLightRadius = 10.0f;
+	float pointLightDecay = 2.0f;
+	//---------------------------------------
 };
 

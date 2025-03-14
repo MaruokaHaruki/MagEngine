@@ -14,6 +14,8 @@ struct PointLight {
 	Vector4 color;		//ライトの色
 	Vector3 position;	//ライトの位置
 	float intensity;	//光度
+	float radius;		//半径
+	float decay;		//減衰
 };
 
 /// @brief スポットライト
