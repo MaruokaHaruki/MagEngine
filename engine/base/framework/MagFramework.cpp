@@ -62,7 +62,7 @@ void MagFramework::Initialize() {
 	///						 ImGuiのセットアップ
 	imguiSetup_ = std::make_unique<ImguiSetup>();
 	//ImGuiの初期化
-	imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CYBER);
+	imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CLASSIC);
 	///--------------------------------------------------------------
 	///						 SrvSetupクラス
 	srvSetup_ = std::make_unique<SrvSetup>();

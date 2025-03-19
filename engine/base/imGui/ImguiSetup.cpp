@@ -66,7 +66,10 @@ void ImguiSetup::Initialize(WinApp* winApp, DirectXCore* dxCore, Style style) {
 		srvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart()
 	);
 
-
+	//========================================
+	// ドッキング設定
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; 
 }
 
 ///=============================================================================
