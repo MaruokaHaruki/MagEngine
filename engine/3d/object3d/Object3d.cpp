@@ -37,6 +37,8 @@ void Object3d::Initialize(Object3dSetup* object3dSetup) {
 	CreateDirectionalLight();
 	// ポイントライトの作成
 	CreatePointLight();
+	// スポットライトの作成（追加）
+	CreateSpotLight();
 
 	//========================================
 	// ワールド行列の初期化
@@ -101,6 +103,8 @@ void Object3d::Draw() {
 	commandList->SetGraphicsRootConstantBufferView(4, cameraBuffer_->GetGPUVirtualAddress());
 	// ポイントライトバッファの設定
 	commandList->SetGraphicsRootConstantBufferView(5, pointLightBuffer_->GetGPUVirtualAddress());
+	// スポットライトの設定
+	commandList->SetGraphicsRootConstantBufferView(6, spotLightBuffer_->GetGPUVirtualAddress());
 	
 	//========================================
 	// 描画コール
@@ -165,7 +169,6 @@ void Object3d::CreateDirectionalLight() {
 
 ///--------------------------------------------------------------
 ///						 ポイントライトの作成
-//TODO:スポットライトの作成
 void Object3d::CreatePointLight() {
 	// 定数バッファのサイズを 256 バイトの倍数に設定
     size_t bufferSize = (sizeof(PointLight) + 255) & ~255;
@@ -181,4 +184,26 @@ void Object3d::CreatePointLight() {
 	pointLight.radius = 10.0f;
 	pointLight.decay = 1.0f;
     *pointLightData_ = pointLight;
+}
+
+///--------------------------------------------------------------
+///						 スポットライトの作成
+void Object3d::CreateSpotLight() {
+    // 定数バッファのサイズを 256 バイトの倍数に設定
+    size_t bufferSize = (sizeof(SpotLight) + 255) & ~255;
+    spotLightBuffer_ = object3dSetup_->GetDXManager()->CreateBufferResource(bufferSize);
+    // スポットライト書き込み用データ
+    SpotLight spotLight = {};
+    // 書き込むためのアドレスを取得
+    spotLightBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&spotLightData_));
+    // 初期値設定
+    spotLight.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+    spotLight.position = { 0.0f, 5.0f, 0.0f };
+    spotLight.direction = { 0.0f, -1.0f, 0.0f };  // 真下方向
+    spotLight.intensity = 1.0f;
+    spotLight.distance = 15.0f;  			// 影響範囲
+    spotLight.decay = 1.5f;      			// 減衰率
+    spotLight.cosAngle = cosf(0.5f);  		// 約30度の円錐
+    // 書き込み
+    *spotLightData_ = spotLight;
 }

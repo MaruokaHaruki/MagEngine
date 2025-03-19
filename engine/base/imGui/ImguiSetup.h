@@ -11,6 +11,10 @@
 // base
 #include "WinApp.h"
 #include "DirectXCore.h"
+//---------------------------------------
+// ImGui
+#include <imgui_impl_win32.h>
+#include <imgui_impl_dx12.h>
 
 //---------------------------------------
 // imguiStyle
@@ -98,5 +102,9 @@ private:
 	int triangleCount = 0;
 	float logicTime = 0.0f;      // ゲームロジック処理時間（ms）
 	float renderingTime = 0.0f;  // レンダリング処理時間（ms）
+
+	// ドッキング関連
+	bool isDockingEnabled_ = false;   // ドッキング機能の有効/無効
+	ImGuiID dockspaceID_ = 0;         // メインドッキングスペースのID
 };
 

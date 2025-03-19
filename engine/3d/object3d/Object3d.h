@@ -66,6 +66,11 @@ private:
     void CreatePointLight();
 
 	/**----------------------------------------------------------------------------
+     * \brief  CreateSpotLight スポットライトの作成
+     */
+    void CreateSpotLight();
+
+	/**----------------------------------------------------------------------------
 	 * \brief  カメラバッファの作成
 	 */
 	void CreateCameraBuffer();
@@ -142,7 +147,7 @@ public:
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetPointLight ポイントライトの設定（拡張版）
-		* \param  color ライトの色
+	 * \param  color ライトの色
 	 * \param  position ライトの位置
 	 * \param  intensity 光の強度
 	 * \param  radius ライトの影響範囲
@@ -161,6 +166,34 @@ public:
 	* \return 現在設定されているポイントライト情報
 	*/
 	const PointLight& GetPointLight() const { return *pointLightData_; }
+
+    /**----------------------------------------------------------------------------
+     * \brief  SetSpotLight スポットライトの設定
+     * \param  color ライトの色
+     * \param  position ライトの位置
+     * \param  direction ライトの方向
+     * \param  intensity 光の強度
+     * \param  distance 光の届く距離
+     * \param  decay 減衰の度合い
+     * \param  angle スポットライトの角度（ラジアン）
+     */
+    void SetSpotLight(const Vector4& color, const Vector3& position, 
+        const Vector3& direction, float intensity,
+        float distance = 15.0f, float decay = 2.0f, 
+        float angle = 0.5f){
+			spotLightData_->color = color;
+			spotLightData_->position = position;
+			spotLightData_->direction = direction;
+			spotLightData_->intensity = intensity;
+			spotLightData_->distance = distance;
+			spotLightData_->decay = decay;
+			spotLightData_->cosAngle = cosf(angle);
+		}
+    /*
+     * \brief  GetSpotLight スポットライトの取得
+     * \return 現在設定されているスポットライト情報
+     */
+    const SpotLight& GetSpotLight() const { return *spotLightData_; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetMaterialColor マテリアルカラーの設定
@@ -198,10 +231,10 @@ private:
 	Microsoft::WRL::ComPtr <ID3D12Resource> cameraBuffer_;
 	// 並行光源
 	Microsoft::WRL::ComPtr <ID3D12Resource> directionalLightBuffer_;
-	// TODO:点光源
+	// 点光源
 	Microsoft::WRL::ComPtr <ID3D12Resource> pointLightBuffer_;
 	// TODO:スポットライト
-	//Microsoft::WRL::ComPtr <ID3D12Resource> spotLightBuffer_;
+	Microsoft::WRL::ComPtr <ID3D12Resource> spotLightBuffer_;
 	//========================================
 	// バッファリソース内のデータを指すポインタ
 	// トランスフォーメーションマトリックス
@@ -210,10 +243,10 @@ private:
 	CameraForGpu *cameraData_ = nullptr;
 	// 並行光源
 	DirectionalLight* directionalLightData_ = nullptr;
-	// TODO:点光源
+	// 点光源
 	PointLight* pointLightData_ = nullptr;
 	// TODO:スポットライト
-	//SpotLight* spotLightData_ = nullptr;
+	SpotLight* spotLightData_ = nullptr;
 	//========================================
 	// Transform
 	Transform transform_ = {};

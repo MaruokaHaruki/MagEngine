@@ -90,6 +90,14 @@ private:
 	float pointLightIntensity = 2.0f;
 	float pointLightRadius = 10.0f;
 	float pointLightDecay = 2.0f;
-	//---------------------------------------
+	
+	// スポットライト
+	Vector4 spotLightColor = { 1.0f,1.0f,1.0f,1.0f };
+	Vector3 spotLightPosition = { 0.0f,0.0f,0.0f };
+	Vector3 spotLightDirection = { 0.0f,-1.0f,0.0f };
+	float spotLightIntensity = 2.0f;
+	float spotLightDistance = 15.0f;
+	float spotLightDecay = 2.0f;
+	float spotLightAngle = 15.0f;
 };
 

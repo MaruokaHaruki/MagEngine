@@ -98,9 +98,10 @@ void DebugScene::Update() {
 	// ライト情報の設定
 	objMonsterBall_->SetDirectionalLight(directionalLightColor, directionalLightDirection, directionalLightIntensity);
 	objMonsterBall_->SetPointLight(pointLightColor, pointLightPosition, pointLightIntensity,pointLightRadius,pointLightDecay);
+	objMonsterBall_->SetSpotLight(spotLightColor, spotLightPosition, spotLightDirection, spotLightIntensity, spotLightDistance, spotLightDecay, spotLightAngle);
 	objTerrain_->SetDirectionalLight(directionalLightColor, directionalLightDirection, directionalLightIntensity);
 	objTerrain_->SetPointLight(pointLightColor, pointLightPosition, pointLightIntensity, pointLightRadius, pointLightDecay);
-
+	objTerrain_->SetSpotLight(spotLightColor, spotLightPosition, spotLightDirection, spotLightIntensity, spotLightDistance, spotLightDecay, spotLightAngle);
 	//========================================
 	// パーティクル系
 
@@ -167,5 +168,14 @@ void DebugScene::ImGuiDraw() {
 	ImGui::SliderFloat("PointLightIntensity", &pointLightIntensity, 0.00f, 10.0f);
 	ImGui::SliderFloat("PointLightRadius", &pointLightRadius, 0.00f, 50.0f);
 	ImGui::SliderFloat("PointLightDecay", &pointLightDecay, 0.00f, 10.0f);
+	// スポットライト
+	ImGui::Text("SpotLight");
+	ImGui::ColorEdit4("SpotLightColor", &spotLightColor.x);
+	ImGui::SliderFloat3("SpotLightPosition", &spotLightPosition.x, 0.00f, 50.0f);
+	ImGui::SliderFloat3("SpotLightDirection", &spotLightDirection.x, -1.0f, 1.0f);
+	ImGui::SliderFloat("SpotLightIntensity", &spotLightIntensity, 0.00f, 10.0f);
+	ImGui::SliderFloat("SpotLightDistance", &spotLightDistance, 0.00f, 50.0f);
+	ImGui::SliderFloat("SpotLightDecay", &spotLightDecay, 0.00f, 10.0f);
+	ImGui::SliderFloat("SpotLightAngle", &spotLightAngle, 0.00f, 180.0f);
 	ImGui::End();
 }
