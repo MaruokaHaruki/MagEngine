@@ -52,26 +52,48 @@ void MagFramework::Initialize() {
 	///						 ウィンドウ生成
 	win_ = std::make_unique<WinApp>();
 	//ウィンドウの生成
-	win_->CreateGameWindow(L"MREngine_Ver15.0");
+	win_->CreateGameWindow(L"MREngine_Ver0.4.0");
+
 	///--------------------------------------------------------------
 	///						 ダイレクトX生成
 	dxCore_ = std::make_unique<DirectXCore>();
 	//ダイレクトXの初期化
 	dxCore_->InitializeDirectX(win_.get());
+
 	///--------------------------------------------------------------
 	///						 ImGuiのセットアップ
 	imguiSetup_ = std::make_unique<ImguiSetup>();
 	//ImGuiの初期化
 	imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CLASSIC);
+
 	///--------------------------------------------------------------
 	///						 SrvSetupクラス
 	srvSetup_ = std::make_unique<SrvSetup>();
 	//SrvSetupの初期化
 	srvSetup_->Initialize(dxCore_.get());
+
 	///--------------------------------------------------------------
 	///						 入力クラス
 	//入力の初期化
 	Input::GetInstance()->Initialize(win_->GetWindowClass().hInstance, win_->GetWindowHandle());
+
+	///--------------------------------------------------------------
+	// 						 テクスチャマネージャ
+	TextureManager::GetInstance()->Initialize(dxCore_.get(), "resources/texture/", srvSetup_.get());
+
+	///--------------------------------------------------------------
+	///						 ライトマネージャ
+	lightManager_ = std::make_unique<LightManager>();
+	// ライトマネージャの初期化
+	lightManager_->Initialize();
+
+	///--------------------------------------------------------------
+	/// 					 カメラの初期化
+	CameraManager::GetInstance()->Initialize();
+	// TODO: カメラの改善 現在、カメラの設定はここで行っているが、自由に変更がしにくいという問題が発生している。
+	// Lineのカメラ設定
+	LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+	
 	///--------------------------------------------------------------
 	///						 スプライトクラス
 	//========================================
@@ -79,9 +101,7 @@ void MagFramework::Initialize() {
 	spriteSetup_ = std::make_unique<SpriteSetup>();
 	//スプライト共通部の初期化
 	spriteSetup_->Initialize(dxCore_.get());
-	//========================================
-	// テクスチャマネージャ
-	TextureManager::GetInstance()->Initialize(dxCore_.get(), "resources/texture/", srvSetup_.get());
+
 	///--------------------------------------------------------------
 	///						 Object3D共通部
 	//========================================
@@ -92,33 +112,27 @@ void MagFramework::Initialize() {
 	object3dSetup_ = std::make_unique<Object3dSetup>();
 	//3Dオブジェクト共通部の初期化
 	object3dSetup_->Initialize(dxCore_.get());
+	// Object3Dのカメラ設定
+	object3dSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+	// Object3Dのライトマネージャ設定
+	object3dSetup_->SetLightManager(lightManager_.get());
+
 	///--------------------------------------------------------------
 	///						 パーティクル共通部
-	//========================================
-	// パーティクルセットアップ
 	particleSetup_ = std::make_unique<ParticleSetup>();
 	//パーティクルセットアップの初期化
 	particleSetup_->Initialize(dxCore_.get(), srvSetup_.get());
+	// パーティクルのカメラ設定
+	particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+
 	///--------------------------------------------------------------
 	///						 ラインマネージャ
-	//========================================
-	// ラインマネージャの初期化
 	LineManager::GetInstance()->Initialize(dxCore_.get(), srvSetup_.get());
+
 	///--------------------------------------------------------------
 	///						 オーディオの初期化
 	MAudioG::GetInstance()->Initialize("resources/sound/");
-	///--------------------------------------------------------------
-	/// デフォルトカメラの初期化
-	//========================================
-	// カメラ
-	CameraManager::GetInstance()->Initialize();
-	// TODO: カメラの改善 現在、カメラの設定はここで行っているが、自由に変更がしにくいという問題が発生している。
-	// Object3Dのカメラ設定
-	object3dSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
-	// パーティクルのカメラ設定
-	particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
-	// Lineのカメラ設定
-	LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+
 	///--------------------------------------------------------------
 	///						 シーンマネージャ
 	sceneManager_ = std::make_unique<SceneManager>();
@@ -218,15 +232,14 @@ void MagFramework::ImGuiPreDraw() {
 	// imguiの初期化
 	imguiSetup_->Begin();
 #ifdef _DEBUG
-	//========================================
-	// imguiの描画
+	// シーンのImgui描画
 	sceneManager_->ImGuiDraw();
 	// InPutのImGui描画
 	Input::GetInstance()->ImGuiDraw();
-	//========================================
 	// CameraのImGui描画
 	CameraManager::GetInstance()->DrawImGui();
-	//========================================
+	// LightのImGui描画
+	lightManager_->DrawImGui();
 	// LineのImGui描画
 	LineManager::GetInstance()->DrawImGui();
 #endif // DEBUG

@@ -9,6 +9,7 @@
 #include "Object3d.h"
 #include "Object3dSetup.h"
 #include "Camera.h"
+#include "LightManager.h"
  //---------------------------------------
  // ファイル読み込み関数
 #include <fstream>
@@ -57,6 +58,15 @@ void Object3d::Update() {
 	camera_ = object3dSetup_->GetDefaultCamera();
 	// カメラの位置を書き込む
 	cameraData_->worldPosition = camera_->GetTransform().translate;
+
+	//========================================
+	// ライトの位置を取得
+	// 並行光源の取得
+	directionalLightData_ = object3dSetup_->GetLightManager()->GetDirectionalLight();
+	// 点光源
+	pointLightData_ = object3dSetup_->GetLightManager()->GetPointLight();
+	// スポットライト
+	spotLightData_ = object3dSetup_->GetLightManager()->GetSpotLight();
 
 	//========================================
 	// TransformからWorld行列を作成

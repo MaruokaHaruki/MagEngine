@@ -23,6 +23,7 @@
 #include "Object3dSetup.h"
 #include "ModelManager.h"
 #include "LineManager.h"
+#include "LightManager.h"
 // シーン
 #include "CameraManager.h"
 #include "SceneManager.h"
@@ -113,8 +114,11 @@ protected:
 	// モデルセットアップ
 	std::unique_ptr<ModelSetup> modelSetup_;
 	//========================================
+	// マネージャ
 	// シーンマネージャ
 	std::unique_ptr<SceneManager> sceneManager_;
 	// シーンファクトリー
 	std::unique_ptr<SceneFactory> sceneFactory_;
+	// ライトマネージャ
+	std::unique_ptr<LightManager> lightManager_;  // ライトマネージャーのインスタンス
 };
