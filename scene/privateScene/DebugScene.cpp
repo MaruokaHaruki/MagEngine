@@ -22,7 +22,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 
 	///--------------------------------------------------------------
 	///						 2D系クラス
-	////========================================
+	//========================================
 	//// テクスチャマネージャ
 
 	//========================================
@@ -46,14 +46,6 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	objTerrain_->Initialize(object3dSetup);
 	objTerrain_->SetModel("terrain.obj");
 
-	//========================================
-	// ライト情報の設定
-	// 平面光源
-	directionalLightColor = objMonsterBall_->GetDirectionalLight().color;
-	directionalLightDirection = objMonsterBall_->GetDirectionalLight().direction;
-	directionalLightIntensity = objMonsterBall_->GetDirectionalLight().intensity;
-	directionalLightShininess = objMonsterBall_->GetShininess();
-
 	///--------------------------------------------------------------
 	///						 パーティクル系
 	//========================================
@@ -76,11 +68,9 @@ void DebugScene::Update() {
 
 	//========================================
 	// カメラの更新
-	//CameraManager::GetInstance()->UpdateAll();
 
 	//========================================
 	// 2D更新
-
 
 	//========================================
 	// 3D更新 
@@ -95,16 +85,8 @@ void DebugScene::Update() {
 	objTerrain_->SetPosition(Vector3{ 0.0f,0.0f,0.0f });
 	objTerrain_->Update();
 
-	// ライト情報の設定
-	objMonsterBall_->SetDirectionalLight(directionalLightColor, directionalLightDirection, directionalLightIntensity);
-	objMonsterBall_->SetPointLight(pointLightColor, pointLightPosition, pointLightIntensity,pointLightRadius,pointLightDecay);
-	objMonsterBall_->SetSpotLight(spotLightColor, spotLightPosition, spotLightDirection, spotLightIntensity, spotLightDistance, spotLightDecay, spotLightAngle);
-	objTerrain_->SetDirectionalLight(directionalLightColor, directionalLightDirection, directionalLightIntensity);
-	objTerrain_->SetPointLight(pointLightColor, pointLightPosition, pointLightIntensity, pointLightRadius, pointLightDecay);
-	objTerrain_->SetSpotLight(spotLightColor, spotLightPosition, spotLightDirection, spotLightIntensity, spotLightDistance, spotLightDecay, spotLightAngle);
 	//========================================
 	// パーティクル系
-
 
 	//========================================
 	// 音声の再生
@@ -153,29 +135,5 @@ void DebugScene::ImGuiDraw() {
 	ImGui::SliderFloat3("Rotate", &transform.rotate.x, -180.0f, 180.0f);
 	ImGui::SliderFloat3("Translate", &transform.translate.x, -10.0f, 10.0f);
 	ImGui::Separator();
-	//ライトの設定
-	ImGui::Text("LightSetting");
-	// 平面光源
-	ImGui::Text("DirectionalLight");
-	ImGui::ColorEdit4("DirectionalLightColor", &directionalLightColor.x);
-	ImGui::SliderFloat3("DirectionalLightDirection", &directionalLightDirection.x, -1.0f, 1.0f);
-	ImGui::SliderFloat("DirectionalLightIntensity", &directionalLightIntensity, 0.00f, 10.0f);
-	ImGui::SliderFloat("DirectionalShininess", &directionalLightShininess, 0.00f, 10.0f);
-	// ポイントライト
-	ImGui::Text("PointLight");
-	ImGui::ColorEdit4("PointLightColor", &pointLightColor.x);
-	ImGui::SliderFloat3("PointLightPosition", &pointLightPosition.x, 0.00f, 50.0f);
-	ImGui::SliderFloat("PointLightIntensity", &pointLightIntensity, 0.00f, 10.0f);
-	ImGui::SliderFloat("PointLightRadius", &pointLightRadius, 0.00f, 50.0f);
-	ImGui::SliderFloat("PointLightDecay", &pointLightDecay, 0.00f, 10.0f);
-	// スポットライト
-	ImGui::Text("SpotLight");
-	ImGui::ColorEdit4("SpotLightColor", &spotLightColor.x);
-	ImGui::SliderFloat3("SpotLightPosition", &spotLightPosition.x, 0.00f, 50.0f);
-	ImGui::SliderFloat3("SpotLightDirection", &spotLightDirection.x, -1.0f, 1.0f);
-	ImGui::SliderFloat("SpotLightIntensity", &spotLightIntensity, 0.00f, 10.0f);
-	ImGui::SliderFloat("SpotLightDistance", &spotLightDistance, 0.00f, 50.0f);
-	ImGui::SliderFloat("SpotLightDecay", &spotLightDecay, 0.00f, 10.0f);
-	ImGui::SliderFloat("SpotLightAngle", &spotLightAngle, 0.00f, 180.0f);
 	ImGui::End();
 }

@@ -1,11 +1,9 @@
-// LightManager.h
 /*********************************************************************
  * \file   LightManager.h
  * \brief  ライト管理用クラス
  *
- * \author YourName
- * \date   March 2025
- * \note   
+ * \author Harukichimaru
+ * \date   March 2025 
  *********************************************************************/
 #pragma once
 #include <map>
@@ -14,6 +12,9 @@
 #include "Light.h"
 #include "Vector3.h"
 #include "Vector4.h"
+
+// LineManagerのインクルードを追加
+class LineManager;
 
 ///=============================================================================
 ///						ライトマネージャクラス
@@ -25,6 +26,10 @@ public:
     /// \brief 初期化
     void Initialize();
 
+    /// \brief LineManager設定
+    /// \param lineManager ラインマネージャーのポインタ
+    void SetLineManager(LineManager* lineManager) { lineManager_ = lineManager; }
+
     /// \brief 終了処理
     void Finalize();
 
@@ -33,6 +38,9 @@ public:
 
     /// @brief ImGui描画
     void DrawImGui();
+    
+    /// @brief ライト情報をラインで描画
+    void DrawLightDebugLines();
 
     ///--------------------------------------------------------------
     /// ディレクショナルライト（平行光源）関連
@@ -103,10 +111,25 @@ public:
     /// @note スポットライトの向きは、ライトの位置からカメラの位置を引いたベクトルで決まる。
     void SetActiveSpotLight(const std::string& name);
 
+
+    ///--------------------------------------------------------------
+    ///                         静的メンバ関数
 private:
+    /// @brief ディレクショナルライト可視化
+    /// @param lightName 描画対象のライト名（空文字でアクティブライト）
+    void VisualizeDirectionalLight(const std::string& lightName = "");
+    
+    /// @brief ポイントライト可視化
+    /// @param lightName 描画対象のライト名（空文字でアクティブライト）
+    void VisualizePointLight(const std::string& lightName = "");
+    
+    /// @brief スポットライト可視化
+    /// @param lightName 描画対象のライト名（空文字でアクティブライト）
+    void VisualizeSpotLight(const std::string& lightName = "");
+
     ///--------------------------------------------------------------
     ///						 メンバ変数
-
+    
     //========================================
     // ディレクショナルライト管理
     std::map<std::string, DirectionalLight> directionalLights_;
@@ -127,4 +150,21 @@ private:
     bool showDirectionalLightSettings_ = true;
     bool showPointLightSettings_ = true;
     bool showSpotLightSettings_ = true;
+
+    //========================================
+    // LineManagerへの参照
+    LineManager* lineManager_ = nullptr;
+
+    //========================================
+    // デバッグ表示設定
+    bool showLightDebug_ = false;
+    bool showDirectionalLightDebug_ = false;
+    bool showPointLightDebug_ = false;
+    bool showSpotLightDebug_ = false;
+    float debugLightScale_ = 1.0f;  // デバッグ表示のスケール調整用
+
+    // デバッグ表示用の追加設定
+    bool showDebugLabels_ = true;       // ラベル表示
+    bool showDebugParameters_ = true;   // パラメータ数値表示
+    float debugLineThickness_ = 1.5f;   // 線の太さ
 };

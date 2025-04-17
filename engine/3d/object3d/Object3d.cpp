@@ -61,12 +61,12 @@ void Object3d::Update() {
 
 	//========================================
 	// ライトの位置を取得
-	// 並行光源の取得
-	directionalLightData_ = object3dSetup_->GetLightManager()->GetDirectionalLight();
+	// 並行光源
+	*directionalLightData_ = object3dSetup_->GetLightManager()->GetDirectionalLight();
 	// 点光源
-	pointLightData_ = object3dSetup_->GetLightManager()->GetPointLight();
+	*pointLightData_ = object3dSetup_->GetLightManager()->GetPointLight();
 	// スポットライト
-	spotLightData_ = object3dSetup_->GetLightManager()->GetSpotLight();
+	*spotLightData_ = object3dSetup_->GetLightManager()->GetSpotLight();
 
 	//========================================
 	// TransformからWorld行列を作成

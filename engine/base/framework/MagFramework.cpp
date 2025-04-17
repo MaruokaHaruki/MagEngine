@@ -91,8 +91,6 @@ void MagFramework::Initialize() {
 	/// 					 カメラの初期化
 	CameraManager::GetInstance()->Initialize();
 	// TODO: カメラの改善 現在、カメラの設定はここで行っているが、自由に変更がしにくいという問題が発生している。
-	// Lineのカメラ設定
-	LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	
 	///--------------------------------------------------------------
 	///						 スプライトクラス
@@ -128,6 +126,8 @@ void MagFramework::Initialize() {
 	///--------------------------------------------------------------
 	///						 ラインマネージャ
 	LineManager::GetInstance()->Initialize(dxCore_.get(), srvSetup_.get());
+	// Lineのカメラ設定
+	LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 
 	///--------------------------------------------------------------
 	///						 オーディオの初期化
@@ -141,6 +141,12 @@ void MagFramework::Initialize() {
 	//シーンファクトリーのセット
 	sceneFactory_ = std::make_unique<SceneFactory>();
 	sceneManager_->SetSceneFactory(sceneFactory_.get());
+
+	///--------------------------------------------------------------
+	///						 各種設定
+	// ライトマネージャへラインマネージャポインタの受け渡し
+	lightManager_->SetLineManager(LineManager::GetInstance());
+
 }
 
 ///=============================================================================
@@ -154,23 +160,32 @@ void MagFramework::Update() {
 	if(Input::GetInstance()->PushKey(DIK_2)) {
 		CameraManager::GetInstance()->SetCurrentCamera("DefaultCamera");
 	}
+
 	//========================================
 	// カメラの更新
 	CameraManager::GetInstance()->UpdateAll();
+
 	//========================================
 	// ラインの更新
 	// カメラの更新
 	LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	// ラインの更新
 	LineManager::GetInstance()->Update();
+
+	//=========================================
+	// ライトの可視化
+	lightManager_->Update();
+
 	//========================================
 	// Object3Dのカメラ設定の更新
 	object3dSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	// particleのカメラ設定の更新
 	particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+
 	//========================================
 	// インプットの更新
 	Input::GetInstance()->Update();
+
 	//========================================
 	// シーンマネージャの更新
 	sceneManager_->Update();
