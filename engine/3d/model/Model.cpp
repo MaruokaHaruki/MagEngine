@@ -9,11 +9,6 @@
 #include "Model.h"
 #include "ModelSetup.h"
 //---------------------------------------
-// assimpライブラリ
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-//---------------------------------------
 // ファイル読み込み関数
 #include <fstream>
 #include <sstream>
@@ -31,7 +26,7 @@ void Model::Initialize(ModelSetup *modelSetup, const std::string &directorypath,
 	//modelSetupから受け取る
 	modelSetup_ = modelSetup;
 	//モデルデータの読み込み
-	LoadObjFile(directorypath, filename);
+	LoadModelFile(directorypath, filename);
 	//頂点バッファの作成
 	CreateVertexBuffer();
 	//マテリアルバッファの作成
@@ -129,7 +124,7 @@ MaterialData Model::LoadMaterialTemplateFile(const std::string &directoryPath, c
 
 ///--------------------------------------------------------------
 ///						 OBJファイル読み込み関数
-void Model::LoadObjFile(const std::string &directoryPath, const std::string &filename) {
+void Model::LoadModelFile(const std::string &directoryPath, const std::string &filename) {
 	//========================================
     // Assimpインポーターの作成
     Assimp::Importer importer;
@@ -138,6 +133,9 @@ void Model::LoadObjFile(const std::string &directoryPath, const std::string &fil
 	//========================================
 	// 読み込みエラーのチェック
 	assert(scene && scene->HasMeshes() && "Failed to load the model file.");
+    //========================================
+    // シーンの階層構造を構築
+
 	//========================================
 	// メッシュの取得
 	for(uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
@@ -182,6 +180,37 @@ void Model::LoadObjFile(const std::string &directoryPath, const std::string &fil
 			}
 		}
 	}
+}
+
+///--------------------------------------------------------------
+///                      Nodeの読み込み
+Node Model::ReadNode(aiNode* node) {
+    Node result;
+    
+    // Assimpの行列を自前の行列形式に変換
+    aiMatrix4x4 aiLocalMatrix = node->mTransformation;
+    // 行列変換（aiMatrixは行優先、自前のMatrix4x4は列優先と仮定）
+    Matrix4x4 localMatrix;
+    localMatrix.m[0][0] = aiLocalMatrix.a1; localMatrix.m[0][1] = aiLocalMatrix.b1;
+    localMatrix.m[0][2] = aiLocalMatrix.c1; localMatrix.m[0][3] = aiLocalMatrix.d1;
+    localMatrix.m[1][0] = aiLocalMatrix.a2; localMatrix.m[1][1] = aiLocalMatrix.b2;
+    localMatrix.m[1][2] = aiLocalMatrix.c2; localMatrix.m[1][3] = aiLocalMatrix.d2;
+    localMatrix.m[2][0] = aiLocalMatrix.a3; localMatrix.m[2][1] = aiLocalMatrix.b3;
+    localMatrix.m[2][2] = aiLocalMatrix.c3; localMatrix.m[2][3] = aiLocalMatrix.d3;
+    localMatrix.m[3][0] = aiLocalMatrix.a4; localMatrix.m[3][1] = aiLocalMatrix.b4;
+    localMatrix.m[3][2] = aiLocalMatrix.c4; localMatrix.m[3][3] = aiLocalMatrix.d4;
+    
+    // ノードの情報を設定
+    result.name = node->mName.C_Str();
+    result.localMatrix = localMatrix;
+    
+    // 子ノードを再帰的に読み込む
+    result.children.resize(node->mNumChildren);
+    for (uint32_t i = 0; i < node->mNumChildren; ++i) {
+        result.children[i] = ReadNode(node->mChildren[i]);
+    }
+    
+    return result;
 }
 
 ///--------------------------------------------------------------
