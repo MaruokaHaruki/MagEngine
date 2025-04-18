@@ -49,10 +49,19 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///--------------------------------------------------------------
 	///						 パーティクル系
 	//========================================
-	// パーティクルクラス
-	
+	// パーティクルの作成
+
 	//========================================
-	// パーティクルエミッター
+	// パーティクルクラス
+	particle_ = std::make_unique<Particle>();
+	particle_->Initialize(particleSetup);
+	// パーティクルのグループを作成
+	particle_->CreateParticleGroup("Test", "circle2.png");
+	//========================================
+	// エミッターの作成
+	particleEmitter_ = std::make_unique<ParticleEmitter>(particle_.get(), "Test", transform, 100, 0.1f, true);
+	// エミッターの初期化
+	particleEmitter_->SetTranslate(Vector3{ 0.0f,0.0f,0.0f });
 }
 
 ///=============================================================================
@@ -87,6 +96,10 @@ void DebugScene::Update() {
 
 	//========================================
 	// パーティクル系
+	// パーティクルの更新
+	particle_->Update();
+	// エミッターの更新
+	particleEmitter_->Update();
 
 	//========================================
 	// 音声の再生
@@ -106,15 +119,16 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	objMonsterBall_->Draw();
+	//objMonsterBall_->Draw();
 	// 地面
-	objTerrain_->Draw();
+	//objTerrain_->Draw();
 }
 
 ///=============================================================================
 ///						パーティクル描画
 void DebugScene::ParticleDraw() {
-
+	// パーティクルの描画
+	particle_->Draw();
 }
 
 ///=============================================================================
@@ -136,4 +150,8 @@ void DebugScene::ImGuiDraw() {
 	ImGui::SliderFloat3("Translate", &transform.translate.x, -10.0f, 10.0f);
 	ImGui::Separator();
 	ImGui::End();
+
+	//========================================
+	// パーティクルのImGui描画
+
 }

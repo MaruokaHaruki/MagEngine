@@ -70,6 +70,9 @@ private:
 	std::unique_ptr<Object3d> objTerrain_;
 	//========================================
 	// パーティクル
+	std::unique_ptr<Particle> particle_;
+	// パーティクルエミッター
+	std::unique_ptr<ParticleEmitter> particleEmitter_;
 
 
 	///--------------------------------------------------------------
