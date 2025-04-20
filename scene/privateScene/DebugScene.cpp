@@ -59,9 +59,13 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	particle_->CreateParticleGroup("Test", "circle2.png");
 	//========================================
 	// エミッターの作成
-	particleEmitter_ = std::make_unique<ParticleEmitter>(particle_.get(), "Test", transform, 100, 0.1f, true);
-	// エミッターの初期化
-	particleEmitter_->SetTranslate(Vector3{ 0.0f,0.0f,0.0f });
+	particleEmitter_ =
+		std::make_unique<ParticleEmitter>(particle_.get(),
+			"Test",
+			Transform{ {0.2f,0.2f,0.2f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} },
+			100,
+			0.1f,
+			true);
 }
 
 ///=============================================================================
@@ -150,8 +154,4 @@ void DebugScene::ImGuiDraw() {
 	ImGui::SliderFloat3("Translate", &transform.translate.x, -10.0f, 10.0f);
 	ImGui::Separator();
 	ImGui::End();
-
-	//========================================
-	// パーティクルのImGui描画
-
 }

@@ -120,62 +120,34 @@ void Particle::Update() {
 ///=============================================================================
 ///						描画
 void Particle::Draw() {
-	ID3D12GraphicsCommandList* commandList = particleSetup_->GetDXManager()->GetCommandList().Get();
-	// TODO: パイプラインステートオブジェクトの設定を行う
-	// ルートシグネチャを設定
-	//commandList->SetGraphicsRootSignature(rootSignature_.Get());
-	//キャッシュ内に指定されたブレンドモードのPSOが存在するか確認
-	//auto it = pipelineStateCache_.find(blendMode_);
-	//if (it == pipelineStateCache_.end() || !it->second) {
-	//	Logger::Log("PSO for blend mode not found, defaulting to normal blend mode.");
-	//	it = pipelineStateCache_.find(kBlendModeNormal);
-	//	if (it == pipelineStateCache_.end() || !it->second) {
-	//		Logger::Log("Default PSO not found. Aborting draw call.");
-	//		return;
-	//	}
-	//}
+    // コマンドリストの取得
+    ID3D12GraphicsCommandList* commandList = particleSetup_->GetDXManager()->GetCommandList().Get();
+    
+    // 共通の描画設定を適用
+    particleSetup_->CommonDrawSetup();
+    
+    // 頂点バッファをセット
+    commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-	//commandList->SetPipelineState(it->second.Get());
-	// プリミティブトポロジ（描画形状）を設定
-	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	// VBV (Vertex Buffer View)を設定
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+    // 全てのパーティクルグループを処理
+    for(auto& group : particleGroups) {
+        if(group.second.instanceCount == 0) continue; // インスタンスが無い場合はスキップ
 
-	// 全てのパーティクルグループについて処理を行う
-	for(auto& group : particleGroups) {
-		if(group.second.instanceCount == 0) continue; // インスタンスが無い場合はスキップ
+        // マテリアルCBufferの場所を設定
+        commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
+        
+        // テクスチャのSRVのDescriptorTableを設定
+        commandList->SetGraphicsRootDescriptorTable(2, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.srvIndex));
 
-		Vector2 textureLeftTop = group.second.textureLeftTop;
-		Vector2 textureSize = group.second.textureSize;
+        // インスタンシングデータのSRVのDescriptorTableを設定
+        commandList->SetGraphicsRootDescriptorTable(1, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.instancingSrvIndex));
 
-		// TODO: マテリアルデータの設定を行う後に修正
-		//for(auto& particle : group.second.particleList) {
-			// UV座標の計算
-			//float uStart = textureLeftTop.x / textureSize.x;
-			//float uEnd = ( textureLeftTop.x + textureSize.x ) / textureSize.x;
-			//float vStart = textureLeftTop.y / textureSize.y;
-			//float vEnd = ( textureLeftTop.y + textureSize.y ) / textureSize.y;
+        // Draw Call (インスタンシング描画)
+        commandList->DrawInstanced(6, group.second.instanceCount, 0, 0);
 
-			// 必要であればUV座標を設定する処理を追加
-		//}
-
-		//マテリアルCBufferの場所を設定
-		commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
-
-		// テクスチャのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(2, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.srvIndex));
-
-		// インスタンシングデータのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(1, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.instancingSrvIndex));
-
-		// Draw Call (インスタンシング描画)
-		commandList->DrawInstanced(6, group.second.instanceCount, 0, 0);
-
-
-		// インスタンスカウントをリセット
-		group.second.instanceCount = 0;
-	}
-
+        // インスタンスカウントをリセット
+        group.second.instanceCount = 0;
+    }
 }
 
 ///=============================================================================
@@ -286,12 +258,16 @@ void Particle::CreateParticleGroup(const std::string& name, const std::string& t
 ///--------------------------------------------------------------
 ///						 頂点データの作成
 void Particle::CreateVertexData() {
-	modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    // 四角形を2つの三角形として定義（計6頂点）
+    // 1つ目の三角形
+    modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    
+    // 2つ目の三角形
+    modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
 }
 
 ///--------------------------------------------------------------
@@ -363,7 +339,8 @@ ParticleStr Particle::CreateNewParticle(std::mt19937& randomEngine, const Vector
 
 	// カラーと寿命を設定
 	particle.color = { distColor(randomEngine), distColor(randomEngine), distColor(randomEngine), 1.0f };
-	particle.lifeTime = 0.4f; //distTime(randomEngine);
+	// ランダムな寿命を使用する
+	particle.lifeTime = distTime(randomEngine);
 	particle.currentTime = 0.0f;
 
 	return particle;
