@@ -63,8 +63,8 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 		std::make_unique<ParticleEmitter>(particle_.get(),
 			"Test",
 			Transform{ {0.2f,0.2f,0.2f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} },
-			100,
-			0.1f,
+			4,
+			2.0f,
 			true);
 }
 
