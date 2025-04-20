@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   ParticleSetup.h
- * \brief 
- * 
+ * \brief
+ *
  * \author Harukichimaru
  * \date   December 2024
- * \note   
+ * \note
  *********************************************************************/
 #pragma once
 #include "DirectXCore.h"
@@ -19,7 +19,7 @@ public:
 	* \brief  Initialize 初期化
 	* \param  dxManager ダイレクトXマネージャー
 	*/
-	void Initialize(DirectXCore* dxCore, SrvSetup* srvSetup);
+	void Initialize(DirectXCore *dxCore, SrvSetup *srvSetup);
 
 	/**----------------------------------------------------------------------------
 	* \brief  CommonDrawSetup 共通描画設定
@@ -48,24 +48,24 @@ public:
 	* \brief  GetDXManager DirectXCore取得
 	* \return
 	*/
-	DirectXCore* GetDXManager() const { return dxCore_; }
+	DirectXCore *GetDXManager() const { return dxCore_; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetSrvSetup SrvSetup取得
-	 * \return 
+	 * \return
 	 */
-	SrvSetup* GetSrvSetup() const { return srvSetup_; }
+	SrvSetup *GetSrvSetup() const { return srvSetup_; }
 
 	/**----------------------------------------------------------------------------
 	* \brief  SetCamera デフォルトカメラの設定
 	* \param  camera
 	*/
-	void SetDefaultCamera(Camera* camera) { this->defaultCamera_ = camera; }
+	void SetDefaultCamera(Camera *camera) { this->defaultCamera_ = camera; }
 	/*
 	* \brief  GetCamera デフォルトカメラの取得
 	* \return
 	*/
-	Camera* GetDefaultCamera() { return defaultCamera_; }
+	Camera *GetDefaultCamera() { return defaultCamera_; }
 
 
 	///--------------------------------------------------------------
@@ -73,9 +73,9 @@ public:
 private:
 	//========================================
 	// DirectXCoreポインタ
-	DirectXCore* dxCore_ = nullptr;
+	DirectXCore *dxCore_ = nullptr;
 	//SrvSetupポインタ
-	SrvSetup* srvSetup_ = nullptr;
+	SrvSetup *srvSetup_ = nullptr;
 
 	//========================================
 	// RootSignature
@@ -87,6 +87,6 @@ private:
 
 	//========================================
 	// デフォルトカメラ
-	Camera* defaultCamera_ = nullptr;
+	Camera *defaultCamera_ = nullptr;
 };
 
