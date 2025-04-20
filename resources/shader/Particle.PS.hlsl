@@ -30,9 +30,12 @@ PixelShaderOutput main(VertexShaderOutput input)
     float4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
     output.color = gMaterial.color * textureColor * input.color;
     // アルファ値が一定閾値以下のピクセルを破棄
-    if (output.color.a < 0.01)
+    if (output.color.a < 0.00)
     {
         discard;
-    } 
+    } else if(textureColor.a < 0.00)
+    {
+        discard;
+    }
     return output;
 }

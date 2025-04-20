@@ -295,7 +295,7 @@ void Particle::CreateMaterialData() {
 
 	//書き込むためのアドレスを取得
 	materialBuffer_->Map(0, nullptr, reinterpret_cast<void**>( &materialData_ ));
-	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 0.9f);
 	//SpriteはLightingしないのfalseを設定する
 	materialData_->enableLighting = false;
 	materialData_->uvTransform = Identity4x4();
