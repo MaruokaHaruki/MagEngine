@@ -52,307 +52,260 @@ public:
 	///--------------------------------------------------------------
 	///						 メンバ関数
 
-	/**----------------------------------------------------------------------------
-	 * \brief  PreDraw ループ前処理
-	 */
+	/// @brief PreDraw ループ前処理
 	void PreDraw();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  PostDraw ループ後処理
-	 */
+	/// @brief PostDraw ループ後処理
 	void PostDraw();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  InitializeDirectX ダイレクトXの初期化
-	 * \param  winApp
-	 */
+	/// @brief InitializeDirectX DirectXの初期化
+	/// @param winApp ウィンドウクラス
 	void InitializeDirectX(WinApp *winApp);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  ReleaseDirectX ダイレクトXの開放
-	 */
+	/// @brief ReleaseDirectX DirectXの開放
+	/// @note ループ終了時に呼び出す
 	void ReleaseDirectX();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateDebugLayer デバッグレイヤーの生成
-	 */
+	/// @brief CreateDebugLayer デバックレイヤーの生成
+	/// @note デバックビルド時に呼び出す
 	void CreateDebugLayer();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateDxgiFactory DXGIファクトリーの生成
-	 */
+	/// @brief CreateDxgiFactory DXGIファクトリーの生成
+	/// @note DXGIファクトリーはアダプタの選択に必要
 	void CreateDxgiFactory();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SelectAdapter アダプタの選択
-	 */
+	/// @brief SelectAdapter 使用するアダプタの選択
+	/// @note アダプタはGPUのこと
 	void SelectAdapter();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateD3D12Device デバイスの生成
-	 */
+	/// @brief CreateD3D12Device D3D12デバイスの生成
+	/// @note D3D12デバイスはコマンドキューの生成に必要
 	void CreateD3D12Device();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SetupErrorHandling エラーハンドリングの設定
-	 */
+	/// @brief SetupErrorHandling エラーハンドリングの設定
+	/// @note エラーハンドリングはコマンドキューの生成に必要
 	void SetupErrorHandling();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateCommandQueue コマンドキューの生成
-	 */
+	/// @brief CreateCommandQueue コマンドキューの生成
+	/// @note コマンドキューはコマンドリストの生成に必要
 	void CreateCommandQueue();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateCommandAllocator コマンドアロケータの生成
-	 */
+	/// @brief CreateCommandAllocator コマンドアロケータの生成
+	/// @note コマンドアロケータはコマンドリストの生成に必要
 	void CreateCommandAllocator();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateSwapChain SwapChainの生成
-	 */
+	/// @brief CreateSwapChain スワップチェインの生成
+	/// @note スワップチェインはレンダーターゲットの生成に必要
 	void CreateSwapChain();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateFence FenceとEventの生成
-	 */
+	/// @brief CreateFence フェンスの生成
+	/// @note フェンスはコマンドリストの実行に必要
 	void CreateFence();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateDepthBuffer 深度Bufferの生成
-	 */
+	/// @brief CreateDepthBuffer 深度Bufferの生成
+	
 	void CreateDepthBuffer();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateVariousDescriptorHeap ディスクリプタヒープの生成
-	 */
+	/// @brief CreateVariousDescriptorHeap ディスクリプタヒープの生成
 	void CreateVariousDescriptorHeap();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateRTVDescriptorHeap RTVディスクリプタヒープ
-
-	 */
+	/// @brief CreateRTVDescriptorHeap RTVディスクリプタヒープの生成
+	/// @note スワップチェインの生成に必要
 	void CreateRTVDescriptorHeap();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetResourcesFromSwapChain SwapChainからResource
-
-	 */
+	/// @brief GetResourcesFromSwapChain スワップチェインからリソースを取得
+	/// @note スワップチェインの生成に必要
 	void GetResourcesFromSwapChain();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateRenderTargetViews RTVの作成
-
-	 */
+	/// @brief CreateRenderTargetViews レンダーターゲットビューの生成
+	/// @note スワップチェインの生成に必要
 	void CreateRenderTargetViews();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  FenceGeneration フェンスの生成
-	 */
+	/// @brief FenceGeneration フェンスの生成
+	/// @note コマンドリストの実行に必要
 	void FenceGeneration();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SettleCommandList コマンドリストの決定
-	 */
+	/// @brief SetttleCommandList コマンドリストの決定
+	/// @note コマンドリストの実行に必要
 	void SettleCommandList();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SetupTransitionBarrier TransitionBarrierの設定
-	 */
+	/// @brief SetupTransitionBarrier 遷移バリアの設定
+	/// @note コマンドリストの実行に必要
 	void SetupTransitionBarrier();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  RenderTargetPreference レンダーターゲットの設定
-	 */
+	/// @brief RenderTargetPreference レンダーターゲットの設定
+	/// @note コマンドリストの実行に必要
 	void RenderTargetPreference();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateVirePortAndScissorRect ビューポートとシザーレクトの生成
-	 */
+	/// @brief CreateVirePortAndScissorRect ビューポートとシザーレクトの生成
+	/// @note コマンドリストの実行に必要
+	/// @note ビューポートは描画領域を指定するために必要
 	void CreateVirePortAndScissorRect();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CloseCommandList コマンドリストの終了
-	 */
+	/// @brief CloseCommandList コマンドリストの決定
+	/// @note コマンドリストの実行に必要
 	void CloseCommandList();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  ExecuteCommandList コマンドリストの実行
-	 */
+	/// @brief ExecuteCommandList コマンドリストの実行
+	/// @note コマンドリストの実行に必要
 	void ExecuteCommandList();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  ReleaseResources リソースの開放
-	 */
+	/// @brief SetupTransitionBarrier 遷移バリアの設定
+	/// @note コマンドリストの実行に必要
 	void ReleaseResources();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CheckResourceLeaks リソースリークのチェック
-	 */
+	/// @brief CheckResourceLeaks リソースリークのチェック
+	/// @note デバックビルド時に呼び出す
+	/// @note リソースリークがあった場合、エラーを出力する
 	void CheckResourceLeaks();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  ImGuiInitialize ImGuiの初期化
-	 */
+	/// @brief ImGuiInitialize ImGuiの初期化
+	/// @note ImGuiは描画に必要
+	/// @note ImGuiはコマンドリストの実行に必要
 	void ImGuiInitialize();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateDXCCompiler DXCコンパイラーの初期化
-	 */
+	/// @brief ImGuiDraw ImGuiの描画
+	/// @note ImGuiは描画に必要
+	/// @note ImGuiはコマンドリストの実行に必要
 	void CreateDXCCompiler();
 
 
 	///--------------------------------------------------------------
 	///						 生成系メンバ関数
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateDepthStencilTextureResource 深度BufferステンシルBufferの生成
-	 * \param  width
-	 * \param  height
-	 * \return
-	 */
+	
+	/// @brief CreateDepthStencilTextureResource 深度ステンシルテクスチャリソースの生成
+	/// @param width 
+	/// @param height 
+	/// @return 
 	Microsoft::WRL::ComPtr <ID3D12Resource> CreateDepthStencilTextureResource(int32_t width, int32_t height);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateDescriptorHeap ディスクリプタヒープの生成
-	 * \param  heapType ヒープタイプ
-	 * \param  numDescriptors ディスクリプタ数
-	 * \param  shaderVisible シェーダーから見えるか
-	 * \return
-	 */
+	/// @brief CreateDescriptorHeap ディスクリプタヒープの生成
+	/// @param heapType ヒープタイプ
+	/// @param numDescriptors ディスクリプタ数
+	/// @param shaderVisible シェーダーから見えるか
+	/// @return 
 	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CompileShader シェーダーのコンパイル
-	 * \param  filePath ファイルパス
-	 * \param  profile プロファイル
-	 * \return
-	 */
+	/// @brief CompileShader シェーダーのコンパイル
+	/// @param filePath	ファイルパス
+	/// @param profile	プロファイル
+	/// @note	プロファイルは、L"vs_5_0"やL"ps_5_0"などを指定する。
+	/// @return 
 	IDxcBlob *CompileShader(const std::wstring &filePath, const wchar_t *profile);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateBufferResource バッファリソースの生成
-	 * \param  sizeInByte サイズ
-	 * \return
-	 */
+	/// @brief CreateBufferResource バッファリソースの生成
+	/// @param sizeInByte サイズ
+	/// @return 
 	Microsoft::WRL::ComPtr <ID3D12Resource> CreateBufferResource(size_t sizeInByte);
-
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateTextureResource テクスチャリソースの生成
-	 * \param  metadata メタデータ
-	 * \return
-	 */
+	
+	/// @brief CreateTextureResource テクスチャリソースの生成
+	/// @param metadata メタデータ
+	/// @return 
 	Microsoft::WRL::ComPtr <ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata &metadata);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  UploadTextureData テクスチャデータのアップロード
-	 * \param  texture テクスチャ
-	 * \param  mipImages ミップマップ
-	 * \return
-	 */
+	/// @brief UploadTextureData テクスチャデータのアップロード
+	/// @param texture テクスチャ
+	/// @param mipImages ミップマップ
+	/// @return アップロードしたテクスチャ
 	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(Microsoft::WRL::ComPtr <ID3D12Resource> texture, const DirectX::ScratchImage &mipImages);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  LoadTexture テクスチャの読み込み
-	 * \param  filePath ファイルパス
-	 * \return
-	 */
+	/// @brief LoadTexture テクスチャの読み込み
+	/// @param filePath ファイルパス
+	/// @return 
 	static DirectX::ScratchImage LoadTexture(const std::string &filePath);
 
+
+	/// @brief CreateRenderTextureResource レンダーテクスチャリソースの生成
+	/// @param width 幅
+	/// @param height 高さ
+	/// @param format フォーマット
+	/// @param clearColor クリアカラー
+	/// @return
+	Microsoft::WRL::ComPtr<ID3D12Resource> 
+		CreateRenderTextureResource(uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
+
+	void CreateRenderTextureRTV();
+
+	void CreateRenderTextureSRV();
+
+	void CreateOffscreenRootSignature();
+
+	void CreateOffscreenPipelineState();
 
 	///--------------------------------------------------------------
 	///						 
 private:
 	/// ===CPU=== ///
-	/**----------------------------------------------------------------------------
-	 * \brief  GetCPUDescriptorHandle CPUディスクリプタハンドルの取得
-	 * \param  descriptorHeap ディスクリプタヒープ
-	 * \param  descriptorSize
-	 * \param  index
-	 * \return
-	 */
+	/// @brief GetCPUDescriptorHandle CPUディスクリプタハンドルの取得
+	/// @param descriptorHeap ディスクリプタヒープ
+	/// @param descriptorSize ディスクリプタサイズ
+	/// @param index インデックス
+	/// @return CPUディスクリプタハンドル
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
 	/// ===GPU=== ///
-	/**----------------------------------------------------------------------------
-	 * \brief  GetGPUDescriptorHandle GPUディスクリプタハンドルの取得
-	 * \param  descriptorHeap
-	 * \param  descriptorSize
-	 * \param  index
-	 * \return
-	 */
+	/// @brief GetGPUDescriptorHandle GPUディスクリプタハンドルの取得
+	/// @param descriptorHeap ディスクリプタヒープ
+	/// @param descriptorSize ディスクリプタサイズ
+	/// @param index インデックス
+	/// @return GPUディスクリプタハンドル
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  InitializeFixFPS FPS固定更新の初期化
-	 */
+	/// @brief InitializeFixFPS FPS固定更新の初期化
+	/// @note FPS固定更新は、ゲームの更新処理をFPSに合わせて固定するために必要
 	void InitializeFixFPS();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  UpdateFixFPS FPS固定更新
-	 */
+	/// @brief UpdateFixFPS FPS固定更新の更新
 	void UpdateFixFPS();
-
 
 	///--------------------------------------------------------------
 	///						 入出力関数
 public:
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetWinApp WindowsAPI取得
-	 */
+	/// @brief GetReference 記録時間の取得
+	/// @return 記録時間
 	WinApp GetWinApp() { return *winApp_; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SetHr HRESULT型の変数を設定するセッター関数。
-	 * \param  sHr HRESULT型の変数
-	 */
+	/// @brief GetDebugController デバックコントローラーの取得
+	/// @param sHr HRESULT
 	void SetHr(HRESULT sHr) { this->hr_ = sHr; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetHr HRESULT型の変数を取得するゲッター関数。
-	 */
+	/// @brief GetHr HRESULTの取得
+	/// @return	HRESULT
 	HRESULT GetHr() const { return hr_; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SetDevice デバイスの設定
-	 * \param  sDevice デバイス
-	 */
+	/// @brief SetDevice デバイスの設定
+	/// @param sDevice デバイス
 	void SetDevice(Microsoft::WRL::ComPtr <ID3D12Device> sDevice) { this->device_ = sDevice; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetDevice デバイスの取得
-	 */
+	/// @brief GetDevice デバイスの取得
+	/// @return デバイス
 	Microsoft::WRL::ComPtr <ID3D12Device> GetDevice() { return device_; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SetCommandList コマンドリストの設定
-	 * \param  sCommandList
-	 */
+	/// @brief SetCommandAllocator コマンドアロケータの設定
+	/// @param sCommandList コマンドアロケータ
+	/// @note コマンドアロケータは、コマンドリストの生成に必要
 	void SetCommandList(Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> sCommandList) { this->commandList_ = sCommandList; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetCommandList コマンドリストの取得
-	 * \return
-	 */
+	/// @brief GetCommandList コマンドリストの取得
+	/// @return コマンドリスト
+	/// @note 取得したコマンドリストは、Reset()を呼び出すことで、リセットすることができる。
 	Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> GetCommandList() { return commandList_.Get(); }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetSwapChainDesc スワップチェーンの設定の取得
-	 */
+	/// @brief GetSwapChainDesc スワップチェインの設定を取得するゲッター関数。
+	/// @return スワップチェインの設定
+	/// @note スワップチェインの設定は、DXGI_SWAP_CHAIN_DESC1型である。
 	DXGI_SWAP_CHAIN_DESC1 GetSwapChainDesc() const { return swapChainDesc_; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetRtvDesc RTVディスクリプタの取得
-	 */
+	/// @brief GetRtvDesc RTVの設定を取得するゲッター関数。
+	/// @return RTVの設定
+	/// @note RTVの設定は、D3D12_RENDER_TARGET_VIEW_DESC型である。
 	D3D12_RENDER_TARGET_VIEW_DESC GetRtvDesc() const { return rtvDesc_; }
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetRtvDescriptorHeap RTVディスクリプタヒープの取得
-	 */
+	/// @brief GetRtvDescriptorHeap RTVディスクリプタヒープを取得するゲッター関数。
+	/// @return  RTVディスクリプタヒープ
+	/// @note  RTVディスクリプタヒープは、ID3D12DescriptorHeap型である。
 	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> GetRtvDescriptorHeap() { return rtvDescriptorHeap_; }
-
-
-
 
 	///--------------------------------------------------------------
 	///						 メンバ変数
@@ -429,8 +382,8 @@ private:
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc_{};
 	//ディスクリプタの先頭を取得する
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle_{};
-	//RTVを2つ作るのでディスクリプタを2つ用意
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[2]{};
+	//RTVを4つ作るのでディスクリプタを2つ用意
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[4]{};
 	//これから書き込むバックバッファのインデックスを取得
 	UINT backBufferIndex_ = 0;
 	//TransitionBarrierの設定
@@ -438,7 +391,7 @@ private:
 
 	//========================================
 	// SwapChainからResource
-	Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResource_[2] = { nullptr, nullptr };
+	Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResource_[4] = { nullptr, nullptr };
 
 	//========================================
 	// DXCコンパイラ
@@ -456,5 +409,12 @@ private:
 	// シザー矩形
 	D3D12_RECT scissorRect_{};
 
+	//========================================================
+	// ポストエフェクト用
+	// レンダーターゲット用のリソース
+	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources[2] = { nullptr };
+	// レンダーターゲット用のSRV
+	uint32_t renderResourceIndex_ = 0;
+	uint32_t renderTargetIndex_ = 1;
 };
 

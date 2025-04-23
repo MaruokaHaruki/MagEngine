@@ -123,9 +123,9 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	//objMonsterBall_->Draw();
+	objMonsterBall_->Draw();
 	// 地面
-	//objTerrain_->Draw();
+	objTerrain_->Draw();
 }
 
 ///=============================================================================

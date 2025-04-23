@@ -10,6 +10,7 @@
  //========================================
  // 標準ライブラリ
 #include <vector>
+#include "Vector4.h"
 //========================================
 // DirectXTex
 #include "d3dx12.h"
@@ -786,6 +787,99 @@ DirectX::ScratchImage DirectXCore::LoadTexture(const std::string& filePath) {
 
 	/// ===ミニマップ付きのデータを返す=== ///
 	return mipImages;
+}
+
+///=============================================================================
+///						レンダーテクスチャ系
+///--------------------------------------------------------------
+///                        レンダーテクスチャの生成
+Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 &clearColor) {
+	//========================================
+	// 1.metadataを元にResouceの設定
+	D3D12_RESOURCE_DESC resouceDesc{};
+	resouceDesc.Width = UINT(width);								//Textureの幅
+	resouceDesc.Height = UINT(height);								//Textureの高さ
+	resouceDesc.MipLevels = 1;										//mipmapの数
+	resouceDesc.DepthOrArraySize = 	1;								//奥行き or 配列Textureの配列数
+	resouceDesc.Format = format;									//TextureのFormat
+	resouceDesc.SampleDesc.Count = 1;								//サンプリングカウント
+	resouceDesc.Dimension =D3D12_RESOURCE_DIMENSION_TEXTURE2D;		//Textureの次元数。普段つかているのは2次元。
+	resouceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;	//RenderTargetとして使う通知
+
+	//========================================
+	// 2.利用するHeapの設定
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;					//当然VRAM上に作る
+
+	//========================================
+	// 2.5 深度値のクリア設定
+	D3D12_CLEAR_VALUE clearValue{};
+	clearValue.Format = format;									//Format。Resourceと合わせる
+	clearValue.Color[0] = clearColor.x;							//クリア色の設定
+	clearValue.Color[1] = clearColor.y;							//クリア色の設定
+	clearValue.Color[2] = clearColor.z;							//クリア色の設定
+	clearValue.Color[3] = clearColor.w;							//クリア色の設定
+
+	//========================================
+	// 3.resouceを生成する
+	Microsoft::WRL::ComPtr <ID3D12Resource> resource = nullptr;
+	HRESULT hr = device_->CreateCommittedResource(
+		&heapProperties,					//Heapの設定
+		D3D12_HEAP_FLAG_NONE,				//Heapの特殊な設定、特になし
+		&resouceDesc,						//Resourceの設定
+		D3D12_RESOURCE_STATE_COPY_DEST,	//初回のResouceState。Textureは基本読むだけ
+		nullptr,
+		IID_PPV_ARGS(&resource)
+	);
+
+	//========================================
+	// エラーチェック
+#ifdef _DEBUG
+	assert(SUCCEEDED(hr));
+#endif // _DEBUG
+	if(FAILED(hr)) {
+		//深度ステンシルテクスチャの生成がうまくいかなかったので起動できない
+		Log("Failed to create depth stencil texture resource.", LogLevel::Error);
+		return nullptr;
+	}
+
+	//========================================
+	// 出力
+	return resource;
+}
+
+///--------------------------------------------------------------
+///                        レンダーテクスチャのRTVを生成
+void DirectXCore::CreateRenderTextureRTV() {
+	const Vector4 kRenderTargetClearValue = Vector4(1.0f, 0.0f, 0.0f, 1.0f);	//クリア色(識別のために赤色)
+	auto renderTextureResource = CreateRenderTextureResource(
+		winApp_->GetWindowWidth(), winApp_->GetWindowHeight(),
+		 DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTargetClearValue);
+	device_->CreateRenderTargetView(renderTextureResource.Get(), &rtvDesc_, rtvHandles_[0]);
+}
+
+///--------------------------------------------------------------
+///                        レンダーテクスチャのSRVを生成
+void DirectXCore::CreateRenderTextureSRV() {
+	//========================================
+	// SRVの設定
+	D3D12_SHADER_RESOURCE_VIEW_DESC renderTextureSrvDesc_{};
+	renderTextureSrvDesc_.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;	//デフォルトのコンポーネントマッピングを使用
+	renderTextureSrvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;							//SRVのFormat。RenderTargetと合わせる
+	renderTextureSrvDesc_.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;						//2Dテクスチャとして扱う
+	renderTextureSrvDesc_.Texture2D.MostDetailedMip = 0;										//最も詳細なmipmapを使用する
+	renderTextureSrvDesc_.Texture2D.MipLevels = 1;											//mipmapの数。今回は1つだけ
+	renderTextureSrvDesc_.Texture2D.ResourceMinLODClamp = 0.0f;								//最小LOD値
+
+	//========================================
+	// SRVを生成する
+	device_->CreateShaderResourceView(renderTextureSrvDesc_.Get(), &srvDesc, srvHandle_);
+}
+
+void DirectXCore::CreateOffscreenRootSignature() {
+}
+
+void DirectXCore::CreateOffscreenPipelineState() {
 }
 
 
