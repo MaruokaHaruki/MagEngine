@@ -83,6 +83,17 @@ void DirectXCore::InitializeDirectX(WinApp* winApp) {
 	GetResourcesFromSwapChain();
 	//RTVの生成
 	CreateRenderTargetViews();
+
+
+	// レンダーテクスチャの作成（ピンポン方式のため2つ作成）
+	CreateRenderTextureRTV(); // RTVを作成
+	CreateRenderTextureSRV(); // SRVを作成
+
+	// オフスクリーン描画用のルートシグネチャとパイプラインステートを作成
+	CreateOffScreenRootSignature();
+	CreateOffScreenPipelineState();
+
+
 	//コマンドリストの決定
 	SettleCommandList();
 	//バリアの設定
@@ -342,10 +353,12 @@ void DirectXCore::CreateRenderTargetViews() {
 	//１つ目の作成
 	rtvHandles_[0] = rtvStarHandle_;
 	device_->CreateRenderTargetView(swapChainResource_[0].Get(), &rtvDesc_, rtvHandles_[0]);
+	swapChainResource_[0]->SetName(L"SwapChainResource0");
 	//2つめのディスクリプハンドルの作成
 	rtvHandles_[1].ptr = rtvHandles_[0].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	//2つめの作成
 	device_->CreateRenderTargetView(swapChainResource_[1].Get(), &rtvDesc_, rtvHandles_[1]);
+	swapChainResource_[1]->SetName(L"SwapChainResource1");
 }
 
 
@@ -490,16 +503,6 @@ void DirectXCore::CheckResourceLeaks() {
 ///=============================================================================
 ///						ImGuiの初期化
 void DirectXCore::ImGuiInitialize() {
-	//IMGUI_CHECKVERSION();
-	//ImGui::CreateContext();
-	//ImGui::StyleColorsDark();
-	//ImGui_ImplWin32_Init(winApp_->GetWindowHandle());
-	//ImGui_ImplDX12_Init(device_.Get(),
-	//	swapChainDesc_.BufferCount,
-	//	rtvDesc_.Format,
-	//	srvDescriptorHeap_.Get(),
-	//	srvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart(),
-	//	srvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart());
 }
 
 ///=============================================================================
@@ -851,37 +854,259 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(
 ///--------------------------------------------------------------
 ///                        レンダーテクスチャのRTVを生成
 void DirectXCore::CreateRenderTextureRTV() {
-	const Vector4 kRenderTargetClearValue = Vector4(1.0f, 0.0f, 0.0f, 1.0f);	//クリア色(識別のために赤色)
-	auto renderTextureResource = CreateRenderTextureResource(
-		winApp_->GetWindowWidth(), winApp_->GetWindowHeight(),
-		 DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, kRenderTargetClearValue);
-	device_->CreateRenderTargetView(renderTextureResource.Get(), &rtvDesc_, rtvHandles_[0]);
+	const Vector4 kRenderTargetClearValue{ 1.0f,0.0f,0.0f,1.0f };
+	renderTextureResources[0] = CreateRenderTextureResource(
+		winApp_->GetWindowWidth(),
+		winApp_->GetWindowHeight(),
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+		kRenderTargetClearValue);
+
+	rtvHandles_[2].ptr = rtvHandles_[1].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	device_->CreateRenderTargetView(renderTextureResources[0].Get(), &rtvDesc_, rtvHandles_[2]);
+	assert(renderTextureResources[0]);
+	renderTextureResources[0]->SetName(L"renderTexture0");
+
+	renderTextureResources[1] = CreateRenderTextureResource(
+		winApp_->GetWindowWidth(),
+		winApp_->GetWindowHeight(),
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+		kRenderTargetClearValue);
+
+	rtvHandles_[3].ptr = rtvHandles_[2].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	device_->CreateRenderTargetView(renderTextureResources[1].Get(), &rtvDesc_, rtvHandles_[3]);
+	assert(renderTextureResources[1]);
+	renderTextureResources[1]->SetName(L"renderTexture1");
+
+	renderResourceIndex_ = 0;
+	renderTargetIndex_ = 1;
 }
 
 ///--------------------------------------------------------------
 ///                        レンダーテクスチャのSRVを生成
 void DirectXCore::CreateRenderTextureSRV() {
-	//========================================
-	// SRVの設定
-	D3D12_SHADER_RESOURCE_VIEW_DESC renderTextureSrvDesc_{};
-	renderTextureSrvDesc_.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;	//デフォルトのコンポーネントマッピングを使用
-	renderTextureSrvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;							//SRVのFormat。RenderTargetと合わせる
-	renderTextureSrvDesc_.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;						//2Dテクスチャとして扱う
-	renderTextureSrvDesc_.Texture2D.MostDetailedMip = 0;										//最も詳細なmipmapを使用する
-	renderTextureSrvDesc_.Texture2D.MipLevels = 1;											//mipmapの数。今回は1つだけ
-	renderTextureSrvDesc_.Texture2D.ResourceMinLODClamp = 0.0f;								//最小LOD値
-
-	//========================================
-	// SRVを生成する
-	device_->CreateShaderResourceView(renderTextureSrvDesc_.Get(), &srvDesc, srvHandle_);
 }
 
-void DirectXCore::CreateOffscreenRootSignature() {
+///--------------------------------------------------------------
+///                        オフスクリーンのRootSignatureを生成
+void DirectXCore::CreateOffScreenRootSignature(){
+	HRESULT hr;
+
+	// ルートシグネチャの設定
+	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	// SRV の Descriptor Range
+	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
+	descriptorRange[0].BaseShaderRegister = 0; // t0: Shader Register
+	descriptorRange[0].NumDescriptors = 1; // 1つのSRV
+	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRV
+	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // 自動計算
+
+	// Root Parameter: SRV (gTexture)
+	D3D12_ROOT_PARAMETER rootParameters[1] = {};
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // Pixel Shaderで使用
+	//rootParameters[0].DescriptorTable.NumDescriptorRanges = 1; // 1つの範囲
+	//rootParameters[0].DescriptorTable.pDescriptorRanges = &descriptorRange; // SRV の範囲
+
+	rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRange; // Tableの中身の配列を指定
+	rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // Tableで利用する数
+
+
+	// Static Sampler
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
+	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // バイリニアフィルタ
+	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX; // 全MipMap使用
+	staticSamplers[0].ShaderRegister = 0; // s0: Shader Register
+	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // Pixel Shaderで使用
+
+	// ルートシグネチャの構築
+	descriptionRootSignature.pParameters = rootParameters; // ルートパラメーター配列へのポインタ
+	descriptionRootSignature.NumParameters = _countof(rootParameters); // 配列の長さ
+	descriptionRootSignature.pStaticSamplers = staticSamplers; // サンプラー配列へのポインタ
+	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers); // サンプラーの数
+
+	// 深度バッファのSRVを追加
+	descriptionRootSignature.pStaticSamplers = nullptr; // サンプラー配列へのポインタ
+	descriptionRootSignature.NumStaticSamplers = 0; // サンプラーの数
+
+	//シリアライズしてバイナリにする
+
+	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob_, &errorBlob_);
+	if (FAILED(hr))
+	{
+		Logger::Log(reinterpret_cast<char*>(errorBlob_->GetBufferPointer()));
+		assert(false);
+	}
+
+	// バイナリを元に生成
+	rootSignature_ = nullptr;
+	hr = device_->CreateRootSignature(0, signatureBlob_->GetBufferPointer(), signatureBlob_->GetBufferSize(), IID_PPV_ARGS(&rootSignature_));
+	assert(SUCCEEDED(hr));
 }
 
-void DirectXCore::CreateOffscreenPipelineState() {
+void DirectXCore::CreateOffScreenPipelineState() {
+	CreateOffScreenRootSignature();
+
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
+	inputElementDescs[0].SemanticName = "POSITION";
+	inputElementDescs[0].SemanticIndex = 0;
+	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[1].SemanticName = "TEXCOORD";
+	inputElementDescs[1].SemanticIndex = 0;
+	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
+	inputLayoutDesc.pInputElementDescs = nullptr;
+	inputLayoutDesc.NumElements = 0;
+
+	// BlendStateの設定
+	D3D12_BLEND_DESC blendDesc{};
+
+	// すべての要素数を書き込む
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	// RasiterzerStateの設定
+	D3D12_RASTERIZER_DESC rasterizerDesc{};
+
+	// 裏面(時計回り)を表示しない
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
+	// 三角形の中を塗りつぶす
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+
+	// Shaderをコンパイルする
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Resources/shaders/CopyImage.VS.hlsl", L"vs_6_0");
+	assert(vertexShaderBlob != nullptr);
+
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Resources/shaders/CopyImage.PS.hlsl", L"ps_6_0");
+	assert(pixelShaderBlob != nullptr);
+
+	// DepthStencilStateの設定
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+
+	// Depthの機能を有効化する
+	depthStencilDesc.DepthEnable = false;
+
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get(); // RootSignature
+	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;  // InputLayout
+	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(),vertexShaderBlob->GetBufferSize() }; // VertexShader
+	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(),pixelShaderBlob->GetBufferSize() };   // PixelShader
+	graphicsPipelineStateDesc.BlendState = blendDesc; //BlendState
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc; // RasterizerState
+
+	// 書き込むRTVの情報
+	graphicsPipelineStateDesc.NumRenderTargets = 1;
+	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+	// 利用するトポロジ(形状)のタイプ.。三角形
+	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+	// どのように画面に色をつけるか
+	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	// DepthStencilの設定
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	// 実際に生成
+	graphicsPipelineState_ = nullptr;
+	device_->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState_));
 }
 
+///--------------------------------------------------------------
+///                        RenderTextureを描画ターゲットとして設定
+void DirectXCore::SetRenderTextureAsTarget() {
+   // バリアを設定してレンダーターゲットとして使用可能に
+   D3D12_RESOURCE_BARRIER barrier{};
+   barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+   barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+   barrier.Transition.pResource = renderTextureResources[renderTargetIndex_].Get();
+   barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+   barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+   barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+   commandList_->ResourceBarrier(1, &barrier);
+   
+   // レンダーターゲットビューのCPUハンドルを取得
+   D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = GetCPUDescriptorHandle(
+	   renderTextureRtvHeap_, 
+	   descriptorSizeRTV, 
+	   renderTargetIndex_);
+   
+   // 深度バッファのCPUハンドルを取得
+   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+   
+   // レンダーターゲットと深度バッファを設定
+   commandList_->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
+   
+   // ビューポートとシザー矩形を設定
+   commandList_->RSSetViewports(1, &viewport_);
+   commandList_->RSSetScissorRects(1, &scissorRect_);
+   
+   // レンダーターゲットをクリア
+   float clearColor[] = { 0.1f, 0.25f, 0.5f, 0.0f };
+   commandList_->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+   commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+}
+
+///--------------------------------------------------------------
+///                        SwapChainを描画ターゲットとして設定
+void DirectXCore::SetSwapChainAsTarget() {
+    // バリアを設定してレンダーターゲットとして使用可能に
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = renderTextureResources[renderTargetIndex_].Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    commandList_->ResourceBarrier(1, &barrier);
+
+    // SwapChainをレンダーターゲットに設定
+    SetupTransitionBarrier();
+    RenderTargetPreference();
+    commandList_->RSSetViewports(1, &viewport_);
+    commandList_->RSSetScissorRects(1, &scissorRect_);
+}
+
+///--------------------------------------------------------------
+///                        レンダーテクスチャをSwapChainに描画
+void DirectXCore::DrawRenderTextureToSwapChain() {
+    // オフスクリーン用のグラフィックスパイプラインステートをセット
+    commandList_->SetPipelineState(graphicsPipelineState_.Get());
+    // ルートシグネチャをセット
+    commandList_->SetGraphicsRootSignature(rootSignature_.Get());
+    
+    // レンダーテクスチャのSRVをセット（t0）
+    commandList_->SetGraphicsRootDescriptorTable(0, GetRenderTextureSrvHandleGPU());
+    
+    // フルスクリーンクアッドを描画（頂点バッファなし）
+    commandList_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    commandList_->IASetVertexBuffers(0, 0, nullptr);
+    commandList_->DrawInstanced(3, 1, 0, 0);
+    
+    // ピンポン方式のレンダリングのための準備
+    SwapRenderTargets();
+}
+
+///--------------------------------------------------------------
+///                        レンダーテクスチャのSRVを取得
+void DirectXCore::SwapRenderTargets() {
+    // レンダリングターゲットのインデックスを入れ替え
+    uint32_t temp = renderTargetIndex_;
+    renderTargetIndex_ = renderResourceIndex_;
+    renderResourceIndex_ = temp;
+}
 
 ///=============================================================================
 ///						DescriptorHandleの取得を関数化

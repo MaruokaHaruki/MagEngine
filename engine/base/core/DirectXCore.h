@@ -22,6 +22,7 @@ using namespace WstringUtility;
 #include "Logger.h"
 using namespace Logger;
 #include "WinApp.h"
+#include "SrvSetup.h"
 //========================================
 // ReportLiveObj
 #include <dxgidebug.h>
@@ -172,7 +173,6 @@ public:
 
 	///--------------------------------------------------------------
 	///						 生成系メンバ関数
-	
 	/// @brief CreateDepthStencilTextureResource 深度ステンシルテクスチャリソースの生成
 	/// @param width 
 	/// @param height 
@@ -215,6 +215,8 @@ public:
 	static DirectX::ScratchImage LoadTexture(const std::string &filePath);
 
 
+
+
 	/// @brief CreateRenderTextureResource レンダーテクスチャリソースの生成
 	/// @param width 幅
 	/// @param height 高さ
@@ -224,14 +226,36 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12Resource> 
 		CreateRenderTextureResource(uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
 
+	/// @brief CreateRenderTextureRTV レンダーテクスチャのRTVを生成
 	void CreateRenderTextureRTV();
 
-	void CreateRenderTextureSRV();
+	/// @brief CreateDepthStencilTextureResource 深度ステンシルテクスチャリソースの生成
+	void CreateRenderTextureSRV();	
 
-	void CreateOffscreenRootSignature();
+	/// @brief CreateDepthStencilDSV 深度ステンシルビューの生成
+	void CreateOffScreenRootSignature();
 
-	void CreateOffscreenPipelineState();
+	/// @brief CreateOffScreenRootSignature オフスクリーン用ルートシグネチャの生成
+	void CreateOffScreenPipelineState();
 
+    // レンダーテクスチャをターゲットとして設定
+    void SetRenderTextureAsTarget();
+    
+    // スワップチェーンをターゲットとして設定
+    void SetSwapChainAsTarget();
+	
+	/// @brief DrawRenderTextureToSwapChain レンダーテクスチャをスワップチェインに描画
+	void DrawRenderTextureToSwapChain();
+
+	/// @brief DrawRenderTextureToSwapChain レンダーテクスチャをスワップチェインに描画
+	void SwapRenderTargets();
+    
+    // レンダーテクスチャのSRV GPUハンドルを取得
+    D3D12_GPU_DESCRIPTOR_HANDLE GetRenderTextureSrvHandleGPU() const {
+        // サービスロケータパターンでSrvSetupから取得する場合
+    	return srvSetup_->GetSRVGPUDescriptorHandle(renderTextureSrvIndices_[renderTargetIndex_]);
+    }
+	
 	///--------------------------------------------------------------
 	///						 
 private:
@@ -307,6 +331,10 @@ public:
 	/// @note  RTVディスクリプタヒープは、ID3D12DescriptorHeap型である。
 	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> GetRtvDescriptorHeap() { return rtvDescriptorHeap_; }
 
+	/// @brief SetSrvSetup SrvSetupの設定
+	void SetSrvSetup(SrvSetup *srvSetup) { this->srvSetup_ = srvSetup; }
+
+
 	///--------------------------------------------------------------
 	///						 メンバ変数
 private:
@@ -317,6 +345,10 @@ private:
 	//========================================
 	// WindowsAPI
 	WinApp *winApp_ = nullptr;
+
+	//========================================
+	// SrvSetupポインタ
+	SrvSetup *srvSetup_ = nullptr;
 
 	//========================================
 	// デバックレイヤーの生成
@@ -412,9 +444,21 @@ private:
 	//========================================================
 	// ポストエフェクト用
 	// レンダーターゲット用のリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources[2] = { nullptr };
+	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources[2] = {0, 0};
 	// レンダーターゲット用のSRV
 	uint32_t renderResourceIndex_ = 0;
 	uint32_t renderTargetIndex_ = 1;
+
+	// レンダーテクスチャ関連のリソース
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> renderTextureRtvHeap_;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> renderTextureSrvHeap_;
+	
+	Microsoft::WRL::ComPtr< ID3D12RootSignature> rootSignature_;
+	// パイプラインステートオブジェクト
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;
+	// シェーダーのコンパイル結果
+	Microsoft::WRL::ComPtr< ID3DBlob> signatureBlob_ = nullptr;
+	// シェーダーのコンパイル結果
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob_ = nullptr;
 };
 
