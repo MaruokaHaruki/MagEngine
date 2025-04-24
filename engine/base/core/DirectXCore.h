@@ -22,6 +22,7 @@ using namespace WstringUtility;
 #include "Logger.h"
 using namespace Logger;
 #include "WinApp.h"
+#include "Vector4.h"
 //========================================
 // ReportLiveObj
 #include <dxgidebug.h>
@@ -258,6 +259,23 @@ public:
 	 */
 	static DirectX::ScratchImage LoadTexture(const std::string &filePath);
 
+	/// @brief CreateRenderTextureResource レンダーテクスチャリソースの生成
+	/// @param width 幅
+	/// @param height 高さ
+	/// @param format フォーマット
+	/// @param clearColor クリアカラー
+	/// @return
+	Microsoft::WRL::ComPtr<ID3D12Resource> 
+		CreateRenderTextureResource(
+			uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor, D3D12_RESOURCE_STATES initialState);
+
+	/// @brief CreateRenderTextureRTV レンダーテクスチャのRTVを生成
+	/// @param SRVはマネージャの方にあるので、RTVだけ生成する
+	void CreateRenderTextureRTV();
+
+	///--------------------------------------------------------------
+	///						 メンバ変数
+
 
 	///--------------------------------------------------------------
 	///						 
@@ -351,11 +369,10 @@ public:
 	 */
 	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> GetRtvDescriptorHeap() { return rtvDescriptorHeap_; }
 
+	/// @brief GetRenderTextureResources レンダーテクスチャリソースの取得
+	/// @return
+	Microsoft::WRL::ComPtr<ID3D12Resource> GetRenderTextureResources(uint32_t index) { return renderTextureResources_[index]; }
 
-
-
-	///--------------------------------------------------------------
-	///						 メンバ変数
 private:
 	//========================================
 	// 記録時間(FPS固定用)
@@ -430,7 +447,7 @@ private:
 	//ディスクリプタの先頭を取得する
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle_{};
 	//RTVを2つ作るのでディスクリプタを2つ用意
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[2]{};
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[4]{}; //2つ分のRTVを作るので4つ用意する
 	//これから書き込むバックバッファのインデックスを取得
 	UINT backBufferIndex_ = 0;
 	//TransitionBarrierの設定
@@ -456,5 +473,8 @@ private:
 	// シザー矩形
 	D3D12_RECT scissorRect_{};
 
+	//========================================
+	// レンダーテクスチャリソース
+	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources_[2] = { nullptr, nullptr };
 };
 

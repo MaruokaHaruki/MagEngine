@@ -50,6 +50,9 @@ public:
 	void CreateSRVStructuredBuffer(uint32_t srvIndex, ID3D12Resource* pResource, UINT enelemtQuantity, UINT structureByteStride);
 
 
+	/// @brief CreateDepthStencilTextureResource 深度ステンシルテクスチャリソースの生成
+	void CreateRenderTextureSRV();	
+
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:

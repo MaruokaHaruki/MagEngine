@@ -341,6 +341,7 @@ void DirectXCore::CreateRenderTargetViews() {
 	//１つ目の作成
 	rtvHandles_[0] = rtvStarHandle_;
 	device_->CreateRenderTargetView(swapChainResource_[0].Get(), &rtvDesc_, rtvHandles_[0]);
+	
 	//2つめのディスクリプハンドルの作成
 	rtvHandles_[1].ptr = rtvHandles_[0].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	//2つめの作成
@@ -787,6 +788,110 @@ DirectX::ScratchImage DirectXCore::LoadTexture(const std::string& filePath) {
 	/// ===ミニマップ付きのデータを返す=== ///
 	return mipImages;
 }
+
+///=============================================================================
+///						レンダーテクスチャ系
+///--------------------------------------------------------------
+///                        レンダーテクスチャの生成
+Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 &clearColor, D3D12_RESOURCE_STATES initialState) {
+	//========================================
+	// 1.metadataを元にResouceの設定
+	D3D12_RESOURCE_DESC resouceDesc{};
+	resouceDesc.Width = UINT(width);								//Textureの幅
+	resouceDesc.Height = UINT(height);								//Textureの高さ
+	resouceDesc.MipLevels = 1;										//mipmapの数
+	resouceDesc.DepthOrArraySize = 	1;								//奥行き or 配列Textureの配列数
+	resouceDesc.Format = format;									//TextureのFormat
+	resouceDesc.SampleDesc.Count = 1;								//サンプリングカウント
+	resouceDesc.Dimension =D3D12_RESOURCE_DIMENSION_TEXTURE2D;		//Textureの次元数。普段つかているのは2次元。
+	resouceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;	//RenderTargetとして使う通知
+
+	//========================================
+	// 2.利用するHeapの設定
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;					//当然VRAM上に作る
+
+	//========================================
+	// 2.5 深度値のクリア設定
+	D3D12_CLEAR_VALUE clearValue{};
+	clearValue.Format = format;									//Format。Resourceと合わせる
+	clearValue.Color[0] = clearColor.x;							//クリア色の設定
+	clearValue.Color[1] = clearColor.y;							//クリア色の設定
+	clearValue.Color[2] = clearColor.z;							//クリア色の設定
+	clearValue.Color[3] = clearColor.w;							//クリア色の設定
+
+	//========================================
+	// 3.resouceを生成する
+	Microsoft::WRL::ComPtr <ID3D12Resource> resource = nullptr;
+	HRESULT hr = device_->CreateCommittedResource(
+		&heapProperties,					//Heapの設定
+		D3D12_HEAP_FLAG_NONE,				//Heapの特殊な設定、特になし
+		&resouceDesc,						//Resourceの設定
+		// NOTE: 以下のResourceStateは、RenderTargetとして使うため、初期状態をD3D12_RESOURCE_STATE_RENDER_TARGETに設定
+		// TODO:また､引数で変更できたほうが便利なので、引数で受け取るようにしておくか検討
+		initialState,	//初回のResouceState。Textureは基本読むだけ
+		&clearValue,						//Clear最適値
+		IID_PPV_ARGS(&resource)
+	);
+
+	//========================================
+	// エラーチェック
+#ifdef _DEBUG
+	assert(SUCCEEDED(hr));
+#endif // _DEBUG
+	if(FAILED(hr)) {
+		//深度ステンシルテクスチャの生成がうまくいかなかったので起動できない
+		Log("Failed to create depth stencil texture resource.", LogLevel::Error);
+		return nullptr;
+	}
+
+	//========================================
+	// 出力
+	return resource;
+}
+///--------------------------------------------------------------
+///                        レンダーテクスチャのRTVを生成
+void DirectXCore::CreateRenderTextureRTV() {
+	//========================================
+	// わかりやすくするために、赤色でクリアする
+	const Vector4 kRenderTargetClearValue{ 1.0f,0.0f,0.0f,1.0f };
+	//========================================
+	// 1つ目の作成
+	renderTextureResources_[0] = CreateRenderTextureResource(
+		winApp_->GetWindowWidth(),
+		winApp_->GetWindowHeight(),
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+		kRenderTargetClearValue,
+		D3D12_RESOURCE_STATE_RENDER_TARGET);
+	// ========================================
+	// RTVの設定
+	rtvHandles_[2].ptr = rtvHandles_[1].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	// レンダーターのビューを作成
+	device_->CreateRenderTargetView(renderTextureResources_[0].Get(), &rtvDesc_, rtvHandles_[2]);
+	// assertはデバッグビルド時にのみ有効になる
+	// もし条件がfalseの場合、プログラムは終了する
+	renderTextureResources_[0]->SetName(L"renderTexture0");
+	assert(renderTextureResources_[0]);
+	//========================================
+	// 2つ目の作成
+	renderTextureResources_[1] = CreateRenderTextureResource(
+		winApp_->GetWindowWidth(),
+		winApp_->GetWindowHeight(),
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+		kRenderTargetClearValue,
+		// NOTE: 2つ目のRenderTargetはSRVとしても使うので、初期状態をD3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCEに設定
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	//========================================
+	// RTVの設定
+	rtvHandles_[3].ptr = rtvHandles_[2].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	// レンダーターのビューを作成
+	device_->CreateRenderTargetView(renderTextureResources_[1].Get(), &rtvDesc_, rtvHandles_[3]);
+	// assertはデバッグビルド時にのみ有効になる
+	// もし条件がfalseの場合、プログラムは終了する
+	renderTextureResources_[1]->SetName(L"renderTexture1");
+	assert(renderTextureResources_[1]);
+}
+
 
 
 ///=============================================================================
