@@ -189,47 +189,55 @@ void LineManager::DrawSphere(const Vector3 &center, float radius, const Vector4 
     if(!isDrawSphere_ || divisions <= 0) {
         return;
     }
-    
-    // XY, XZ, YZ平面を基準にした円を描画
-    DrawCircle(center, radius, color, thickness, {0, 0, 1}); // XY平面
-    DrawCircle(center, radius, color, thickness, {0, 1, 0}); // XZ平面
-    DrawCircle(center, radius, color, thickness, {1, 0, 0}); // YZ平面
 
-    // さらに細かいワイヤーフレームを追加
-    float angleStep = 2.0f * static_cast<float>(M_PI) / divisions;
+    // 緯度・経度方向の分割を計算
+    float latStep = static_cast<float>(M_PI) / divisions; // 緯度のステップ
+    float lonStep = 2.0f * static_cast<float>(M_PI) / divisions; // 経度のステップ
 
-    // 緯度方向の分割を追加（上半球と下半球）
-    for(int lat = 1; lat < divisions / 2; ++lat) {
-        float latAngle = static_cast<float>(M_PI / 2) - static_cast<float>(M_PI) * lat / divisions;
-        float r = radius * cosf(latAngle);
-        float y = center.y + radius * sinf(latAngle);
-        
-        // 北半球（Y+方向）
-        DrawCircle({center.x, y, center.z}, r, color, thickness, {0, 1, 0}, divisions);
-        
-        // 南半球（Y-方向）
-        DrawCircle({center.x, center.y - (y - center.y), center.z}, r, color, thickness, {0, 1, 0}, divisions);
-    }
+    // 緯度方向のループ
+    for (int lat = 0; lat <= divisions; ++lat) {
+        float theta = lat * latStep; // 緯度角
+        float sinTheta = sinf(theta);
+        float cosTheta = cosf(theta);
 
-    // 経度方向の線（経線）を追加
-    for(int lon = 0; lon < divisions / 2; ++lon) {
-        float lonAngle = angleStep * lon;
-        
-        Vector3 start = {
-            center.x + radius * cosf(lonAngle),
-            center.y,
-            center.z + radius * sinf(lonAngle)
-        };
-        
-        Vector3 end = {
-            center.x - radius * cosf(lonAngle),
-            center.y,
-            center.z - radius * sinf(lonAngle)
-        };
-        
-        DrawLine({center.x, center.y + radius, center.z}, start, color, thickness);
-        DrawLine(start, end, color, thickness);
-        DrawLine(end, {center.x, center.y - radius, center.z}, color, thickness);
+        // 経度方向のループ
+        for (int lon = 0; lon < divisions; ++lon) {
+            float phi = lon * lonStep; // 経度角
+            float nextPhi = (lon + 1) * lonStep;
+
+            // 現在の点
+            Vector3 point1 = {
+                center.x + radius * sinTheta * cosf(phi),
+                center.y + radius * cosTheta,
+                center.z + radius * sinTheta * sinf(phi)
+            };
+
+            // 次の経度の点
+            Vector3 point2 = {
+                center.x + radius * sinTheta * cosf(nextPhi),
+                center.y + radius * cosTheta,
+                center.z + radius * sinTheta * sinf(nextPhi)
+            };
+
+            // 次の緯度の点
+            if (lat < divisions) {
+                float nextTheta = (lat + 1) * latStep;
+                float sinNextTheta = sinf(nextTheta);
+                float cosNextTheta = cosf(nextTheta);
+
+                Vector3 point3 = {
+                    center.x + radius * sinNextTheta * cosf(phi),
+                    center.y + radius * cosNextTheta,
+                    center.z + radius * sinNextTheta * sinf(phi)
+                };
+
+                // 緯度方向の線を描画
+                DrawLine(point1, point3, color, thickness);
+            }
+
+            // 経度方向の線を描画
+            DrawLine(point1, point2, color, thickness);
+        }
     }
 }
 

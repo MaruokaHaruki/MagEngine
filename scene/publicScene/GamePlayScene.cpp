@@ -201,7 +201,7 @@ void GamePlayScene::Object2DDraw() {
 void GamePlayScene::Object3DDraw() {
 	//========================================
 	// 地面
-	ground_->Draw();
+	//ground_->Draw();
 
 	//========================================
 	// プレイヤー
@@ -223,8 +223,8 @@ void GamePlayScene::Object3DDraw() {
 void GamePlayScene::ParticleDraw() {
 	//========================================
 	// パーティクル描画
-	particle_->Draw();
-	particleEmitter_->Draw();
+	//particle_->Draw();
+	//particleEmitter_->Draw();
 }
 
 ///=============================================================================

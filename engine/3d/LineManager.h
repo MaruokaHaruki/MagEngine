@@ -67,7 +67,7 @@ public:
     /// @param normal 円の法線方向（デフォルトはY軸方向）
     /// @param divisions 分割数
     void DrawCircle(const Vector3& center, float radius, const Vector4& color, 
-        float thickness = 1.0f, const Vector3& normal = {0.0f, 1.0f, 0.0f}, int divisions = 32);
+        float thickness = 1.0f, const Vector3& normal = {0.0f, 1.0f, 0.0f}, int divisions = 2);
 
     /// @brief 球体の描画
     /// @param center 中心
@@ -76,7 +76,7 @@ public:
     /// @param divisions 分割数
     /// @param thickness 線の太さ
     void DrawSphere(const Vector3& center, float radius, const Vector4& color, 
-        int divisions = 32, float thickness = 1.0f);
+        int divisions = 8, float thickness = 1.0f);
 
     /// @brief 3D空間にテキストを描画
     /// @param position 位置
