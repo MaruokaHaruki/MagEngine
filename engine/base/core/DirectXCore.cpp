@@ -792,6 +792,74 @@ DirectX::ScratchImage DirectXCore::LoadTexture(const std::string& filePath) {
 ///=============================================================================
 ///						レンダーテクスチャ系
 ///--------------------------------------------------------------
+///						 レンダーテクスチャの前処理
+void DirectXCore::RenderTexturePreDraw() { 
+	D3D12_RESOURCE_BARRIER barrier{};
+
+	// TransitionBarrierの設定
+	// 今回のバリアはTransition
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+
+	// NONEにしておく
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+
+	uint32_t renderTargetIndex = 2 + renderResourceIndex_;
+
+	// バリアを張る対象のリソース。現在のバックバッファに対して行う
+	barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
+
+	// 還移前(現在)のResourceState
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+	// 還移後のResourceState
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+	// TransitionBarrierを張る
+	commandList_->ResourceBarrier(1, &barrier);
+
+	// DSV設定
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHandle_;
+
+	commandList_->OMSetRenderTargets(1,&rtvHandles_[renderTargetIndex], false, &dsvHandle);
+
+	// 指定した色で画面全体をクリアする
+	float clearColor[] = { 1.0f,0.0f,0.0f,1.0f }; // 青っぽい色 RGBAの順
+	commandList_->ClearRenderTargetView(rtvHandles_[renderTargetIndex], clearColor, 0, nullptr);
+
+	// 画面全体の深度をクリア
+	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+
+	commandList_->RSSetViewports(1, &viewport_); // Viewportを設定
+	commandList_->RSSetScissorRects(1, &scissorRect_); // Scissorを設定
+}
+
+///--------------------------------------------------------------
+///						 レンダーテクスチャの後処理
+void DirectXCore::RendertexturePostDraw() {
+	D3D12_RESOURCE_BARRIER barrier{};
+
+	// TransitionBarrierの設定
+	// 今回のバリアはTransition
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+
+	// NONEにしておく
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+
+	// バリアを張る対象のリソース。現在のバックバッファに対して行う
+	barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
+
+	// 還移前(現在)のResourceState
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+	// 還移後のResourceState
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+	// TransitionBarrierを張る
+	commandList_->ResourceBarrier(1, &barrier);
+}
+
+///--------------------------------------------------------------
 ///                        レンダーテクスチャの生成
 Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 &clearColor, D3D12_RESOURCE_STATES initialState) {
 	//========================================
@@ -890,6 +958,11 @@ void DirectXCore::CreateRenderTextureRTV() {
 	// もし条件がfalseの場合、プログラムは終了する
 	renderTextureResources_[1]->SetName(L"renderTexture1");
 	assert(renderTextureResources_[1]);
+
+	//========================================
+	// レンダーテクスチャ
+	renderResourceIndex_ = 0;
+	renderTargetIndex_ = 1;
 }
 
 

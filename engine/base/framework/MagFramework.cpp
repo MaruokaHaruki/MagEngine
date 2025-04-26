@@ -59,6 +59,8 @@ void MagFramework::Initialize() {
 	dxCore_ = std::make_unique<DirectXCore>();
 	//ダイレクトXの初期化
 	dxCore_->InitializeDirectX(win_.get());
+	dxCore_->CreateRenderTextureRTV();
+
 
 	///--------------------------------------------------------------
 	///						 ImGuiのセットアップ
@@ -218,8 +220,20 @@ void MagFramework::Finalize() {
 }
 
 ///=============================================================================
+///                        レンダーテクスチャ前処理
+void MagFramework::RenderPostDraw() {
+	dxCore_->RenderTexturePreDraw();
+}
+
+///=============================================================================
+///                        レンダーテクスチャ後処理
+void MagFramework::RenderPreDraw() {
+	dxCore_->RendertexturePostDraw();
+}
+
+///=============================================================================
 ///						フレームワーク共通前処理
-void MagFramework::FrameworkPreDraw() {
+void MagFramework::PreDraw() {
 	//========================================
 	// ループ前処理
 	dxCore_->PreDraw();
@@ -231,7 +245,7 @@ void MagFramework::FrameworkPreDraw() {
 
 ///=============================================================================
 ///						フレームワーク共通後処理
-void MagFramework::FrameworkPostDraw() {
+void MagFramework::PostDraw() {
 	//========================================
 	// ImGui描画
 	imguiSetup_->Draw();

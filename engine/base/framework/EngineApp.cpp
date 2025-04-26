@@ -34,21 +34,14 @@ void EngineApp::Update() {
 
 	///--------------------------------------------------------------
 	///						更新処理
-
-	//========================================
-	// ImGuiの更新
-	MagFramework ::ImGuiPreDraw();
-	//↓この間に書け!!!
-	//↑
-	MagFramework ::ImGuiPostDraw();
 }
 
 ///=============================================================================
 ///						描画
 void EngineApp::Draw() {
 	//========================================
-	// ループ前処理
-	MagFramework ::FrameworkPreDraw();
+	// レンダーテクスチャ前処理
+	MagFramework ::RenderPreDraw();
 
 	//========================================
 	//3Dオブジェクト共通描画設定
@@ -63,6 +56,21 @@ void EngineApp::Draw() {
 	MagFramework ::ParticleCommonDraw();
 
 	//========================================
-	// ループ後処理
-	MagFramework ::FrameworkPostDraw();
+	// レンダーテクスチャ後処理
+	MagFramework ::RenderPostDraw();
+
+	//========================================
+	// 描画前処理
+	MagFramework::PreDraw();
+
+	MagFramework ::ImGuiPreDraw();
+	//↓この間に書け!!!
+	//↑
+	MagFramework ::ImGuiPostDraw();
+
+	//========================================
+	// 描画後処理
+	MagFramework::PostDraw();
+
 }
+
