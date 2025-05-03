@@ -59,7 +59,7 @@ void MagFramework::Initialize() {
 	dxCore_ = std::make_unique<DirectXCore>();
 	//ダイレクトXの初期化
 	dxCore_->InitializeDirectX(win_.get());
-	dxCore_->CreateRenderTextureRTV();
+	//dxCore_->CreateRenderTextureRTV();
 
 
 	///--------------------------------------------------------------

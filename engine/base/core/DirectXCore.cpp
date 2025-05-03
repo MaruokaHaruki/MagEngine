@@ -82,6 +82,11 @@ void DirectXCore::InitializeDirectX(WinApp* winApp) {
 	GetResourcesFromSwapChain();
 	//RTVの生成
 	CreateRenderTargetViews();
+
+
+	CreateRenderTextureRTV();
+
+
 	//コマンドリストの決定
 	SettleCommandList();
 	//バリアの設定
@@ -311,7 +316,7 @@ void DirectXCore::CreateRTVDescriptorHeap() {
 	//ディスクリプタヒープの生成
 	rtvDescriptorHeap_ = nullptr;
 	rtvDescriptorHeapDesc_.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvDescriptorHeapDesc_.NumDescriptors = 2;
+	rtvDescriptorHeapDesc_.NumDescriptors = 4;
 	hr_ = device_->CreateDescriptorHeap(&rtvDescriptorHeapDesc_, IID_PPV_ARGS(&rtvDescriptorHeap_));
 
 	assert(SUCCEEDED(hr_));

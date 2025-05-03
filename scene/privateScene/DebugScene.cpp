@@ -123,16 +123,16 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	//objMonsterBall_->Draw();
+	objMonsterBall_->Draw();
 	// 地面
-	//objTerrain_->Draw();
+	objTerrain_->Draw();
 }
 
 ///=============================================================================
 ///						パーティクル描画
 void DebugScene::ParticleDraw() {
 	// パーティクルの描画
-	particle_->Draw();
+	//particle_->Draw();
 }
 
 ///=============================================================================
