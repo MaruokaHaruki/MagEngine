@@ -116,7 +116,12 @@ D3D12_GPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVGPUDescriptorHandle(uint32_t index) 
 }
 
 void SrvSetup::SetGraphicsRootDescriptorTable(uint32_t rootParameterIndex, uint32_t srvIndex) {
-	//========================================
-	// ルートディスクリプタテーブルの設定
-	dxCore_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetSRVGPUDescriptorHandle(srvIndex));
+    //========================================
+    // ディスクリプタヒープをコマンドリストに設定
+    // ID3D12DescriptorHeap* ppHeaps[] = { descriptorHeap_.Get() };  
+    //dxCore_->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+    
+    //========================================
+    // ルートディスクリプタテーブルの設定
+    dxCore_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetSRVGPUDescriptorHandle(srvIndex));
 }
