@@ -799,40 +799,35 @@ DirectX::ScratchImage DirectXCore::LoadTexture(const std::string& filePath) {
 ///--------------------------------------------------------------
 ///						 レンダーテクスチャの前処理
 void DirectXCore::RenderTexturePreDraw() { 
-	D3D12_RESOURCE_BARRIER barrier{};
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
+    
+    // 現在の状態を使用して正しく設定
+    barrier.Transition.StateBefore = renderTextureStates_[renderResourceIndex_];
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    
+    // 現在と次の状態が異なる場合のみバリアを適用
+    if (renderTextureStates_[renderResourceIndex_] != D3D12_RESOURCE_STATE_RENDER_TARGET) {
+        commandList_->ResourceBarrier(1, &barrier);
+        // 状態を更新
+        renderTextureStates_[renderResourceIndex_] = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    }
+    
+    // 以降のDSV設定やクリア処理...
+    uint32_t renderTargetIndex = 2 + renderResourceIndex_;
+    commandList_->OMSetRenderTargets(1, &rtvHandles_[renderTargetIndex], false, &dsvHandle_);
 
-	// TransitionBarrierの設定
-	// 今回のバリアはTransition
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-
-	// NONEにしておく
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-
-	uint32_t renderTargetIndex = 2 + renderResourceIndex_;
-
-	// バリアを張る対象のリソース。現在のバックバッファに対して行う
-	barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
-
-	// 還移前(現在)のResourceState
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-
-	// 還移後のResourceState
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
-	// TransitionBarrierを張る
-	commandList_->ResourceBarrier(1, &barrier);
-
-	// DSV設定
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHandle_;
-
-	commandList_->OMSetRenderTargets(1,&rtvHandles_[renderTargetIndex], false, &dsvHandle);
+	//commandList_->OMSetRenderTargets(1,&rtvHandles_[renderTargetIndex], false, &dsvHandle);
 
 	// 指定した色で画面全体をクリアする
 	float clearColor[] = { 1.0f,0.0f,0.0f,1.0f }; // 青っぽい色 RGBAの順
 	commandList_->ClearRenderTargetView(rtvHandles_[renderTargetIndex], clearColor, 0, nullptr);
 
 	// 画面全体の深度をクリア
-	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	commandList_->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 
 	commandList_->RSSetViewports(1, &viewport_); // Viewportを設定
@@ -842,26 +837,22 @@ void DirectXCore::RenderTexturePreDraw() {
 ///--------------------------------------------------------------
 ///						 レンダーテクスチャの後処理
 void DirectXCore::RendertexturePostDraw() {
-	D3D12_RESOURCE_BARRIER barrier{};
-
-	// TransitionBarrierの設定
-	// 今回のバリアはTransition
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-
-	// NONEにしておく
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-
-	// バリアを張る対象のリソース。現在のバックバッファに対して行う
-	barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
-
-	// 還移前(現在)のResourceState
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
-	// 還移後のResourceState
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-
-	// TransitionBarrierを張る
-	commandList_->ResourceBarrier(1, &barrier);
+    D3D12_RESOURCE_BARRIER barrier{};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
+    
+    // 現在の状態を使用して正しく設定
+    barrier.Transition.StateBefore = renderTextureStates_[renderResourceIndex_];
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    
+    // 現在と次の状態が異なる場合のみバリアを適用
+    if (renderTextureStates_[renderResourceIndex_] != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) {
+        commandList_->ResourceBarrier(1, &barrier);
+        // 状態を更新
+        renderTextureStates_[renderResourceIndex_] = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    }
 }
 
 ///--------------------------------------------------------------
@@ -935,7 +926,7 @@ void DirectXCore::CreateRenderTextureRTV() {
 		winApp_->GetWindowHeight(),
 		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 		kRenderTargetClearValue,
-		D3D12_RESOURCE_STATE_RENDER_TARGET);
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	// ========================================
 	// RTVの設定
 	rtvHandles_[2].ptr = rtvHandles_[1].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -963,6 +954,10 @@ void DirectXCore::CreateRenderTextureRTV() {
 	// もし条件がfalseの場合、プログラムは終了する
 	renderTextureResources_[1]->SetName(L"renderTexture1");
 	assert(renderTextureResources_[1]);
+
+    // 初期状態を明示的に設定
+    renderTextureStates_[0] = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    renderTextureStates_[1] = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
 	//========================================
 	// レンダーテクスチャ

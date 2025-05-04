@@ -465,6 +465,11 @@ private:
 	//========================================
 	// レンダーテクスチャリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources_[2] = { nullptr, nullptr };
+    // レンダーテクスチャの現在の状態を追跡
+    D3D12_RESOURCE_STATES renderTextureStates_[2] = {
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+    };
 	// レンダーリソース
 	uint32_t renderResourceIndex_ = 0;
 	// レンダーターゲットインデックス
