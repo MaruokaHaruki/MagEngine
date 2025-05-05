@@ -373,6 +373,15 @@ public:
 	/// @brief SetRenderTargetIndex レンダーテクスチャのインデックスを設定
 	void SetRenderTargetIndex(uint32_t renderTargetIndex) { renderTargetIndex_ = renderTargetIndex; }
 
+    // SwapChainのリソースを取得
+    Microsoft::WRL::ComPtr<ID3D12Resource> GetSwapChainResource() const { return swapChainResource_[backBufferIndex_]; }
+    
+    // SwapChainのRTVハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE* GetRTVHandle(int index) { return &rtvHandles_[index]; }
+    
+    // ウィンドウサイズの取得
+	int32_t GetWindowWidth() const { return winApp_->GetWindowWidth(); }
+	int32_t GetWindowHeight() const { return winApp_->GetWindowHeight(); }
 
 private:
 	//========================================

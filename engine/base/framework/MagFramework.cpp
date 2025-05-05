@@ -244,11 +244,7 @@ void MagFramework::RenderPostDraw() {
 
 ///=============================================================================
 ///							ポストエフェクト
-void MagFramework::PostEffect() {
-	//========================================
-	// ポストエフェクトの描画
-	offscreenRendering_->CommonDrawSetup();
-	
+void MagFramework::PostEffect() {	
 	//========================================
 	// レンダーテクスチャをSwapChainに描画
 	offscreenRendering_->DrawToSwapChain();

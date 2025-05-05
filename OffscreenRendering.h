@@ -21,7 +21,7 @@ public:
 	void Initialize(DirectXCore *dxCore, SrvSetup *srvSetup);
 
 	/// \brief 共通描画設定
-	void CommonDrawSetup();
+	void CommonDrawSetup(uint32_t renderTargetIndex, uint32_t renderResourceIndex);
 
     /// \brief レンダーテクスチャをSwapChainに描画
     void DrawToSwapChain();

@@ -944,7 +944,7 @@ void DirectXCore::CreateRenderTextureRTV() {
 		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 		kRenderTargetClearValue,
 		// NOTE: 2つ目のRenderTargetはSRVとしても使うので、初期状態をD3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCEに設定
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		D3D12_RESOURCE_STATE_RENDER_TARGET);
 	//========================================
 	// RTVの設定
 	rtvHandles_[3].ptr = rtvHandles_[2].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
