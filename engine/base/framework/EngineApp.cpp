@@ -43,15 +43,15 @@ void EngineApp::Draw() {
 	// レンダーテクスチャ前処理
 	MagFramework ::RenderPreDraw();
 
-	//========================================
+	//---------------------------------------
 	//3Dオブジェクト共通描画設定
 	MagFramework ::Object3DCommonDraw();
 
-	//========================================
+	//---------------------------------------
 	// 2Dオブジェクト共通描画設定
 	MagFramework ::Object2DCommonDraw();
 
-	//========================================
+	//---------------------------------------
 	//パーティクル共通描画設定
 	MagFramework ::ParticleCommonDraw();
 
@@ -59,10 +59,15 @@ void EngineApp::Draw() {
 	// レンダーテクスチャ後処理
 	MagFramework ::RenderPostDraw();
 
+	// ポストエフェクト
+	MagFramework::PostEffect();
+
 	//========================================
 	// 描画前処理
 	MagFramework::PreDraw();
 
+	//---------------------------------------
+	// ImGuiの描画
 	MagFramework ::ImGuiPreDraw();
 	//↓この間に書け!!!
 	//↑

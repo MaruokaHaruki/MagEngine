@@ -24,6 +24,7 @@
 #include "ModelManager.h"
 #include "LineManager.h"
 #include "LightManager.h"
+#include "OffscreenRendering.h"
 // シーン
 #include "CameraManager.h"
 #include "SceneManager.h"
@@ -63,6 +64,9 @@ public:
 
 	/// @biref レンダーテクスチャ後処理
 	void RenderPostDraw();
+
+	/// @brief ポストエフェクト
+	void PostEffect();
 
 	/// @brief フレームワーク共通前処理
 	void PreDraw();
@@ -109,6 +113,9 @@ protected:
 	//========================================
 	// SrvSetup
 	std::unique_ptr<SrvSetup> srvSetup_;
+	//========================================
+	// オフスクリーンレンダリング
+	std::unique_ptr<OffscreenRendering> offscreenRendering_;
 	//========================================
 	// 共通部
 	// スプライトセットアップ

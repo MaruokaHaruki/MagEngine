@@ -358,9 +358,21 @@ public:
 	 */
 	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> GetRtvDescriptorHeap() { return rtvDescriptorHeap_; }
 
+	//========================================
+	// オフスクリーンレンダリング用
 	/// @brief GetRenderTextureResources レンダーテクスチャリソースの取得
-	/// @return
 	Microsoft::WRL::ComPtr<ID3D12Resource> GetRenderTextureResource(uint32_t index) { return renderTextureResources_[index]; }
+
+	/// @brief GetRenderTextureState レンダーテクスチャの状態を取得
+	uint32_t GetRenderResourceIndex() { return renderResourceIndex_; }
+	/// @brief GetRenderTargetIndex レンダーテクスチャのインデックスを取得
+	uint32_t GetRenderTargetIndex() { return renderTargetIndex_; }
+
+	/// @brief GetRenderTextureState レンダーテクスチャの状態を取得
+	void SetRenderResourceIndex(uint32_t renderResourceIndex) { renderResourceIndex_ = renderResourceIndex; }
+	/// @brief SetRenderTargetIndex レンダーテクスチャのインデックスを設定
+	void SetRenderTargetIndex(uint32_t renderTargetIndex) { renderTargetIndex_ = renderTargetIndex; }
+
 
 private:
 	//========================================
