@@ -273,6 +273,10 @@ public:
 	/// @brief CreateRenderTextureRTV レンダーテクスチャのRTVを生成
 	/// @param SRVはマネージャの方にあるので、RTVだけ生成する
 	void CreateRenderTextureRTV();
+
+	void CreateOffScreenRootSignature();
+
+	void CreateOffScreenPipeLine();
 		
 	///--------------------------------------------------------------
 	///                        静的メンバ関数
@@ -469,5 +473,13 @@ private:
 	uint32_t renderResourceIndex_ = 0;
 	// レンダーターゲットインデックス
 	uint32_t renderTargetIndex_ = 1;
+	/// @brief rootSignature_ レンダーテクスチャのルートシグネチャ
+	Microsoft::WRL::ComPtr< ID3D12RootSignature> renderTextureRootSignature_;
+	/// @brief graphicsPipelineState_ レンダーテクスチャのパイプラインステート
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> renderTextureGraphicsPipelineState_;
+	/// @brief signatureBlob_ レンダーテクスチャのシグネチャ
+	Microsoft::WRL::ComPtr< ID3DBlob> signatureBlob_ = nullptr;
+	/// @brief errorBlob_ レンダーテクスチャのエラーログ
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob_ = nullptr;
 };
 
