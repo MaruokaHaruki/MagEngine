@@ -80,6 +80,14 @@ public:
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandleGPU(const std::string& filePath);
 
 	/**----------------------------------------------------------------------------
+  * \brief  CPUハンドルの取得
+  * \param  textureIndex
+  * \return CPUハンドル
+  * \note   高速化には必要ダヨ
+  */
+	D3D12_CPU_DESCRIPTOR_HANDLE GetSrvHandleCPU(const std::string &filePath);
+
+	/**----------------------------------------------------------------------------
   * \brief  GetMetadata メタデータの取得
   * \param  textureIndex テクスチャインデックス
   * \return 
@@ -87,7 +95,8 @@ public:
   */
 	const DirectX::TexMetadata& GetMetadata(const std::string& filePath);
 
-
+	/// @brief CreateRenderTextureMetaData レンダーテクスチャのメタデータを生成
+	void CreateRenderTextureMetaData();
 
 	///--------------------------------------------------------------
 	///							 メンバ変数

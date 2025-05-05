@@ -51,7 +51,11 @@ public:
 
 
 	/// @brief CreateDepthStencilTextureResource 深度ステンシルテクスチャリソースの生成
-	void CreateRenderTextureSRV();	
+	void CreateRenderTextureSRV();
+
+	/// @brief CreateRenderTextureSRV レンダーテクスチャのSRVを生成
+	void CreateOffScreenTexture(uint32_t srvIndex, uint32_t rtvIndex);
+
 
 	///--------------------------------------------------------------
 	///							静的メンバ関数

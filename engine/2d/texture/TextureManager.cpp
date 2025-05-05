@@ -36,6 +36,8 @@ void TextureManager::Initialize(DirectXCore* dxCore, const std::string& textureD
 	//---------------------------------------
 	// SrvSetupの設定
 	srvSetup_ = srvSetup;
+
+	CreateRenderTextureMetaData();
 }
 
 ///=============================================================================
@@ -130,11 +132,35 @@ uint32_t TextureManager::GetTextureIndex(const std::string& filePath) {
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& filePath) {
 	// ディレクトリパスを追加
 	std::string fullPath = kTextureDirectoryPath + filePath;
+	// レンダーテクスチャの場合は特別処理
+	if (filePath == "RenderTexture0" || filePath == "RenderTexture1") {
+		fullPath = filePath;
+	} else {
+		// 通常のテクスチャの場合はディレクトリパスを追加
+		fullPath = kTextureDirectoryPath + filePath;
+	}
 	// 範囲外指定チェック
 	assert(textureDatas_.contains(fullPath));
 	// テクスチャデータの参照を取得
 	TextureData& textureData = textureDatas_[fullPath];
 	return textureData.srvHandleGPU;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleCPU(const std::string &filePath) {
+	// ディレクトリパスを追加
+	std::string fullPath = kTextureDirectoryPath + filePath;
+	// レンダーテクスチャの場合は特別処理
+	if (filePath == "RenderTexture0" || filePath == "RenderTexture1") {
+		fullPath = filePath;
+	} else {
+		// 通常のテクスチャの場合はディレクトリパスを追加
+		fullPath = kTextureDirectoryPath + filePath;
+	}
+	// 範囲外指定チェック
+	assert(textureDatas_.contains(fullPath));
+	// テクスチャデータの参照を取得
+	TextureData &textureData = textureDatas_[fullPath];
+	return textureData.srvHandleCPU;
 }
 
 ///=============================================================================
@@ -147,4 +173,24 @@ const DirectX::TexMetadata& TextureManager::GetMetadata(const std::string& fileP
 	// テクスチャデータの参照を取得
 	TextureData& textureData = textureDatas_[fullPath];
 	return textureData.metadata;
+}
+
+void TextureManager::CreateRenderTextureMetaData()
+{
+	TextureData& textureData1 = textureDatas_["RenderTexture0"];
+
+	textureData1.srvIndex = srvSetup_->Allocate();
+	textureData1.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData1.srvIndex);
+	textureData1.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData1.srvIndex);
+
+	srvSetup_->CreateOffScreenTexture(textureData1.srvIndex,0);
+
+
+
+	TextureData& textureData2 = textureDatas_["RenderTexture1"];
+
+	textureData2.srvIndex = srvSetup_->Allocate();
+	textureData2.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData2.srvIndex);
+	textureData2.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData2.srvIndex);
+	srvSetup_->CreateOffScreenTexture(textureData2.srvIndex,1);
 }

@@ -125,3 +125,14 @@ void SrvSetup::SetGraphicsRootDescriptorTable(uint32_t rootParameterIndex, uint3
     // ルートディスクリプタテーブルの設定
     dxCore_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetSRVGPUDescriptorHandle(srvIndex));
 }
+
+void SrvSetup::CreateOffScreenTexture(uint32_t srvIndex, uint32_t rtvIndex)
+{
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	dxCore_->GetDevice()->CreateShaderResourceView(dxCore_->GetRenderTextureResource(rtvIndex).Get(), &srvDesc, GetSRVCPUDescriptorHandle(srvIndex));
+}
