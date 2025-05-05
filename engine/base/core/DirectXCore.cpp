@@ -805,22 +805,15 @@ void DirectXCore::RenderTexturePreDraw() {
     barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
     
     // 現在の状態を使用して正しく設定
-    barrier.Transition.StateBefore = renderTextureStates_[renderResourceIndex_];
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     
     // 現在と次の状態が異なる場合のみバリアを適用
-    if (renderTextureStates_[renderResourceIndex_] != D3D12_RESOURCE_STATE_RENDER_TARGET) {
-        commandList_->ResourceBarrier(1, &barrier);
-        // 状態を更新
-        renderTextureStates_[renderResourceIndex_] = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    }
+    commandList_->ResourceBarrier(1, &barrier);
     
     // 以降のDSV設定やクリア処理...
     uint32_t renderTargetIndex = 2 + renderResourceIndex_;
     commandList_->OMSetRenderTargets(1, &rtvHandles_[renderTargetIndex], false, &dsvHandle_);
-
-	//commandList_->OMSetRenderTargets(1,&rtvHandles_[renderTargetIndex], false, &dsvHandle);
 
 	// 指定した色で画面全体をクリアする
 	float clearColor[] = { 1.0f,0.0f,0.0f,1.0f }; // 青っぽい色 RGBAの順
@@ -843,16 +836,10 @@ void DirectXCore::RendertexturePostDraw() {
     barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
     
     // 現在の状態を使用して正しく設定
-    barrier.Transition.StateBefore = renderTextureStates_[renderResourceIndex_];
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     
-    // 現在と次の状態が異なる場合のみバリアを適用
-    if (renderTextureStates_[renderResourceIndex_] != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE) {
-        commandList_->ResourceBarrier(1, &barrier);
-        // 状態を更新
-        renderTextureStates_[renderResourceIndex_] = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-    }
+    commandList_->ResourceBarrier(1, &barrier);
 }
 
 ///--------------------------------------------------------------
@@ -954,10 +941,6 @@ void DirectXCore::CreateRenderTextureRTV() {
 	// もし条件がfalseの場合、プログラムは終了する
 	renderTextureResources_[1]->SetName(L"renderTexture1");
 	assert(renderTextureResources_[1]);
-
-    // 初期状態を明示的に設定
-    renderTextureStates_[0] = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-    renderTextureStates_[1] = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 
 	//========================================
 	// レンダーテクスチャ
