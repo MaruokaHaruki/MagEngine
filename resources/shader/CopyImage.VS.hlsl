@@ -16,5 +16,6 @@ VertexShaderOutput main(uint32_t vertexId : SV_VertexID)
     VertexShaderOutput output;
     output.position = kPositions[vertexId];
     output.texcoord = kTexCoords[vertexId];
+    output.screenPos = output.position.xy * 0.5f + 0.5f; // NDC -> Screen space
     return output;
 }
