@@ -21,6 +21,11 @@
 // DXC
 #include <dxcapi.h>
 #pragma comment(lib,"dxcompiler.lib")
+//---------------------------------------
+// assimpライブラリ
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 class ModelSetup;
 class Model {
@@ -63,7 +68,12 @@ private:
 	 * \param  filename ファイルネーム
 	 * \note   そのままmodelDataに格納
 	 */
-	void LoadObjFile(const std::string &directoryPath, const std::string &filename);
+	void LoadModelFile(const std::string &directoryPath, const std::string &filename);
+
+	/// @brief ReadNode ノードの読み込み
+	/// @param node ノード
+	/// @return ノードデータ
+	Node ReadNode(aiNode* node);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  頂点バッファの作成

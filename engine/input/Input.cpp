@@ -180,6 +180,11 @@ bool Input::TriggerKey(int keyCode) const {
 ///=============================================================================
 ///						コントローラ
 ///--------------------------------------------------------------
+///						
+bool Input::IsControllerConnected() const {
+	return controllerConnected_;
+}
+///--------------------------------------------------------------
 ///						 ボタンの押下をチェック
 bool Input::PushButton(WORD button) const {
 	if(!controllerConnected_) {
@@ -304,6 +309,16 @@ bool Input::IsRightStickDown() const {
 }
 
 ///=============================================================================
+///						コントローラの振動を設定
+void Input::SetVibration(float leftMotor, float rightMotor) {
+	XINPUT_VIBRATION vibration;
+	ZeroMemory(&vibration, sizeof(XINPUT_VIBRATION));
+	vibration.wLeftMotorSpeed = static_cast<WORD>(leftMotor * 65535.0f);
+	vibration.wRightMotorSpeed = static_cast<WORD>(rightMotor * 65535.0f);
+	XInputSetState(0, &vibration);
+}
+
+///=============================================================================
 ///						ImGui描画
 void Input::ImGuiDraw() {
 	ImGui::Begin("Input");
@@ -327,6 +342,9 @@ void Input::ImGuiDraw() {
 		ImGui::Text("Left Stick Y: %f", GetLeftStickY());
 		ImGui::Text("Right Stick X: %f", GetRightStickX());
 		ImGui::Text("Right Stick Y: %f", GetRightStickY());
+		// バイブレーションテストの切り替え
+		SetVibration(GetLeftTrigger(), GetRightTrigger());
+
 	} else {
 		ImGui::Text("Controller not connected.");
 	}

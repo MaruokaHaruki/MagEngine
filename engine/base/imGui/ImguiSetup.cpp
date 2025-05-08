@@ -9,12 +9,6 @@
 #include "ImguiSetup.h"
 #include <windows.h>
 #include <psapi.h>
-//---------------------------------------
-// ImGui
-#include "imgui.h"
-#include "imgui_internal.h"
-#include <imgui_impl_dx12.h>
-#include <imgui_impl_win32.h>
 
 ///=============================================================================
 ///						初期化
@@ -44,10 +38,6 @@ void ImguiSetup::Initialize(WinApp* winApp, DirectXCore* dxCore, Style style) {
 		ImGui::StyleColorsDark();
 	}
 
-	//---------------------------------------
-	
-
-
 
 	//========================================
 	// Win32用の初期化
@@ -75,6 +65,11 @@ void ImguiSetup::Initialize(WinApp* winApp, DirectXCore* dxCore, Style style) {
 		srvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart(),
 		srvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart()
 	);
+
+	//========================================
+	// ドッキング設定
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; 
 }
 
 ///=============================================================================

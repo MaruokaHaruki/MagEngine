@@ -92,6 +92,12 @@ public:
 	///--------------------------------------------------------------
 	///						コントローラ系
 	/**----------------------------------------------------------------------------
+	* \brief  IsControllerConnected 
+	* \return 
+	*/
+	bool IsControllerConnected() const;
+
+	/**----------------------------------------------------------------------------
 	* \brief  PushButton コントローラーボタンの押下をチェック
 	* \param  button ボタン定数（XINPUT_GAMEPAD_XXX）
 	* \return 押されているか
@@ -188,6 +194,14 @@ public:
 	* \return
 	*/
 	bool IsRightStickDown() const;
+
+	/**----------------------------------------------------------------------------
+	* \brief  SetVibration コントローラの振動を設定
+	* \param  leftMotor 左モーターの振動強度（0.0f〜1.0f）
+	* \param  rightMotor 右モーターの振動強度（0.0f〜1.0f）
+	*/
+	void SetVibration(float leftMotor, float rightMotor);
+
 
 	///--------------------------------------------------------------
 	///						 ImGui

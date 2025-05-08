@@ -9,7 +9,7 @@
 #pragma once
 #include <vector>
 #include "TransformationMatrix.h"
-#include "DirectionalLight.h"
+#include "Light.h"
 #include "Transform.h"
  //========================================
  // DX12include

@@ -85,8 +85,8 @@ void Particle::Update() {
 				continue;
 			}
 			// スケールをテクスチャサイズに基づいて調整
-			particle.transform.scale.x = textureSize.x * scaleMultiplier;
-			particle.transform.scale.y = textureSize.y * scaleMultiplier;
+			//particle.transform.scale.x = textureSize.x * scaleMultiplier;
+			//particle.transform.scale.y = textureSize.y * scaleMultiplier;
 			// 位置の更新
 			particle.transform.translate = AddVec3(particle.transform.translate, MultiplyVec3(kDeltaTime, particle.velocity));
 			// 経過時間を更新
@@ -120,62 +120,34 @@ void Particle::Update() {
 ///=============================================================================
 ///						描画
 void Particle::Draw() {
-	ID3D12GraphicsCommandList* commandList = particleSetup_->GetDXManager()->GetCommandList().Get();
-	// TODO: パイプラインステートオブジェクトの設定を行う
-	// ルートシグネチャを設定
-	//commandList->SetGraphicsRootSignature(rootSignature_.Get());
-	//キャッシュ内に指定されたブレンドモードのPSOが存在するか確認
-	//auto it = pipelineStateCache_.find(blendMode_);
-	//if (it == pipelineStateCache_.end() || !it->second) {
-	//	Logger::Log("PSO for blend mode not found, defaulting to normal blend mode.");
-	//	it = pipelineStateCache_.find(kBlendModeNormal);
-	//	if (it == pipelineStateCache_.end() || !it->second) {
-	//		Logger::Log("Default PSO not found. Aborting draw call.");
-	//		return;
-	//	}
-	//}
+    // コマンドリストの取得
+    ID3D12GraphicsCommandList* commandList = particleSetup_->GetDXManager()->GetCommandList().Get();
+    
+    // 共通の描画設定を適用
+    particleSetup_->CommonDrawSetup();
+    
+    // 頂点バッファをセット
+    commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-	//commandList->SetPipelineState(it->second.Get());
-	// プリミティブトポロジ（描画形状）を設定
-	//commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	// VBV (Vertex Buffer View)を設定
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+    // 全てのパーティクルグループを処理
+    for(auto& group : particleGroups) {
+        if(group.second.instanceCount == 0) continue; // インスタンスが無い場合はスキップ
 
-	// 全てのパーティクルグループについて処理を行う
-	for(auto& group : particleGroups) {
-		if(group.second.instanceCount == 0) continue; // インスタンスが無い場合はスキップ
+        // マテリアルCBufferの場所を設定
+        commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
+        
+        // テクスチャのSRVのDescriptorTableを設定
+        commandList->SetGraphicsRootDescriptorTable(2, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.srvIndex));
 
-		Vector2 textureLeftTop = group.second.textureLeftTop;
-		Vector2 textureSize = group.second.textureSize;
+        // インスタンシングデータのSRVのDescriptorTableを設定
+        commandList->SetGraphicsRootDescriptorTable(1, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.instancingSrvIndex));
 
-		// TODO: マテリアルデータの設定を行う後に修正
-		//for(auto& particle : group.second.particleList) {
-			// UV座標の計算
-			//float uStart = textureLeftTop.x / textureSize.x;
-			//float uEnd = ( textureLeftTop.x + textureSize.x ) / textureSize.x;
-			//float vStart = textureLeftTop.y / textureSize.y;
-			//float vEnd = ( textureLeftTop.y + textureSize.y ) / textureSize.y;
+        // Draw Call (インスタンシング描画)
+        commandList->DrawInstanced(6, group.second.instanceCount, 0, 0);
 
-			// 必要であればUV座標を設定する処理を追加
-		//}
-
-		//マテリアルCBufferの場所を設定
-		commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
-
-		// テクスチャのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(2, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.srvIndex));
-
-		// インスタンシングデータのSRVのDescriptorTableを設定
-		commandList->SetGraphicsRootDescriptorTable(1, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.instancingSrvIndex));
-
-		// Draw Call (インスタンシング描画)
-		commandList->DrawInstanced(6, group.second.instanceCount, 0, 0);
-
-
-		// インスタンスカウントをリセット
-		group.second.instanceCount = 0;
-	}
-
+        // インスタンスカウントをリセット
+        group.second.instanceCount = 0;
+    }
 }
 
 ///=============================================================================
@@ -286,12 +258,16 @@ void Particle::CreateParticleGroup(const std::string& name, const std::string& t
 ///--------------------------------------------------------------
 ///						 頂点データの作成
 void Particle::CreateVertexData() {
-	modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-	modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    // 四角形を2つの三角形として定義（計6頂点）
+    // 1つ目の三角形
+    modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    
+    // 2つ目の三角形
+    modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    modelData_.vertices.push_back(VertexData{ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
 }
 
 ///--------------------------------------------------------------
@@ -319,7 +295,7 @@ void Particle::CreateMaterialData() {
 
 	//書き込むためのアドレスを取得
 	materialBuffer_->Map(0, nullptr, reinterpret_cast<void**>( &materialData_ ));
-	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 0.9f);
 	//SpriteはLightingしないのfalseを設定する
 	materialData_->enableLighting = false;
 	materialData_->uvTransform = Identity4x4();
@@ -329,44 +305,52 @@ void Particle::CreateMaterialData() {
 ///						新しいパーティクルを生成
 // Particle.cpp
 ParticleStr Particle::CreateNewParticle(std::mt19937& randomEngine, const Vector3& position) {
-	// カラーと寿命のランダム分布
-	std::uniform_real_distribution<float> distColor(colorRange_.min, colorRange_.max);
-	std::uniform_real_distribution<float> distTime(lifetimeRange_.min, lifetimeRange_.max);
+    // カラーと寿命のランダム分布
+    std::uniform_real_distribution<float> distColor(colorRange_.min, colorRange_.max);
+    std::uniform_real_distribution<float> distTime(lifetimeRange_.min, lifetimeRange_.max);
 
-	// 速度のランダム分布
-	std::uniform_real_distribution<float> distSpeed(velocityRange_.min, velocityRange_.max);
+    // 速度のランダム分布（ヒットエフェクト用に速度を小さく）
+    std::uniform_real_distribution<float> distSpeed(0.1f, 0.3f); // 速度範囲を小さく設定
 
-	// 新たなパーティクルの生成
-	ParticleStr particle = {};
+    // 回転のランダム分布（0〜2π）
+    std::uniform_real_distribution<float> distRotation(0.0f, 2.0f * std::numbers::pi_v<float>);
 
-	particle.transform.scale = { 1.0f, 1.0f, 1.0f };
-	particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
+    // 新たなパーティクルの生成
+    ParticleStr particle = {};
 
-	// 初期位置をエミッターの位置に設定
-	particle.transform.translate = position;
+    // ヒットエフェクト用に縦長の形状にする
+    particle.transform.scale = { 1.2f, 0.2f, 1.0f }; // X軸を小さく、Y軸を大きくして縦長に
+    
+    // ランダムな回転を設定（Z軸周り）
+    float randomRotationZ = distRotation(randomEngine);
+    particle.transform.rotate = { 0.0f, 0.0f, randomRotationZ };
 
-	// ランダムな方向ベクトルの生成（球面上のランダムな点）
-	std::uniform_real_distribution<float> distAngle(0.0f, 1.0f);
-	float z = distAngle(randomEngine) * 2.0f - 1.0f; // z ∈ [-1, 1]
-	float theta = distAngle(randomEngine) * 2.0f * std::numbers::pi_v<float>; // θ ∈ [0, 2π]
-	float r = std::sqrt(1.0f - z * z);
-	float x = r * std::cos(theta);
-	float y = r * std::sin(theta);
+    // 初期位置をエミッターの位置に設定
+    particle.transform.translate = position;
 
-	Vector3 direction = { x, y, z }; // 方向ベクトル
+    // 小さな範囲でランダムな方向ベクトルを生成（ヒットエフェクト用に広がりを制限）
+    std::uniform_real_distribution<float> distAngle(0.0f, 1.0f);
+    float z = distAngle(randomEngine) * 0.2f - 0.1f; // より狭い範囲に
+    float theta = distAngle(randomEngine) * 2.0f * std::numbers::pi_v<float>;
+    float r = std::sqrt(1.0f - z * z);
+    float x = r * std::cos(theta) * 0.3f; // 広がりを制限
+    float y = r * std::sin(theta) * 0.3f; // 広がりを制限
 
-	// 速度を設定
-	float speed = distSpeed(randomEngine);
+    Vector3 direction = { x, y, z }; // 方向ベクトル
+    
+    // 速度を設定（ヒットエフェクト用に小さめ）
+    float speed = distSpeed(randomEngine);
 
-	// 初期速度を設定
-	particle.velocity = MultiplyVec3(speed, direction);
+    // 初期速度を設定
+    particle.velocity = MultiplyVec3(speed, direction);
 
-	// カラーと寿命を設定
-	particle.color = { distColor(randomEngine), distColor(randomEngine), distColor(randomEngine), 1.0f };
-	particle.lifeTime = 0.4f; //distTime(randomEngine);
-	particle.currentTime = 0.0f;
+    // カラーと寿命を設定
+    particle.color = { distColor(randomEngine), distColor(randomEngine), distColor(randomEngine), 1.0f };
+    // 短めの寿命を設定（ヒットエフェクト向け）
+    particle.lifeTime = distTime(randomEngine) * 0.5f;
+    particle.currentTime = 0.0f;
 
-	return particle;
+    return particle;
 }
 
 

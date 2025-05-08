@@ -86,7 +86,7 @@
     <ClCompile Include="engine\utils\Logger.cpp">
       <Filter>engine\utils</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\framework\MaruRhythm.cpp">
+    <ClCompile Include="engine\base\framework\EngineApp.cpp">
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="engine\utils\WstringUtility.cpp">
@@ -116,12 +116,20 @@
     <ClCompile Include="scene\publicScene\TitleScene.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\framework\MRFramework.cpp">
+    <ClCompile Include="engine\base\framework\MagFramework.cpp">
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="application\Ground.cpp">
       <Filter>application</Filter>
     </ClCompile>
+    <ClCompile Include="externals\imgui\imgui.cpp" />
+    <ClCompile Include="externals\imgui\imgui_demo.cpp" />
+    <ClCompile Include="externals\imgui\imgui_draw.cpp" />
+    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="externals\imgui\imgui_tables.cpp" />
+    <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="LightManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -208,7 +216,7 @@
     <ClInclude Include="engine\utils\Logger.h">
       <Filter>engine\utils</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\framework\MaruRhythm.h">
+    <ClInclude Include="engine\base\framework\EngineApp.h">
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\structure\Transform.h">
@@ -238,7 +246,7 @@
     <ClInclude Include="engine\math\AffineTransformations.h">
       <Filter>engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\DirectionalLight.h">
+    <ClInclude Include="engine\math\structure\drawData\Light.h">
       <Filter>engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\imGui\ImguiSetup.h">
@@ -283,7 +291,7 @@
     <ClInclude Include="scene\publicScene\TitleScene.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\framework\MRFramework.h">
+    <ClInclude Include="engine\base\framework\MagFramework.h">
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="application\Ground.h">
@@ -292,9 +300,21 @@
     <ClInclude Include="engine\math\RenderingMatrices.h">
       <Filter>engine\math</Filter>
     </ClInclude>
+    <ClInclude Include="externals\imgui\imconfig.h" />
+    <ClInclude Include="externals\imgui\imgui.h" />
+    <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="externals\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="externals\imgui\imgui_internal.h" />
+    <ClInclude Include="externals\imgui\imstb_rectpack.h" />
+    <ClInclude Include="externals\imgui\imstb_textedit.h" />
+    <ClInclude Include="externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="LightManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
+    <None Include="externals\imgui\.editorconfig" />
+    <None Include="externals\imgui\.gitattributes" />
+    <None Include="externals\imgui\.gitignore" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="engine">
@@ -351,5 +371,8 @@
     <Filter Include="engine\3d\object3d">
       <UniqueIdentifier>{2a1919e6-866d-4d2a-9d5b-ffa76219fba8}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="externals\imgui\LICENSE.txt" />
   </ItemGroup>
 </Project>

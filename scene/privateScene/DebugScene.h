@@ -64,19 +64,19 @@ private:
 	
 	//========================================
 	// 3dオブジェクト
-	std::unique_ptr<Object3d> object3d_;
+	// モンスターボール
+	std::unique_ptr<Object3d> objMonsterBall_;
+	// 地面
+	std::unique_ptr<Object3d> objTerrain_;
 	//========================================
 	// パーティクル
+	std::unique_ptr<Particle> particle_;
+	// パーティクルエミッター
+	std::unique_ptr<ParticleEmitter> particleEmitter_;
 
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
 	Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
-
-	//========================================
-	//ライト
-	Vector4 lightColor = { 1.0f,1.0f,1.0f,1.0f };
-	Vector3 lightDirection = { 0.0f,0.0f,0.0f };
-	float lightIntensity = 16.0f;
 };
 
