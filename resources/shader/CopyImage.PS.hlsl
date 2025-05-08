@@ -34,7 +34,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     distortedUV = clamp(distortedUV, 0.01f, 0.99f);
 
     // クロマティックアバレーション
-    float chromaOffset = 1.5f / 1920.0f;
+    float chromaOffset = 16.5f / 1920.0f;
     float2 offset = float2(chromaOffset, 0.0f);
     float3 color;
     color.r = gTexture.Sample(gSampler, distortedUV - offset).r;
@@ -42,7 +42,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     color.b = gTexture.Sample(gSampler, distortedUV + offset).b;
 
     // スキャンライン
-    float scanlineFreq = 1200.0f;
+    float scanlineFreq = 200.0f;
     float scanlineStrength = 0.15f;
     float scan = 1.0f - scanlineStrength * sin(screenUV.y * scanlineFreq);
     color *= scan;
