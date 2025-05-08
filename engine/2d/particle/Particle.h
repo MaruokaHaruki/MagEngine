@@ -207,7 +207,7 @@ private:
 	Vector2 customTextureSize = { 100.0f, 100.0f };
 
 	// パーティクルの形状
-	ParticleShape particleShape_ = ParticleShape::Board;
+	ParticleShape particleShape_ = ParticleShape::Ring;
 	// 形状パラメータ
 	float ringRadius_ = 1.0f;      // リングの半径
 	float cylinderHeight_ = 1.0f;  // シリンダーの高さ

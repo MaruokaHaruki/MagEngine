@@ -129,6 +129,13 @@ void Particle::Draw() {
     // 頂点バッファをセット
     commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
+    // 形状に応じて頂点数を決定
+    UINT vertexCount = 6; // デフォルトは四角形（2三角形）
+    if (particleShape_ == ParticleShape::Ring) {
+        // リング形状の場合は16セクション×6頂点
+        vertexCount = 32 * 6;
+    }
+    
     // 全てのパーティクルグループを処理
     for(auto& group : particleGroups) {
         if(group.second.instanceCount == 0) continue; // インスタンスが無い場合はスキップ
@@ -142,8 +149,8 @@ void Particle::Draw() {
         // インスタンシングデータのSRVのDescriptorTableを設定
         commandList->SetGraphicsRootDescriptorTable(1, particleSetup_->GetSrvSetup()->GetSRVGPUDescriptorHandle(group.second.instancingSrvIndex));
 
-        // Draw Call (インスタンシング描画)
-        commandList->DrawInstanced(6, group.second.instanceCount, 0, 0);
+        // Draw Call (インスタンシング描画) - 形状に応じた頂点数を使用
+        commandList->DrawInstanced(vertexCount, group.second.instanceCount, 0, 0);
 
         // インスタンスカウントをリセット
         group.second.instanceCount = 0;
@@ -255,19 +262,77 @@ void Particle::CreateParticleGroup(const std::string& name, const std::string& t
 
 ///=============================================================================
 ///						静的メンバ関数
-///--------------------------------------------------------------
-///						 頂点データの作成
 void Particle::CreateVertexData() {
-    // 四角形を2つの三角形として定義（計6頂点）
-    // 1つ目の三角形
-    modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-    
-    // 2つ目の三角形
-    modelData_.vertices.push_back(VertexData{ .position = {1.0f, 1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 0.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-    modelData_.vertices.push_back(VertexData{ .position = {-1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {1.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
-    modelData_.vertices.push_back(VertexData{ .position = {1.0f, -1.0f, 0.0f, 1.0f}, .texCoord = {0.0f, 1.0f}, .normal = {0.0f, 0.0f, 1.0f} });
+    const uint32_t kRingDivide = 32;
+    const float kOuterRadius = 1.0f;
+    const float kInnerRadius = 0.5f;  // 内径を大きめに調整
+    const float radianPerDivide = 2.0f * std::numbers::pi_v<float> / float(kRingDivide);
+
+    if (particleShape_ == ParticleShape::Ring) {
+        // リング形状の場合はここでモデルデータを作成
+        for (uint32_t index = 0; index < kRingDivide; ++index) {
+            float currentRadian = index * radianPerDivide;
+            float nextRadian = (index + 1) * radianPerDivide;
+            
+            // 現在の点の座標
+            float sinCurrent = std::sin(currentRadian);
+            float cosCurrent = std::cos(currentRadian);
+            
+            // 次の点の座標
+            float sinNext = std::sin(nextRadian);
+            float cosNext = std::cos(nextRadian);
+
+            // UV座標
+            float uCurrent = float(index) / float(kRingDivide);
+            float uNext = float(index + 1) / float(kRingDivide);
+
+            // 外側の頂点
+            Vector4 outerCurrent = { cosCurrent * kOuterRadius, sinCurrent * kOuterRadius, 0.0f, 1.0f };
+            Vector4 outerNext = { cosNext * kOuterRadius, sinNext * kOuterRadius, 0.0f, 1.0f };
+            
+            // 内側の頂点
+            Vector4 innerCurrent = { cosCurrent * kInnerRadius, sinCurrent * kInnerRadius, 0.0f, 1.0f };
+            Vector4 innerNext = { cosNext * kInnerRadius, sinNext * kInnerRadius, 0.0f, 1.0f };
+
+            Vector3 normal = { 0.0f, 0.0f, 1.0f };
+            
+            // 三角形1: 外側の現在点 → 外側の次の点 → 内側の現在点
+            modelData_.vertices.push_back({ outerCurrent, { uCurrent, 0.0f }, normal });
+            modelData_.vertices.push_back({ outerNext, { uNext, 0.0f }, normal });
+            modelData_.vertices.push_back({ innerCurrent, { uCurrent, 1.0f }, normal });
+            
+            // 三角形2: 内側の現在点 → 外側の次の点 → 内側の次の点
+            modelData_.vertices.push_back({ innerCurrent, { uCurrent, 1.0f }, normal });
+            modelData_.vertices.push_back({ outerNext, { uNext, 0.0f }, normal });
+            modelData_.vertices.push_back({ innerNext, { uNext, 1.0f }, normal });
+        }
+    } else {
+        // 四角形（デフォルト）の場合の頂点データ
+        // 単純な正方形を作成
+        Vector3 normal = { 0.0f, 0.0f, 1.0f };
+        
+        // 左上
+        modelData_.vertices.push_back({ { -0.5f, 0.5f, 0.0f, 1.0f }, { 0.0f, 0.0f }, normal });
+        // 右上
+        modelData_.vertices.push_back({ { 0.5f, 0.5f, 0.0f, 1.0f }, { 1.0f, 0.0f }, normal });
+        // 左下
+        modelData_.vertices.push_back({ { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.0f, 1.0f }, normal });
+        
+        // 左下
+        modelData_.vertices.push_back({ { -0.5f, -0.5f, 0.0f, 1.0f }, { 0.0f, 1.0f }, normal });
+        // 右上
+        modelData_.vertices.push_back({ { 0.5f, 0.5f, 0.0f, 1.0f }, { 1.0f, 0.0f }, normal });
+        // 右下
+        modelData_.vertices.push_back({ { 0.5f, -0.5f, 0.0f, 1.0f }, { 1.0f, 1.0f }, normal });
+    }
+
+    // 円柱形状の頂点データはコメントアウト（必要な場合は後で実装）
+    /*
+    const float kCylinderHeight = 1.0f; // 円柱の高さ
+    for (uint32_t index = 0; index < kRingDivide; ++index) {
+        // ...円柱のコードは省略...
+    }
+    */
 }
 
 ///--------------------------------------------------------------
