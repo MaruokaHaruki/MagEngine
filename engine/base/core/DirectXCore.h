@@ -22,6 +22,7 @@ using namespace WstringUtility;
 #include "Logger.h"
 using namespace Logger;
 #include "WinApp.h"
+#include "Vector4.h"
 //========================================
 // ReportLiveObj
 #include <dxgidebug.h>
@@ -52,25 +53,17 @@ public:
 	///--------------------------------------------------------------
 	///						 メンバ関数
 
-	/**----------------------------------------------------------------------------
-	 * \brief  PreDraw ループ前処理
-	 */
+	/// @brief PostDraw 描画前処理
 	void PreDraw();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  PostDraw ループ後処理
-	 */
+	/// @brief 描画前処理
 	void PostDraw();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  InitializeDirectX ダイレクトXの初期化
-	 * \param  winApp
-	 */
+	/// @brief InitializeDirectX ダイレクトXの初期化
+	/// @param winApp ウィンドウズアプリケーション
 	void InitializeDirectX(WinApp *winApp);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  ReleaseDirectX ダイレクトXの開放
-	 */
+	/// @brief ReleaseDirectX ダイレクトXの開放
 	void ReleaseDirectX();
 
 	/**----------------------------------------------------------------------------
@@ -258,38 +251,56 @@ public:
 	 */
 	static DirectX::ScratchImage LoadTexture(const std::string &filePath);
 
+	//========================================
+	// 以下はレンダーテクスチャ用
+public:
+	/// @brief RenderTexturePreDraw レンダーテクスチャ描画前処理
+	void RenderTexturePreDraw();
 
+	/// @brief RenderTexturePostDraw レンダーテクスチャの描画後処理
+	void RendertexturePostDraw();
+
+	/// @brief CreateRenderTextureResource レンダーテクスチャリソースの生成
+	/// @param width 幅
+	/// @param height 高さ
+	/// @param format フォーマット
+	/// @param clearColor クリアカラー
+	/// @return
+	Microsoft::WRL::ComPtr<ID3D12Resource> 
+		CreateRenderTextureResource(
+			uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor, D3D12_RESOURCE_STATES initialState);
+
+	/// @brief CreateRenderTextureRTV レンダーテクスチャのRTVを生成
+	/// @param SRVはマネージャの方にあるので、RTVだけ生成する
+	void CreateRenderTextureRTV();
+
+	void CreateOffScreenRootSignature();
+
+	void CreateOffScreenPipeLine();
+		
 	///--------------------------------------------------------------
-	///						 
+	///                        静的メンバ関数
 private:
 	/// ===CPU=== ///
-	/**----------------------------------------------------------------------------
-	 * \brief  GetCPUDescriptorHandle CPUディスクリプタハンドルの取得
-	 * \param  descriptorHeap ディスクリプタヒープ
-	 * \param  descriptorSize
-	 * \param  index
-	 * \return
-	 */
+	/// @brief GetCPUDescriptorHandle CPUディスクリプタハンドルの取得
+	/// @param descriptorHeap ディスクリプタヒープ
+	/// @param descriptorSize 
+	/// @param index 
+	/// @return 
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
 	/// ===GPU=== ///
-	/**----------------------------------------------------------------------------
-	 * \brief  GetGPUDescriptorHandle GPUディスクリプタハンドルの取得
-	 * \param  descriptorHeap
-	 * \param  descriptorSize
-	 * \param  index
-	 * \return
-	 */
+	/// @brief GetGPUDescriptorHandle GPUディスクリプタハンドルの取得
+	/// @param descriptorHeap 
+	/// @param descriptorSize 
+	/// @param index 
+	/// @return 
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  InitializeFixFPS FPS固定更新の初期化
-	 */
+	/// @brief InitializeFixFPS FPS固定更新の初期化
 	void InitializeFixFPS();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  UpdateFixFPS FPS固定更新
-	 */
+	/// @brief UpdateFixFPS FPS固定更新
 	void UpdateFixFPS();
 
 
@@ -351,11 +362,10 @@ public:
 	 */
 	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> GetRtvDescriptorHeap() { return rtvDescriptorHeap_; }
 
+	/// @brief GetRenderTextureResources レンダーテクスチャリソースの取得
+	/// @return
+	Microsoft::WRL::ComPtr<ID3D12Resource> GetRenderTextureResource(uint32_t index) { return renderTextureResources_[index]; }
 
-
-
-	///--------------------------------------------------------------
-	///						 メンバ変数
 private:
 	//========================================
 	// 記録時間(FPS固定用)
@@ -430,7 +440,7 @@ private:
 	//ディスクリプタの先頭を取得する
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle_{};
 	//RTVを2つ作るのでディスクリプタを2つ用意
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[2]{};
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[4]{}; //2つ分のRTVを作るので4つ用意する
 	//これから書き込むバックバッファのインデックスを取得
 	UINT backBufferIndex_ = 0;
 	//TransitionBarrierの設定
@@ -456,5 +466,20 @@ private:
 	// シザー矩形
 	D3D12_RECT scissorRect_{};
 
+	//========================================
+	// レンダーテクスチャリソース
+	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources_[2] = { nullptr, nullptr };
+	// レンダーリソース
+	uint32_t renderResourceIndex_ = 0;
+	// レンダーターゲットインデックス
+	uint32_t renderTargetIndex_ = 1;
+	/// @brief rootSignature_ レンダーテクスチャのルートシグネチャ
+	Microsoft::WRL::ComPtr< ID3D12RootSignature> renderTextureRootSignature_;
+	/// @brief graphicsPipelineState_ レンダーテクスチャのパイプラインステート
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> renderTextureGraphicsPipelineState_;
+	/// @brief signatureBlob_ レンダーテクスチャのシグネチャ
+	Microsoft::WRL::ComPtr< ID3DBlob> signatureBlob_ = nullptr;
+	/// @brief errorBlob_ レンダーテクスチャのエラーログ
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob_ = nullptr;
 };
 

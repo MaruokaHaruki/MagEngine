@@ -58,11 +58,17 @@ public:
 	///						 静的メンバ関数
 public:
 
+	/// @brief レンダーテクスチャ前処理
+	void RenderPreDraw();
+
+	/// @biref レンダーテクスチャ後処理
+	void RenderPostDraw();
+
 	/// @brief フレームワーク共通前処理
-	void FrameworkPreDraw();
+	void PreDraw();
 
 	/// @brief フレームワーク共通後処理
-	void FrameworkPostDraw();
+	void PostDraw();
 
 	/// @brief ImGuiの更新前処理
 	void ImGuiPreDraw();
