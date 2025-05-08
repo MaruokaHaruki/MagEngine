@@ -303,51 +303,33 @@ void Particle::CreateMaterialData() {
 
 ///=============================================================================
 ///						新しいパーティクルを生成
-// Particle.cpp
 ParticleStr Particle::CreateNewParticle(std::mt19937& randomEngine, const Vector3& position) {
     // カラーと寿命のランダム分布
     std::uniform_real_distribution<float> distColor(colorRange_.min, colorRange_.max);
     std::uniform_real_distribution<float> distTime(lifetimeRange_.min, lifetimeRange_.max);
-
-    // 速度のランダム分布（ヒットエフェクト用に速度を小さく）
-    std::uniform_real_distribution<float> distSpeed(0.1f, 0.3f); // 速度範囲を小さく設定
-
-    // 回転のランダム分布（0〜2π）
+    std::uniform_real_distribution<float> distSpeed(0.1f, 0.3f);
     std::uniform_real_distribution<float> distRotation(0.0f, 2.0f * std::numbers::pi_v<float>);
+    std::uniform_real_distribution<float> distAngle(0.0f, 1.0f);
 
     // 新たなパーティクルの生成
     ParticleStr particle = {};
-
-    // ヒットエフェクト用に縦長の形状にする
-    particle.transform.scale = { 1.2f, 0.2f, 1.0f }; // X軸を小さく、Y軸を大きくして縦長に
-    
-    // ランダムな回転を設定（Z軸周り）
-    float randomRotationZ = distRotation(randomEngine);
-    particle.transform.rotate = { 0.0f, 0.0f, randomRotationZ };
-
-    // 初期位置をエミッターの位置に設定
     particle.transform.translate = position;
+    particle.transform.scale = { 1.0f, 1.0f, 1.0f };
+    particle.transform.rotate = { 0.0f, 0.0f, 0.0f };
 
-    // 小さな範囲でランダムな方向ベクトルを生成（ヒットエフェクト用に広がりを制限）
-    std::uniform_real_distribution<float> distAngle(0.0f, 1.0f);
-    float z = distAngle(randomEngine) * 0.2f - 0.1f; // より狭い範囲に
-    float theta = distAngle(randomEngine) * 2.0f * std::numbers::pi_v<float>;
-    float r = std::sqrt(1.0f - z * z);
-    float x = r * std::cos(theta) * 0.3f; // 広がりを制限
-    float y = r * std::sin(theta) * 0.3f; // 広がりを制限
-
-    Vector3 direction = { x, y, z }; // 方向ベクトル
-    
-    // 速度を設定（ヒットエフェクト用に小さめ）
-    float speed = distSpeed(randomEngine);
-
-    // 初期速度を設定
-    particle.velocity = MultiplyVec3(speed, direction);
+    // 既存のボード形状の処理
+	float z = distAngle(randomEngine) * 0.2f - 0.1f;
+	float theta = distAngle(randomEngine) * 2.0f * std::numbers::pi_v<float>;
+	float r = std::sqrt(1.0f - z * z);
+	float x = r * std::cos(theta) * 0.3f;
+	float y = r * std::sin(theta) * 0.3f;
+	Vector3 direction = { x, y, z };
+	float speed = distSpeed(randomEngine);
+	particle.velocity = MultiplyVec3(speed, direction);
 
     // カラーと寿命を設定
     particle.color = { distColor(randomEngine), distColor(randomEngine), distColor(randomEngine), 1.0f };
-    // 短めの寿命を設定（ヒットエフェクト向け）
-    particle.lifeTime = distTime(randomEngine) * 0.5f;
+    particle.lifeTime = distTime(randomEngine);
     particle.currentTime = 0.0f;
 
     return particle;

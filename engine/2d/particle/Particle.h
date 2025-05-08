@@ -63,6 +63,13 @@ struct ParticleGroup {
 	Vector2 textureSize = { 0.0f, 0.0f }; // テクスチャサイズを追加
 };
 
+// パーティクルの形状を定義する列挙型
+enum class ParticleShape {
+	Board,    // 現在のボード形状
+	Ring,     // リング形状
+	Cylinder  // シリンダー形状
+};
+
 class Object3dSetup;
 class Camera;
 class Particle {
@@ -95,6 +102,13 @@ public:
 	 */
 	void CreateParticleGroup(const std::string& name, const std::string& textureFilePath/*, uint32_t maxInstanceCount*/);
 
+	// 形状設定用の関数
+	void SetParticleShape(ParticleShape shape) { particleShape_ = shape; }
+	void SetRingRadius(float radius) { ringRadius_ = radius; }
+	void SetCylinderParams(float height, float radius) {
+		cylinderHeight_ = height;
+		cylinderRadius_ = radius;
+	}
 
 	///--------------------------------------------------------------
 	///						 静的メンバ関数
@@ -191,5 +205,12 @@ private:
 
 	// TODO:設定しているテクスチャサイズを使うかどうかを変更できるようにする
 	Vector2 customTextureSize = { 100.0f, 100.0f };
+
+	// パーティクルの形状
+	ParticleShape particleShape_ = ParticleShape::Board;
+	// 形状パラメータ
+	float ringRadius_ = 1.0f;      // リングの半径
+	float cylinderHeight_ = 1.0f;  // シリンダーの高さ
+	float cylinderRadius_ = 0.5f;  // シリンダーの半径
 };
 

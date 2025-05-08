@@ -132,7 +132,7 @@ void DebugScene::Object3DDraw() {
 ///						パーティクル描画
 void DebugScene::ParticleDraw() {
 	// パーティクルの描画
-	//particle_->Draw();
+	particle_->Draw();
 }
 
 ///=============================================================================

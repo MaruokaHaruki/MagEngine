@@ -39,6 +39,17 @@ public:
 	//画像の大きさ
 	void SetCustomTextureSize(const Vector2 &size) { particle_->SetCustomTextureSize(size); }
 
+    // 形状設定用の関数
+    void SetParticleShape(ParticleShape shape) { 
+        particle_->SetParticleShape(shape); 
+    }
+    void SetRingRadius(float radius) { 
+        particle_->SetRingRadius(radius); 
+    }
+    void SetCylinderParams(float height, float radius) { 
+        particle_->SetCylinderParams(height, radius); 
+    }
+
     ///--------------------------------------------------------------
     ///							静的メンバ関数
 private:
