@@ -55,7 +55,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	particle_ = std::make_unique<Particle>();
 	particle_->Initialize(particleSetup);
 	// パーティクルのグループを作成
-	particle_->CreateParticleGroup("Test", "gradationLine.png", ParticleShape::Cylinder);
+	particle_->CreateParticleGroup("Test", "gradationLine_top.png", ParticleShape::Cylinder);
 	//========================================
 	// エミッターの作成
 	particleEmitter_ =

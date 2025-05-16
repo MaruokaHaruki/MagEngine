@@ -86,6 +86,10 @@ void Particle::Update() {
 			// スケールをテクスチャサイズに基づいて調整
 			// particle.transform.scale.x = textureSize.x * scaleMultiplier;
 			// particle.transform.scale.y = textureSize.y * scaleMultiplier;
+
+			// 回転の更新 (Y軸周りに回転させる例)
+			particle.transform.rotate.y += kDeltaTime * 2.0f; // 回転速度を調整してください
+
 			// 位置の更新
 			particle.transform.translate = AddVec3(particle.transform.translate, MultiplyVec3(kDeltaTime, particle.velocity));
 			// 経過時間を更新
@@ -442,14 +446,15 @@ ParticleStr Particle::CreateNewParticle(std::mt19937 &randomEngine, const Vector
 	std::uniform_real_distribution<float> distColor(colorRange_.min, colorRange_.max);
 	std::uniform_real_distribution<float> distTime(lifetimeRange_.min, lifetimeRange_.max);
 	std::uniform_real_distribution<float> distSpeed(0.1f, 0.3f);
-	std::uniform_real_distribution<float> distRotation(0.0f, 2.0f * std::numbers::pi_v<float>);
+	std::uniform_real_distribution<float> distRotation(0.0f, 2.0f * std::numbers::pi_v<float>); // 0から2πのランダムな回転
 	std::uniform_real_distribution<float> distAngle(0.0f, 1.0f);
 
 	// 新たなパーティクルの生成
 	ParticleStr particle = {};
 	particle.transform.translate = position;
 	particle.transform.scale = {1.0f, 1.0f, 1.0f};
-	particle.transform.rotate = {0.0f, 0.0f, 0.0f};
+	// 初期回転を設定 (Y軸周りにランダムな回転)
+	particle.transform.rotate = {0.0f, distRotation(randomEngine), 0.0f};
 
 	// 既存のボード形状の処理
 	float z = distAngle(randomEngine) * 0.2f - 0.1f;

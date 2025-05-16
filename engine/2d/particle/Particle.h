@@ -191,7 +191,7 @@ private:
 	//---------------------------------------
 	// その他
 	// カメラ目線を使用するかどうか
-	bool isUsedBillboard = true;
+	bool isUsedBillboard = false; // デフォルトを false に変更
 	// 最大インスタンス数
 	static const uint32_t kNumMaxInstance = 128;
 	//
