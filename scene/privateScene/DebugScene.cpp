@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   DebugScene.cpp
- * \brief  
- * 
+ * \brief
+ *
  * \author Harukichimaru
  * \date   January 2025
- * \note   
+ * \note
  *********************************************************************/
 #include "DebugScene.h"
 #include "Input.h"
@@ -28,16 +28,15 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	//========================================
 	// スプライトクラス(Game)
 
-
 	///--------------------------------------------------------------
 	///						 3D系クラス
-	//モデルの読み込み
+	// モデルの読み込み
 	ModelManager::GetInstance()->LoadMedel("axisPlus.obj");
 	ModelManager::GetInstance()->LoadMedel("ball.obj");
 	ModelManager::GetInstance()->LoadMedel("terrain.obj");
 	//========================================
 	// 3Dオブジェクトクラス
-	//モンスターボール
+	// モンスターボール
 	objMonsterBall_ = std::make_unique<Object3d>();
 	objMonsterBall_->Initialize(object3dSetup);
 	objMonsterBall_->SetModel("ball.obj");
@@ -56,16 +55,16 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	particle_ = std::make_unique<Particle>();
 	particle_->Initialize(particleSetup);
 	// パーティクルのグループを作成
-	particle_->CreateParticleGroup("Test", "gradationLine.png");
+	particle_->CreateParticleGroup("Test", "gradationLine.png", ParticleShape::Cylinder);
 	//========================================
 	// エミッターの作成
 	particleEmitter_ =
 		std::make_unique<ParticleEmitter>(particle_.get(),
-			"Test",
-			Transform{ {0.2f,0.2f,0.2f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} },
-			4,
-			2.0f,
-			true);
+										  "Test",
+										  Transform{{0.2f, 0.2f, 0.2f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
+										  4,
+										  2.0f,
+										  true);
 }
 
 ///=============================================================================
@@ -86,16 +85,16 @@ void DebugScene::Update() {
 	// 2D更新
 
 	//========================================
-	// 3D更新 
+	// 3D更新
 	// モンスターボール
-	objMonsterBall_->SetScale(Vector3{ transform.scale.x,transform.scale.y,transform.scale.z });
-	objMonsterBall_->SetRotation(Vector3{ transform.rotate.x,transform.rotate.y,transform.rotate.z });
-	objMonsterBall_->SetPosition(Vector3{ transform.translate.x,transform.translate.y,transform.translate.z });
+	objMonsterBall_->SetScale(Vector3{transform.scale.x, transform.scale.y, transform.scale.z});
+	objMonsterBall_->SetRotation(Vector3{transform.rotate.x, transform.rotate.y, transform.rotate.z});
+	objMonsterBall_->SetPosition(Vector3{transform.translate.x, transform.translate.y, transform.translate.z});
 	objMonsterBall_->Update();
 	// 地面
-	objTerrain_->SetScale(Vector3{ 1.0f,1.0f,1.0f });
-	objTerrain_->SetRotation(Vector3{ 0.0f,0.0f,0.0f });
-	objTerrain_->SetPosition(Vector3{ 0.0f,0.0f,0.0f });
+	objTerrain_->SetScale(Vector3{1.0f, 1.0f, 1.0f});
+	objTerrain_->SetRotation(Vector3{0.0f, 0.0f, 0.0f});
+	objTerrain_->SetPosition(Vector3{0.0f, 0.0f, 0.0f});
 	objTerrain_->Update();
 
 	//========================================
@@ -107,16 +106,15 @@ void DebugScene::Update() {
 
 	//========================================
 	// 音声の再生
-	if(audio_->IsWavPlaying("Duke_Ellington.wav") == false) {
-		//audio_->PlayWavReverse("Duke_Ellington.wav", true, 1.0f, 1.0f);
-		//audio_->PlayWav("Duke_Ellington.wav", true, 1.0f, 1.0f);
+	if (audio_->IsWavPlaying("Duke_Ellington.wav") == false) {
+		// audio_->PlayWavReverse("Duke_Ellington.wav", true, 1.0f, 1.0f);
+		// audio_->PlayWav("Duke_Ellington.wav", true, 1.0f, 1.0f);
 	}
 }
 
 ///=============================================================================
 ///						2D描画
 void DebugScene::Object2DDraw() {
-
 }
 
 ///=============================================================================
@@ -138,15 +136,14 @@ void DebugScene::ParticleDraw() {
 ///=============================================================================
 ///						ImGui描画
 void DebugScene::ImGuiDraw() {
-	//DebugSceneのImGui描画
+	// DebugSceneのImGui描画
 	ImGui::Begin("DebugScene");
 	ImGui::Text("Hello, DebugScene!");
 	ImGui::End();
 
-
 	//========================================
 	// 3DオブジェクトのImGui描画
-	//ライトの設定
+	// ライトの設定
 	ImGui::Begin("3DObject");
 	ImGui::Text("TransformSetting");
 	ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 10.0f);
