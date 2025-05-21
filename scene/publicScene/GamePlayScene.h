@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   GamePlayScene.h
- * \brief  
- * 
+ * \brief
+ *
  * \author Harukichimaru
  * \date   January 2025
- * \note   
+ * \note
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
@@ -12,16 +12,16 @@
 //========================================
 // Game
 #include "Camera.h"
-#include "Sprite.h"
+#include "CollisionManager.h"
+#include "Enemy.h"
+#include "Ground.h"
+#include "MAudioG.h"
+#include "Model.h"
+#include "Object3d.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
-#include "Object3d.h"
-#include "Model.h"
-#include "MAudioG.h"
-#include "CollisionManager.h"
 #include "Player.h"
-#include "Ground.h"
-#include "Enemy.h"
+#include "Sprite.h"
 
 ///=============================================================================
 ///						ゲームプレイシーンクラス
@@ -41,7 +41,7 @@ public:
 	/// @brie 2D描画
 	void Object2DDraw() override;
 
-	/// \brief 3D描画 
+	/// \brief 3D描画
 	void Object3DDraw() override;
 
 	/// \brief パーティクル描画
@@ -53,25 +53,18 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
-
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
-
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
 	//========================================
 	// 当たり判定
 	std::unique_ptr<CollisionManager> collisionManager_;
-	//3Dオブジェクト
-	std::unique_ptr<Object3d> objCollisionManager_;
 
 	//========================================
 	// 地面
-	std::unique_ptr<Ground> ground_;
-	// 3dオブジェクト
-	std::unique_ptr<Object3d> objGround_;
 
 	//========================================
 	// プレイヤー
@@ -80,27 +73,14 @@ private:
 	std::unique_ptr<Object3d> objPlayer_;
 
 	//========================================
-	//　敵
-	std::unique_ptr<Enemy> enemy_;
-	// 3dオブジェクト
-	std::unique_ptr<Object3d> objEnemy_;
-	//複数体の敵の格納
-	std::vector<std::unique_ptr<Enemy>> enemyList_;
-	std::vector<std::unique_ptr<Object3d>> objEnemyList_;
-	//敵の数
-	int enemyNum_ = 32;
+	// 　敵
+
 	//========================================
 	// スプライト
 	std::unique_ptr<Sprite> moveSprite_;
 	//========================================
 	// パーティクル
 	std::unique_ptr<Particle> particle_;
-	//エミッター
+	// エミッター
 	std::unique_ptr<ParticleEmitter> particleEmitter_;
-	//========================================
-	// 倒した敵の数
-	int defeatedEnemies_ = 0;
-	// クリアに必要な敵の数
-	const int requiredDefeatedEnemies_ = 2;
 };
-
