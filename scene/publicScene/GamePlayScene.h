@@ -13,14 +13,11 @@
 // Game
 #include "Camera.h"
 #include "CollisionManager.h"
-#include "Enemy.h"
-#include "Ground.h"
 #include "MAudioG.h"
 #include "Model.h"
 #include "Object3d.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
-#include "Player.h"
 #include "Sprite.h"
 
 ///=============================================================================
@@ -68,7 +65,6 @@ private:
 
 	//========================================
 	// プレイヤー
-	std::unique_ptr<Player> player_;
 	// 3dオブジェクト
 	std::unique_ptr<Object3d> objPlayer_;
 

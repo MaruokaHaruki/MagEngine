@@ -112,13 +112,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\Collider.cpp" />
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
-    <ClCompile Include="application\Player.cpp" />
-    <ClCompile Include="application\Ground.cpp" />
-    <ClCompile Include="application\Enemy.cpp" />
     <ClCompile Include="engine\3d\Line.cpp" />
     <ClCompile Include="engine\3d\LineSetup.cpp" />
     <ClCompile Include="engine\3d\LineManager.cpp" />
-    <ClCompile Include="application\PlayerWepon.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />
     <ClCompile Include="externals\imgui\imgui_demo.cpp" />
     <ClCompile Include="externals\imgui\imgui_draw.cpp" />
@@ -127,6 +123,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
     <ClCompile Include="LightManager.cpp" />
+    <ClCompile Include="application\Player.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -163,7 +160,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Line.h" />
     <ClInclude Include="engine\3d\LineSetup.h" />
     <ClInclude Include="engine\3d\LineManager.h" />
-    <ClInclude Include="application\PlayerWepon.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
@@ -173,13 +169,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="LightManager.h" />
+    <ClInclude Include="application\Player.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
     <ClInclude Include="application\collision\BaseObject.h" />
-    <ClInclude Include="application\Player.h" />
-    <ClInclude Include="application\Ground.h" />
-    <ClInclude Include="application\Enemy.h" />
     <ClInclude Include="scene\base\SceneFactory.h" />
     <ClInclude Include="scene\publicScene\ClearScene.h" />
     <ClInclude Include="scene\privateScene\DebugScene.h" />

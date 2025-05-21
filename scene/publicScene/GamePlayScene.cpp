@@ -25,7 +25,8 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// テクスチャの読み込み
 
 	//========================================
-	// オブジェクト読み込み
+	// モデルの読み込み
+	ModelManager::GetInstance()->LoadMedel("jet.obj");
 
 	//========================================
 	// スプライトクラス(Game)
@@ -37,10 +38,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// プレイヤー
 	objPlayer_ = std::make_unique<Object3d>();
 	objPlayer_->Initialize(object3dSetup);
-	objPlayer_->SetModel("player.obj");
-	// プレイヤーの初期化
-	player_ = std::make_unique<Player>();
-	player_->Initialize(objPlayer_.get());
+	objPlayer_->SetModel("jet.obj");
 
 	//========================================
 	// 敵
@@ -76,6 +74,9 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
+	//========================================
+	// プレイヤー
+	objPlayer_->Update();
 }
 
 ///=============================================================================
@@ -91,7 +92,7 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// プレイヤー
-	player_->Draw();
+	objPlayer_->Draw();
 
 	//========================================
 	// 複数の敵
@@ -117,7 +118,6 @@ void GamePlayScene::ImGuiDraw() {
 	ImGui::End();
 	//========================================
 	// プレイヤー
-	player_->ImGuiDraw();
 
 	//========================================
 	// 敵
