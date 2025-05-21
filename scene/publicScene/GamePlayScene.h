@@ -14,10 +14,9 @@
 #include "Camera.h"
 #include "CollisionManager.h"
 #include "MAudioG.h"
-#include "Model.h"
-#include "Object3d.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
+#include "Player.h"
 #include "Sprite.h"
 
 ///=============================================================================
@@ -66,7 +65,7 @@ private:
 	//========================================
 	// プレイヤー
 	// 3dオブジェクト
-	std::unique_ptr<Object3d> objPlayer_;
+	std::unique_ptr<Player> player_; // Object3dからPlayerに変更
 
 	//========================================
 	// 　敵

@@ -8,6 +8,8 @@
  *********************************************************************/
 #include "GamePlayScene.h"
 #include "CameraManager.h"
+#include "Player.h" 
+#include "ModelManager.h"
 
 ///=============================================================================
 ///						初期化
@@ -26,7 +28,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadMedel("jet.obj");
+	ModelManager::GetInstance()->LoadMedel("jet.obj"); // モデルは事前にロードしておく
 
 	//========================================
 	// スプライトクラス(Game)
@@ -36,9 +38,8 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// プレイヤー
-	objPlayer_ = std::make_unique<Object3d>();
-	objPlayer_->Initialize(object3dSetup);
-	objPlayer_->SetModel("jet.obj");
+	player_ = std::make_unique<Player>();
+	player_->Initialize(object3dSetup, "jet.obj"); // PlayerにObject3dSetupとモデル名を渡す
 
 	//========================================
 	// 敵
@@ -76,7 +77,9 @@ void GamePlayScene::Finalize() {
 void GamePlayScene::Update() {
 	//========================================
 	// プレイヤー
-	objPlayer_->Update();
+	if (player_) {
+		player_->Update();
+	}
 }
 
 ///=============================================================================
@@ -92,7 +95,9 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// プレイヤー
-	objPlayer_->Draw();
+	if (player_) {
+		player_->Draw();
+	}
 
 	//========================================
 	// 複数の敵
@@ -118,6 +123,9 @@ void GamePlayScene::ImGuiDraw() {
 	ImGui::End();
 	//========================================
 	// プレイヤー
+	if (player_) {
+		player_->DrawImGui();
+	}
 
 	//========================================
 	// 敵

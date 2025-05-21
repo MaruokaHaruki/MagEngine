@@ -6,12 +6,20 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "Object3d.h"
+#include <memory> // For std::unique_ptr
+#include <string> // For std::string
+
+// Forward declarations
+class Object3d;
+class Object3dSetup;
+
 class Player {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize();
+	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath);
 
 	/// \brief 更新
 	void Update();
@@ -31,4 +39,5 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	std::unique_ptr<Object3d> obj_; // プレイヤーの3Dオブジェクト
 };
