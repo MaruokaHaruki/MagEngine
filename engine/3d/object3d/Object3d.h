@@ -84,6 +84,8 @@ public:
 	*/
 	void SetModel(const std::string& filePath) {model_ = ModelManager::GetInstance()->FindModel(filePath);}
 
+
+	Transform *GetTransform() { return &transform_; } // Transformのポインタを取得する関数
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTransform トランスフォーメーションの設定
 	 * \param  transform トランスフォーメーション
