@@ -9,25 +9,26 @@
 #pragma once
 //========================================
 // Framework
-#include "WinApp.h"
+#include "Camera.h"
 #include "DirectXCore.h"
 #include "ImguiSetup.h"
-#include "SrvSetup.h"
 #include "Input.h"
 #include "MAudioG.h"
-#include "Camera.h"
+#include "SrvSetup.h"
+#include "WinApp.h"
 // 共通部
+#include "DebugTextManager.h"
+#include "LightManager.h"
+#include "LineManager.h"
+#include "ModelManager.h"
+#include "Object3dSetup.h"
+#include "ParticleSetup.h"
 #include "SpriteSetup.h"
 #include "TextureManager.h"
-#include "ParticleSetup.h"
-#include "Object3dSetup.h"
-#include "ModelManager.h"
-#include "LineManager.h"
-#include "LightManager.h"
 // シーン
 #include "CameraManager.h"
-#include "SceneManager.h"
 #include "SceneFactory.h"
+#include "SceneManager.h"
 
 ///=============================================================================
 ///						FrameWorkクラス
@@ -35,7 +36,6 @@ class MagFramework {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
-
 	/// \brief 仮想デストラクタ
 	virtual ~MagFramework() = default;
 
@@ -48,7 +48,7 @@ public:
 	/// \brief 更新
 	virtual void Update();
 
-	/// \brief 描画 
+	/// \brief 描画
 	virtual void Draw() = 0;
 
 	/// \brief 終了処理
@@ -57,7 +57,6 @@ public:
 	///--------------------------------------------------------------
 	///						 静的メンバ関数
 public:
-
 	/// @brief レンダーテクスチャ前処理
 	void RenderPreDraw();
 
@@ -89,7 +88,9 @@ public:
 	///							入出力関数
 public:
 	/// \brief 終了リクエストの取得
-	virtual bool IsEndRequest() const { return isEndRequest_; }
+	virtual bool IsEndRequest() const {
+		return isEndRequest_;
+	}
 
 	///--------------------------------------------------------------
 	///							メンバ変数
@@ -126,5 +127,5 @@ protected:
 	// シーンファクトリー
 	std::unique_ptr<SceneFactory> sceneFactory_;
 	// ライトマネージャ
-	std::unique_ptr<LightManager> lightManager_;  // ライトマネージャーのインスタンス
+	std::unique_ptr<LightManager> lightManager_; // ライトマネージャーのインスタンス
 };

@@ -19,9 +19,9 @@ void MagFramework::Run() {
 	// メインループ
 	MSG msg{};
 	// メッセージがなくなるまでループ
-	while(msg.message != WM_QUIT) {
+	while (msg.message != WM_QUIT) {
 		// メッセージがあれば処理
-		if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			// メッセージ処理
 			TranslateMessage(&msg);
 			// メッセージ処理
@@ -32,7 +32,7 @@ void MagFramework::Run() {
 			Update();
 			//---------------------------------------
 			// 終了リクエストがあれば終了
-			if(IsEndRequest()) {
+			if (IsEndRequest()) {
 				break;
 			}
 			//---------------------------------------
@@ -51,32 +51,39 @@ void MagFramework::Initialize() {
 	///--------------------------------------------------------------
 	///						 ウィンドウ生成
 	win_ = std::make_unique<WinApp>();
-	//ウィンドウの生成
+	// ウィンドウの生成
 	win_->CreateGameWindow(L"MREngine_Ver0.4.0");
 
 	///--------------------------------------------------------------
 	///						 ダイレクトX生成
 	dxCore_ = std::make_unique<DirectXCore>();
-	//ダイレクトXの初期化
+	// ダイレクトXの初期化
 	dxCore_->InitializeDirectX(win_.get());
 	dxCore_->CreateRenderTextureRTV();
-
 
 	///--------------------------------------------------------------
 	///						 ImGuiのセットアップ
 	imguiSetup_ = std::make_unique<ImguiSetup>();
-	//ImGuiの初期化
+	// ImGuiの初期化
 	imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CLASSIC);
+
+	///--------------------------------------------------------------
+	///                        デバックテキストマネージャ
+	DebugTextManager::GetInstance()->Initialize(win_.get());
+	// デバッグテキストマネージャの初期化
+	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
+	// デバッグテキストの表示を有効にする
+	DebugTextManager::GetInstance()->SetDebugTextEnabled(true);
 
 	///--------------------------------------------------------------
 	///						 SrvSetupクラス
 	srvSetup_ = std::make_unique<SrvSetup>();
-	//SrvSetupの初期化
+	// SrvSetupの初期化
 	srvSetup_->Initialize(dxCore_.get());
 
 	///--------------------------------------------------------------
 	///						 入力クラス
-	//入力の初期化
+	// 入力の初期化
 	Input::GetInstance()->Initialize(win_->GetWindowClass().hInstance, win_->GetWindowHandle());
 
 	///--------------------------------------------------------------
@@ -93,13 +100,13 @@ void MagFramework::Initialize() {
 	/// 					 カメラの初期化
 	CameraManager::GetInstance()->Initialize();
 	// TODO: カメラの改善 現在、カメラの設定はここで行っているが、自由に変更がしにくいという問題が発生している。
-	
+
 	///--------------------------------------------------------------
 	///						 スプライトクラス
 	//========================================
 	// スプライト共通部
 	spriteSetup_ = std::make_unique<SpriteSetup>();
-	//スプライト共通部の初期化
+	// スプライト共通部の初期化
 	spriteSetup_->Initialize(dxCore_.get());
 
 	///--------------------------------------------------------------
@@ -110,7 +117,7 @@ void MagFramework::Initialize() {
 	//========================================
 	// 3Dオブジェクト共通部
 	object3dSetup_ = std::make_unique<Object3dSetup>();
-	//3Dオブジェクト共通部の初期化
+	// 3Dオブジェクト共通部の初期化
 	object3dSetup_->Initialize(dxCore_.get());
 	// Object3Dのカメラ設定
 	object3dSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
@@ -120,7 +127,7 @@ void MagFramework::Initialize() {
 	///--------------------------------------------------------------
 	///						 パーティクル共通部
 	particleSetup_ = std::make_unique<ParticleSetup>();
-	//パーティクルセットアップの初期化
+	// パーティクルセットアップの初期化
 	particleSetup_->Initialize(dxCore_.get(), srvSetup_.get());
 	// パーティクルのカメラ設定
 	particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
@@ -138,9 +145,9 @@ void MagFramework::Initialize() {
 	///--------------------------------------------------------------
 	///						 シーンマネージャ
 	sceneManager_ = std::make_unique<SceneManager>();
-	//シーンマネージャの初期化
+	// シーンマネージャの初期化
 	sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get());
-	//シーンファクトリーのセット
+	// シーンファクトリーのセット
 	sceneFactory_ = std::make_unique<SceneFactory>();
 	sceneManager_->SetSceneFactory(sceneFactory_.get());
 
@@ -148,7 +155,6 @@ void MagFramework::Initialize() {
 	///						 各種設定
 	// ライトマネージャへラインマネージャポインタの受け渡し
 	lightManager_->SetLineManager(LineManager::GetInstance());
-
 }
 
 ///=============================================================================
@@ -156,16 +162,20 @@ void MagFramework::Initialize() {
 void MagFramework::Update() {
 	//========================================
 	// デバックカメラの呼び出し1,2
-	if(Input::GetInstance()->PushKey(DIK_1)) {
+	if (Input::GetInstance()->PushKey(DIK_1)) {
 		CameraManager::GetInstance()->SetCurrentCamera("DebugCamera");
 	}
-	if(Input::GetInstance()->PushKey(DIK_2)) {
+	if (Input::GetInstance()->PushKey(DIK_2)) {
 		CameraManager::GetInstance()->SetCurrentCamera("DefaultCamera");
 	}
 
 	//========================================
 	// カメラの更新
 	CameraManager::GetInstance()->UpdateAll();
+
+	//========================================
+	// デバックテキストの更新
+	DebugTextManager::GetInstance()->Update();
 
 	//========================================
 	// ラインの更新
@@ -226,7 +236,6 @@ void MagFramework::RenderPreDraw() {
 	srvSetup_->PreDraw();
 }
 
-
 ///=============================================================================
 ///                        レンダーテクスチャ後処理
 void MagFramework::RenderPostDraw() {
@@ -239,9 +248,9 @@ void MagFramework::PreDraw() {
 	//========================================
 	// ループ前処理
 	dxCore_->PreDraw();
-	//srvSetup_->PreDraw();
+	// srvSetup_->PreDraw();
 	//========================================
-	// Lineの描画
+	//  Lineの描画
 	LineManager::GetInstance()->Draw();
 }
 
@@ -252,7 +261,7 @@ void MagFramework::PostDraw() {
 	// ImGui描画
 	imguiSetup_->Draw();
 	//========================================
-	//ループ後処理
+	// ループ後処理
 	dxCore_->PostDraw();
 }
 
@@ -273,6 +282,13 @@ void MagFramework::ImGuiPreDraw() {
 	lightManager_->DrawImGui();
 	// LineのImGui描画
 	LineManager::GetInstance()->DrawImGui();
+	// デバッグテキストのImGui描画
+	// 3D空間にテキスト追加
+	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
+	DebugTextManager::GetInstance()->AddText3D("Origin", {0, 0, 0}, {1.0f, 1.0f, 0.0f, 1.0f});
+	// スクリーン上に固定テキスト追加
+	DebugTextManager::GetInstance()->AddTextScreen("FPS: 60", {10, 10}, {0.0f, 1.0f, 0.0f, 1.0f});
+	DebugTextManager::GetInstance()->DrawImGui();
 #endif // DEBUG
 }
 

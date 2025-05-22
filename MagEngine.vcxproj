@@ -112,6 +112,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\Collider.cpp" />
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
+    <ClCompile Include="DebugTextManager.cpp" />
     <ClCompile Include="engine\3d\Line.cpp" />
     <ClCompile Include="engine\3d\LineSetup.cpp" />
     <ClCompile Include="engine\3d\LineManager.cpp" />
@@ -157,6 +158,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="scene\publicScene\TitleScene.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DebugTextManager.h" />
     <ClInclude Include="engine\3d\Line.h" />
     <ClInclude Include="engine\3d\LineSetup.h" />
     <ClInclude Include="engine\3d\LineManager.h" />
