@@ -9,6 +9,9 @@
 #include <unordered_map>
 #include <vector>
 
+// Forward declaration for ImFont
+struct ImFont;
+
 // デバッグテキストの情報
 struct DebugText {
 	std::string text;		// 表示テキスト
@@ -20,6 +23,7 @@ struct DebugText {
 	bool useScreenPosition; // true: スクリーン座標使用, false: ワールド座標使用
 	Vector2 screenPosition; // スクリーン座標（useScreenPositionがtrueの時）
 	void *targetObject;		// 追従対象オブジェクト（nullptrで固定位置）
+	std::string fontName;	// 使用するフォント名 (空の場合はデフォルトフォント)
 };
 
 class DebugTextManager {
@@ -39,18 +43,14 @@ public:
 	// 3D空間上にテキスト追加
 	void AddText3D(const std::string &text, const Vector3 &position,
 				   const Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
-				   float duration = -1.0f, float scale = 1.0f);
+				   float duration = -1.0f, float scale = 1.0f,
+				   const std::string &fontName = "");
 
 	// スクリーン座標にテキスト追加
 	void AddTextScreen(const std::string &text, const Vector2 &position,
 					   const Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
-					   float duration = -1.0f, float scale = 1.0f);
-
-	// オブジェクトに追従するテキスト追加
-	template <typename T>
-	void AddTextFollow(const std::string &text, T *object,
-					   const Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
-					   float duration = -1.0f, float scale = 1.0f);
+					   float duration = -1.0f, float scale = 1.0f,
+					   const std::string &fontName = "");
 
 	// 全テキストの削除
 	void ClearAllTexts();
@@ -67,6 +67,10 @@ public:
 	bool IsDebugTextEnabled() const {
 		return isDebugTextEnabled_;
 	}
+
+	// フォントのロード
+	// fontName: 管理用のフォント名, filePath: ttf/otfファイルへのパス, size: フォントサイズ
+	bool LoadFont(const std::string &fontName, const std::string &filePath, float size);
 
 private:
 	DebugTextManager() = default;
@@ -90,6 +94,7 @@ private:
 	std::vector<DebugText> debugTexts_;
 	Camera *camera_ = nullptr;
 	bool isDebugTextEnabled_ = true;
+	std::unordered_map<std::string, ImFont *> loadedFonts_; // ロード済みフォントのマップ
 };
 
 // Object3dクラス用の特殊化（GetPosition関数を持つ前提）

@@ -285,7 +285,7 @@ void MagFramework::ImGuiPreDraw() {
 	// デバッグテキストのImGui描画
 	// 3D空間にテキスト追加
 	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
-	DebugTextManager::GetInstance()->AddText3D("Origin", {0, 0, 0}, {1.0f, 1.0f, 0.0f, 1.0f});
+	DebugTextManager::GetInstance()->AddText3D("Origin_オリジン", {0, 0, 0}, {1.0f, 1.0f, 0.0f, 1.0f});
 	// スクリーン上に固定テキスト追加
 	DebugTextManager::GetInstance()->AddTextScreen("FPS: 60", {10, 10}, {0.0f, 1.0f, 0.0f, 1.0f});
 	DebugTextManager::GetInstance()->DrawImGui();

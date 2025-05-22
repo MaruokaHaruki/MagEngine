@@ -2,6 +2,7 @@
 #include "MathFunc4x4.h"
 #include "WinApp.h"
 #include "imgui.h"
+#include <iostream> // エラー出力用 (任意)
 
 DebugTextManager *DebugTextManager::instance_ = nullptr;
 
@@ -20,9 +21,28 @@ void DebugTextManager::Initialize(WinApp *winApp) {
 	}
 	winApp_ = winApp;
 	debugTexts_.clear();
+	loadedFonts_.clear(); // ロード済みフォントもクリア
+
+	// 指定されたフォントファイルをロードする
+	std::string fontPath = "resources\\fonts\\KikaiChokokuJIS-Md.ttf";
+	std::string fontKey = "kikai_chokoku"; // このフォントを識別するためのキー (任意の名前に変更可能)
+	float fontSize = 16.0f;				   // フォントサイズ (適宜調整してください)
+
+	if (!LoadFont(fontKey, fontPath, fontSize)) {
+		// フォントのロードに失敗した場合の処理 (任意)
+		std::cerr << "Failed to load font: " << fontPath << std::endl;
+	}
+
+	// さらに他のフォントをロードする場合は、同様に LoadFont を呼び出します。
+	// 例：
+	// if (!LoadFont("another_font", "C:\\Kamata_Workbench\\MagEngine\\project\\resources\\fonts\\another_font_file.otf", 20.0f)) {
+	//     std::cerr << "Failed to load font: C:\\Kamata_Workbench\\MagEngine\\project\\resources\\fonts\\another_font_file.otf" << std::endl;
+	// }
 }
 
 void DebugTextManager::Update() {
+	ClearAllTexts(); // 前フレームのテキストをクリア
+
 	if (!camera_)
 		return;
 
@@ -93,11 +113,31 @@ void DebugTextManager::DrawImGui() {
 		ImColor color(text.color.x, text.color.y, text.color.z,
 					  text.color.w * alpha);
 
+		// フォントの指定があれば適用
+		ImFont *currentFont = nullptr;
+		if (!text.fontName.empty()) {
+			auto it = loadedFonts_.find(text.fontName);
+			if (it != loadedFonts_.end()) {
+				currentFont = it->second;
+			}
+		}
+
+		if (currentFont) {
+			ImGui::PushFont(currentFont);
+		} else {
+			// 指定フォントがない場合やデフォルトの場合は、ImGui::GetFont()が使われる
+			// (PushFontしないことでデフォルトフォントになる)
+		}
+
 		// テキスト描画
-		float fontSize = 16.0f * text.scale; // 基本フォントサイズ × スケール
-		drawList->AddText(ImGui::GetFont(), fontSize,
+		float fontSize = (currentFont ? currentFont->FontSize : ImGui::GetFontSize()) * text.scale; // 基本フォントサイズ × スケール
+		drawList->AddText(currentFont ? currentFont : ImGui::GetFont(), fontSize,					// PushFontした場合でも、ここで明示的にフォントを指定する方が安全
 						  ImVec2(screenPos.x, screenPos.y),
 						  color, text.text.c_str());
+
+		if (currentFont) {
+			ImGui::PopFont();
+		}
 	}
 }
 
@@ -120,7 +160,7 @@ Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
 }
 
 void DebugTextManager::AddText3D(const std::string &text, const Vector3 &position,
-								 const Vector4 &color, float duration, float scale) {
+								 const Vector4 &color, float duration, float scale, const std::string &fontName) {
 	DebugText newText{};
 	newText.text = text;
 	newText.worldPosition = position;
@@ -130,12 +170,13 @@ void DebugTextManager::AddText3D(const std::string &text, const Vector3 &positio
 	newText.timer = 0;
 	newText.useScreenPosition = false;
 	newText.targetObject = nullptr;
+	newText.fontName = fontName;
 
 	debugTexts_.push_back(newText);
 }
 
 void DebugTextManager::AddTextScreen(const std::string &text, const Vector2 &position,
-									 const Vector4 &color, float duration, float scale) {
+									 const Vector4 &color, float duration, float scale, const std::string &fontName) {
 	DebugText newText{};
 	newText.text = text;
 	newText.screenPosition = position;
@@ -145,29 +186,31 @@ void DebugTextManager::AddTextScreen(const std::string &text, const Vector2 &pos
 	newText.timer = 0;
 	newText.useScreenPosition = true;
 	newText.targetObject = nullptr;
-
-	debugTexts_.push_back(newText);
-}
-
-template <typename T>
-void DebugTextManager::AddTextFollow(const std::string &text, T *object,
-									 const Vector4 &color, float duration, float scale) {
-	if (!object)
-		return;
-
-	DebugText newText{};
-	newText.text = text;
-	newText.worldPosition = GetObjectPosition(object);
-	newText.color = color;
-	newText.scale = scale;
-	newText.duration = duration;
-	newText.timer = 0;
-	newText.useScreenPosition = false;
-	newText.targetObject = object;
+	newText.fontName = fontName;
 
 	debugTexts_.push_back(newText);
 }
 
 void DebugTextManager::ClearAllTexts() {
 	debugTexts_.clear();
+}
+
+bool DebugTextManager::LoadFont(const std::string &fontName, const std::string &filePath, float size) {
+	ImGuiIO &io = ImGui::GetIO();
+	ImFont *font = io.Fonts->AddFontFromFileTTF(filePath.c_str(), size, nullptr, io.Fonts->GetGlyphRangesJapanese());
+	if (font) {
+		loadedFonts_[fontName] = font;
+		// ImGuiのフォントテクスチャを再構築する必要がある場合がある
+		// 通常、ImGui_ImplDX12_CreateDeviceObjectsなどで初期化時に行われるが、
+		// 動的にフォントを追加した場合は手動で更新が必要になることがある。
+		// unsigned char* pixels;
+		// int width, height;
+		// io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+		// (この後、テクスチャをGPUにアップロードし、SetTexIDする処理。通常はImGuiバックエンドが行う)
+		// ここでは、フォントのロードのみ行い、テクスチャの更新はImGuiのメインループに任せるか、
+		// 必要に応じて明示的な更新関数を設けることを検討。
+		// 簡単のため、ここではロードのみ。
+		return true;
+	}
+	return false;
 }
