@@ -300,6 +300,8 @@ void MagFramework::ImGuiPreDraw() {
 	char fpsText[32];
 	sprintf_s(fpsText, "FPS: %.1f", ImGui::GetIO().Framerate);
 	DebugTextManager::GetInstance()->AddTextScreen(fpsText, {10, 10}, {0.0f, 1.0f, 0.0f, 1.0f});
+	// 3D空間上にデバッグテキストを追加
+	DebugTextManager::GetInstance()->AddText3D("Debug Text", {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
 
 	// ImGuiでデバッグテキストを描画
 	DebugTextManager::GetInstance()->DrawImGui();
