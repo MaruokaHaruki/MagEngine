@@ -68,12 +68,20 @@ void MagFramework::Initialize() {
 	imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CLASSIC);
 
 	///--------------------------------------------------------------
+	/// 					 カメラの初期化
+	CameraManager::GetInstance()->Initialize();
+
+	///--------------------------------------------------------------
 	///                        デバックテキストマネージャ
 	DebugTextManager::GetInstance()->Initialize(win_.get());
-	// デバッグテキストマネージャの初期化
+	// デバッグテキストマネージャの初期化（カメラ初期化後に設定）
 	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	// デバッグテキストの表示を有効にする
 	DebugTextManager::GetInstance()->SetDebugTextEnabled(true);
+
+	// 初期の永続的なデバッグテキストを設定
+	DebugTextManager::GetInstance()->AddAxisLabels(); // 座標軸ラベル
+	// DebugTextManager::GetInstance()->AddGridLabels(5.0f, 2); // グリッドラベル
 
 	///--------------------------------------------------------------
 	///						 SrvSetupクラス
@@ -174,7 +182,8 @@ void MagFramework::Update() {
 	CameraManager::GetInstance()->UpdateAll();
 
 	//========================================
-	// デバックテキストの更新
+	// デバックテキストの更新（カメラ更新後に実行）
+	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	DebugTextManager::GetInstance()->Update();
 
 	//========================================
@@ -282,12 +291,17 @@ void MagFramework::ImGuiPreDraw() {
 	lightManager_->DrawImGui();
 	// LineのImGui描画
 	LineManager::GetInstance()->DrawImGui();
-	// デバッグテキストのImGui描画
-	// 3D空間にテキスト追加
-	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
-	DebugTextManager::GetInstance()->AddText3D("Origin_オリジン", {0, 0, 0}, {1.0f, 1.0f, 0.0f, 1.0f});
-	// スクリーン上に固定テキスト追加
-	DebugTextManager::GetInstance()->AddTextScreen("FPS: 60", {10, 10}, {0.0f, 1.0f, 0.0f, 1.0f});
+
+	// デバッグテキストの描画のみ実行
+	// 非永続テキストをクリア（毎フレームの一時的な表示用）
+	DebugTextManager::GetInstance()->ClearAllTexts();
+
+	// 一時的なスクリーンテキストのみここで追加（フレームレート等）
+	char fpsText[32];
+	sprintf_s(fpsText, "FPS: %.1f", ImGui::GetIO().Framerate);
+	DebugTextManager::GetInstance()->AddTextScreen(fpsText, {10, 10}, {0.0f, 1.0f, 0.0f, 1.0f});
+
+	// ImGuiでデバッグテキストを描画
 	DebugTextManager::GetInstance()->DrawImGui();
 #endif // DEBUG
 }

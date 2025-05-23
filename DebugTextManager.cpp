@@ -20,7 +20,8 @@ void DebugTextManager::Initialize(WinApp *winApp) {
 		return;
 	}
 	winApp_ = winApp;
-	debugTexts_.clear();
+	// すべてのテキストを確実にクリア
+	ClearAllTextsIncludingPersistent();
 	loadedFonts_.clear(); // ロード済みフォントもクリア
 
 	// 指定されたフォントファイルをロードする
@@ -41,8 +42,6 @@ void DebugTextManager::Initialize(WinApp *winApp) {
 }
 
 void DebugTextManager::Update() {
-	ClearAllTexts(); // 前フレームのテキストをクリア
-
 	if (!camera_)
 		return;
 
@@ -64,11 +63,13 @@ void DebugTextManager::Update() {
 
 		// オブジェクト追従の場合、位置を更新
 		if (text.targetObject) {
-			// オブジェクトタイプにより分岐（実装時はObject3dクラスなど実際のクラスで特殊化）
 			if (auto obj3d = static_cast<Object3d *>(text.targetObject)) {
 				text.worldPosition = GetObjectPosition(obj3d);
 			}
 		}
+
+		// 固定スクリーン位置のテキストの場合、カメラ更新に合わせて再計算しない
+		// そのほかのテキストは毎フレーム位置を再計算する必要がない
 
 		++i;
 	}
@@ -85,8 +86,14 @@ void DebugTextManager::DrawImGui() {
 		Vector2 screenPos;
 
 		if (text.useScreenPosition) {
+			// スクリーン座標指定の場合
 			screenPos = text.screenPosition;
+		} else if (text.isFixedToScreen) {
+			// 3D座標だがスクリーンに固定する場合
+			// 初回の変換位置を使用（カメラ移動の影響を受けない）
+			screenPos = text.fixedScreenPos;
 		} else {
+			// 通常の3D→スクリーン座標変換（カメラ移動の影響を受ける）
 			screenPos = WorldToScreen(text.worldPosition);
 
 			// カメラの後ろにあるオブジェクトのテキストは表示しない
@@ -145,22 +152,56 @@ Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
 	if (!camera_)
 		return Vector2{0, 0};
 
-	// ワールド→ビュー→プロジェクション変換
+	// ワールド→クリップ空間への変換
 	Matrix4x4 viewProjMatrix = camera_->GetViewProjectionMatrix();
-	Vector3 ndcPos = Multiply(worldPosition, viewProjMatrix);
 
-	// NDC座標からスクリーン座標への変換
+	// 同次座標でのクリップ空間変換
+	float x = worldPosition.x;
+	float y = worldPosition.y;
+	float z = worldPosition.z;
+	float w = 1.0f;
+
+	// 行列乗算を展開（わかりやすさのため）
+	float clipX = viewProjMatrix.m[0][0] * x + viewProjMatrix.m[0][1] * y + viewProjMatrix.m[0][2] * z + viewProjMatrix.m[0][3] * w;
+	float clipY = viewProjMatrix.m[1][0] * x + viewProjMatrix.m[1][1] * y + viewProjMatrix.m[1][2] * z + viewProjMatrix.m[1][3] * w;
+	float clipZ = viewProjMatrix.m[2][0] * x + viewProjMatrix.m[2][1] * y + viewProjMatrix.m[2][2] * z + viewProjMatrix.m[2][3] * w;
+	float clipW = viewProjMatrix.m[3][0] * x + viewProjMatrix.m[3][1] * y + viewProjMatrix.m[3][2] * z + viewProjMatrix.m[3][3] * w;
+
+	// wが0に近い場合はエラー防止（極端な位置）
+	if (std::abs(clipW) < 1e-6f) {
+		return Vector2{-1000.0f, -1000.0f}; // 画面外の座標を返す
+	}
+
+	// 正規化デバイス座標（NDC）に変換
+	float ndcX = clipX / clipW;
+	float ndcY = clipY / clipW;
+
+	// NDCからスクリーン座標へ変換
 	float width = static_cast<float>(winApp_->GetWindowWidth());
 	float height = static_cast<float>(winApp_->GetWindowHeight());
 	Vector2 screenPos;
-	screenPos.x = (ndcPos.x + 1.0f) * width * 0.5f;
-	screenPos.y = (1.0f - ndcPos.y) * height * 0.5f; // Y軸は反転
+	screenPos.x = (ndcX + 1.0f) * width * 0.5f;
+	screenPos.y = (1.0f - ndcY) * height * 0.5f; // Y軸は反転
 
 	return screenPos;
 }
 
 void DebugTextManager::AddText3D(const std::string &text, const Vector3 &position,
-								 const Vector4 &color, float duration, float scale, const std::string &fontName) {
+								 const Vector4 &color, float duration, float scale, const std::string &fontName,
+								 bool isFixedToScreen, bool isPersistent) {
+	// 既存の永続的なテキストで同じ内容があれば追加しない（重複防止）
+	if (isPersistent) {
+		for (const auto &existingText : debugTexts_) {
+			if (existingText.isPersistent &&
+				existingText.text == text &&
+				existingText.worldPosition.x == position.x &&
+				existingText.worldPosition.y == position.y &&
+				existingText.worldPosition.z == position.z) {
+				return; // 同一テキストが既に存在するので追加しない
+			}
+		}
+	}
+
 	DebugText newText{};
 	newText.text = text;
 	newText.worldPosition = position;
@@ -171,12 +212,20 @@ void DebugTextManager::AddText3D(const std::string &text, const Vector3 &positio
 	newText.useScreenPosition = false;
 	newText.targetObject = nullptr;
 	newText.fontName = fontName;
+	newText.isFixedToScreen = isFixedToScreen;
+	newText.isPersistent = isPersistent;
+
+	// スクリーンに固定する場合は、現在のカメラ視点での位置を記録
+	if (isFixedToScreen && camera_) {
+		newText.fixedScreenPos = WorldToScreen(position);
+	}
 
 	debugTexts_.push_back(newText);
 }
 
 void DebugTextManager::AddTextScreen(const std::string &text, const Vector2 &position,
-									 const Vector4 &color, float duration, float scale, const std::string &fontName) {
+									 const Vector4 &color, float duration, float scale, const std::string &fontName,
+									 bool isPersistent) {
 	DebugText newText{};
 	newText.text = text;
 	newText.screenPosition = position;
@@ -187,11 +236,24 @@ void DebugTextManager::AddTextScreen(const std::string &text, const Vector2 &pos
 	newText.useScreenPosition = true;
 	newText.targetObject = nullptr;
 	newText.fontName = fontName;
+	newText.isPersistent = isPersistent;
 
 	debugTexts_.push_back(newText);
 }
 
 void DebugTextManager::ClearAllTexts() {
+	// 永続的でないテキストのみを削除
+	for (size_t i = 0; i < debugTexts_.size();) {
+		if (!debugTexts_[i].isPersistent) {
+			debugTexts_.erase(debugTexts_.begin() + i);
+		} else {
+			++i;
+		}
+	}
+}
+
+void DebugTextManager::ClearAllTextsIncludingPersistent() {
+	// すべてのテキストを削除
 	debugTexts_.clear();
 }
 
@@ -213,4 +275,34 @@ bool DebugTextManager::LoadFont(const std::string &fontName, const std::string &
 		return true;
 	}
 	return false;
+}
+
+void DebugTextManager::AddAxisLabels() {
+	// 座標軸のラベルを追加（原点と各軸の正方向）
+	AddText3D("Origin", {0, 0, 0}, {1.0f, 1.0f, 0.0f, 1.0f}, -1.0f, 1.0f, "", false, false);
+	AddText3D("X+", {5, 0, 0}, {1.0f, 0.0f, 0.0f, 1.0f}, -1.0f, 1.0f, "", false, false);
+	AddText3D("Y+", {0, 5, 0}, {0.0f, 1.0f, 0.0f, 1.0f}, -1.0f, 1.0f, "", false, false);
+	AddText3D("Z+", {0, 0, 5}, {0.0f, 0.0f, 1.0f, 1.0f}, -1.0f, 1.0f, "", false, false);
+}
+
+void DebugTextManager::AddGridLabels(float gridSize, int gridCount) {
+	// グリッドの座標ラベルを追加
+	for (int x = -gridCount; x <= gridCount; x++) {
+		for (int z = -gridCount; z <= gridCount; z++) {
+			if (x == 0 && z == 0)
+				continue; // 原点は飛ばす
+
+			float xPos = x * gridSize;
+			float zPos = z * gridSize;
+
+			char label[32];
+			sprintf_s(label, "(%d,%d)", x, z);
+			AddText3D(label, {xPos, 0.1f, zPos}, {0.7f, 0.7f, 0.7f, 1.0f}, -1.0f, 0.8f, "", false, true);
+		}
+	}
+}
+
+void DebugTextManager::AddPointLabel(const std::string &label, const Vector3 &position, const Vector4 &color) {
+	// 指定された位置にラベルを追加
+	AddText3D(label, position, color, -1.0f, 1.0f, "", false, true);
 }

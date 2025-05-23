@@ -24,6 +24,9 @@ struct DebugText {
 	Vector2 screenPosition; // スクリーン座標（useScreenPositionがtrueの時）
 	void *targetObject;		// 追従対象オブジェクト（nullptrで固定位置）
 	std::string fontName;	// 使用するフォント名 (空の場合はデフォルトフォント)
+	bool isFixedToScreen;	// true: カメラ移動に影響されない位置に表示
+	Vector2 fixedScreenPos; // 固定スクリーン位置（isFixedToScreenがtrueの時）
+	bool isPersistent;		// true: テキストはClearAllTextsで削除されない
 };
 
 class DebugTextManager {
@@ -41,19 +44,35 @@ public:
 	void DrawImGui();
 
 	// 3D空間上にテキスト追加
+	// isFixedToScreen: trueの場合、テキストはスクリーン上に固定されます（カメラ移動に影響されない）
+	// isPersistent: trueの場合、ClearAllTextsでテキストが削除されません
 	void AddText3D(const std::string &text, const Vector3 &position,
 				   const Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
 				   float duration = -1.0f, float scale = 1.0f,
-				   const std::string &fontName = "");
+				   const std::string &fontName = "",
+				   bool isFixedToScreen = false,
+				   bool isPersistent = false);
+
+	// 3D空間上に軸名やポイント名などのデバッグ用のテキストを追加する簡易関数
+	// これらは自動的に永続的なテキストになります
+	void AddAxisLabels();
+	void AddGridLabels(float gridSize = 5.0f, int gridCount = 4);
+	void AddPointLabel(const std::string &label, const Vector3 &position,
+					   const Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f});
 
 	// スクリーン座標にテキスト追加
+	// isPersistent: trueの場合、ClearAllTextsでテキストが削除されない
 	void AddTextScreen(const std::string &text, const Vector2 &position,
 					   const Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
 					   float duration = -1.0f, float scale = 1.0f,
-					   const std::string &fontName = "");
+					   const std::string &fontName = "",
+					   bool isPersistent = false);
 
-	// 全テキストの削除
+	// 全テキストの削除（永続的なテキストを除く）
 	void ClearAllTexts();
+
+	// 全てのテキストを削除（永続的なテキストを含む）
+	void ClearAllTextsIncludingPersistent();
 
 	// カメラの設定
 	void SetCamera(Camera *camera) {
