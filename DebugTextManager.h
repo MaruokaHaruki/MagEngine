@@ -43,6 +43,9 @@ public:
 	// ImGui描画処理
 	void DrawImGui();
 
+	// ImGuiでデバッグテキスト一覧を表示・管理するウィンドウを描画
+	void DrawDebugTextManagerImGui();
+
 	// 3D空間上にテキスト追加
 	// isFixedToScreen: trueの場合、テキストはスクリーン上に固定されます（カメラ移動に影響されない）
 	// isPersistent: trueの場合、ClearAllTextsでテキストが削除されません
@@ -114,6 +117,12 @@ private:
 	Camera *camera_ = nullptr;
 	bool isDebugTextEnabled_ = true;
 	std::unordered_map<std::string, ImFont *> loadedFonts_; // ロード済みフォントのマップ
+
+	// ImGui管理用フラグ
+	bool showDebugTextManager_ = false; // デバッグテキスト管理ウィンドウ表示フラグ
+	bool showOnlyPersistent_ = false;	// 永続テキストのみ表示
+	bool showOnly3DTexts_ = false;		// 3Dテキストのみ表示
+	bool showOnlyScreenTexts_ = false;	// スクリーンテキストのみ表示
 };
 
 // Object3dクラス用の特殊化（GetPosition関数を持つ前提）

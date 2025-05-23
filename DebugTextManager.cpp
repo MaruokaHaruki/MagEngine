@@ -25,8 +25,8 @@ void DebugTextManager::Initialize(WinApp *winApp) {
 	loadedFonts_.clear(); // ロード済みフォントもクリア
 
 	// 指定されたフォントファイルをロードする
-	std::string fontPath = "resources\\fonts\\KikaiChokokuJIS-Md.ttf";
-	std::string fontKey = "kikai_chokoku"; // このフォントを識別するためのキー (任意の名前に変更可能)
+	std::string fontPath = "resources\\fonts\\Firge-Regular.ttf";
+	std::string fontKey = "firge_regular"; // このフォントを識別するためのキー (任意の名前に変更可能)
 	float fontSize = 16.0f;				   // フォントサイズ (適宜調整してください)
 
 	if (!LoadFont(fontKey, fontPath, fontSize)) {
@@ -76,6 +76,7 @@ void DebugTextManager::Update() {
 }
 
 void DebugTextManager::DrawImGui() {
+	// 既存のテキスト描画処理
 	if (!isDebugTextEnabled_ || !camera_ || debugTexts_.empty())
 		return;
 
@@ -145,6 +146,19 @@ void DebugTextManager::DrawImGui() {
 		if (currentFont) {
 			ImGui::PopFont();
 		}
+	}
+
+	// デバッグテキスト管理ウィンドウの表示ボタン
+	if (ImGui::Begin("DebugTools")) {
+		if (ImGui::Button("デバッグテキスト管理")) {
+			showDebugTextManager_ = true;
+		}
+		ImGui::End();
+	}
+
+	// デバッグテキスト管理ウィンドウ表示
+	if (showDebugTextManager_) {
+		DrawDebugTextManagerImGui();
 	}
 }
 
@@ -304,4 +318,134 @@ void DebugTextManager::AddGridLabels(float gridSize, int gridCount) {
 void DebugTextManager::AddPointLabel(const std::string &label, const Vector3 &position, const Vector4 &color) {
 	// 指定された位置にラベルを追加
 	AddText3D(label, position, color, -1.0f, 1.0f, "", false, true);
+}
+
+void DebugTextManager::DrawDebugTextManagerImGui() {
+	if (!ImGui::Begin("デバッグテキスト管理", &showDebugTextManager_)) {
+		ImGui::End();
+		return;
+	}
+
+	// テキスト表示の切り替えボタン
+	if (ImGui::Button(isDebugTextEnabled_ ? "テキスト表示オフ" : "テキスト表示オン")) {
+		isDebugTextEnabled_ = !isDebugTextEnabled_;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("すべてクリア")) {
+		ClearAllTexts();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("すべてクリア（永続的含む）")) {
+		ClearAllTextsIncludingPersistent();
+	}
+
+	// 表示フィルター
+	ImGui::Separator();
+	ImGui::Text("表示フィルター:");
+	ImGui::Checkbox("永続テキストのみ", &showOnlyPersistent_);
+	ImGui::SameLine();
+	ImGui::Checkbox("3Dテキストのみ", &showOnly3DTexts_);
+	ImGui::SameLine();
+	ImGui::Checkbox("スクリーンテキストのみ", &showOnlyScreenTexts_);
+
+	// テキスト数の表示
+	ImGui::Separator();
+	ImGui::Text("テキスト数: %zu", debugTexts_.size());
+
+	// テキスト一覧表示
+	ImGui::Separator();
+	if (ImGui::BeginTable("##デバッグテキスト", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("ID");
+		ImGui::TableSetupColumn("テキスト");
+		ImGui::TableSetupColumn("タイプ");
+		ImGui::TableSetupColumn("残り時間");
+		ImGui::TableHeadersRow();
+
+		for (size_t i = 0; i < debugTexts_.size(); i++) {
+			const auto &text = debugTexts_[i];
+
+			// フィルター適用
+			if ((showOnlyPersistent_ && !text.isPersistent) ||
+				(showOnly3DTexts_ && text.useScreenPosition) ||
+				(showOnlyScreenTexts_ && !text.useScreenPosition)) {
+				continue;
+			}
+
+			ImGui::TableNextRow();
+
+			// ID列
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("%zu", i);
+
+			// テキスト列
+			ImGui::TableSetColumnIndex(1);
+			ImGui::TextColored(ImVec4(text.color.x, text.color.y, text.color.z, text.color.w),
+							   "%s", text.text.c_str());
+
+			// タイプ列
+			ImGui::TableSetColumnIndex(2);
+			if (text.useScreenPosition) {
+				ImGui::Text("スクリーン");
+			} else {
+				ImGui::Text("3D空間");
+				if (text.isFixedToScreen) {
+					ImGui::SameLine();
+					ImGui::Text("(固定)");
+				}
+			}
+			if (text.isPersistent) {
+				ImGui::SameLine();
+				ImGui::Text("(永続)");
+			}
+
+			// 残り時間列
+			ImGui::TableSetColumnIndex(3);
+			if (text.duration < 0) {
+				ImGui::Text("無期限");
+			} else {
+				float remaining = text.duration - text.timer;
+				ImGui::Text("%.2f秒", remaining > 0 ? remaining : 0);
+			}
+
+			// 詳細情報を展開表示（クリックで開閉）
+			if (ImGui::TableNextColumn()) {
+				char detailLabel[32];
+				sprintf_s(detailLabel, "詳細##%zu", i);
+				if (ImGui::TreeNode(detailLabel)) {
+					if (!text.useScreenPosition) {
+						ImGui::Text("位置: (%.2f, %.2f, %.2f)",
+									text.worldPosition.x, text.worldPosition.y, text.worldPosition.z);
+					} else {
+						ImGui::Text("スクリーン位置: (%.2f, %.2f)",
+									text.screenPosition.x, text.screenPosition.y);
+					}
+					ImGui::Text("色: (%.2f, %.2f, %.2f, %.2f)",
+								text.color.x, text.color.y, text.color.z, text.color.w);
+					ImGui::Text("スケール: %.2f", text.scale);
+
+					if (text.fontName.empty()) {
+						ImGui::Text("フォント: デフォルト");
+					} else {
+						ImGui::Text("フォント: %s", text.fontName.c_str());
+					}
+
+					if (text.targetObject) {
+						ImGui::Text("追従オブジェクト: あり");
+					}
+
+					// テキスト削除ボタン
+					if (ImGui::Button("このテキストを削除")) {
+						debugTexts_.erase(debugTexts_.begin() + i);
+						ImGui::TreePop();
+						break; // リストが変更されたのでループを抜ける
+					}
+
+					ImGui::TreePop();
+				}
+			}
+		}
+		ImGui::EndTable();
+	}
+
+	ImGui::End();
 }
