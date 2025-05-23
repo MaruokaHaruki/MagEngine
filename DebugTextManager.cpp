@@ -41,6 +41,40 @@ void DebugTextManager::Initialize(WinApp *winApp) {
 	// }
 }
 
+void DebugTextManager::Update() {
+	if (!camera_)
+		return;
+
+	float deltaTime = 1.0f / 60.0f; // 理想的には実際のフレーム時間を使用
+
+	// テキスト情報を更新、期限切れを削除
+	for (size_t i = 0; i < debugTexts_.size();) {
+		DebugText &text = debugTexts_[i];
+
+		// タイマー更新
+		if (text.duration > 0) {
+			text.timer += deltaTime;
+			if (text.timer >= text.duration) {
+				// 期限切れのテキストを削除
+				debugTexts_.erase(debugTexts_.begin() + i);
+				continue;
+			}
+		}
+
+		// オブジェクト追従の場合、位置を更新
+		if (text.targetObject) {
+			if (auto obj3d = static_cast<Object3d *>(text.targetObject)) {
+				text.worldPosition = GetObjectPosition(obj3d);
+			}
+		}
+
+		// 固定スクリーン位置のテキストの場合、カメラ更新に合わせて再計算しない
+		// そのほかのテキストは毎フレーム位置を再計算する必要がない
+
+		++i;
+	}
+}
+
 void DebugTextManager::DrawImGui() {
 	if (!isDebugTextEnabled_ || !camera_ || debugTexts_.empty())
 		return;
@@ -60,26 +94,20 @@ void DebugTextManager::DrawImGui() {
 			screenPos = text.fixedScreenPos;
 		} else {
 			// 通常の3D→スクリーン座標変換（カメラ移動の影響を受ける）
-			// ここが重要：毎フレーム最新のカメラ情報を使って変換する
 			screenPos = WorldToScreen(text.worldPosition);
 
 			// カメラの後ろにあるオブジェクトのテキストは表示しない
-			// 正確なカリング判定
+			// 簡易的なカリング判定（より正確な判定が必要なら改良すること）
 			Matrix4x4 viewMatrix = camera_->GetViewMatrix();
-			Vector3 viewPos = {
-				viewMatrix.m[0][0] * text.worldPosition.x + viewMatrix.m[0][1] * text.worldPosition.y + viewMatrix.m[0][2] * text.worldPosition.z + viewMatrix.m[0][3],
-				viewMatrix.m[1][0] * text.worldPosition.x + viewMatrix.m[1][1] * text.worldPosition.y + viewMatrix.m[1][2] * text.worldPosition.z + viewMatrix.m[1][3],
-				viewMatrix.m[2][0] * text.worldPosition.x + viewMatrix.m[2][1] * text.worldPosition.y + viewMatrix.m[2][2] * text.worldPosition.z + viewMatrix.m[2][3]};
-
-			// Z値がカメラの背後にある場合は描画しない
-			if (viewPos.z < 0.0f) {
+			Vector3 viewPos = Multiply(text.worldPosition, viewMatrix);
+			if (viewPos.z < 0) {
 				continue;
 			}
 		}
 
 		// スクリーン外のテキストはスキップ（簡易的な判定）
-		if (screenPos.x < -100 || screenPos.x > io.DisplaySize.x + 100 ||
-			screenPos.y < -100 || screenPos.y > io.DisplaySize.y + 100) {
+		if (screenPos.x < 0 || screenPos.x > io.DisplaySize.x ||
+			screenPos.y < 0 || screenPos.y > io.DisplaySize.y) {
 			continue;
 		}
 
@@ -121,33 +149,31 @@ void DebugTextManager::DrawImGui() {
 }
 
 Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
-	if (!camera_)
+	if (!camera_ || !winApp_)
 		return Vector2{0, 0};
 
 	// ワールド→クリップ空間への変換
-	// 毎フレーム最新のビュープロジェクション行列を取得
 	Matrix4x4 viewProjMatrix = camera_->GetViewProjectionMatrix();
 
-	// 同次座標でのクリップ空間変換
-	float x = worldPosition.x;
-	float y = worldPosition.y;
-	float z = worldPosition.z;
-	float w = 1.0f;
-
-	// 行列乗算を展開
-	float clipX = viewProjMatrix.m[0][0] * x + viewProjMatrix.m[0][1] * y + viewProjMatrix.m[0][2] * z + viewProjMatrix.m[0][3] * w;
-	float clipY = viewProjMatrix.m[1][0] * x + viewProjMatrix.m[1][1] * y + viewProjMatrix.m[1][2] * z + viewProjMatrix.m[1][3] * w;
-	float clipZ = viewProjMatrix.m[2][0] * x + viewProjMatrix.m[2][1] * y + viewProjMatrix.m[2][2] * z + viewProjMatrix.m[2][3] * w;
-	float clipW = viewProjMatrix.m[3][0] * x + viewProjMatrix.m[3][1] * y + viewProjMatrix.m[3][2] * z + viewProjMatrix.m[3][3] * w;
+	// 同次座標でのクリップ空間変換（完全な行列乗算）
+	Vector4 clipPos;
+	clipPos.x = worldPosition.x * viewProjMatrix.m[0][0] + worldPosition.y * viewProjMatrix.m[1][0] +
+				worldPosition.z * viewProjMatrix.m[2][0] + viewProjMatrix.m[3][0];
+	clipPos.y = worldPosition.x * viewProjMatrix.m[0][1] + worldPosition.y * viewProjMatrix.m[1][1] +
+				worldPosition.z * viewProjMatrix.m[2][1] + viewProjMatrix.m[3][1];
+	clipPos.z = worldPosition.x * viewProjMatrix.m[0][2] + worldPosition.y * viewProjMatrix.m[1][2] +
+				worldPosition.z * viewProjMatrix.m[2][2] + viewProjMatrix.m[3][2];
+	clipPos.w = worldPosition.x * viewProjMatrix.m[0][3] + worldPosition.y * viewProjMatrix.m[1][3] +
+				worldPosition.z * viewProjMatrix.m[2][3] + viewProjMatrix.m[3][3];
 
 	// wが0に近い場合はエラー防止（極端な位置）
-	if (std::abs(clipW) < 1e-6f) {
+	if (std::abs(clipPos.w) < 1e-6f) {
 		return Vector2{-1000.0f, -1000.0f}; // 画面外の座標を返す
 	}
 
 	// 正規化デバイス座標（NDC）に変換
-	float ndcX = clipX / clipW;
-	float ndcY = clipY / clipW;
+	float ndcX = clipPos.x / clipPos.w;
+	float ndcY = clipPos.y / clipPos.w;
 
 	// NDCからスクリーン座標へ変換
 	float width = static_cast<float>(winApp_->GetWindowWidth());
@@ -278,38 +304,4 @@ void DebugTextManager::AddGridLabels(float gridSize, int gridCount) {
 void DebugTextManager::AddPointLabel(const std::string &label, const Vector3 &position, const Vector4 &color) {
 	// 指定された位置にラベルを追加
 	AddText3D(label, position, color, -1.0f, 1.0f, "", false, true);
-}
-
-void DebugTextManager::Update() {
-	if (!camera_)
-		return;
-
-	float deltaTime = 1.0f / 60.0f; // 理想的には実際のフレーム時間を使用
-
-	// テキスト情報を更新、期限切れを削除
-	for (size_t i = 0; i < debugTexts_.size();) {
-		DebugText &text = debugTexts_[i];
-
-		// タイマー更新
-		if (text.duration > 0) {
-			text.timer += deltaTime;
-			if (text.timer >= text.duration) {
-				// 期限切れのテキストを削除
-				debugTexts_.erase(debugTexts_.begin() + i);
-				continue;
-			}
-		}
-
-		// オブジェクト追従の場合、位置を更新
-		if (text.targetObject) {
-			if (auto obj3d = static_cast<Object3d *>(text.targetObject)) {
-				text.worldPosition = GetObjectPosition(obj3d);
-			}
-		}
-
-		// ワールド座標のテキストは毎フレーム位置計算が必要
-		// スクリーンに固定されたテキストのみ再計算不要
-
-		++i;
-	}
 }

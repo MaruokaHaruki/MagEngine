@@ -291,18 +291,9 @@ void MagFramework::ImGuiPreDraw() {
 	lightManager_->DrawImGui();
 	// LineのImGui描画
 	LineManager::GetInstance()->DrawImGui();
-
 	// デバッグテキストの描画のみ実行
 	// 非永続テキストをクリア（毎フレームの一時的な表示用）
 	DebugTextManager::GetInstance()->ClearAllTexts();
-
-	// 一時的なスクリーンテキストのみここで追加（フレームレート等）
-	char fpsText[32];
-	sprintf_s(fpsText, "FPS: %.1f", ImGui::GetIO().Framerate);
-	DebugTextManager::GetInstance()->AddTextScreen(fpsText, {10, 10}, {0.0f, 1.0f, 0.0f, 1.0f});
-	// 3D空間上にデバッグテキストを追加
-	DebugTextManager::GetInstance()->AddText3D("Debug Text", {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
-
 	// ImGuiでデバッグテキストを描画
 	DebugTextManager::GetInstance()->DrawImGui();
 #endif // DEBUG
