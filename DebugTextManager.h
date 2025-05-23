@@ -119,10 +119,9 @@ private:
 	std::unordered_map<std::string, ImFont *> loadedFonts_; // ロード済みフォントのマップ
 
 	// ImGui管理用フラグ
-	bool showDebugTextManager_ = false; // デバッグテキスト管理ウィンドウ表示フラグ
-	bool showOnlyPersistent_ = false;	// 永続テキストのみ表示
-	bool showOnly3DTexts_ = false;		// 3Dテキストのみ表示
-	bool showOnlyScreenTexts_ = false;	// スクリーンテキストのみ表示
+	bool showOnlyPersistent_ = false;  // 永続テキストのみ表示
+	bool showOnly3DTexts_ = false;	   // 3Dテキストのみ表示
+	bool showOnlyScreenTexts_ = false; // スクリーンテキストのみ表示
 };
 
 // Object3dクラス用の特殊化（GetPosition関数を持つ前提）

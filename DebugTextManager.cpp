@@ -42,6 +42,9 @@ void DebugTextManager::Initialize(WinApp *winApp) {
 }
 
 void DebugTextManager::Update() {
+	// 開始前にテキストのリセット
+	DebugTextManager::GetInstance()->ClearAllTexts();
+
 	if (!camera_)
 		return;
 
@@ -76,9 +79,14 @@ void DebugTextManager::Update() {
 }
 
 void DebugTextManager::DrawImGui() {
+	// デバッグテキスト管理ウィンドウ表示
+	DrawDebugTextManagerImGui();
+
 	// 既存のテキスト描画処理
-	if (!isDebugTextEnabled_ || !camera_ || debugTexts_.empty())
+	// isDebugTextEnabled_ が false、カメラがない、または表示するテキストがない場合はここでリターン
+	if (!isDebugTextEnabled_ || !camera_ || debugTexts_.empty()) {
 		return;
+	}
 
 	ImGuiIO &io = ImGui::GetIO();
 	ImDrawList *drawList = ImGui::GetBackgroundDrawList();
@@ -148,18 +156,18 @@ void DebugTextManager::DrawImGui() {
 		}
 	}
 
-	// デバッグテキスト管理ウィンドウの表示ボタン
-	if (ImGui::Begin("DebugTools")) {
-		if (ImGui::Button("デバッグテキスト管理")) {
-			showDebugTextManager_ = true;
-		}
-		ImGui::End();
-	}
+	// デバッグテキスト管理ウィンドウの表示ボタン // このブロックは上に移動しました
+	// if (ImGui::Begin("DebugTools")) {
+	// 	if (ImGui::Button("デバッグテキスト管理")) {
+	// 		showDebugTextManager_ = true;
+	// 	}
+	// 	ImGui::End();
+	// }
 
-	// デバッグテキスト管理ウィンドウ表示
-	if (showDebugTextManager_) {
-		DrawDebugTextManagerImGui();
-	}
+	// デバッグテキスト管理ウィンドウ表示 // このブロックは上に移動しました
+	// if (showDebugTextManager_) {
+	// 	DrawDebugTextManagerImGui();
+	// }
 }
 
 Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
@@ -321,10 +329,8 @@ void DebugTextManager::AddPointLabel(const std::string &label, const Vector3 &po
 }
 
 void DebugTextManager::DrawDebugTextManagerImGui() {
-	if (!ImGui::Begin("デバッグテキスト管理", &showDebugTextManager_)) {
-		ImGui::End();
-		return;
-	}
+	// デバッグテキスト管理ウィンドウを常に表示
+	ImGui::Begin("デバッグテキスト管理");
 
 	// テキスト表示の切り替えボタン
 	if (ImGui::Button(isDebugTextEnabled_ ? "テキスト表示オフ" : "テキスト表示オン")) {

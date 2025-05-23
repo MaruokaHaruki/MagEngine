@@ -1,17 +1,23 @@
 /*********************************************************************
-* \file   IScene.h
-* \brief`
-*
-* \author Harukichimaru
-* \date   December 2024
-* \note
-*********************************************************************/
+ * \file   IScene.h
+ * \brief`
+ *
+ * \author Harukichimaru
+ * \date   December 2024
+ * \note
+ *********************************************************************/
 #pragma once
-#include "SpriteSetup.h"
+#include "DebugTextManager.h"
 #include "Object3dSetup.h"
 #include "ParticleSetup.h"
+#include "SpriteSetup.h"
 // シーンの種類
-enum SCENE { DEBUG, TITLE, GAMEPLAY, CLEAR };
+enum SCENE {
+	DEBUG,
+	TITLE,
+	GAMEPLAY,
+	CLEAR
+};
 
 ///=============================================================================
 ///						インターフェースシーン
@@ -20,7 +26,6 @@ class BaseScene {
 	///							メンバ関数
 	// NOTE:継承先で実装される関数。抽象クラスなので純粋仮想関数とする。
 public:
-
 	/// \brief 初期化
 	virtual void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) = 0;
 
@@ -43,29 +48,31 @@ public:
 	virtual void ImGuiDraw() = 0;
 
 	/**----------------------------------------------------------------------------
-	* \brief  ~IScene 抽象クラスのデストラクタ
-	* NOTE: 仮想デストラクタを用意することで、継承先のクラスのデストラクタが呼ばれるようにする。
-	*/
+	 * \brief  ~IScene 抽象クラスのデストラクタ
+	 * NOTE: 仮想デストラクタを用意することで、継承先のクラスのデストラクタが呼ばれるようにする。
+	 */
 	virtual ~BaseScene() = default;
 
 	/**----------------------------------------------------------------------------
-	* \brief  GetSceneNo シーン番号を取得する
-	* \return
-	*/
-	int GetSceneNo() { return sceneNo; }
-	
-	/**----------------------------------------------------------------------------
-	 * \brief  SetSceneNo 
-	 * \param  sceneNo
-	 * \return 
+	 * \brief  GetSceneNo シーン番号を取得する
+	 * \return
 	 */
-	int SetSceneNo(int nextNo) { return sceneNo = nextNo; }
+	int GetSceneNo() {
+		return sceneNo;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetSceneNo
+	 * \param  sceneNo
+	 * \return
+	 */
+	int SetSceneNo(int nextNo) {
+		return sceneNo = nextNo;
+	}
 
 	///--------------------------------------------------------------
 	///							メンバ変数
 protected:
-	//シーン番号を保存する変数
+	// シーン番号を保存する変数
 	static int sceneNo;
 };
-
-

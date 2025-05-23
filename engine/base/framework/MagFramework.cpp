@@ -291,9 +291,6 @@ void MagFramework::ImGuiPreDraw() {
 	lightManager_->DrawImGui();
 	// LineのImGui描画
 	LineManager::GetInstance()->DrawImGui();
-	// デバッグテキストの描画のみ実行
-	// 非永続テキストをクリア（毎フレームの一時的な表示用）
-	DebugTextManager::GetInstance()->ClearAllTexts();
 	// ImGuiでデバッグテキストを描画
 	DebugTextManager::GetInstance()->DrawImGui();
 #endif // DEBUG
