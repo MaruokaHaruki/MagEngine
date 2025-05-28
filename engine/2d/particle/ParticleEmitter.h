@@ -59,6 +59,68 @@ public:
 		particle_->SetCylinderParams(height, radius);
 	}
 
+	/// @brief SetBillboard
+	/// @param enable ビルボードを使用するかどうか
+	void SetBillboard(bool enable) {
+		particle_->SetBillboard(enable);
+	}
+
+	/// @brief SetTranslateRange
+	/// @param min 最小移動量
+	/// @param max 最大移動量
+	void SetTranslateRange(const Vector3 &min, const Vector3 &max) {
+		particle_->SetTranslateRange(min, max);
+	}
+
+	/// @brief SetVelocityRange
+	/// @param min 最小初速度
+	/// @param max 最大初速度
+	void SetVelocityRange(const Vector3 &min, const Vector3 &max) {
+		particle_->SetVelocityRange(min, max);
+	}
+
+	/// @brief SetColorRange
+	/// @param min 最小色 (RGBA)
+	/// @param max 最大色 (RGBA)
+	void SetColorRange(const Vector4 &min, const Vector4 &max) {
+		particle_->SetColorRange(min, max);
+	}
+
+	/// @brief SetLifetimeRange
+	/// @param min 最小生存時間
+	/// @param max 最大生存時間
+	void SetLifetimeRange(float min, float max) {
+		particle_->SetLifetimeRange(min, max);
+	}
+
+	/// @brief SetInitialScaleRange
+	/// @param min 最小初期スケール
+	/// @param max 最大初期スケール
+	void SetInitialScaleRange(const Vector3 &min, const Vector3 &max) {
+		particle_->SetInitialScaleRange(min, max);
+	}
+
+	/// @brief SetEndScaleRange
+	/// @param min 最小終了スケール
+	/// @param max 最大終了スケール
+	void SetEndScaleRange(const Vector3 &min, const Vector3 &max) {
+		particle_->SetEndScaleRange(min, max);
+	}
+
+	/// @brief SetInitialRotationRange
+	/// @param min 最小初期回転 (ラジアン)
+	/// @param max 最大初期回転 (ラジアン)
+	void SetInitialRotationRange(const Vector3 &min, const Vector3 &max) {
+		particle_->SetInitialRotationRange(min, max);
+	}
+
+	/// @brief SetEndRotationRange
+	/// @param min 最小終了回転 (ラジアン)
+	/// @param max 最大終了回転 (ラジアン)
+	void SetEndRotationRange(const Vector3 &min, const Vector3 &max) {
+		particle_->SetEndRotationRange(min, max);
+	}
+
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:

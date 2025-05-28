@@ -87,8 +87,18 @@ void Particle::Update() {
 			// particle.transform.scale.x = textureSize.x * scaleMultiplier;
 			// particle.transform.scale.y = textureSize.y * scaleMultiplier;
 
-			// 回転の更新 (Y軸周りに回転させる例)
-			particle.transform.rotate.y += kDeltaTime * 2.0f; // 回転速度を調整してください
+			// 経過時間に対する割合
+			float timeRatio = particle.currentTime / particle.lifeTime;
+
+			// スケールの線形補間
+			particle.transform.scale.x = std::lerp(particle.initialScale.x, particle.endScale.x, timeRatio);
+			particle.transform.scale.y = std::lerp(particle.initialScale.y, particle.endScale.y, timeRatio);
+			particle.transform.scale.z = std::lerp(particle.initialScale.z, particle.endScale.z, timeRatio);
+
+			// 回転の線形補間
+			particle.transform.rotate.x = std::lerp(particle.initialRotation.x, particle.endRotation.x, timeRatio);
+			particle.transform.rotate.y = std::lerp(particle.initialRotation.y, particle.endRotation.y, timeRatio);
+			particle.transform.rotate.z = std::lerp(particle.initialRotation.z, particle.endRotation.z, timeRatio);
 
 			// 位置の更新
 			particle.transform.translate = AddVec3(particle.transform.translate, MultiplyVec3(kDeltaTime, particle.velocity));
@@ -443,33 +453,69 @@ void Particle::CreateMaterialData() {
 ///						新しいパーティクルを生成
 ParticleStr Particle::CreateNewParticle(std::mt19937 &randomEngine, const Vector3 &position) {
 	// カラーと寿命のランダム分布
-	std::uniform_real_distribution<float> distColor(colorRange_.min, colorRange_.max);
+	std::uniform_real_distribution<float> distTranslateX(translateMin_.x, translateMax_.x);
+	std::uniform_real_distribution<float> distTranslateY(translateMin_.y, translateMax_.y);
+	std::uniform_real_distribution<float> distTranslateZ(translateMin_.z, translateMax_.z);
+	std::uniform_real_distribution<float> distVelocityX(velocityMin_.x, velocityMax_.x);
+	std::uniform_real_distribution<float> distVelocityY(velocityMin_.y, velocityMax_.y);
+	std::uniform_real_distribution<float> distVelocityZ(velocityMin_.z, velocityMax_.z);
+	std::uniform_real_distribution<float> distColorR(colorMin_.x, colorMax_.x);
+	std::uniform_real_distribution<float> distColorG(colorMin_.y, colorMax_.y);
+	std::uniform_real_distribution<float> distColorB(colorMin_.z, colorMax_.z);
+	std::uniform_real_distribution<float> distColorA(colorMin_.w, colorMax_.w);
 	std::uniform_real_distribution<float> distTime(lifetimeRange_.min, lifetimeRange_.max);
-	std::uniform_real_distribution<float> distSpeed(0.1f, 0.3f);
-	std::uniform_real_distribution<float> distRotation(0.0f, 2.0f * std::numbers::pi_v<float>); // 0から2πのランダムな回転
-	std::uniform_real_distribution<float> distAngle(0.0f, 1.0f);
+	std::uniform_real_distribution<float> distInitialScaleX(initialScaleMin_.x, initialScaleMax_.x);
+	std::uniform_real_distribution<float> distInitialScaleY(initialScaleMin_.y, initialScaleMax_.y);
+	std::uniform_real_distribution<float> distInitialScaleZ(initialScaleMin_.z, initialScaleMax_.z);
+	std::uniform_real_distribution<float> distEndScaleX(endScaleMin_.x, endScaleMax_.x);
+	std::uniform_real_distribution<float> distEndScaleY(endScaleMin_.y, endScaleMax_.y);
+	std::uniform_real_distribution<float> distEndScaleZ(endScaleMin_.z, endScaleMax_.z);
+	std::uniform_real_distribution<float> distInitialRotationX(initialRotationMin_.x, initialRotationMax_.x);
+	std::uniform_real_distribution<float> distInitialRotationY(initialRotationMin_.y, initialRotationMax_.y);
+	std::uniform_real_distribution<float> distInitialRotationZ(initialRotationMin_.z, initialRotationMax_.z);
+	std::uniform_real_distribution<float> distEndRotationX(endRotationMin_.x, endRotationMax_.x);
+	std::uniform_real_distribution<float> distEndRotationY(endRotationMin_.y, endRotationMax_.y);
+	std::uniform_real_distribution<float> distEndRotationZ(endRotationMin_.z, endRotationMax_.z);
 
 	// 新たなパーティクルの生成
 	ParticleStr particle = {};
-	particle.transform.translate = position;
-	particle.transform.scale = {1.0f, 1.0f, 1.0f};
-	// 初期回転を設定 (Y軸周りにランダムな回転)
-	particle.transform.rotate = {0.0f, distRotation(randomEngine), 0.0f};
-
-	// 既存のボード形状の処理
-	float z = distAngle(randomEngine) * 0.2f - 0.1f;
-	float theta = distAngle(randomEngine) * 2.0f * std::numbers::pi_v<float>;
-	float r = std::sqrt(1.0f - z * z);
-	float x = r * std::cos(theta) * 0.3f;
-	float y = r * std::sin(theta) * 0.3f;
-	Vector3 direction = {x, y, z};
-	float speed = distSpeed(randomEngine);
-	particle.velocity = MultiplyVec3(speed, direction);
-
-	// カラーと寿命を設定
-	particle.color = {distColor(randomEngine), distColor(randomEngine), distColor(randomEngine), 1.0f};
+	particle.transform.translate = {
+		position.x + distTranslateX(randomEngine),
+		position.y + distTranslateY(randomEngine),
+		position.z + distTranslateZ(randomEngine)};
+	particle.velocity = {
+		distVelocityX(randomEngine),
+		distVelocityY(randomEngine),
+		distVelocityZ(randomEngine)};
+	particle.color = {
+		distColorR(randomEngine),
+		distColorG(randomEngine),
+		distColorB(randomEngine),
+		distColorA(randomEngine)};
 	particle.lifeTime = distTime(randomEngine);
 	particle.currentTime = 0.0f;
+
+	particle.initialScale = {
+		distInitialScaleX(randomEngine),
+		distInitialScaleY(randomEngine),
+		distInitialScaleZ(randomEngine)};
+	particle.endScale = {
+		distEndScaleX(randomEngine),
+		distEndScaleY(randomEngine),
+		distEndScaleZ(randomEngine)};
+	particle.initialRotation = {
+		distInitialRotationX(randomEngine),
+		distInitialRotationY(randomEngine),
+		distInitialRotationZ(randomEngine)};
+	particle.endRotation = {
+		distEndRotationX(randomEngine),
+		distEndRotationY(randomEngine),
+		distEndRotationZ(randomEngine)};
+
+	// 初期回転をtransformに設定
+	particle.transform.rotate = particle.initialRotation;
+	// 初期スケールをtransformに設定
+	particle.transform.scale = particle.initialScale;
 
 	return particle;
 }
