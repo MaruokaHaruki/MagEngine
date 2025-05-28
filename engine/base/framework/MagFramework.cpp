@@ -52,7 +52,7 @@ void MagFramework::Initialize() {
 	///						 ウィンドウ生成
 	win_ = std::make_unique<WinApp>();
 	// ウィンドウの生成
-	win_->CreateGameWindow(L"MREngine_Ver0.4.0");
+	win_->CreateGameWindow(L"MagEngine_Ver1.0.2");
 
 	///--------------------------------------------------------------
 	///						 ダイレクトX生成
