@@ -46,9 +46,15 @@ public:
 	// ImGuiでデバッグテキスト一覧を表示・管理するウィンドウを描画
 	void DrawDebugTextManagerImGui();
 
-	// 3D空間上にテキスト追加
-	// isFixedToScreen: trueの場合、テキストはスクリーン上に固定されます（カメラ移動に影響されない）
-	// isPersistent: trueの場合、ClearAllTextsでテキストが削除されません
+	/// @brief 3D空間上にテキストを追加
+	/// @param text 追加するテキスト
+	/// @param position 3D空間上の位置
+	/// @param color テキストの色（RGBA）
+	/// @param duration 表示時間（-1で無期限）
+	/// @param scale テキストのスケール
+	/// @param fontName 使用するフォント名（空文字でデフォルトフォント）
+	/// @param isFixedToScreen スクリーンに固定するかどうか（trueでカメラ移動の影響を受けない）
+	/// @param isPersistent 永続的なテキストかどうか（trueでClearAllTextsで削除されない）
 	void AddText3D(const std::string &text, const Vector3 &position,
 				   const Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
 				   float duration = -1.0f, float scale = 1.0f,
