@@ -151,6 +151,4 @@ void DebugScene::ImGuiDraw() {
 	ImGui::SliderFloat3("Translate", &transform.translate.x, -10.0f, 10.0f);
 	ImGui::Separator();
 	ImGui::End();
-
-	DebugTextManager::GetInstance()->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
 }

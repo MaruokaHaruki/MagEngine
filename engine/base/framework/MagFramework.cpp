@@ -52,7 +52,7 @@ void MagFramework::Initialize() {
 	///						 ウィンドウ生成
 	win_ = std::make_unique<WinApp>();
 	// ウィンドウの生成
-	win_->CreateGameWindow(L"MagEngine_Ver1.0.2");
+	win_->CreateGameWindow(L"MagEngine_Ver1.0.3");
 
 	///--------------------------------------------------------------
 	///						 ダイレクトX生成
@@ -78,10 +78,8 @@ void MagFramework::Initialize() {
 	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	// デバッグテキストの表示を有効にする
 	DebugTextManager::GetInstance()->SetDebugTextEnabled(true);
-
 	// 初期の永続的なデバッグテキストを設定
 	DebugTextManager::GetInstance()->AddAxisLabels(); // 座標軸ラベル
-	// DebugTextManager::GetInstance()->AddGridLabels(5.0f, 2); // グリッドラベル
 
 	///--------------------------------------------------------------
 	///						 SrvSetupクラス

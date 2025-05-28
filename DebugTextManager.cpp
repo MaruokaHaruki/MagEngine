@@ -42,9 +42,6 @@ void DebugTextManager::Initialize(WinApp *winApp) {
 }
 
 void DebugTextManager::Update() {
-	// 開始前にテキストのリセット
-	DebugTextManager::GetInstance()->ClearAllTexts();
-
 	if (!camera_)
 		return;
 
@@ -209,21 +206,29 @@ Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
 
 void DebugTextManager::AddText3D(const std::string &text, const Vector3 &position,
 								 const Vector4 &color, float duration, float scale, const std::string &fontName,
-								 bool isFixedToScreen, bool isPersistent) {
-	// 既存の永続的なテキストで同じ内容があれば追加しない（重複防止）
-	if (isPersistent) {
-		for (const auto &existingText : debugTexts_) {
-			if (existingText.isPersistent &&
-				existingText.text == text &&
-				existingText.worldPosition.x == position.x &&
-				existingText.worldPosition.y == position.y &&
-				existingText.worldPosition.z == position.z) {
-				return; // 同一テキストが既に存在するので追加しない
+								 bool isFixedToScreen, bool isPersistent) { // id パラメータを削除
+	// 既存のテキストを検索して更新 (テキスト内容で検索)
+	for (auto &existingText : debugTexts_) {
+		if (existingText.text == text && !existingText.useScreenPosition) { // 3Dテキストで同じ内容のものを検索
+			existingText.worldPosition = position;
+			existingText.color = color;
+			existingText.scale = scale;
+			existingText.duration = duration;
+			existingText.timer = 0; // タイマーリセット
+			// targetObject はこの関数では設定されないので、既存の値を維持
+			existingText.fontName = fontName;
+			existingText.isFixedToScreen = isFixedToScreen;
+			existingText.isPersistent = isPersistent;
+			if (isFixedToScreen && camera_) {
+				existingText.fixedScreenPos = WorldToScreen(position);
 			}
+			return; // 更新完了
 		}
 	}
 
+	// 該当するテキストが見つからない場合は新規追加
 	DebugText newText{};
+	// newText.id = id; // ← この行を削除
 	newText.text = text;
 	newText.worldPosition = position;
 	newText.color = color;
@@ -246,8 +251,26 @@ void DebugTextManager::AddText3D(const std::string &text, const Vector3 &positio
 
 void DebugTextManager::AddTextScreen(const std::string &text, const Vector2 &position,
 									 const Vector4 &color, float duration, float scale, const std::string &fontName,
-									 bool isPersistent) {
+									 bool isPersistent) { // id パラメータを削除
+	// 既存のテキストを検索して更新 (テキスト内容で検索)
+	for (auto &existingText : debugTexts_) {
+		if (existingText.text == text && existingText.useScreenPosition) { // スクリーンテキストで同じ内容のものを検索
+			existingText.screenPosition = position;
+			existingText.color = color;
+			existingText.scale = scale;
+			existingText.duration = duration;
+			existingText.timer = 0; // タイマーリセット
+			// targetObject はこの関数では設定されないので、既存の値を維持
+			existingText.fontName = fontName;
+			// isFixedToScreen はスクリーン座標テキストでは通常関係ないが、構造体にはあるので維持
+			existingText.isPersistent = isPersistent;
+			return; // 更新完了
+		}
+	}
+
+	// 該当するテキストが見つからない場合は新規追加
 	DebugText newText{};
+	// newText.id = id; // ← この行を削除
 	newText.text = text;
 	newText.screenPosition = position;
 	newText.color = color;
@@ -300,6 +323,7 @@ bool DebugTextManager::LoadFont(const std::string &fontName, const std::string &
 
 void DebugTextManager::AddAxisLabels() {
 	// 座標軸のラベルを追加（原点と各軸の正方向）
+	// id引数を削除
 	AddText3D("Origin", {0, 0, 0}, {1.0f, 1.0f, 0.0f, 1.0f}, -1.0f, 1.0f, "", false, false);
 	AddText3D("X+", {5, 0, 0}, {1.0f, 0.0f, 0.0f, 1.0f}, -1.0f, 1.0f, "", false, false);
 	AddText3D("Y+", {0, 5, 0}, {0.0f, 1.0f, 0.0f, 1.0f}, -1.0f, 1.0f, "", false, false);
@@ -318,6 +342,7 @@ void DebugTextManager::AddGridLabels(float gridSize, int gridCount) {
 
 			char label[32];
 			sprintf_s(label, "(%d,%d)", x, z);
+			// id引数は元々なかったので変更なし
 			AddText3D(label, {xPos, 0.1f, zPos}, {0.7f, 0.7f, 0.7f, 1.0f}, -1.0f, 0.8f, "", false, true);
 		}
 	}
@@ -325,6 +350,7 @@ void DebugTextManager::AddGridLabels(float gridSize, int gridCount) {
 
 void DebugTextManager::AddPointLabel(const std::string &label, const Vector3 &position, const Vector4 &color) {
 	// 指定された位置にラベルを追加
+	// id引数を削除
 	AddText3D(label, position, color, -1.0f, 1.0f, "", false, true);
 }
 
@@ -360,8 +386,9 @@ void DebugTextManager::DrawDebugTextManagerImGui() {
 
 	// テキスト一覧表示
 	ImGui::Separator();
-	if (ImGui::BeginTable("##デバッグテキスト", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+	if (ImGui::BeginTable("##デバッグテキスト", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) { // 列数を4に戻す
 		ImGui::TableSetupColumn("ID");
+		// ImGui::TableSetupColumn("Text ID"); // ← Text ID列を削除
 		ImGui::TableSetupColumn("テキスト");
 		ImGui::TableSetupColumn("タイプ");
 		ImGui::TableSetupColumn("残り時間");
@@ -383,13 +410,17 @@ void DebugTextManager::DrawDebugTextManagerImGui() {
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("%zu", i);
 
+			// Text ID列の表示を削除
+			// ImGui::TableSetColumnIndex(1);
+			// ImGui::Text("%s", text.id.c_str());
+
 			// テキスト列
-			ImGui::TableSetColumnIndex(1);
+			ImGui::TableSetColumnIndex(1); // インデックスを調整 (元2)
 			ImGui::TextColored(ImVec4(text.color.x, text.color.y, text.color.z, text.color.w),
 							   "%s", text.text.c_str());
 
 			// タイプ列
-			ImGui::TableSetColumnIndex(2);
+			ImGui::TableSetColumnIndex(2); // インデックスを調整 (元3)
 			if (text.useScreenPosition) {
 				ImGui::Text("スクリーン");
 			} else {
@@ -405,7 +436,7 @@ void DebugTextManager::DrawDebugTextManagerImGui() {
 			}
 
 			// 残り時間列
-			ImGui::TableSetColumnIndex(3);
+			ImGui::TableSetColumnIndex(3); // インデックスを調整 (元4)
 			if (text.duration < 0) {
 				ImGui::Text("無期限");
 			} else {
