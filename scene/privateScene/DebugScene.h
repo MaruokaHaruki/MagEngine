@@ -1,22 +1,22 @@
 /*********************************************************************
  * \file   DebugScene.h
- * \brief  
- * 
+ * \brief
+ *
  * \author Harukichimaru
  * \date   January 2025
- * \note   
+ * \note
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
- //========================================
- // Game
+//========================================
+// Game
 #include "Camera.h"
-#include "Sprite.h"
+#include "MAudioG.h"
+#include "Model.h"
+#include "Object3d.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
-#include "Object3d.h"
-#include "Model.h"
-#include "MAudioG.h"
+#include "Sprite.h"
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
@@ -34,7 +34,7 @@ public:
 	/// @brie 2D描画
 	void Object2DDraw() override;
 
-	/// \brief 3D描画 
+	/// \brief 3D描画
 	void Object3DDraw() override;
 
 	/// \brief パーティクル描画
@@ -46,12 +46,9 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
-
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
-
-
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
@@ -61,7 +58,7 @@ private:
 
 	//========================================
 	// スプライト
-	
+
 	//========================================
 	// 3dオブジェクト
 	// モンスターボール
@@ -74,9 +71,7 @@ private:
 	// パーティクルエミッター
 	std::unique_ptr<ParticleEmitter> particleEmitter_;
 
-
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
-	Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+	Transform transform{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 };
-
