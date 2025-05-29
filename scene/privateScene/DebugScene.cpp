@@ -59,28 +59,28 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	particle2_->Initialize(particleSetup);
 	particle3_->Initialize(particleSetup);
 	// パーティクルのグループを作成
-	particle_->CreateParticleGroup("Test", "gradationLine_top.png", ParticleShape::Board);
-	particle2_->CreateParticleGroup("Test2", "gradationLine_top.png", ParticleShape::Ring);
-	particle3_->CreateParticleGroup("Test3", "gradationLine_top.png", ParticleShape::Cylinder);
+	particle_->CreateParticleGroup("Test", "circle2.png", ParticleShape::Board);
+	particle2_->CreateParticleGroup("Test2", "circle2.png", ParticleShape::Ring);
+	particle3_->CreateParticleGroup("Test3", "circle2.png", ParticleShape::Cylinder);
 
 	//========================================
 	// ヒットエフェクト用パーティクルの初期化
 	// コア（中心の爆発）
 	hitEffect_core_ = std::make_unique<Particle>();
 	hitEffect_core_->Initialize(particleSetup);
-	hitEffect_core_->CreateParticleGroup("HitCore", "gradationLine_top.png", ParticleShape::Board);
+	hitEffect_core_->CreateParticleGroup("HitCore", "circle2.png", ParticleShape::Board);
 	hitEffect_core_->SetBillboard(true);
 	hitEffect_core_->SetVelocityRange({-2.0f, -2.0f, -2.0f}, {2.0f, 2.0f, 2.0f});
 	hitEffect_core_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.5f, 1.5f, 1.5f});
 	hitEffect_core_->SetEndScaleRange({3.0f, 3.0f, 3.0f}, {5.0f, 5.0f, 5.0f});
 	hitEffect_core_->SetLifetimeRange(0.3f, 0.6f);
 	hitEffect_core_->SetColorRange(coreColor_, coreColor_);
-	hitEffect_core_->SetFadeInOut(0.1f, 0.6f);
+	hitEffect_core_->SetFadeInOut(0.1f, 0.f);
 
 	// 火花
 	hitEffect_sparks_ = std::make_unique<Particle>();
 	hitEffect_sparks_->Initialize(particleSetup);
-	hitEffect_sparks_->CreateParticleGroup("HitSparks", "gradationLine_top.png", ParticleShape::Board);
+	hitEffect_sparks_->CreateParticleGroup("HitSparks", "circle2.png", ParticleShape::Board);
 	hitEffect_sparks_->SetBillboard(true);
 	hitEffect_sparks_->SetVelocityRange({-8.0f, -2.0f, -8.0f}, {8.0f, 8.0f, 8.0f});
 	hitEffect_sparks_->SetInitialScaleRange({0.1f, 0.1f, 0.1f}, {0.3f, 0.3f, 0.3f});
@@ -93,7 +93,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// 煙
 	hitEffect_smoke_ = std::make_unique<Particle>();
 	hitEffect_smoke_->Initialize(particleSetup);
-	hitEffect_smoke_->CreateParticleGroup("HitSmoke", "gradationLine_top.png", ParticleShape::Board);
+	hitEffect_smoke_->CreateParticleGroup("HitSmoke", "circle2.png", ParticleShape::Board);
 	hitEffect_smoke_->SetBillboard(true);
 	hitEffect_smoke_->SetVelocityRange({-3.0f, 1.0f, -3.0f}, {3.0f, 5.0f, 3.0f});
 	hitEffect_smoke_->SetInitialScaleRange({1.0f, 1.0f, 1.0f}, {2.0f, 2.0f, 2.0f});
@@ -106,7 +106,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// 衝撃波
 	hitEffect_shockwave_ = std::make_unique<Particle>();
 	hitEffect_shockwave_->Initialize(particleSetup);
-	hitEffect_shockwave_->CreateParticleGroup("HitShockwave", "gradationLine_top.png", ParticleShape::Ring);
+	hitEffect_shockwave_->CreateParticleGroup("HitShockwave", "circle2.png", ParticleShape::Ring);
 	hitEffect_shockwave_->SetVelocityRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
 	hitEffect_shockwave_->SetInitialScaleRange({0.1f, 0.1f, 0.1f}, {0.2f, 0.2f, 0.2f});
 	hitEffect_shockwave_->SetEndScaleRange({8.0f, 8.0f, 8.0f}, {12.0f, 12.0f, 12.0f});
