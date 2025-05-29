@@ -120,6 +120,7 @@
     <ClCompile Include="LightManager.cpp" />
     <ClCompile Include="application\Player.cpp" />
     <ClCompile Include="DebugTextManager.cpp" />
+    <ClCompile Include="TestPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -289,6 +290,7 @@
     <ClInclude Include="LightManager.h" />
     <ClInclude Include="application\Player.h" />
     <ClInclude Include="DebugTextManager.h" />
+    <ClInclude Include="TestPlayer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

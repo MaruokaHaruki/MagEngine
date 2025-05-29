@@ -156,6 +156,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\base\framework\EngineApp.cpp" />
     <ClCompile Include="engine\base\framework\MagFramework.cpp" />
     <ClCompile Include="scene\publicScene\TitleScene.cpp" />
+    <ClCompile Include="TestPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DebugTextManager.h" />
@@ -221,6 +222,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="scene\base\BaseScene.h" />
     <ClInclude Include="scene\publicScene\GamePlayScene.h" />
     <ClInclude Include="scene\publicScene\TitleScene.h" />
+    <ClInclude Include="TestPlayer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
