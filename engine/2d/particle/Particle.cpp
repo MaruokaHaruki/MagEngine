@@ -83,9 +83,6 @@ void Particle::Update() {
 				it = group.second.particleList.erase(it);
 				continue;
 			}
-			// スケールをテクスチャサイズに基づいて調整
-			// particle.transform.scale.x = textureSize.x * scaleMultiplier;
-			// particle.transform.scale.y = textureSize.y * scaleMultiplier;
 
 			// 経過時間に対する割合
 			float timeRatio = particle.currentTime / particle.lifeTime;
@@ -99,6 +96,9 @@ void Particle::Update() {
 			particle.transform.rotate.x = std::lerp(particle.initialRotation.x, particle.endRotation.x, timeRatio);
 			particle.transform.rotate.y = std::lerp(particle.initialRotation.y, particle.endRotation.y, timeRatio);
 			particle.transform.rotate.z = std::lerp(particle.initialRotation.z, particle.endRotation.z, timeRatio);
+
+			// 重力の適用
+			particle.velocity = AddVec3(particle.velocity, MultiplyVec3(kDeltaTime, gravity_));
 
 			// 位置の更新
 			particle.transform.translate = AddVec3(particle.transform.translate, MultiplyVec3(kDeltaTime, particle.velocity));
@@ -115,12 +115,21 @@ void Particle::Update() {
 			if (group.second.instanceCount < kNumMaxInstance) {
 				group.second.instancingDataPtr[group.second.instanceCount].WVP = worldviewProjectionMatrix;
 				group.second.instancingDataPtr[group.second.instanceCount].World = worldMatrix;
-				// カラーを設定し、アルファ値を減衰
+				// カラーを設定し、フェードイン・アウトを適用
 				group.second.instancingDataPtr[group.second.instanceCount].color = particle.color;
-				group.second.instancingDataPtr[group.second.instanceCount].color.w = 1.0f - (particle.currentTime / particle.lifeTime);
-				if (group.second.instancingDataPtr[group.second.instanceCount].color.w < 0.0f) {
-					group.second.instancingDataPtr[group.second.instanceCount].color.w = 0.0f;
+
+				// フェードイン・アウトの計算
+				float alpha = 1.0f;
+				if (timeRatio < fadeInRatio_) {
+					// フェードイン
+					alpha = timeRatio / fadeInRatio_;
+				} else if (timeRatio > fadeOutRatio_) {
+					// フェードアウト
+					alpha = 1.0f - ((timeRatio - fadeOutRatio_) / (1.0f - fadeOutRatio_));
 				}
+				alpha = std::clamp(alpha, 0.0f, 1.0f);
+
+				group.second.instancingDataPtr[group.second.instanceCount].color.w = particle.color.w * alpha;
 				// インスタンス数を増やす
 				++group.second.instanceCount;
 			}

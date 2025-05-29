@@ -208,6 +208,32 @@ public:
 		endRotationMax_ = max;
 	}
 
+	/**----------------------------------------------------------------------------
+	 * \brief  SetGravity 重力の設定
+	 * \param  gravity 重力ベクトル
+	 */
+	void SetGravity(const Vector3 &gravity) {
+		gravity_ = gravity;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEmissionDelay エミッション遅延の設定
+	 * \param  delay 遅延時間
+	 */
+	void SetEmissionDelay(float delay) {
+		emissionDelay_ = delay;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetFadeInOut フェードイン・アウトの設定
+	 * \param  fadeInRatio フェードイン比率 (0.0-1.0)
+	 * \param  fadeOutRatio フェードアウト比率 (0.0-1.0)
+	 */
+	void SetFadeInOut(float fadeInRatio, float fadeOutRatio) {
+		fadeInRatio_ = fadeInRatio;
+		fadeOutRatio_ = fadeOutRatio;
+	}
+
 	///--------------------------------------------------------------
 	///						 静的メンバ関数
 private:
@@ -309,6 +335,12 @@ private:
 	Vector3 initialRotationMax_ = {0.0f, 0.0f, 0.0f};
 	Vector3 endRotationMin_ = {0.0f, 0.0f, 0.0f};
 	Vector3 endRotationMax_ = {0.0f, 0.0f, 0.0f};
+
+	// エフェクト用の追加パラメータ
+	Vector3 gravity_ = {0.0f, -9.8f, 0.0f}; // 重力
+	float emissionDelay_ = 0.0f;			// エミッション遅延
+	float fadeInRatio_ = 0.1f;				// フェードイン比率
+	float fadeOutRatio_ = 0.7f;				// フェードアウト比率
 
 	// TODO:設定しているテクスチャサイズを使うかどうかを変更できるようにする
 	Vector2 customTextureSize = {100.0f, 100.0f};
