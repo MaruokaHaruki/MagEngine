@@ -17,6 +17,9 @@
 #include "Particle.h"
 #include "ParticleEmitter.h"
 #include "Sprite.h"
+#include "TestPlayer.h"
+#include <memory>
+#include <vector>
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
@@ -70,6 +73,14 @@ private:
 	std::unique_ptr<Particle> particle_;
 	// パーティクルエミッター
 	std::unique_ptr<ParticleEmitter> particleEmitter_;
+
+	//========================================
+	// TestPlayer配列
+	std::vector<std::unique_ptr<TestPlayer>> testPlayers_;
+	// 各TestPlayerのFPS設定
+	std::vector<float> targetFPSList_;
+	// TestPlayer表示制御
+	bool showTestPlayers_;
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
