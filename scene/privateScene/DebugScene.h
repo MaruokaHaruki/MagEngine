@@ -43,6 +43,13 @@ public:
 	/// \brief ImGui描画
 	void ImGuiDraw() override;
 
+private:
+	/// \brief ハンマーアニメーション更新
+	void UpdateHammerAnimation();
+
+	/// \brief ハンマーヘッド位置計算
+	Vector3 CalculateHammerHeadPosition();
+
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
@@ -126,6 +133,20 @@ private:
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
 	Transform transform{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+
+	// ハンマーアニメーション制御用
+	Transform hammerTransform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 4.0f, -1.0f}};
+	bool enableHammerAnimation_ = false;
+	bool enableParticleFollowHammer_ = true; // パーティクルがハンマーに追従するかどうか
+	float hammerAnimationTimer_ = 0.0f;
+	float hammerAnimationCycleDuration_ = 2.0f; // アニメーションサイクル時間
+	float hammerStartHeight_ = 4.0f;			// ハンマーの開始高さ（電子レンジを叩けるように調整）
+	float hammerSwingDistance_ = 3.0f;			// 振り下ろし距離
+	float microwaveHeight_ = 1.0f;				// 電子レンジの上部の高さ
+	bool hammerHitGround_ = false;				// 電子レンジに当たったフラグ
+	bool hammerHitDetected_ = false;			// 衝突検知済みフラグ
+	bool enableAutoHitEffect_ = true;			// 自動ヒットエフェクト
+	bool enableAutoDynamicHitEffect_ = true;	// 自動ダイナミックヒットエフェクト
 
 	// ヒットエフェクト制御用
 	bool triggerHitEffect_ = false;

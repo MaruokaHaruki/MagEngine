@@ -106,6 +106,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	hitEffect_shockwave_ = std::make_unique<Particle>();
 	hitEffect_shockwave_->Initialize(particleSetup);
 	hitEffect_shockwave_->CreateParticleGroup("HitShockwave", "circle2.png", ParticleShape::Ring);
+	hitEffect_shockwave_->SetBillboard(true);
 	hitEffect_shockwave_->SetVelocityRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
 	hitEffect_shockwave_->SetInitialScaleRange({0.1f, 0.1f, 0.1f}, {0.2f, 0.2f, 0.2f});
 	hitEffect_shockwave_->SetEndScaleRange({8.0f, 8.0f, 8.0f}, {12.0f, 12.0f, 12.0f});
@@ -156,6 +157,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	dynamicHit_rings_ = std::make_unique<Particle>();
 	dynamicHit_rings_->Initialize(particleSetup);
 	dynamicHit_rings_->CreateParticleGroup("DynamicRings", "circle2.png", ParticleShape::Ring);
+	dynamicHit_rings_->SetBillboard(true);
 	dynamicHit_rings_->SetVelocityRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
 	dynamicHit_rings_->SetInitialScaleRange({0.1f, 0.1f, 0.1f}, {0.3f, 0.3f, 0.3f});
 	dynamicHit_rings_->SetEndScaleRange({10.0f, 10.0f, 10.0f}, {15.0f, 15.0f, 15.0f});
@@ -416,6 +418,10 @@ void DebugScene::Update() {
 	///						更新処理
 
 	//========================================
+	// ハンマーアニメーション更新
+	UpdateHammerAnimation();
+
+	//========================================
 	// 3D更新
 	// モンスターボール
 	objMonsterBall_->SetScale(Vector3{transform.scale.x, transform.scale.y, transform.scale.z});
@@ -433,15 +439,38 @@ void DebugScene::Update() {
 	objSkyDome_->SetPosition(Vector3{0.0f, 0.0f, 0.0f});
 	objSkyDome_->Update();
 	// ハンマー
-	objHammer_->SetScale(Vector3{transform.scale.x, transform.scale.y, transform.scale.z});
-	objHammer_->SetRotation(Vector3{transform.rotate.x, transform.rotate.y, transform.rotate.z});
-	objHammer_->SetPosition(Vector3{transform.translate.x, transform.translate.y, transform.translate.z});
+	objHammer_->SetScale(Vector3{hammerTransform_.scale.x, hammerTransform_.scale.y, hammerTransform_.scale.z});
+	objHammer_->SetRotation(Vector3{hammerTransform_.rotate.x, hammerTransform_.rotate.y, hammerTransform_.rotate.z});
+	objHammer_->SetPosition(Vector3{hammerTransform_.translate.x, hammerTransform_.translate.y, hammerTransform_.translate.z});
 	objHammer_->Update();
 	// 電子レンジ
-	objMicrowave_->SetScale(Vector3{ transform.scale.x, transform.scale.y, transform.scale.z });
-	objMicrowave_->SetRotation(Vector3{ transform.rotate.x, transform.rotate.y, transform.rotate.z });
-	objMicrowave_->SetPosition(Vector3{ transform.translate.x, transform.translate.y, transform.translate.z });
+	objMicrowave_->SetScale(Vector3{transform.scale.x, transform.scale.y, transform.scale.z});
+	objMicrowave_->SetRotation(Vector3{transform.rotate.x, transform.rotate.y, transform.rotate.z});
+	objMicrowave_->SetPosition(Vector3{transform.translate.x, transform.translate.y, transform.translate.z});
 	objMicrowave_->Update();
+
+	//========================================
+	// パーティクル位置の更新処理
+	if (enableHammerAnimation_ && enableParticleFollowHammer_) {
+		// ハンマーアニメーション有効時：ハンマーヘッド位置に追従
+		Vector3 hammerHeadPosition = CalculateHammerHeadPosition();
+		hitEffectPosition_ = hammerHeadPosition;
+		dynamicHitEffectPosition_ = hammerHeadPosition;
+		weldingEffectPosition_ = hammerHeadPosition;
+	}
+	// else: 手動制御時はImGuiで設定された位置を使用
+
+	//========================================
+	// ハンマーが電子レンジに当たったタイミングでエフェクト発動
+	if (hammerHitGround_) {
+		if (enableAutoHitEffect_) {
+			triggerHitEffect_ = true;
+		}
+		if (enableAutoDynamicHitEffect_) {
+			triggerDynamicHitEffect_ = true;
+		}
+		hammerHitGround_ = false;
+	}
 
 	//========================================
 	// ヒットエフェクトのトリガー処理
@@ -632,6 +661,63 @@ void DebugScene::ImGuiDraw() {
 	ImGui::End();
 
 	//========================================
+	// ハンマーアニメーション制御のImGui描画
+	ImGui::Begin("Hammer Animation Control");
+	ImGui::Text("Hammer Swing Animation");
+
+	// アニメーション制御
+	if (ImGui::Checkbox("Enable Hammer Animation", &enableHammerAnimation_)) {
+		if (enableHammerAnimation_) {
+			hammerAnimationTimer_ = 0.0f;
+			hammerHitDetected_ = false;
+		}
+	}
+
+	// パーティクル追従制御
+	ImGui::Checkbox("Particles Follow Hammer", &enableParticleFollowHammer_);
+
+	if (!enableParticleFollowHammer_) {
+		ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Manual particle control enabled");
+	} else {
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Particles following hammer head");
+	}
+
+	ImGui::Separator();
+
+	// アニメーション設定
+	ImGui::SliderFloat("Animation Cycle Duration", &hammerAnimationCycleDuration_, 1.0f, 5.0f, "%.1f sec");
+	ImGui::SliderFloat("Start Height", &hammerStartHeight_, 0.0f, 5.0f);
+	ImGui::SliderFloat("Swing Distance", &hammerSwingDistance_, 1.0f, 4.0f);
+	ImGui::SliderFloat("Microwave Top Height", &microwaveHeight_, 0.0f, 3.0f);
+
+	ImGui::Separator();
+
+	// ハンマーの基本トランスフォーム
+	ImGui::Text("Hammer Base Transform");
+	ImGui::SliderFloat3("Hammer Position", &hammerTransform_.translate.x, -10.0f, 10.0f);
+	ImGui::SliderFloat3("Hammer Scale", &hammerTransform_.scale.x, 0.1f, 3.0f);
+
+	ImGui::Separator();
+
+	// エフェクト自動発動設定
+	ImGui::Text("Auto Effect Triggers");
+	ImGui::Checkbox("Auto Hit Effect on Microwave Impact", &enableAutoHitEffect_);
+	ImGui::Checkbox("Auto Dynamic Hit Effect on Microwave Impact", &enableAutoDynamicHitEffect_);
+
+	ImGui::Separator();
+
+	// アニメーション状態表示
+	ImGui::Text("Animation Status");
+	float cycleProgress = hammerAnimationTimer_ / hammerAnimationCycleDuration_;
+	cycleProgress = cycleProgress - std::floor(cycleProgress);
+	ImGui::ProgressBar(cycleProgress, ImVec2(0.0f, 0.0f), "Animation Progress");
+
+	Vector3 hammerHeadPos = CalculateHammerHeadPosition();
+	ImGui::Text("Hammer Head Position: %.2f, %.2f, %.2f", hammerHeadPos.x, hammerHeadPos.y, hammerHeadPos.z);
+
+	ImGui::End();
+
+	//========================================
 	// 3DオブジェクトのImGui描画
 	ImGui::Begin("3DObject");
 	ImGui::Text("TransformSetting");
@@ -673,8 +759,16 @@ void DebugScene::ImGuiDraw() {
 		ImGui::Separator();
 	}
 
-	// エフェクト位置とスケール
-	ImGui::SliderFloat3("Effect Position", &hitEffectPosition_.x, -10.0f, 10.0f);
+	// エフェクト位置とスケール（手動制御時のみ有効）
+	if (!enableParticleFollowHammer_) {
+		ImGui::Text("Manual Position Control");
+		ImGui::SliderFloat3("Effect Position", &hitEffectPosition_.x, -10.0f, 10.0f);
+	} else {
+		ImGui::Text("Position Control (Auto - Following Hammer)");
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Position: %.2f, %.2f, %.2f",
+						   hitEffectPosition_.x, hitEffectPosition_.y, hitEffectPosition_.z);
+	}
+
 	ImGui::SliderFloat("Effect Scale", &hitEffectScale_, 0.1f, 3.0f);
 
 	ImGui::Separator();
@@ -726,7 +820,15 @@ void DebugScene::ImGuiDraw() {
 	}
 
 	// エフェクト位置とスケール
-	ImGui::SliderFloat3("Dynamic Hit Position", &dynamicHitEffectPosition_.x, -10.0f, 10.0f);
+	if (!enableParticleFollowHammer_) {
+		ImGui::Text("Manual Position Control");
+		ImGui::SliderFloat3("Dynamic Hit Position", &dynamicHitEffectPosition_.x, -10.0f, 10.0f);
+	} else {
+		ImGui::Text("Position Control (Auto - Following Hammer)");
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Position: %.2f, %.2f, %.2f",
+						   dynamicHitEffectPosition_.x, dynamicHitEffectPosition_.y, dynamicHitEffectPosition_.z);
+	}
+
 	ImGui::SliderFloat("Dynamic Hit Scale", &dynamicHitEffectScale_, 0.1f, 5.0f);
 
 	ImGui::Separator();
@@ -772,7 +874,15 @@ void DebugScene::ImGuiDraw() {
 	ImGui::Separator();
 
 	// 溶接設定
-	ImGui::SliderFloat3("Welding Position", &weldingEffectPosition_.x, -10.0f, 10.0f);
+	if (!enableParticleFollowHammer_) {
+		ImGui::Text("Manual Position Control");
+		ImGui::SliderFloat3("Welding Position", &weldingEffectPosition_.x, -10.0f, 10.0f);
+	} else {
+		ImGui::Text("Position Control (Auto - Following Hammer)");
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Position: %.2f, %.2f, %.2f",
+						   weldingEffectPosition_.x, weldingEffectPosition_.y, weldingEffectPosition_.z);
+	}
+
 	ImGui::SliderFloat("Welding Scale", &weldingEffectScale_, 0.1f, 3.0f);
 	ImGui::SliderFloat("Welding Intensity", &weldingIntensity_, 0.1f, 3.0f);
 
@@ -805,4 +915,118 @@ void DebugScene::ImGuiDraw() {
 	welding_flash_pulse_->SetColorRange(weldingFlashPulseColor_, weldingFlashPulseColor_);
 
 	ImGui::End();
+}
+
+// ハンマーアニメーション更新処理
+void DebugScene::UpdateHammerAnimation() {
+	if (!enableHammerAnimation_) {
+		return;
+	}
+
+	hammerAnimationTimer_ += 1.0f / 60.0f;
+
+	// アニメーションサイクル計算
+	float cycleProgress = hammerAnimationTimer_ / hammerAnimationCycleDuration_;
+	cycleProgress = cycleProgress - std::floor(cycleProgress); // 0.0f～1.0fの範囲にループ
+
+	// フェーズ判定
+	float swingPhase = 0.4f;  // 振り上げから振り下ろしまでの時間比率
+	float holdPhase = 0.1f;	  // 電子レンジでの停止時間比率
+	float returnPhase = 0.5f; // 戻りの時間比率
+
+	if (cycleProgress < swingPhase) {
+		// 振り下ろしフェーズ
+		float swingProgress = cycleProgress / swingPhase;
+
+		// イージング関数を使用（加速度的な動き）
+		float easedProgress = swingProgress * swingProgress;
+
+		// 回転角度計算（X軸回転：上から下へ）
+		float targetRotationX = -90.0f; // 振り下ろし角度
+		hammerTransform_.rotate.x = easedProgress * targetRotationX;
+
+		// Y位置計算（電子レンジの上部を狙う）
+		float hammerLength = 2.0f;
+		float targetY = microwaveHeight_ + hammerLength * std::cos(hammerTransform_.rotate.x * (3.14159f / 180.0f));
+		hammerTransform_.translate.y = hammerStartHeight_ - (easedProgress * (hammerStartHeight_ - targetY));
+
+		// Z位置の調整（電子レンジに向かって前進）
+		float startZ = -1.0f;
+		float targetZ = 0.0f; // 電子レンジの中心
+		hammerTransform_.translate.z = startZ + (easedProgress * (targetZ - startZ));
+
+		// 電子レンジに当たった瞬間を検知（ハンマーヘッドが電子レンジの上部に近づいた時）
+		Vector3 hammerHeadPos = CalculateHammerHeadPosition();
+		if (hammerHeadPos.y <= microwaveHeight_ + 0.2f && !hammerHitDetected_) {
+			hammerHitGround_ = true;
+			hammerHitDetected_ = true;
+		}
+	} else if (cycleProgress < swingPhase + holdPhase) {
+		// 電子レンジでの停止フェーズ
+		hammerTransform_.rotate.x = -90.0f;
+		// ハンマーヘッドが電子レンジの上部に当たった状態
+		float hammerLength = 2.0f;
+		hammerTransform_.translate.y = microwaveHeight_ + hammerLength;
+		hammerTransform_.translate.z = 0.0f;
+	} else {
+		// 戻りフェーズ
+		float returnProgress = (cycleProgress - swingPhase - holdPhase) / returnPhase;
+
+		// イージング関数（減速）
+		float easedProgress = 1.0f - (1.0f - returnProgress) * (1.0f - returnProgress);
+
+		// 回転角度を元に戻す
+		hammerTransform_.rotate.x = -90.0f + (easedProgress * 90.0f);
+
+		// Y位置を元に戻す
+		float hammerLength = 2.0f;
+		float currentY = microwaveHeight_ + hammerLength;
+		hammerTransform_.translate.y = currentY + (easedProgress * (hammerStartHeight_ - currentY));
+
+		// Z位置を元に戻す
+		float currentZ = 0.0f;
+		float startZ = -1.0f;
+		hammerTransform_.translate.z = currentZ + (easedProgress * (startZ - currentZ));
+
+		// 次のサイクルの準備
+		if (returnProgress > 0.9f) {
+			hammerHitDetected_ = false;
+		}
+	}
+}
+
+// ハンマーヘッドの位置を計算
+Vector3 DebugScene::CalculateHammerHeadPosition() {
+	// ハンマーの長さ（取っ手からヘッドまでの距離）
+	float hammerLength = 2.0f;
+
+	// ハンマーの回転を考慮してヘッド位置を計算
+	float rotationRadX = hammerTransform_.rotate.x * (3.14159f / 180.0f);
+	float rotationRadY = hammerTransform_.rotate.y * (3.14159f / 180.0f);
+	float rotationRadZ = hammerTransform_.rotate.z * (3.14159f / 180.0f);
+
+	// ローカル座標でのハンマーヘッド位置（取っ手が原点の場合）
+	Vector3 localHeadPosition = {0.0f, -hammerLength, 0.0f};
+
+	// 回転行列を適用
+	Vector3 rotatedPosition;
+	rotatedPosition.x = localHeadPosition.x * std::cos(rotationRadY) * std::cos(rotationRadZ) +
+						localHeadPosition.y * (-std::sin(rotationRadX) * std::sin(rotationRadY) * std::cos(rotationRadZ) + std::cos(rotationRadX) * std::sin(rotationRadZ)) +
+						localHeadPosition.z * (std::cos(rotationRadX) * std::sin(rotationRadY) * std::cos(rotationRadZ) + std::sin(rotationRadX) * std::sin(rotationRadZ));
+
+	rotatedPosition.y = localHeadPosition.x * (-std::cos(rotationRadY) * std::sin(rotationRadZ)) +
+						localHeadPosition.y * (std::sin(rotationRadX) * std::sin(rotationRadY) * std::sin(rotationRadZ) + std::cos(rotationRadX) * std::cos(rotationRadZ)) +
+						localHeadPosition.z * (-std::cos(rotationRadX) * std::sin(rotationRadY) * std::sin(rotationRadZ) + std::sin(rotationRadX) * std::cos(rotationRadZ));
+
+	rotatedPosition.z = localHeadPosition.x * std::sin(rotationRadY) +
+						localHeadPosition.y * (-std::sin(rotationRadX) * std::cos(rotationRadY)) +
+						localHeadPosition.z * (std::cos(rotationRadX) * std::cos(rotationRadY));
+
+	// ワールド座標に変換
+	Vector3 worldHeadPosition;
+	worldHeadPosition.x = hammerTransform_.translate.x + rotatedPosition.x;
+	worldHeadPosition.y = hammerTransform_.translate.y + rotatedPosition.y;
+	worldHeadPosition.z = hammerTransform_.translate.z + rotatedPosition.z;
+
+	return worldHeadPosition;
 }
