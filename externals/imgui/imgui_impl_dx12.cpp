@@ -873,7 +873,7 @@ bool ImGui_ImplDX12_Init(ID3D12Device* device, int num_frames_in_flight, DXGI_FO
     queueDesc.NodeMask = 1;
     HRESULT hr = device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&init_info.CommandQueue));
     IM_ASSERT(SUCCEEDED(hr));
-
+    hr;
     bool ret = ImGui_ImplDX12_Init(&init_info);
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     bd->commandQueueOwned = true;
@@ -1006,7 +1006,7 @@ static void ImGui_ImplDX12_CreateWindow(ImGuiViewport* viewport)
 
         HRESULT hr = bd->pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&vd->RtvDescHeap));
         IM_ASSERT(hr == S_OK);
-
+        hr;
         SIZE_T rtv_descriptor_size = bd->pd3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
         D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = vd->RtvDescHeap->GetCPUDescriptorHandleForHeapStart();
         for (UINT i = 0; i < bd->numFramesInFlight; i++)

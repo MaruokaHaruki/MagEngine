@@ -112,6 +112,7 @@ public:
 
 	// 形状設定用の関数 (注意: CreateVertexDataが固定形状を生成するため、現状これらの動的変更は限定的)
 	void SetParticleShape(ParticleShape shape) { /* particleShape_ = shape; */
+		shape = shape;
 	} // particleShape_ は削除されたため、この関数は現状何もしません。グループ作成時に形状を指定してください。
 	void SetRingRadius(float radius) {
 		ringRadius_ = radius;

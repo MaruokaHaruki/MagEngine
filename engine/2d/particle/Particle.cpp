@@ -67,8 +67,8 @@ void Particle::Update() {
 	}
 
 	// スケール調整用の倍率を設定
-	constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
-
+	//constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
+	
 	//========================================
 	// パーティクルの更新
 	for (auto &group : particleGroups) {

@@ -158,8 +158,8 @@ private:
 	Vector4 shockwaveColor_ = {0.8f, 0.9f, 1.0f, 0.5f}; // 青白い
 
 	// ダイナミックヒットエフェクト制御用
-	bool triggerDynamicHitEffect_ = false;
-	Vector3 dynamicHitEffectPosition_ = {0.0f, 0.0f, 0.0f};
+	bool triggerDynamicHitEffect_ = true;
+	Vector3 dynamicHitEffectPosition_ = {0.0f, -4.0f, 0.0f};
 	float dynamicHitEffectScale_ = 1.0f;
 	Vector4 dynamicFlashColor_ = {1.0f, 0.9f, 0.8f, 1.0f};		// 明るい閃光
 	Vector4 dynamicSpiralColor_ = {1.0f, 0.6f, 0.1f, 1.0f};		// オレンジ螺旋
@@ -171,8 +171,8 @@ private:
 
 	// アーク溶接エフェクト制御用
 	bool triggerWeldingEffect_ = false;
-	bool enableWeldingEffect_ = false; // 継続的な溶接エフェクト
-	Vector3 weldingEffectPosition_ = {0.0f, 0.0f, 0.0f};
+	bool enableWeldingEffect_ = true; // 継続的な溶接エフェクト
+	Vector3 weldingEffectPosition_ = {5.0f, 0.0f, 0.0f};
 	float weldingEffectScale_ = 1.0f;
 	float weldingIntensity_ = 1.0f;								  // 溶接強度
 	Vector4 weldingArcCoreColor_ = {0.8f, 0.9f, 1.0f, 1.0f};	  // アーク中心（青白）
@@ -196,7 +196,7 @@ private:
 	float hitEffectLoopTimer_ = 0.0f;	 // ループタイマー
 
 	// ダイナミックヒットエフェクトループ制御用
-	bool enableDynamicHitLoop_ = false;
+	bool enableDynamicHitLoop_ = true;
 	float dynamicHitLoopInterval_ = 1.0f;
 	float dynamicHitLoopTimer_ = 0.0f;
 };

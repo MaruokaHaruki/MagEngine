@@ -11,6 +11,11 @@
 ///=============================================================================
 ///						Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    // エラー回避
+    hInstance;
+	hPrevInstance;
+	lpCmdLine;
+	nCmdShow;
     //========================================
     // フレームワークのインスタンスを生成
     MagFramework *framework = new EngineApp();

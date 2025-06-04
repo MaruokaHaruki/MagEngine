@@ -618,9 +618,9 @@ void DebugScene::Object3DDraw() {
 	// スカイドーム
 	objSkyDome_->Draw();
 	// ハンマー
-	objHammer_->Draw();
+	//objHammer_->Draw();
 	// 電子レンジ
-	objMicrowave_->Draw();
+	//objMicrowave_->Draw();
 }
 
 ///=============================================================================

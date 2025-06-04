@@ -118,12 +118,11 @@ void LineManager::DrawLine(const Vector3 &start, const Vector3 &end, const Vecto
     if(!isDrawLine_) {
         return;
     }
-#ifdef _DEBUG
+    thickness;
     // ラインの追加
     line_->DrawLine(start, end, color);
     // 注：Line.cppを修正して線の太さのサポートを追加する必要があります
     // ここでは既存の関数を使用していますが、実際には線の太さを設定する機能を追加すべきです
-#endif // _DEBUG
 }
 
 ///=============================================================================
@@ -248,6 +247,7 @@ void LineManager::DrawText3D(const Vector3& position, const std::string& text, c
     // ここではダミーの実装として、テキストの位置に小さなマーカーを描画します
     DrawLine(position, {position.x + 0.1f, position.y + 0.1f, position.z}, color);
     DrawLine(position, {position.x - 0.1f, position.y + 0.1f, position.z}, color);
+	text; // テキストは使用しないが、将来の拡張のために保持
 }
 
 ///=============================================================================
@@ -567,7 +567,7 @@ void LineManager::DrawLightRays(const Vector3& center, float maxLength, const Ve
             
             // 距離による減衰効果の反映（減衰係数に応じた透明度）
             float alpha1 = 1.0f / (1.0f + powf(t1 * 5.0f, decay));
-            float alpha2 = 1.0f / (1.0f + powf(t2 * 5.0f, decay));
+            //float alpha2 = 1.0f / (1.0f + powf(t2 * 5.0f, decay));
             
             Vector3 point1 = {
                 center.x + direction.x * len1,
