@@ -9,6 +9,7 @@
 #include "GamePlayScene.h"
 #include "CameraManager.h"
 #include "Input.h" // Inputクラスを使用するためにインクルード
+#include "LineManager.h"
 #include "ModelManager.h"
 #include "Player.h"
 
@@ -29,13 +30,19 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadMedel("jet.obj"); // モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadMedel("jet.obj");	   // モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadMedel("skydome.obj"); // 地面のモデルもロード
 
 	//========================================
 	// スプライトクラス(Game)
 
 	//========================================
 	// 地面
+
+	//========================================
+	// スカイドーム
+	skydome_ = std::make_unique<Skydome>();
+	skydome_->Initialize(object3dSetup, "skydome.obj");
 
 	//========================================
 	// プレイヤー
@@ -89,6 +96,18 @@ void GamePlayScene::Update() {
 		bool pressA = input->PushKey(DIK_A);
 		bool pressD = input->PushKey(DIK_D);
 		player_->Update(deltaTime, pressW, pressS, pressA, pressD);
+
+		// プレイヤーの位置に基づいてグリッドオフセットを更新
+		// プレイヤーが移動している錯覚を作るため、プレイヤーの位置の逆方向にグリッドを移動
+		Transform playerTransform = player_->GetTransform();
+		Vector3 gridOffset = {-playerTransform.translate.x, 0.0f, -playerTransform.translate.z};
+		LineManager::GetInstance()->SetGridOffset(gridOffset);
+	}
+
+	//========================================
+	// スカイドーム
+	if (skydome_) {
+		skydome_->Update();
 	}
 }
 
@@ -102,6 +121,12 @@ void GamePlayScene::Object2DDraw() {
 void GamePlayScene::Object3DDraw() {
 	//========================================
 	// 地面
+
+	//=========================================
+	// スカイドーム
+	if (skydome_) {
+		skydome_->Draw();
+	}
 
 	//========================================
 	// プレイヤー

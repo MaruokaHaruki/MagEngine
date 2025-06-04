@@ -13,10 +13,12 @@
 // Game
 #include "Camera.h"
 #include "CollisionManager.h"
+#include "LineManager.h"
 #include "MAudioG.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
 #include "Player.h"
+#include "Skydome.h"
 #include "Sprite.h"
 
 ///=============================================================================
@@ -62,13 +64,17 @@ private:
 	//========================================
 	// 地面
 
+	//=========================================
+	// スカイドーム
+	std::unique_ptr<Skydome> skydome_;
+
 	//========================================
 	// プレイヤー
 	// 3dオブジェクト
 	std::unique_ptr<Player> player_; // Object3dからPlayerに変更
 
 	//========================================
-	// 　敵
+	// 敵
 
 	//========================================
 	// スプライト

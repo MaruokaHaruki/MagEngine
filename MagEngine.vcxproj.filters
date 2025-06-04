@@ -114,6 +114,7 @@
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleSetup.cpp" />
+    <ClCompile Include="application\Skydome.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -277,6 +278,7 @@
     <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
     <ClInclude Include="engine\2d\particle\Particle.h" />
     <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
+    <ClInclude Include="application\Skydome.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
