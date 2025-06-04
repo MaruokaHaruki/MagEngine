@@ -169,6 +169,30 @@ public:
 	/// @param perpVector2 [out] 垂直ベクトル2
 	void CalculatePerpendicularVectors(const Vector3 &direction, Vector3 &perpVector1, Vector3 &perpVector2);
 
+	/// @brief グリッドオフセットの設定
+	/// @param offset オフセット値
+	void SetGridOffset(const Vector3 &offset) {
+		gridOffset_ = offset;
+	}
+
+	/// @brief グリッドオフセットの取得
+	/// @return オフセット値
+	const Vector3 &GetGridOffset() const {
+		return gridOffset_;
+	}
+
+	/// @brief グリッドアニメーションの有効/無効設定
+	/// @param enable アニメーション有効フラグ
+	void SetGridAnimation(bool enable) {
+		isGridAnimationEnabled_ = enable;
+	}
+
+	/// @brief グリッドアニメーション速度の設定
+	/// @param speed 移動速度
+	void SetGridAnimationSpeed(float speed) {
+		gridAnimationSpeed_ = speed;
+	}
+
 	///--------------------------------------------------------------
 	///						 静的メンバ関数
 public:
@@ -224,6 +248,11 @@ private:
 	int gridDivisions_ = 8;
 	Vector4 gridColor_ = {1.0f, 1.0f, 1.0f, 1.0f};
 	Vector3 gridOffset_ = {0.0f, 0.0f, 0.0f}; // グリッドオフセット
+
+	// グリッドアニメーション設定
+	bool isGridAnimationEnabled_ = true;
+	float gridAnimationSpeed_ = 5.0f;
+	float gridAnimationTime_ = 0.0f;
 
 	// 球を描画するか
 	bool isDrawSphere_ = true;

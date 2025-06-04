@@ -97,11 +97,8 @@ void GamePlayScene::Update() {
 		bool pressD = input->PushKey(DIK_D);
 		player_->Update(deltaTime, pressW, pressS, pressA, pressD);
 
-		// プレイヤーの位置に基づいてグリッドオフセットを更新
-		// プレイヤーが移動している錯覚を作るため、プレイヤーの位置の逆方向にグリッドを移動
-		Transform playerTransform = player_->GetTransform();
-		Vector3 gridOffset = {-playerTransform.translate.x, 0.0f, -playerTransform.translate.z};
-		LineManager::GetInstance()->SetGridOffset(gridOffset);
+		// グリッドは自動でアニメーションするため、手動オフセットは不要
+		// LineManager::GetInstance()->SetGridAnimation(true); // 初期化時に設定済み
 	}
 
 	//========================================

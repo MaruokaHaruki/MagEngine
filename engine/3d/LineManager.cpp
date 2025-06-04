@@ -57,6 +57,25 @@ void LineManager::Finalize() {
 ///=============================================================================
 ///						更新処理
 void LineManager::Update() {
+	// グリッドアニメーション
+	if (isGridAnimationEnabled_) {
+		// アニメーション時間を更新
+		gridAnimationTime_ += gridAnimationSpeed_ * (1.0f / 60.0f); // 60FPSを想定
+
+		// グリッドサイズに基づいてループさせる
+		float stepSize = gridSize_ / gridDivisions_;
+		float loopTime = stepSize / gridAnimationSpeed_;
+
+		// 時間をループさせる
+		if (gridAnimationTime_ >= loopTime) {
+			gridAnimationTime_ -= loopTime;
+		}
+
+		// Z方向にマイナス方向へ移動するオフセットを計算
+		float animationOffset = -gridAnimationTime_ * gridAnimationSpeed_;
+		gridOffset_.z = animationOffset;
+	}
+
 	// Gridの描画
 	if (isDrawGrid_) {
 		DrawGrid(gridSize_, gridDivisions_, gridColor_);
@@ -97,6 +116,9 @@ void LineManager::DrawImGui() {
 	ImGui::SliderInt("Divisions", &gridDivisions_, 1, 512);
 	// 色
 	ImGui::ColorEdit4("Color", &gridColor_.x);
+	// グリッドアニメーション設定
+	ImGui::Checkbox("Grid Animation", &isGridAnimationEnabled_);
+	ImGui::SliderFloat("Animation Speed", &gridAnimationSpeed_, 0.1f, 20.0f);
 	// セパレーター
 	ImGui::Separator();
 	//========================================
