@@ -113,6 +113,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
     <ClCompile Include="DebugTextManager.cpp" />
+    <ClCompile Include="engine\2d\particle\Particle.cpp" />
+    <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
+    <ClCompile Include="engine\2d\particle\ParticleSetup.cpp" />
     <ClCompile Include="engine\3d\Line.cpp" />
     <ClCompile Include="engine\3d\LineSetup.cpp" />
     <ClCompile Include="engine\3d\LineManager.cpp" />
@@ -129,7 +132,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
     <ClCompile Include="engine\camera\CameraManager.cpp" />
-    <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
     <ClCompile Include="engine\audio\MAudioG.cpp" />
     <ClCompile Include="engine\base\core\SrvSetup.cpp" />
     <ClCompile Include="engine\camera\Camera.cpp" />
@@ -151,14 +153,15 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\model\Model.cpp" />
     <ClCompile Include="engine\3d\model\ModelSetup.cpp" />
     <ClCompile Include="engine\3d\model\ModelManager.cpp" />
-    <ClCompile Include="engine\2d\particle\Particle.cpp" />
-    <ClCompile Include="engine\2d\particle\ParticleSetup.cpp" />
     <ClCompile Include="engine\base\framework\EngineApp.cpp" />
     <ClCompile Include="engine\base\framework\MagFramework.cpp" />
     <ClCompile Include="scene\publicScene\TitleScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DebugTextManager.h" />
+    <ClInclude Include="engine\2d\particle\Particle.h" />
+    <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
+    <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
     <ClInclude Include="engine\3d\Line.h" />
     <ClInclude Include="engine\3d\LineSetup.h" />
     <ClInclude Include="engine\3d\LineManager.h" />
@@ -180,7 +183,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="scene\publicScene\ClearScene.h" />
     <ClInclude Include="scene\privateScene\DebugScene.h" />
     <ClInclude Include="engine\camera\CameraManager.h" />
-    <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
     <ClInclude Include="engine\audio\MAudioG.h" />
     <ClInclude Include="engine\base\core\SrvSetup.h" />
     <ClInclude Include="engine\camera\Camera.h" />
@@ -212,8 +214,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\model\Model.h" />
     <ClInclude Include="engine\3d\model\ModelSetup.h" />
     <ClInclude Include="engine\3d\model\ModelManager.h" />
-    <ClInclude Include="engine\2d\particle\Particle.h" />
-    <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
     <ClInclude Include="engine\base\imGui\ImguiSetup.h" />
     <ClInclude Include="engine\base\framework\EngineApp.h" />
     <ClInclude Include="engine\base\framework\MagFramework.h" />

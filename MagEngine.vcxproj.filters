@@ -47,15 +47,6 @@
     <ClCompile Include="engine\2d\sprite\SpriteSetup.cpp">
       <Filter>engine\2d\sprite</Filter>
     </ClCompile>
-    <ClCompile Include="engine\2d\particle\Particle.cpp">
-      <Filter>engine\2d\particle</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp">
-      <Filter>engine\2d\particle</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\2d\particle\ParticleSetup.cpp">
-      <Filter>engine\2d\particle</Filter>
-    </ClCompile>
     <ClCompile Include="engine\2d\texture\TextureManager.cpp">
       <Filter>engine\2d\texture</Filter>
     </ClCompile>
@@ -120,6 +111,9 @@
     <ClCompile Include="LightManager.cpp" />
     <ClCompile Include="application\Player.cpp" />
     <ClCompile Include="DebugTextManager.cpp" />
+    <ClCompile Include="engine\2d\particle\Particle.cpp" />
+    <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
+    <ClCompile Include="engine\2d\particle\ParticleSetup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -166,15 +160,6 @@
     </ClInclude>
     <ClInclude Include="engine\2d\sprite\Sprite.h">
       <Filter>engine\2d\sprite</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\2d\particle\ParticleSetup.h">
-      <Filter>engine\2d\particle</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\2d\particle\Particle.h">
-      <Filter>engine\2d\particle</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\2d\particle\ParticleEmitter.h">
-      <Filter>engine\2d\particle</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\texture\TextureManager.h">
       <Filter>engine\2d\texture</Filter>
@@ -289,6 +274,9 @@
     <ClInclude Include="LightManager.h" />
     <ClInclude Include="application\Player.h" />
     <ClInclude Include="DebugTextManager.h" />
+    <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
+    <ClInclude Include="engine\2d\particle\Particle.h" />
+    <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

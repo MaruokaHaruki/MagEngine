@@ -43,6 +43,10 @@ struct ParticleStr {
 	Vector4 color;
 	float lifeTime;
 	float currentTime;
+	Vector3 initialScale;	 // 初期スケール
+	Vector3 endScale;		 // 終了スケール
+	Vector3 initialRotation; // 初期回転
+	Vector3 endRotation;	 // 終了回転
 };
 
 struct ParticleForGPU {
@@ -108,6 +112,7 @@ public:
 
 	// 形状設定用の関数 (注意: CreateVertexDataが固定形状を生成するため、現状これらの動的変更は限定的)
 	void SetParticleShape(ParticleShape shape) { /* particleShape_ = shape; */
+		shape = shape;
 	} // particleShape_ は削除されたため、この関数は現状何もしません。グループ作成時に形状を指定してください。
 	void SetRingRadius(float radius) {
 		ringRadius_ = radius;
@@ -115,6 +120,119 @@ public:
 	void SetCylinderParams(float height, float radius) {
 		cylinderHeight_ = height;
 		cylinderRadius_ = radius;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetBillboard ビルボードの使用/不使用を設定
+	 * \param  enable trueで使用、falseで不使用
+	 */
+	void SetBillboard(bool enable) {
+		isUsedBillboard = enable;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetTranslateRange 移動量のランダム範囲を設定
+	 * \param  min 最小値
+	 * \param  max 最大値
+	 */
+	void SetTranslateRange(const Vector3 &min, const Vector3 &max) {
+		translateMin_ = min;
+		translateMax_ = max;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetVelocityRange 初速度のランダム範囲を設定
+	 * \param  min 最小値
+	 * \param  max 最大値
+	 */
+	void SetVelocityRange(const Vector3 &min, const Vector3 &max) {
+		velocityMin_ = min;
+		velocityMax_ = max;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetColorRange 色のランダム範囲を設定
+	 * \param  min 最小値 (RGBA)
+	 * \param  max 最大値 (RGBA)
+	 */
+	void SetColorRange(const Vector4 &min, const Vector4 &max) {
+		colorMin_ = min;
+		colorMax_ = max;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetLifetimeRange 生存時間のランダム範囲を設定
+	 * \param  min 最小値
+	 * \param  max 最大値
+	 */
+	void SetLifetimeRange(float min, float max) {
+		lifetimeRange_ = {min, max};
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetInitialScaleRange 初期スケールのランダム範囲を設定
+	 * \param  min 最小値
+	 * \param  max 最大値
+	 */
+	void SetInitialScaleRange(const Vector3 &min, const Vector3 &max) {
+		initialScaleMin_ = min;
+		initialScaleMax_ = max;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEndScaleRange 終了スケールのランダム範囲を設定
+	 * \param  min 最小値
+	 * \param  max 最大値
+	 */
+	void SetEndScaleRange(const Vector3 &min, const Vector3 &max) {
+		endScaleMin_ = min;
+		endScaleMax_ = max;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetInitialRotationRange 初期回転のランダム範囲を設定
+	 * \param  min 最小値 (ラジアン)
+	 * \param  max 最大値 (ラジアン)
+	 */
+	void SetInitialRotationRange(const Vector3 &min, const Vector3 &max) {
+		initialRotationMin_ = min;
+		initialRotationMax_ = max;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEndRotationRange 終了回転のランダム範囲を設定
+	 * \param  min 最小値 (ラジアン)
+	 * \param  max 最大値 (ラジアン)
+	 */
+	void SetEndRotationRange(const Vector3 &min, const Vector3 &max) {
+		endRotationMin_ = min;
+		endRotationMax_ = max;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetGravity 重力の設定
+	 * \param  gravity 重力ベクトル
+	 */
+	void SetGravity(const Vector3 &gravity) {
+		gravity_ = gravity;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEmissionDelay エミッション遅延の設定
+	 * \param  delay 遅延時間
+	 */
+	void SetEmissionDelay(float delay) {
+		emissionDelay_ = delay;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetFadeInOut フェードイン・アウトの設定
+	 * \param  fadeInRatio フェードイン比率 (0.0-1.0)
+	 * \param  fadeOutRatio フェードアウト比率 (0.0-1.0)
+	 */
+	void SetFadeInOut(float fadeInRatio, float fadeOutRatio) {
+		fadeInRatio_ = fadeInRatio;
+		fadeOutRatio_ = fadeOutRatio;
 	}
 
 	///--------------------------------------------------------------
@@ -201,11 +319,29 @@ private:
 		float min;
 		float max;
 	};
+
 	// パーティクルの設定
-	RangeForRandom translateRange_ = {0.0f, 0.0f};
-	RangeForRandom colorRange_ = {1.0f, 1.0f};
+	Vector3 translateMin_ = {0.0f, 0.0f, 0.0f};
+	Vector3 translateMax_ = {0.0f, 0.0f, 0.0f};
+	Vector3 velocityMin_ = {-0.1f, -0.1f, -0.1f};
+	Vector3 velocityMax_ = {0.1f, 0.1f, 0.1f};
+	Vector4 colorMin_ = {1.0f, 1.0f, 1.0f, 1.0f};
+	Vector4 colorMax_ = {1.0f, 1.0f, 1.0f, 1.0f};
 	RangeForRandom lifetimeRange_ = {1.0f, 3.0f};
-	RangeForRandom velocityRange_ = {-1.1f, 1.1f};
+	Vector3 initialScaleMin_ = {1.0f, 1.0f, 1.0f};
+	Vector3 initialScaleMax_ = {1.0f, 1.0f, 1.0f};
+	Vector3 endScaleMin_ = {0.0f, 0.0f, 0.0f};
+	Vector3 endScaleMax_ = {0.0f, 0.0f, 0.0f};
+	Vector3 initialRotationMin_ = {0.0f, 0.0f, 0.0f};
+	Vector3 initialRotationMax_ = {0.0f, 0.0f, 0.0f};
+	Vector3 endRotationMin_ = {0.0f, 0.0f, 0.0f};
+	Vector3 endRotationMax_ = {0.0f, 0.0f, 0.0f};
+
+	// エフェクト用の追加パラメータ
+	Vector3 gravity_ = {0.0f, -9.8f, 0.0f}; // 重力
+	float emissionDelay_ = 0.0f;			// エミッション遅延
+	float fadeInRatio_ = 0.1f;				// フェードイン比率
+	float fadeOutRatio_ = 0.7f;				// フェードアウト比率
 
 	// TODO:設定しているテクスチャサイズを使うかどうかを変更できるようにする
 	Vector2 customTextureSize = {100.0f, 100.0f};
