@@ -112,7 +112,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\Collider.cpp" />
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
-    <ClCompile Include="DebugTextManager.cpp" />
+    <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleSetup.cpp" />
@@ -128,6 +128,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
     <ClCompile Include="LightManager.cpp" />
     <ClCompile Include="application\Player.cpp" />
+    <ClCompile Include="application\PlayerBullet.cpp" />
+    <ClCompile Include="application\PlayerMissile.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -159,7 +161,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Skydome.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DebugTextManager.h" />
+    <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
     <ClInclude Include="engine\2d\particle\Particle.h" />
     <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
     <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
@@ -176,6 +178,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="LightManager.h" />
     <ClInclude Include="application\Player.h" />
+    <ClInclude Include="application\PlayerBullet.h" />
+    <ClInclude Include="application\PlayerMissile.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />

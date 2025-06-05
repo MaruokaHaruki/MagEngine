@@ -110,11 +110,13 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
     <ClCompile Include="LightManager.cpp" />
     <ClCompile Include="application\Player.cpp" />
-    <ClCompile Include="DebugTextManager.cpp" />
+    <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleSetup.cpp" />
     <ClCompile Include="application\Skydome.cpp" />
+    <ClCompile Include="application\PlayerBullet.cpp" />
+    <ClCompile Include="application\PlayerMissile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -274,11 +276,13 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="LightManager.h" />
     <ClInclude Include="application\Player.h" />
-    <ClInclude Include="DebugTextManager.h" />
+    <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
     <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
     <ClInclude Include="engine\2d\particle\Particle.h" />
     <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
     <ClInclude Include="application\Skydome.h" />
+    <ClInclude Include="application\PlayerBullet.h" />
+    <ClInclude Include="application\PlayerMissile.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

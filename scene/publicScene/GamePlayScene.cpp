@@ -26,7 +26,8 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	CameraManager::GetInstance()->GetCamera("DefaultCamera")->SetTransform({{1.0f, 1.0f, 1.0f}, {0.3f, 0.0f, 0.0f}, {0.0f, 2.3f, -8.0f}});
 
 	//========================================
-	// テクスチャの読み込み
+	// DebugTextManagerにカメラを設定
+	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCamera("DefaultCamera"));
 
 	//========================================
 	// モデルの読み込み
@@ -73,6 +74,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 当たり判定
 	collisionManager_ = std::make_unique<CollisionManager>();
 	collisionManager_->Initialize();
+
+	// 敵の位置にデバッグテキストを配置（固定位置）
+	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
 }
 
 ///=============================================================================
@@ -96,6 +100,11 @@ void GamePlayScene::Update() {
 		bool pressA = input->PushKey(DIK_A);
 		bool pressD = input->PushKey(DIK_D);
 		player_->Update(deltaTime, pressW, pressS, pressA, pressD);
+
+		// プレイヤーの位置にデバッグテキストを配置
+		Vector3 playerPos = player_->GetPosition();
+		playerPos.y += 2.0f; // プレイヤーの少し上に表示
+		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 
 		// グリッドは自動でアニメーションするため、手動オフセットは不要
 		// LineManager::GetInstance()->SetGridAnimation(true); // 初期化時に設定済み

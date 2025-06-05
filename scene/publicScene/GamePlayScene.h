@@ -13,6 +13,7 @@
 // Game
 #include "Camera.h"
 #include "CollisionManager.h"
+#include "DebugTextManager.h"
 #include "LineManager.h"
 #include "MAudioG.h"
 #include "Particle.h"
