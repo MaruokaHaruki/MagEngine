@@ -6,11 +6,10 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "Input.h" // Input処理のために追加
 #include "Object3d.h"
 #include <memory> // For std::unique_ptr
 #include <string> // For std::string
-
-// #include "Input.h" // Inputクラスの直接呼び出しを避けるため削除
 
 // Forward declarations
 class Object3d;
@@ -24,7 +23,7 @@ public:
 	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath);
 
 	/// \brief 更新
-	void Update(float deltaTime, bool pressW, bool pressS, bool pressA, bool pressD);
+	void Update();
 
 	/// \brief 描画
 	void Draw();
@@ -35,6 +34,21 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
+	/// \brief プレイヤーの動作関係処理（入力処理、移動、回転を統合）
+	void UpdateMovement();
+
+	/// \brief 入力に基づいて目標速度と目標回転を設定
+	void ProcessMovementInput(bool pressW, bool pressS, bool pressA, bool pressD);
+
+	/// \brief 現在の速度を目標速度に向けて更新
+	void UpdateVelocity();
+
+	/// \brief 位置を速度に基づいて更新
+	void UpdatePosition();
+
+	/// \brief 回転（傾き）を更新
+	void UpdateRotation();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 public:

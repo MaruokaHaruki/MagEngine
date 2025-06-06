@@ -87,19 +87,10 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
-	// 仮のdeltaTime (実際のゲームループから取得するのが望ましい)
-	const float deltaTime = 1.0f / 60.0f;
-
-	Input *input = Input::GetInstance();
-
 	//========================================
 	// プレイヤー
 	if (player_) {
-		bool pressW = input->PushKey(DIK_W);
-		bool pressS = input->PushKey(DIK_S);
-		bool pressA = input->PushKey(DIK_A);
-		bool pressD = input->PushKey(DIK_D);
-		player_->Update(deltaTime, pressW, pressS, pressA, pressD);
+		player_->Update();
 
 		// プレイヤーの位置にデバッグテキストを配置
 		Vector3 playerPos = player_->GetPosition();

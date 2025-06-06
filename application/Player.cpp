@@ -57,18 +57,45 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 
 ///=============================================================================
 ///						更新
-void Player::Update(float deltaTime, bool pressW, bool pressS, bool pressA, bool pressD) {
+void Player::Update() {
 	if (!obj_) {
 		return;
 	}
-	Transform *objTransform = obj_->GetTransform(); // GetTransform() を使用
+	Transform *objTransform = obj_->GetTransform();
 	if (!objTransform) {
 		return;
 	}
 
+	// プレイヤーの動作関係処理を統合
+	UpdateMovement();
+
+	// Object3dの更新 (ワールド行列の更新など)
+	obj_->Update();
+}
+
+///=============================================================================
+///						プレイヤーの動作関係処理（入力処理、移動、回転を統合）
+void Player::UpdateMovement() {
+	// 入力情報を取得
+	Input *input = Input::GetInstance();
+	bool pressW = input->PushKey(DIK_W);
+	bool pressS = input->PushKey(DIK_S);
+	bool pressA = input->PushKey(DIK_A);
+	bool pressD = input->PushKey(DIK_D);
+
+	// 動作関係処理を順次実行
+	ProcessMovementInput(pressW, pressS, pressA, pressD);
+	UpdateVelocity();
+	UpdatePosition();
+	UpdateRotation();
+}
+
+///=============================================================================
+///						入力に基づいて目標速度と目標回転を設定
+void Player::ProcessMovementInput(bool pressW, bool pressS, bool pressA, bool pressD) {
 	// 目標速度と目標回転をリセット
 	targetVelocity_ = {0.0f, 0.0f, 0.0f};
-	Vector3 desiredRotationEuler = {0.0f, 0.0f, 0.0f}; // このフレームでの目標傾き
+	Vector3 desiredRotationEuler = {0.0f, 0.0f, 0.0f};
 
 	// 上下移動 (W/S)
 	if (pressW) {
@@ -90,29 +117,54 @@ void Player::Update(float deltaTime, bool pressW, bool pressS, bool pressA, bool
 		desiredRotationEuler.z = DegreesToRadians(-maxRollAngle_); // 右ロール
 	}
 
+	// 目標の傾きを更新 (入力がない場合は0に戻るように)
+	targetRotationEuler_.x = Lerp(targetRotationEuler_.x, desiredRotationEuler.x, rotationSmoothing_);
+	targetRotationEuler_.y = Lerp(targetRotationEuler_.y, desiredRotationEuler.y, rotationSmoothing_);
+	targetRotationEuler_.z = Lerp(targetRotationEuler_.z, desiredRotationEuler.z, rotationSmoothing_);
+}
+
+///=============================================================================
+///						現在の速度を目標速度に向けて更新
+void Player::UpdateVelocity() {
 	// 現在の速度を目標速度に滑らかに近づける
 	currentVelocity_.x = Lerp(currentVelocity_.x, targetVelocity_.x, acceleration_);
 	currentVelocity_.y = Lerp(currentVelocity_.y, targetVelocity_.y, acceleration_);
-	// Z軸方向の速度は今回は0
 	currentVelocity_.z = Lerp(currentVelocity_.z, targetVelocity_.z, acceleration_);
+}
 
-	// 位置を更新
-	objTransform->translate.x += currentVelocity_.x * deltaTime;
-	objTransform->translate.y += currentVelocity_.y * deltaTime;
-	objTransform->translate.z += currentVelocity_.z * deltaTime;
+///=============================================================================
+///						位置を速度に基づいて更新
+void Player::UpdatePosition() {
+	if (!obj_) {
+		return;
+	}
+	Transform *objTransform = obj_->GetTransform();
+	if (!objTransform) {
+		return;
+	}
 
-	// 目標の傾きを更新 (入力がない場合は0に戻るように)
-	targetRotationEuler_.x = Lerp(targetRotationEuler_.x, desiredRotationEuler.x, rotationSmoothing_);
-	targetRotationEuler_.y = Lerp(targetRotationEuler_.y, desiredRotationEuler.y, rotationSmoothing_); // Y軸回転は今回はなし
-	targetRotationEuler_.z = Lerp(targetRotationEuler_.z, desiredRotationEuler.z, rotationSmoothing_);
+	// 60FPS固定での位置更新（1フレーム = 1/60秒）
+	const float frameTime = 1.0f / 60.0f;
+	objTransform->translate.x += currentVelocity_.x * frameTime;
+	objTransform->translate.y += currentVelocity_.y * frameTime;
+	objTransform->translate.z += currentVelocity_.z * frameTime;
+}
+
+///=============================================================================
+///						回転（傾き）を更新
+void Player::UpdateRotation() {
+	if (!obj_) {
+		return;
+	}
+	Transform *objTransform = obj_->GetTransform();
+	if (!objTransform) {
+		return;
+	}
 
 	// 傾きを適用
 	objTransform->rotate.x = targetRotationEuler_.x;
 	objTransform->rotate.y = targetRotationEuler_.y;
 	objTransform->rotate.z = targetRotationEuler_.z;
-
-	// Object3dの更新 (ワールド行列の更新など)
-	obj_->Update();
 }
 
 ///=============================================================================
