@@ -1,6 +1,5 @@
 /*********************************************************************
  * \file   DebugScene.h
- * \brief  
  * 
  * \author Harukichimaru
  * \date   January 2025

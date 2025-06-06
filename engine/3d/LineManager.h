@@ -250,7 +250,7 @@ private:
 	Vector3 gridOffset_ = {0.0f, 0.0f, 0.0f}; // グリッドオフセット
 
 	// グリッドアニメーション設定
-	bool isGridAnimationEnabled_ = true;
+	bool isGridAnimationEnabled_ = false;
 	float gridAnimationSpeed_ = 5.0f;
 	float gridAnimationTime_ = 0.0f;
 

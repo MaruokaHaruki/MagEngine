@@ -117,6 +117,7 @@
     <ClCompile Include="application\Skydome.cpp" />
     <ClCompile Include="application\PlayerBullet.cpp" />
     <ClCompile Include="application\PlayerMissile.cpp" />
+    <ClCompile Include="LevelDataLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -283,6 +284,8 @@
     <ClInclude Include="application\Skydome.h" />
     <ClInclude Include="application\PlayerBullet.h" />
     <ClInclude Include="application\PlayerMissile.h" />
+    <ClInclude Include="LevelDataLoader.h" />
+    <ClInclude Include="externals\json.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
