@@ -61,7 +61,7 @@ void Enemy::Update() {
 	if (destroyState_ == DestroyState::Destroying) {
 		const float frameTime = 1.0f / 60.0f;
 		destroyTimer_ += frameTime;
-		
+
 		// 破壊演出時間が経過したら完全に消滅
 		if (destroyTimer_ >= destroyDuration_) {
 			destroyState_ = DestroyState::Dead;
@@ -138,7 +138,21 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 	if (particle_ && !particleCreated_) {
 		// 敵の位置でパーティクルを発生
 		Vector3 enemyPos = GetPosition();
-		particle_->Emit("DestroyEffect", enemyPos, 20); // 20個のパーティクルを生成
+
+		// 爆発エフェクト用の設定を適用
+		particle_->SetVelocityRange({-8.0f, -3.0f, -8.0f}, {8.0f, 8.0f, 8.0f});		   // より激しく飛び散る
+		particle_->SetTranslateRange({-0.3f, -0.3f, -0.3f}, {0.3f, 0.3f, 0.3f});	   // 発生位置のばらつき
+		particle_->SetColorRange({1.0f, 0.3f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.5f, 1.0f});  // 炎色（オレンジ～黄色）
+		particle_->SetLifetimeRange(0.8f, 2.5f);									   // 0.8～2.5秒間生存
+		particle_->SetInitialScaleRange({0.8f, 0.8f, 0.8f}, {2.0f, 2.0f, 2.0f});	   // 大きめの初期サイズ
+		particle_->SetEndScaleRange({0.0f, 0.0f, 0.0f}, {0.2f, 0.2f, 0.2f});		   // 終了時小さく
+		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {6.28f, 6.28f, 6.28f}); // ランダム回転
+		particle_->SetEndRotationRange({0.0f, 0.0f, 0.0f}, {18.84f, 18.84f, 18.84f});  // 激しく回転
+		particle_->SetGravity({0.0f, -3.0f, 0.0f});									   // 重力で下に落ちる
+		particle_->SetFadeInOut(0.05f, 0.7f);										   // 瞬間的にフェードイン、長めにフェードアウト
+
+		// 50個のパーティクルで派手な爆発を演出
+		particle_->Emit("DestroyEffect", enemyPos, 50);
 		particleCreated_ = true;
 	}
 

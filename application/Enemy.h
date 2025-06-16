@@ -65,9 +65,9 @@ private:
 
 	// 破壊演出関連
 	enum class DestroyState {
-		Alive,      // 生存中
+		Alive,		// 生存中
 		Destroying, // 破壊中（パーティクル再生中）
-		Dead        // 完全に消滅
+		Dead		// 完全に消滅
 	};
 	DestroyState destroyState_;
 	float destroyTimer_;
