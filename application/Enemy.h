@@ -7,11 +7,16 @@
 
 // Forward declarations
 class Object3dSetup;
+class Particle;
+class ParticleSetup;
 
 class Enemy : public BaseObject {
 public:
 	/// \brief 初期化
 	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position);
+
+	/// \brief パーティクルシステムの設定
+	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
 	/// \brief 更新
 	void Update();
@@ -52,4 +57,19 @@ private:
 	bool isAlive_;
 	float radius_;		  // 当たり判定用の半径
 	float rotationSpeed_; // 回転速度
+
+	// パーティクル関連
+	Particle *particle_;
+	ParticleSetup *particleSetup_;
+	bool particleCreated_;
+
+	// 破壊演出関連
+	enum class DestroyState {
+		Alive,      // 生存中
+		Destroying, // 破壊中（パーティクル再生中）
+		Dead        // 完全に消滅
+	};
+	DestroyState destroyState_;
+	float destroyTimer_;
+	float destroyDuration_; // 破壊演出の持続時間
 };

@@ -52,11 +52,6 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	player_->Initialize(object3dSetup, "jet.obj"); // PlayerにObject3dSetupとモデル名を渡す
 
 	//========================================
-	// 敵
-	enemy_ = std::make_unique<Enemy>();
-	enemy_->Initialize(object3dSetup, "jet.obj", {0.0f, 0.0f, 10.0f}); // 固定位置に配置
-
-	//========================================
 	// パーティクルクラス
 	particle_ = std::make_unique<Particle>();
 	// パーティクルの初期化
@@ -64,6 +59,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	particle_->SetCustomTextureSize({10.0f, 10.0f});
 	// パーティクルグループの作成
 	particle_->CreateParticleGroup("Particle", "sandWind.png", ParticleShape::Board);
+	// 敵破壊用のパーティクルグループを追加
+	particle_->CreateParticleGroup("DestroyEffect", "sandWind.png", ParticleShape::Board);
+
 	// パーティクルエミッター
 	particleEmitter_ =
 		std::make_unique<ParticleEmitter>(particle_.get(),
@@ -72,6 +70,13 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 										  4,
 										  0.5f,
 										  true);
+
+	//========================================
+	// 敵
+	enemy_ = std::make_unique<Enemy>();
+	enemy_->Initialize(object3dSetup, "jet.obj", {0.0f, 0.0f, 10.0f}); // 固定位置に配置
+	// 敵にパーティクルシステムを設定
+	enemy_->SetParticleSystem(particle_.get(), particleSetup);
 
 	//========================================
 	// 当たり判定
@@ -111,6 +116,15 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
+	// パーティクルの更新
+	if (particle_) {
+		particle_->Update();
+	}
+	if (particleEmitter_) {
+		particleEmitter_->Update();
+	}
+
+	//========================================
 	// スカイドーム
 	if (skydome_) {
 		skydome_->Update();
@@ -126,7 +140,7 @@ void GamePlayScene::Update() {
 		collisionManager_->AddCollider(player_.get());
 	}
 
-	//  敵の当たり判定を追加
+	//  敵の当たり判定を追加（生存中のみ）
 	if (enemy_ && enemy_->IsAlive()) {
 		collisionManager_->AddCollider(enemy_.get());
 	}
@@ -186,6 +200,12 @@ void GamePlayScene::Object3DDraw() {
 void GamePlayScene::ParticleDraw() {
 	//========================================
 	// パーティクル描画
+	if (particle_) {
+		particle_->Draw();
+	}
+	if (particleEmitter_) {
+		particleEmitter_->Draw();
+	}
 }
 
 ///=============================================================================
