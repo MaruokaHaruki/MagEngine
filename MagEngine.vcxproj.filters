@@ -118,6 +118,7 @@
     <ClCompile Include="application\PlayerBullet.cpp" />
     <ClCompile Include="application\PlayerMissile.cpp" />
     <ClCompile Include="LevelDataLoader.cpp" />
+    <ClCompile Include="application\Enemy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -286,6 +287,7 @@
     <ClInclude Include="application\PlayerMissile.h" />
     <ClInclude Include="LevelDataLoader.h" />
     <ClInclude Include="externals\json.hpp" />
+    <ClInclude Include="application\Enemy.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
