@@ -58,25 +58,20 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	particle_->Initialize(particleSetup);
 	particle_->SetCustomTextureSize({10.0f, 10.0f});
 
-	// パーティクルグループの作成
+	// 通常のパーティクルグループの作成（Board形状）
 	particle_->CreateParticleGroup("Particle", "sandWind.png", ParticleShape::Board);
 
-	// 敵破壊用の爆発パーティクルグループを追加
-	particle_->CreateParticleGroup("DestroyEffect", "sandWind.png", ParticleShape::Board);
+	// 爆発エフェクト用の複数の形状を作成
+	// 1. メインの爆発エフェクト（Board形状 - 火花）
+	particle_->CreateParticleGroup("ExplosionSparks", "sandWind.png", ParticleShape::Board);
 
-	// 爆発エフェクトの設定
-	particle_->SetVelocityRange({-5.0f, -5.0f, -5.0f}, {5.0f, 5.0f, 5.0f});		   // 全方向に飛び散る
-	particle_->SetTranslateRange({-0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, 0.5f});	   // 発生位置のばらつき
-	particle_->SetColorRange({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.3f, 1.0f});  // オレンジ～黄色
-	particle_->SetLifetimeRange(0.5f, 2.0f);									   // 0.5～2秒間生存
-	particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.5f, 1.5f, 1.5f});	   // 初期サイズ
-	particle_->SetEndScaleRange({0.0f, 0.0f, 0.0f}, {0.1f, 0.1f, 0.1f});		   // 終了時小さく
-	particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {6.28f, 6.28f, 6.28f}); // ランダム回転
-	particle_->SetEndRotationRange({0.0f, 0.0f, 0.0f}, {12.56f, 12.56f, 12.56f});  // 回転しながら消える
-	particle_->SetGravity({0.0f, -2.0f, 0.0f});									   // 軽い重力
-	particle_->SetFadeInOut(0.1f, 0.6f);										   // 早めにフェードイン、長めにフェードアウト
+	// 2. リング形状の衝撃波
+	particle_->CreateParticleGroup("ExplosionRing", "sandWind.png", ParticleShape::Ring);
 
-	// パーティクルエミッター
+	// 3. シリンダー形状の煙柱
+	particle_->CreateParticleGroup("ExplosionSmoke", "sandWind.png", ParticleShape::Cylinder);
+
+	// パーティクルエミッター（通常用）
 	particleEmitter_ =
 		std::make_unique<ParticleEmitter>(particle_.get(),
 										  "Particle",

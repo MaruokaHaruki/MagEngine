@@ -136,23 +136,47 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 
 	// プレイヤーの弾との衝突時の処理
 	if (particle_ && !particleCreated_) {
-		// 敵の位置でパーティクルを発生
 		Vector3 enemyPos = GetPosition();
 
-		// 爆発エフェクト用の設定を適用
-		particle_->SetVelocityRange({-8.0f, -3.0f, -8.0f}, {8.0f, 8.0f, 8.0f});		   // より激しく飛び散る
-		particle_->SetTranslateRange({-0.3f, -0.3f, -0.3f}, {0.3f, 0.3f, 0.3f});	   // 発生位置のばらつき
-		particle_->SetColorRange({1.0f, 0.3f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.5f, 1.0f});  // 炎色（オレンジ～黄色）
-		particle_->SetLifetimeRange(0.8f, 2.5f);									   // 0.8～2.5秒間生存
-		particle_->SetInitialScaleRange({0.8f, 0.8f, 0.8f}, {2.0f, 2.0f, 2.0f});	   // 大きめの初期サイズ
-		particle_->SetEndScaleRange({0.0f, 0.0f, 0.0f}, {0.2f, 0.2f, 0.2f});		   // 終了時小さく
-		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {6.28f, 6.28f, 6.28f}); // ランダム回転
-		particle_->SetEndRotationRange({0.0f, 0.0f, 0.0f}, {18.84f, 18.84f, 18.84f});  // 激しく回転
-		particle_->SetGravity({0.0f, -3.0f, 0.0f});									   // 重力で下に落ちる
-		particle_->SetFadeInOut(0.05f, 0.7f);										   // 瞬間的にフェードイン、長めにフェードアウト
+		// 1. 火花エフェクト（Board形状）- メインの爆発
+		particle_->SetVelocityRange({-10.0f, -5.0f, -10.0f}, {10.0f, 10.0f, 10.0f});
+		particle_->SetTranslateRange({-0.2f, -0.2f, -0.2f}, {0.2f, 0.2f, 0.2f});
+		particle_->SetColorRange({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.3f, 1.0f}); // オレンジ～黄色
+		particle_->SetLifetimeRange(0.5f, 1.5f);
+		particle_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.8f, 0.8f, 0.8f});
+		particle_->SetEndScaleRange({0.05f, 0.05f, 0.05f}, {0.15f, 0.15f, 0.15f}); // 0.0f回避
+		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {6.28f, 6.28f, 6.28f});
+		particle_->SetEndRotationRange({6.28f, 6.28f, 6.28f}, {12.56f, 12.56f, 12.56f}); // min < max確保
+		particle_->SetGravity({0.0f, -8.0f, 0.0f});
+		particle_->SetFadeInOut(0.02f, 0.8f);
+		particle_->Emit("ExplosionSparks", enemyPos, 30); // 30個の火花
 
-		// 50個のパーティクルで派手な爆発を演出
-		particle_->Emit("DestroyEffect", enemyPos, 50);
+		// 2. 衝撃波エフェクト（Ring形状）
+		particle_->SetVelocityRange({-2.0f, -1.0f, -2.0f}, {2.0f, 1.0f, 2.0f});
+		particle_->SetTranslateRange({-0.1f, -0.1f, -0.1f}, {0.1f, 0.1f, 0.1f});
+		particle_->SetColorRange({1.0f, 0.8f, 0.4f, 0.8f}, {1.0f, 1.0f, 0.8f, 0.9f}); // alpha値修正
+		particle_->SetLifetimeRange(0.8f, 1.2f);
+		particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f});
+		particle_->SetEndScaleRange({3.0f, 3.0f, 3.0f}, {5.0f, 5.0f, 5.0f}); // 大きく広がる
+		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {6.28f, 6.28f, 6.28f});
+		particle_->SetEndRotationRange({6.28f, 6.28f, 6.28f}, {12.56f, 12.56f, 12.56f}); // min < max確保
+		particle_->SetGravity({0.0f, 0.0f, 0.0f});										 // 重力なし
+		particle_->SetFadeInOut(0.1f, 0.6f);
+		particle_->Emit("ExplosionRing", enemyPos, 3); // 3つの衝撃波リング
+
+		// 3. 煙柱エフェクト（Cylinder形状）
+		particle_->SetVelocityRange({-3.0f, 2.0f, -3.0f}, {3.0f, 8.0f, 3.0f}); // 上向きに強く
+		particle_->SetTranslateRange({-0.3f, 0.0f, -0.3f}, {0.3f, 0.5f, 0.3f});
+		particle_->SetColorRange({0.4f, 0.4f, 0.4f, 0.5f}, {0.8f, 0.8f, 0.8f, 0.8f}); // alpha値修正
+		particle_->SetLifetimeRange(1.5f, 3.0f);									  // 長く残る
+		particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f});
+		particle_->SetEndScaleRange({1.5f, 2.0f, 1.5f}, {2.5f, 3.0f, 2.5f}); // 徐々に大きく
+		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {3.14f, 3.14f, 3.14f});
+		particle_->SetEndRotationRange({3.14f, 3.14f, 3.14f}, {9.42f, 9.42f, 9.42f}); // min < max確保
+		particle_->SetGravity({0.0f, -1.0f, 0.0f});									  // 軽い重力
+		particle_->SetFadeInOut(0.2f, 0.7f);
+		particle_->Emit("ExplosionSmoke", enemyPos, 8); // 8個の煙柱
+
 		particleCreated_ = true;
 	}
 
