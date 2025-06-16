@@ -9,11 +9,13 @@
 #pragma once
 #include "BaseScene.h"
 #include <memory>
+#include <vector>
 //========================================
 // Game
 #include "Camera.h"
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
+#include "Enemy.h"
 #include "LineManager.h"
 #include "MAudioG.h"
 #include "Particle.h"
@@ -52,6 +54,12 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
+	/// \brief 当たり判定処理
+	void CheckCollisions();
+
+	/// \brief 敵の生成処理
+	void SpawnEnemies();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
@@ -76,6 +84,9 @@ private:
 
 	//========================================
 	// 敵
+	std::vector<std::unique_ptr<Enemy>> enemies_;
+	float enemySpawnTimer_;
+	float enemySpawnInterval_;
 
 	//========================================
 	// スプライト

@@ -129,6 +129,8 @@ void GamePlayScene::Object3DDraw() {
 	// プレイヤー
 	if (player_) {
 		player_->Draw();
+		// プレイヤーの弾も描画
+		player_->DrawBullets();
 	}
 
 	//========================================

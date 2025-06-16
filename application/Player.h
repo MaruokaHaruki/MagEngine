@@ -8,8 +8,10 @@
 #pragma once
 #include "Input.h" // Input処理のために追加
 #include "Object3d.h"
+#include "PlayerBullet.h"
 #include <memory> // For std::unique_ptr
 #include <string> // For std::string
+#include <vector> // For std::vector
 
 // Forward declarations
 class Object3d;
@@ -31,6 +33,14 @@ public:
 	/// @brief ImGui描画
 	void DrawImGui();
 
+	/// \brief 弾の描画
+	void DrawBullets();
+
+	/// \brief 弾のリストを取得
+	const std::vector<std::unique_ptr<PlayerBullet>> &GetBullets() const {
+		return bullets_;
+	}
+
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
@@ -48,6 +58,12 @@ private:
 
 	/// \brief 回転（傾き）を更新
 	void UpdateRotation();
+
+	/// \brief 弾の発射処理
+	void ProcessShooting();
+
+	/// \brief 弾の更新・削除処理
+	void UpdateBullets();
 
 	///--------------------------------------------------------------
 	///							入出力関数
@@ -75,4 +91,10 @@ private:
 	float rotationSmoothing_;	  // 傾きの滑らかさ (補間係数として使用)
 	float maxRollAngle_;		  // 最大ロール角
 	float maxPitchAngle_;		  // 最大ピッチ角
+
+	// 弾関連
+	std::vector<std::unique_ptr<PlayerBullet>> bullets_;
+	Object3dSetup *object3dSetup_; // 弾の初期化用
+	float shootCoolTime_;		   // 射撃のクールタイム
+	float maxShootCoolTime_;	   // 最大クールタイム
 };

@@ -32,6 +32,9 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
 
+	// Object3dSetupを保存（弾の初期化で使用）
+	object3dSetup_ = object3dSetup;
+
 	// 移動関連の初期化
 	currentVelocity_ = {0.0f, 0.0f, 0.0f};
 	targetVelocity_ = {0.0f, 0.0f, 0.0f};
@@ -45,6 +48,10 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	rotationSmoothing_ = 0.1f; // 傾き変化の滑らかさ
 	maxRollAngle_ = 30.0f;	   // 度
 	maxPitchAngle_ = 15.0f;	   // 度
+
+	// 弾関連の初期化
+	shootCoolTime_ = 0.0f;
+	maxShootCoolTime_ = 0.2f; // 0.2秒間隔で発射
 
 	if (obj_) {
 		Transform *objTransform = obj_->GetTransform(); // GetTransform() を使用
@@ -68,6 +75,12 @@ void Player::Update() {
 
 	// プレイヤーの動作関係処理を統合
 	UpdateMovement();
+
+	// 弾の発射処理
+	ProcessShooting();
+
+	// 弾の更新・削除処理
+	UpdateBullets();
 
 	// Object3dの更新 (ワールド行列の更新など)
 	obj_->Update();
@@ -168,10 +181,60 @@ void Player::UpdateRotation() {
 }
 
 ///=============================================================================
+///						弾の発射処理
+void Player::ProcessShooting() {
+	Input *input = Input::GetInstance();
+
+	// クールタイムの更新
+	if (shootCoolTime_ > 0.0f) {
+		shootCoolTime_ -= 1.0f / 60.0f;
+	}
+
+	// スペースキーで弾を発射
+	if (input->PushKey(DIK_SPACE) && shootCoolTime_ <= 0.0f) {
+		Vector3 playerPos = obj_->GetPosition();
+		Vector3 shootDirection = {0.0f, 0.0f, 1.0f}; // 前方向に発射
+
+		// 弾を生成
+		auto bullet = std::make_unique<PlayerBullet>();
+		bullet->Initialize(object3dSetup_, "axisPlus.obj", playerPos, shootDirection);
+		bullets_.push_back(std::move(bullet));
+
+		// クールタイムをリセット
+		shootCoolTime_ = maxShootCoolTime_;
+	}
+}
+
+///=============================================================================
+///						弾の更新・削除処理
+void Player::UpdateBullets() {
+	// 弾の更新
+	for (auto &bullet : bullets_) {
+		bullet->Update();
+	}
+
+	// 死んだ弾を削除
+	bullets_.erase(
+		std::remove_if(bullets_.begin(), bullets_.end(),
+					   [](const std::unique_ptr<PlayerBullet> &bullet) {
+						   return !bullet->IsAlive();
+					   }),
+		bullets_.end());
+}
+
+///=============================================================================
 ///                     描画
 void Player::Draw() {
 	if (obj_) {
 		obj_->Draw();
+	}
+}
+
+///=============================================================================
+///						弾の描画
+void Player::DrawBullets() {
+	for (auto &bullet : bullets_) {
+		bullet->Draw();
 	}
 }
 
@@ -196,6 +259,8 @@ void Player::DrawImGui() {
 		ImGui::SliderFloat("Max Roll (Deg)", &maxRollAngle_, 5.0f, 90.0f);
 		ImGui::SliderFloat("Max Pitch (Deg)", &maxPitchAngle_, 5.0f, 45.0f);
 		ImGui::SliderFloat("Rotation Smoothing", &rotationSmoothing_, 0.01f, 0.5f);
+		ImGui::Text("Bullets Count: %zu", bullets_.size());
+		ImGui::SliderFloat("Shoot Cool Time", &maxShootCoolTime_, 0.05f, 1.0f);
 		ImGui::End();
 	}
 }
