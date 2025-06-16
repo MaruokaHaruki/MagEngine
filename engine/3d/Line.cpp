@@ -151,7 +151,7 @@ void Line::CreateVertexBuffer() {
 	// バーテックスバッファビューの設定
     vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
 	// バイトサイズ
-    vertexBufferView_.SizeInBytes = bufferSize;
+	vertexBufferView_.SizeInBytes = static_cast<UINT>( bufferSize );
 	// ストライド
     vertexBufferView_.StrideInBytes = sizeof(LineVertex);
 }

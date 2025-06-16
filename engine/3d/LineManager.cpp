@@ -140,6 +140,8 @@ void LineManager::DrawLine(const Vector3 &start, const Vector3 &end, const Vecto
 	if (!isDrawLine_) {
 		return;
 	}
+	// TODO: 問題あり
+	line_->DrawLine(start, end, color);
 #ifdef _DEBUG
 	// ラインの追加
 	line_->DrawLine(start, end, color);
@@ -558,7 +560,6 @@ void LineManager::DrawLightRays(const Vector3 &center, float maxLength, const Ve
 
 			// 距離による減衰効果の反映（減衰係数に応じた透明度）
 			float alpha1 = 1.0f / (1.0f + powf(t1 * 5.0f, decay));
-			float alpha2 = 1.0f / (1.0f + powf(t2 * 5.0f, decay));
 
 			Vector3 point1 = {
 				center.x + direction.x * len1,
