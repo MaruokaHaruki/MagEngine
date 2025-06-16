@@ -15,6 +15,9 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	spriteSetup;
 	particleSetup;
 
+	// object3dSetupを保存（再読み込み時に使用）
+	object3dSetup_ = object3dSetup;
+
 	///--------------------------------------------------------------
 	///						 音声クラス
 	audio_ = MAudioG::GetInstance();
@@ -44,6 +47,17 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	objTerrain_ = std::make_unique<Object3d>();
 	objTerrain_->Initialize(object3dSetup);
 	objTerrain_->SetModel("terrain.obj");
+
+	//========================================
+	// レベルデータローダーの初期化と読み込み
+	levelDataLoader_ = std::make_unique<LevelDataLoader>();
+	levelDataLoader_->Initialize();
+	// テスト用JSONファイルを読み込み（ファイルパスは適宜変更）
+	bool loadResult = levelDataLoader_->LoadLevelFromJson("resources/levels/test_level.json");
+	if (loadResult) {
+		// レベルデータからObject3Dを作成
+		levelDataLoader_->CreateObjectsFromLevelData(object3dSetup, levelObjects_);
+	}
 
 	///--------------------------------------------------------------
 	///						 パーティクル系
@@ -98,6 +112,14 @@ void DebugScene::Update() {
 	objTerrain_->Update();
 
 	//========================================
+	// レベルデータオブジェクトの更新
+	for (auto &levelObj : levelObjects_) {
+		if (levelObj) {
+			levelObj->Update();
+		}
+	}
+
+	//========================================
 	// パーティクル系
 	// パーティクルの更新
 	particle_->Update();
@@ -124,6 +146,14 @@ void DebugScene::Object3DDraw() {
 	objMonsterBall_->Draw();
 	// 地面
 	objTerrain_->Draw();
+
+	//========================================
+	// レベルデータオブジェクトの描画
+	for (auto &levelObj : levelObjects_) {
+		if (levelObj) {
+			levelObj->Draw();
+		}
+	}
 }
 
 ///=============================================================================
@@ -150,6 +180,28 @@ void DebugScene::ImGuiDraw() {
 	ImGui::SliderFloat3("Rotate", &transform.rotate.x, -180.0f, 180.0f);
 	ImGui::SliderFloat3("Translate", &transform.translate.x, -10.0f, 10.0f);
 	ImGui::Separator();
+
+	//========================================
+	// レベルデータローダー情報表示
+	ImGui::Text("Level Data Loader");
+	if (levelDataLoader_) {
+		ImGui::Text("Loaded: %s", levelDataLoader_->IsLoaded() ? "Yes" : "No");
+		if (levelDataLoader_->IsLoaded()) {
+			const auto &levelData = levelDataLoader_->GetLevelData();
+			ImGui::Text("Scene Name: %s", levelData.name.c_str());
+			ImGui::Text("Root Objects: %zu", levelData.objects.size());
+			ImGui::Text("Created Object3D Count: %zu", levelObjects_.size());
+		}
+		// 再読み込みボタン
+		if (ImGui::Button("Reload Level Data")) {
+			levelObjects_.clear(); // 既存オブジェクトをクリア
+			bool reloadResult = levelDataLoader_->LoadLevelFromJson("resources/levels/test_level.json");
+			if (reloadResult) {
+				// レベルデータからObject3Dを再作成
+				levelDataLoader_->CreateObjectsFromLevelData(object3dSetup_, levelObjects_);
+			}
+		}
+	}
 	ImGui::End();
 
 	DebugTextManager::GetInstance()->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);

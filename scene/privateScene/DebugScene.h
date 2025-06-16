@@ -1,21 +1,22 @@
 /*********************************************************************
  * \file   DebugScene.h
- * 
+ *
  * \author Harukichimaru
  * \date   January 2025
- * \note   
+ * \note
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
- //========================================
- // Game
+//========================================
+// Game
 #include "Camera.h"
-#include "Sprite.h"
+#include "LevelDataLoader.h"
+#include "MAudioG.h"
+#include "Model.h"
+#include "Object3d.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
-#include "Object3d.h"
-#include "Model.h"
-#include "MAudioG.h"
+#include "Sprite.h"
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
@@ -33,7 +34,7 @@ public:
 	/// @brie 2D描画
 	void Object2DDraw() override;
 
-	/// \brief 3D描画 
+	/// \brief 3D描画
 	void Object3DDraw() override;
 
 	/// \brief パーティクル描画
@@ -45,12 +46,9 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
-
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
-
-
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
@@ -60,22 +58,29 @@ private:
 
 	//========================================
 	// スプライト
-	
+
 	//========================================
 	// 3dオブジェクト
 	// モンスターボール
 	std::unique_ptr<Object3d> objMonsterBall_;
 	// 地面
 	std::unique_ptr<Object3d> objTerrain_;
+
+	//========================================
+	// レベルデータローダー
+	std::unique_ptr<LevelDataLoader> levelDataLoader_;
+	// レベルデータから作成されたObject3Dリスト
+	std::vector<std::unique_ptr<Object3d>> levelObjects_;
+	// Object3dSetupの保存（再読み込み時に使用）
+	Object3dSetup *object3dSetup_;
+
 	//========================================
 	// パーティクル
 	std::unique_ptr<Particle> particle_;
 	// パーティクルエミッター
 	std::unique_ptr<ParticleEmitter> particleEmitter_;
 
-
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
-	Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+	Transform transform{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 };
-

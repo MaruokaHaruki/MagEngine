@@ -9,6 +9,7 @@
  *********************************************************************/
 #pragma once
 #include "Object3d.h"
+#include "Transform.h"
 #include "Vector3.h"
 #include "engine/utils/Logger.h"
 #include "externals/json.hpp"
@@ -16,14 +17,8 @@
 #include <string>
 #include <vector>
 
-// レベルデータの構造体定義
-struct Transform {
-	Vector3 translation; // 平行移動
-	Vector3 rotation;	 // 回転（度数法）
-	Vector3 scale;		 // スケール
-};
-
-struct Collider {
+// 名前衝突を避けるためLevelColliderに変更
+struct LevelCollider {
 	std::string type; // コライダータイプ（"BOX", "SPHERE"等）
 	Vector3 center;	  // コライダー中心位置
 	Vector3 size;	  // コライダーサイズ
@@ -34,7 +29,7 @@ struct LevelObject {
 	std::string type;									// オブジェクトタイプ（"MESH", "EMPTY"等）
 	std::string file_name;								// モデルファイル名（空の場合あり）
 	Transform transform;								// トランスフォーム情報
-	std::unique_ptr<Collider> collider;					// コライダー情報（nullptrの場合あり）
+	std::unique_ptr<LevelCollider> collider;			// コライダー情報（nullptrの場合あり）
 	std::vector<std::unique_ptr<LevelObject>> children; // 子オブジェクト
 };
 

@@ -8,6 +8,7 @@ void LevelDataLoader::Initialize() {
 	levelData_ = {}; // 空のレベルデータで初期化
 	Logger::Log("LevelDataLoader initialized", Logger::LogLevel::Info);
 }
+
 ///=============================================================================
 ///                        Jsonファイルからレベルデータを読み込み
 bool LevelDataLoader::LoadLevelFromJson(const std::string &filePath) {
@@ -52,6 +53,7 @@ bool LevelDataLoader::LoadLevelFromJson(const std::string &filePath) {
 		return false;
 	}
 }
+
 ///=============================================================================
 ///                        JSONオブジェクトからLevelObjectを作成（再帰処理）
 std::unique_ptr<LevelObject> LevelDataLoader::ParseObjectFromJson(const nlohmann::json &jsonObj) {
@@ -71,16 +73,16 @@ std::unique_ptr<LevelObject> LevelDataLoader::ParseObjectFromJson(const nlohmann
 		Vector3 blenderRotation = GetVector3FromJson(transform["rotation"]);
 		Vector3 blenderScale = GetVector3FromJson(transform["scale"], {1, 1, 1});
 
-		// 座標変換を実行
-		levelObject->transform.translation = ConvertPositionFromBlender(blenderTranslation);
-		levelObject->transform.rotation = ConvertRotationFromBlender(blenderRotation);
+		// 座標変換を実行（エンジンのTransformメンバー名に合わせる）
+		levelObject->transform.translate = ConvertPositionFromBlender(blenderTranslation);
+		levelObject->transform.rotate = ConvertRotationFromBlender(blenderRotation);
 		levelObject->transform.scale = blenderScale; // スケールは変換不要
 	}
 
 	// コライダー情報を取得（存在する場合のみ）
 	if (jsonObj.contains("collider")) {
 		const auto &colliderJson = jsonObj["collider"];
-		auto collider = std::make_unique<Collider>();
+		auto collider = std::make_unique<LevelCollider>();
 
 		collider->type = colliderJson.value("type", "BOX");
 
@@ -105,6 +107,7 @@ std::unique_ptr<LevelObject> LevelDataLoader::ParseObjectFromJson(const nlohmann
 
 	return levelObject;
 }
+
 ///=============================================================================
 ///                        Blender（右手系）からエンジン（左手系）への座標変換
 Vector3 LevelDataLoader::ConvertPositionFromBlender(const Vector3 &blenderPos) {
@@ -116,6 +119,7 @@ Vector3 LevelDataLoader::ConvertPositionFromBlender(const Vector3 &blenderPos) {
 		-blenderPos.z // Z軸は反転（右手系→左手系）
 	};
 }
+
 ///=============================================================================
 ///                        Blender（右手系）からエンジン（左手系）への回転変換
 Vector3 LevelDataLoader::ConvertRotationFromBlender(const Vector3 &blenderRot) {
@@ -128,6 +132,7 @@ Vector3 LevelDataLoader::ConvertRotationFromBlender(const Vector3 &blenderRot) {
 		-blenderRot.z  // Z軸周りの回転は反転
 	};
 }
+
 ///=============================================================================
 ///                        JSONからVector3を安全に取得
 Vector3 LevelDataLoader::GetVector3FromJson(const nlohmann::json &jsonArray, const Vector3 &defaultValue) {
@@ -147,18 +152,21 @@ Vector3 LevelDataLoader::GetVector3FromJson(const nlohmann::json &jsonArray, con
 		return defaultValue;
 	}
 }
+
 ///=============================================================================
 ///                        更新
 void LevelDataLoader::Update() {
 	// 現在は特に更新処理なし
 	// 必要に応じて、動的レベル読み込みやホットリロード機能を追加すると便利
 }
+
 ///=============================================================================
-///                        Name
+///                        描画
 void LevelDataLoader::Draw() {
 	// 現在は特に描画処理なし
 	// デバッグ表示が必要な場合は、レベルオブジェクトの情報をImGuiで表示する
 }
+
 ///=============================================================================
 ///                        読み込んだレベルデータをObject3Dリストに変換してシーンに配置
 bool LevelDataLoader::CreateObjectsFromLevelData(Object3dSetup *object3dSetup, std::vector<std::unique_ptr<Object3d>> &outObjectList) {
@@ -183,6 +191,7 @@ bool LevelDataLoader::CreateObjectsFromLevelData(Object3dSetup *object3dSetup, s
 	Logger::Log("Successfully created " + std::to_string(outObjectList.size()) + " Object3D instances from level data", Logger::LogLevel::Success);
 	return true;
 }
+
 ///=============================================================================
 ///                        LevelObjectからObject3Dを再帰的に作成してリストに追加
 void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelObject> &levelObject,
@@ -208,10 +217,10 @@ void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelO
 	// 親のトランスフォームと現在のオブジェクトのトランスフォームを合成
 	Transform combinedTransform = CombineTransforms(parentTransform, levelObject->transform);
 
-	// Object3Dにトランスフォームを設定
+	// Object3Dにトランスフォームを設定（エンジンのメソッド名に合わせる）
 	object3d->SetScale(combinedTransform.scale);
-	object3d->SetRotation(combinedTransform.rotation);
-	object3d->SetPosition(combinedTransform.translation);
+	object3d->SetRotation(combinedTransform.rotate);
+	object3d->SetPosition(combinedTransform.translate);
 
 	// Object3Dを更新してワールド行列を確定
 	object3d->Update();
@@ -227,6 +236,7 @@ void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelO
 		}
 	}
 }
+
 ///=============================================================================
 ///                        2つのTransformを合成（親→子の順で適用）
 Transform LevelDataLoader::CombineTransforms(const Transform &parent, const Transform &child) {
@@ -240,16 +250,16 @@ Transform LevelDataLoader::CombineTransforms(const Transform &parent, const Tran
 	// 回転の合成（度数法での加算）
 	// 注意: 実際のゲームエンジンではクォータニオンを使用するべきだが、
 	//       ここでは簡易的にオイラー角の加算で処理
-	combined.rotation.x = parent.rotation.x + child.rotation.x;
-	combined.rotation.y = parent.rotation.y + child.rotation.y;
-	combined.rotation.z = parent.rotation.z + child.rotation.z;
+	combined.rotate.x = parent.rotate.x + child.rotate.x;
+	combined.rotate.y = parent.rotate.y + child.rotate.y;
+	combined.rotate.z = parent.rotate.z + child.rotate.z;
 
 	// 平行移動の合成
 	// 子の位置を親のスケールとローテーションを考慮して変換
 	// 簡易実装: スケールのみ適用（回転変換は複雑なため省略）
-	combined.translation.x = parent.translation.x + (child.translation.x * parent.scale.x);
-	combined.translation.y = parent.translation.y + (child.translation.y * parent.scale.y);
-	combined.translation.z = parent.translation.z + (child.translation.z * parent.scale.z);
+	combined.translate.x = parent.translate.x + (child.translate.x * parent.scale.x);
+	combined.translate.y = parent.translate.y + (child.translate.y * parent.scale.y);
+	combined.translate.z = parent.translate.z + (child.translate.z * parent.scale.z);
 
 	return combined;
 }
