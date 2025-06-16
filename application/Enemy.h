@@ -1,4 +1,5 @@
 #pragma once
+#include "BaseObject.h"
 #include "Object3d.h"
 #include "Vector3.h"
 #include <memory>
@@ -7,7 +8,7 @@
 // Forward declarations
 class Object3dSetup;
 
-class Enemy {
+class Enemy : public BaseObject {
 public:
 	/// \brief 初期化
 	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position);
@@ -38,6 +39,11 @@ public:
 	float GetRadius() const {
 		return radius_;
 	}
+
+	// BaseObjectの純粋仮想関数を実装
+	void OnCollisionEnter(BaseObject *other) override;
+	void OnCollisionStay(BaseObject *other) override;
+	void OnCollisionExit(BaseObject *other) override;
 
 private:
 	std::unique_ptr<Object3d> obj_;

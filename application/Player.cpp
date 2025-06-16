@@ -58,6 +58,10 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 		if (objTransform) {
 			objTransform->translate = {0.0f, 0.0f, 0.0f}; // 初期位置
 			objTransform->rotate = {0.0f, 0.0f, 0.0f};	  // 初期回転
+
+			// BaseObjectの初期化（当たり判定）
+			Vector3 pos = objTransform->translate;
+			BaseObject::Initialize(pos, 1.0f); // プレイヤーの当たり判定半径
 		}
 	}
 }
@@ -81,6 +85,9 @@ void Player::Update() {
 
 	// 弾の更新・削除処理
 	UpdateBullets();
+
+	// BaseObjectのコライダー位置を更新
+	BaseObject::Update(objTransform->translate);
 
 	// Object3dの更新 (ワールド行列の更新など)
 	obj_->Update();
@@ -263,4 +270,19 @@ void Player::DrawImGui() {
 		ImGui::SliderFloat("Shoot Cool Time", &maxShootCoolTime_, 0.05f, 1.0f);
 		ImGui::End();
 	}
+}
+
+///=============================================================================
+///						衝突処理
+void Player::OnCollisionEnter(BaseObject *other) {
+	// 敵との衝突時の処理
+	// ダメージを受ける処理などを実装
+}
+
+void Player::OnCollisionStay(BaseObject *other) {
+	// 継続中の衝突処理（必要に応じて実装）
+}
+
+void Player::OnCollisionExit(BaseObject *other) {
+	// 衝突終了時の処理（必要に応じて実装）
 }

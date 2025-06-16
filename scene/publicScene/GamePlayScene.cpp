@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "GamePlayScene.h"
 #include "CameraManager.h"
+#include "Enemy.h"
 #include "Input.h" // Inputクラスを使用するためにインクルード
 #include "LineManager.h"
 #include "ModelManager.h"
@@ -52,6 +53,8 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// 敵
+	enemy_ = std::make_unique<Enemy>();
+	enemy_->Initialize(object3dSetup, "jet.obj", {0.0f, 0.0f, 10.0f}); // 固定位置に配置
 
 	//========================================
 	// パーティクルクラス
@@ -102,10 +105,44 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
+	// 敵の更新
+	if (enemy_) {
+		enemy_->Update();
+	}
+
+	//========================================
 	// スカイドーム
 	if (skydome_) {
 		skydome_->Update();
 	}
+
+	//---------------------------------------
+	//  当たり判定
+	//  情報のリセット
+	collisionManager_->Reset();
+
+	//  プレイヤーの当たり判定を追加
+	if (player_) {
+		collisionManager_->AddCollider(player_.get());
+	}
+
+	//  敵の当たり判定を追加
+	if (enemy_ && enemy_->IsAlive()) {
+		collisionManager_->AddCollider(enemy_.get());
+	}
+
+	//  プレイヤーの弾の当たり判定を追加
+	if (player_) {
+		const auto &bullets = player_->GetBullets();
+		for (const auto &bullet : bullets) {
+			if (bullet->IsAlive()) {
+				collisionManager_->AddCollider(bullet.get());
+			}
+		}
+	}
+
+	//  当たり判定の更新
+	collisionManager_->Update();
 }
 
 ///=============================================================================
@@ -134,7 +171,10 @@ void GamePlayScene::Object3DDraw() {
 	}
 
 	//========================================
-	// 複数の敵
+	// 敵
+	if (enemy_) {
+		enemy_->Draw();
+	}
 
 	//========================================
 	// 当たり判定
@@ -163,6 +203,9 @@ void GamePlayScene::ImGuiDraw() {
 
 	//========================================
 	// 敵
+	if (enemy_) {
+		enemy_->DrawImGui();
+	}
 
 	//========================================
 	// 当たり判定

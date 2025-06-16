@@ -6,7 +6,8 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "Input.h" // Input処理のために追加
+#include "BaseObject.h" // 当たり判定用
+#include "Input.h"		// Input処理のために追加
 #include "Object3d.h"
 #include "PlayerBullet.h"
 #include <memory> // For std::unique_ptr
@@ -17,7 +18,7 @@
 class Object3d;
 class Object3dSetup;
 
-class Player {
+class Player : public BaseObject {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
@@ -73,6 +74,11 @@ public:
 	}
 
 public:
+	// BaseObjectの純粋仮想関数を実装
+	void OnCollisionEnter(BaseObject *other) override;
+	void OnCollisionStay(BaseObject *other) override;
+	void OnCollisionExit(BaseObject *other) override;
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:

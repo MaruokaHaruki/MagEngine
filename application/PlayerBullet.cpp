@@ -24,6 +24,10 @@ void PlayerBullet::Initialize(Object3dSetup *object3dSetup, const std::string &m
 
 	// 当たり判定設定
 	radius_ = 0.5f;
+
+	// BaseObjectの初期化（当たり判定）
+	Vector3 pos = position;
+	BaseObject::Initialize(pos, radius_);
 }
 
 void PlayerBullet::Update() {
@@ -48,6 +52,9 @@ void PlayerBullet::Update() {
 		isAlive_ = false;
 	}
 
+	// BaseObjectのコライダー位置を更新
+	BaseObject::Update(transform->translate);
+
 	// Object3dの更新
 	obj_->Update();
 }
@@ -63,4 +70,18 @@ Vector3 PlayerBullet::GetPosition() const {
 		return obj_->GetPosition();
 	}
 	return {0.0f, 0.0f, 0.0f};
+}
+
+void PlayerBullet::OnCollisionEnter(BaseObject *other) {
+	// 敵との衝突時の処理
+	// 弾を削除
+	SetDead();
+}
+
+void PlayerBullet::OnCollisionStay(BaseObject *other) {
+	// 継続中の衝突処理（必要に応じて実装）
+}
+
+void PlayerBullet::OnCollisionExit(BaseObject *other) {
+	// 衝突終了時の処理（必要に応じて実装）
 }

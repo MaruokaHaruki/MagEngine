@@ -84,9 +84,7 @@ private:
 
 	//========================================
 	// 敵
-	std::vector<std::unique_ptr<Enemy>> enemies_;
-	float enemySpawnTimer_;
-	float enemySpawnInterval_;
+	std::unique_ptr<Enemy> enemy_;
 
 	//========================================
 	// スプライト
