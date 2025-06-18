@@ -33,7 +33,7 @@ void ModelManager::Initialize(DirectXCore* dxCore) {
 
 ///=============================================================================
 ///						モデルの読み込み
-void ModelManager::LoadMedel(const std::string& filePath) {
+void ModelManager::LoadModel(const std::string& filePath) {
 	//========================================
 	// 読み込み済みモデルを検索
 	if(models_.contains(filePath)) {

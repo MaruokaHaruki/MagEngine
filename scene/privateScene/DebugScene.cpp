@@ -34,9 +34,9 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///--------------------------------------------------------------
 	///						 3D系クラス
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadMedel("axisPlus.obj");
-	ModelManager::GetInstance()->LoadMedel("ball.obj");
-	ModelManager::GetInstance()->LoadMedel("terrain.obj");
+	ModelManager::GetInstance()->LoadModel("axisPlus.obj");
+	ModelManager::GetInstance()->LoadModel("ball.obj");
+	ModelManager::GetInstance()->LoadModel("terrain.obj");
 	//========================================
 	// 3Dオブジェクトクラス
 	// モンスターボール

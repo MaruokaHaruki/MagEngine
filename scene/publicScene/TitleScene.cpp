@@ -37,7 +37,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 
 	//========================================
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadMedel("title.obj");
+	ModelManager::GetInstance()->LoadModel("title.obj");
 	TextureManager::GetInstance()->LoadTexture("press.png");
 
 	//========================================
