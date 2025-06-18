@@ -1,41 +1,65 @@
 /*********************************************************************
  * \file   CollisionManager.h
- * \brief
+ * \brief  軽量で高効率な当たり判定管理システム
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   エンジン内部使用に最適化済み
  *********************************************************************/
 #pragma once
 #include "BaseObject.h"
 #include "Collider.h"
+#include <bitset>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
 //========================================
-// グリッドのセル
-struct PairHash {
-	template <class T1, class T2>
-	std::size_t operator()(const std::pair<T1, T2> &pair) const {
-		auto hash1 = std::hash<T1>{}(pair.first);
-		auto hash2 = std::hash<T2>{}(pair.second);
-		return hash1 ^ hash2; // シンプルなXORでハッシュを計算
+// 最適化されたグリッドセル
+struct GridCell {
+	std::vector<BaseObject *> objects;
+
+	void Clear() {
+		objects.clear();
+	}
+	bool IsEmpty() const {
+		return objects.empty();
+	}
+	size_t Size() const {
+		return objects.size();
 	}
 };
 
 //========================================
-// グリッドのセル
-struct GridCell {
-	std::vector<BaseObject *> objects;
+// コリジョンペア（軽量化）
+struct CollisionPair {
+	BaseObject *objA;
+	BaseObject *objB;
+
+	CollisionPair(BaseObject *a, BaseObject *b)
+		: objA(a < b ? a : b), objB(a < b ? b : a) {
+	}
+
+	bool operator==(const CollisionPair &other) const {
+		return objA == other.objA && objB == other.objB;
+	}
+};
+
+//========================================
+// ハッシュ関数（最適化済み）
+struct CollisionPairHash {
+	std::size_t operator()(const CollisionPair &pair) const {
+		return std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(pair.objA)) ^
+			   (std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(pair.objB)) << 1);
+	}
 };
 
 ///=============================================================================
-///						コリジョンマネージャー
+///						軽量コリジョンマネージャー
 class CollisionManager {
 public:
 	/// \brief 初期化
-	void Initialize();
+	void Initialize(float cellSize = 32.0f, int maxObjects = 1024);
 
 	/// \brief 更新
 	void Update();
@@ -46,72 +70,69 @@ public:
 	/// @brief ImGuiの描画
 	void DrawImGui();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  Reset リセット
-	 * \note
-	 */
+	/// \brief リセット
 	void Reset();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  AddCollider 当たり判定を追加
-	 * \param  characterBase 追加する当たり判定
-	 * \note
-	 */
-	void AddCollider(BaseObject *baseObj);
+	/// \brief オブジェクト登録
+	void RegisterObject(BaseObject *obj);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CheckColliderPair 当たり判定同士をチェック
-	 * \param  characterA
-	 * \param  characterB
-	 * \note
-	 */
-	// void CheckColliderPair(BaseObject* baseObjA, BaseObject* baseObjB);
+	/// \brief オブジェクト登録解除
+	void UnregisterObject(BaseObject *obj);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CheckAllCollisions すべての当たり判定をチェック
-	 * \note
-	 */
+	/// \brief 全ての当たり判定をチェック
 	void CheckAllCollisions();
 
-	///--------------------------------------------------------------
-	///						 静的メンバ関数
-private:
-	/**----------------------------------------------------------------------------
-	 * \brief  GetGridIndex グリッドのインデックスを取得
-	 * \param  position 位置
-	 * \return
-	 */
-	int GetGridIndex(const Vector3 &position) const;
+	/// \brief セルサイズの設定
+	void SetCellSize(float size) {
+		cellSize_ = size;
+	}
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CheckCollisionsInCell セル内の衝突をチェック
-	 * \param  cell セル
-	 */
+	/// \brief グリッド情報取得（デバッグ用）
+	size_t GetActiveGridCount() const {
+		return grid_.size();
+	}
+	size_t GetTotalObjectCount() const {
+		return activeObjects_.size();
+	}
+
+private:
+	/// \brief グリッドインデックス計算（最適化済み）
+	int CalculateGridIndex(const Vector3 &position) const;
+
+	/// \brief オブジェクトをグリッドに配置
+	void AssignObjectsToGrid();
+
+	/// \brief セル内衝突判定
 	void CheckCollisionsInCell(const GridCell &cell);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CheckCollisionsBetweenCells セル間の衝突をチェック
-	 * \param  cellA
-	 * \param  cellB
-	 */
+	/// \brief 隣接セル間衝突判定
 	void CheckCollisionsBetweenCells(const GridCell &cellA, const GridCell &cellB);
 
-	///--------------------------------------------------------------
-	///						 メンバ変数
+	/// \brief 衝突処理実行
+	void ProcessCollision(BaseObject *objA, BaseObject *objB, bool isColliding);
+
 private:
 	//========================================
-	// グリッド
+	// グリッドシステム
 	std::unordered_map<int, GridCell> grid_;
-	// グリッドのセルのサイズ
-	float cellSize_ = 64.0f;
+	float cellSize_;
+
 	//========================================
-	// 当たり判定
-	std::list<BaseObject *> Objects_;
-	// 衝突したオブジェクトを追跡するセット
-	std::unordered_set<BaseObject *> collidedObjects_;
-	// 衝突済みペア
-	std::unordered_set<std::pair<BaseObject *, BaseObject *>, PairHash> collidedPairs_;
+	// オブジェクト管理
+	std::vector<BaseObject *> activeObjects_;
+
 	//========================================
-	// 判定描画
-	bool isHitDraw_ = false;
+	// 衝突状態管理（軽量化）
+	std::unordered_map<CollisionPair, bool, CollisionPairHash> collisionStates_;
+
+	//========================================
+	// デバッグ情報
+	bool enableDebugDraw_;
+	size_t collisionChecksThisFrame_;
+
+	//========================================
+	// 最適化パラメータ
+	static constexpr int GRID_HASH_PRIME1 = 73856093;
+	static constexpr int GRID_HASH_PRIME2 = 19349663;
+	static constexpr int GRID_HASH_PRIME3 = 83492791;
 };

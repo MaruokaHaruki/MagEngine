@@ -3,33 +3,43 @@
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include <algorithm>
-#include <cmath>
 
 ///=============================================================================
 ///						初期化
-void CollisionManager::Initialize() {
+void CollisionManager::Initialize(float cellSize, int maxObjects) {
+	cellSize_ = cellSize;
+	enableDebugDraw_ = false;
+	collisionChecksThisFrame_ = 0;
+
+	// メモリ予約（パフォーマンス最適化）
+	activeObjects_.reserve(maxObjects);
+	grid_.reserve(maxObjects / 4); // 適度な初期容量
 }
 
 ///=============================================================================
 ///						更新処理
 void CollisionManager::Update() {
+	collisionChecksThisFrame_ = 0;
+
 	//========================================
-	// 前回のグリッド情報をクリア
-	grid_.clear();
-	//========================================
-	// 全オブジェクトをグリッドに登録
-	for (auto *baseObj : Objects_) {
-		int index = GetGridIndex(baseObj->GetCollider()->GetPosition());
-		grid_[index].objects.push_back(baseObj);
+	// グリッドクリアと再配置
+	for (auto &pair : grid_) {
+		pair.second.Clear();
 	}
-	//========================================
-	// 衝突判定を実行
+
+	AssignObjectsToGrid();
 	CheckAllCollisions();
-	for (const auto &pair : grid_) {
-		for (auto *obj : pair.second.objects) {
-			Vector3 position = obj->GetCollider()->GetPosition();
-			float radius = obj->GetCollider()->GetRadius();
-			LineManager::GetInstance()->DrawSphere(position, radius, Vector4{1.0f, 0.0f, 0.0f, 1.0f});
+
+	//========================================
+	// デバッグ描画
+	if (enableDebugDraw_) {
+		for (const auto &obj : activeObjects_) {
+			if (obj && obj->GetCollider()) {
+				Vector3 position = obj->GetCollider()->GetPosition();
+				float radius = obj->GetCollider()->GetRadius();
+				LineManager::GetInstance()->DrawSphere(position, radius,
+													   Vector4{1.0f, 0.0f, 0.0f, 1.0f});
+			}
 		}
 	}
 }
@@ -37,163 +47,166 @@ void CollisionManager::Update() {
 ///=============================================================================
 ///						描画
 void CollisionManager::Draw() {
+	// 必要に応じて追加の描画処理
 }
 
 ///=============================================================================
-///						Imguiの描画
+///						ImGuiの描画
 void CollisionManager::DrawImGui() {
-	// あたってるオブジェクトの数
 	ImGui::Begin("CollisionManager");
-	ImGui::Text("Colliding Objects: %d", Objects_.size());
-	// HitBoxの表示
-	ImGui::Checkbox("HitBox", &isHitDraw_);
+	ImGui::Text("Active Objects: %zu", activeObjects_.size());
+	ImGui::Text("Active Grids: %zu", grid_.size());
+	ImGui::Text("Collision Checks: %zu", collisionChecksThisFrame_);
+	ImGui::Text("Cell Size: %.1f", cellSize_);
+
+	ImGui::Separator();
+	ImGui::Checkbox("Debug Draw", &enableDebugDraw_);
+
+	if (ImGui::SliderFloat("Cell Size", &cellSize_, 16.0f, 128.0f)) {
+		// セルサイズ変更時にグリッドを再構築
+		for (auto &pair : grid_) {
+			pair.second.Clear();
+		}
+	}
+
 	ImGui::End();
 }
 
 ///=============================================================================
 ///						リセット
 void CollisionManager::Reset() {
-	// リストを空っぽにする
-	Objects_.clear();
-	// グリッドをクリアする
-	grid_.clear();
+	activeObjects_.clear();
+	for (auto &pair : grid_) {
+		pair.second.Clear();
+	}
+	collisionStates_.clear();
 }
 
 ///=============================================================================
-///						コライダーの追加
-void CollisionManager::AddCollider(BaseObject *baseObj) {
-	// オブジェクトをリストに追加
-	Objects_.push_back(baseObj);
-	// オブジェクトをグリッドに追加
-	int index = GetGridIndex(baseObj->GetCollider()->GetPosition());
-	// グリッドにオブジェクトを追加
-	grid_[index].objects.push_back(baseObj);
+///						オブジェクト登録
+void CollisionManager::RegisterObject(BaseObject *obj) {
+	if (obj && std::find(activeObjects_.begin(), activeObjects_.end(), obj) == activeObjects_.end()) {
+		activeObjects_.push_back(obj);
+	}
 }
 
 ///=============================================================================
-///						グリッドのインデックスを取得
-int CollisionManager::GetGridIndex(const Vector3 &position) const {
-	// セルのインデックスを計算
-	int x = static_cast<int>(position.x / cellSize_);
-	int y = static_cast<int>(position.y / cellSize_);
-	int z = static_cast<int>(position.z / cellSize_);
-	// インデックスを返す
-	return (x * 73856093) ^ (y * 19349663) ^ (z * 83492791); // ハッシュ関数
-}
+///						オブジェクト登録解除
+void CollisionManager::UnregisterObject(BaseObject *obj) {
+	auto it = std::find(activeObjects_.begin(), activeObjects_.end(), obj);
+	if (it != activeObjects_.end()) {
+		activeObjects_.erase(it);
 
-///=============================================================================
-///						セル内の当たり判定をチェック
-void CollisionManager::CheckCollisionsInCell(const GridCell &cell) {
-	//========================================
-	// セル内の全てのオブジェクトペアの衝突判定を行う
-	for (size_t i = 0; i < cell.objects.size(); ++i) {
-		//========================================
-		// 同じオブジェクト同士の衝突はチェックしない
-		for (size_t j = i + 1; j < cell.objects.size(); ++j) {
-			BaseObject *objA = cell.objects[i];
-			BaseObject *objB = cell.objects[j];
-			//========================================
-			// 現在の衝突状態を取得
-			bool currentlyColliding = objA->GetCollider()->Intersects(*objB->GetCollider());
-			//========================================
-			// 衝突しているかどうかを確認
-			if (currentlyColliding) {
-				// オブジェクトペアを作成
-				auto pair = std::make_pair(objA, objB);
-				//---------------------------------------
-				// 新たな衝突かどうかを確認
-				if (collidedPairs_.find(pair) == collidedPairs_.end()) {
-					//---------------------------------------
-					// 新たな衝突
-					objA->OnCollisionEnter(objB);
-					objB->OnCollisionEnter(objA);
-					// 衝突ペアをセットに追加
-					collidedPairs_.insert(pair);
-				} else {
-					//---------------------------------------
-					// 継続中の衝突
-					objA->OnCollisionStay(objB);
-					objB->OnCollisionStay(objA);
-				}
+		// 関連する衝突状態も削除
+		auto stateIt = collisionStates_.begin();
+		while (stateIt != collisionStates_.end()) {
+			if (stateIt->first.objA == obj || stateIt->first.objB == obj) {
+				stateIt = collisionStates_.erase(stateIt);
 			} else {
-				//========================================
-				// オブジェクトペアを作成
-				auto pair = std::make_pair(objA, objB);
-				//========================================
-				// 衝突が終了したかどうかを確認
-				if (collidedPairs_.find(pair) != collidedPairs_.end()) {
-					//---------------------------------------
-					// 衝突終了
-					objA->OnCollisionExit(objB);
-					objB->OnCollisionExit(objA);
-					// 衝突ペアをセットから削除
-					collidedPairs_.erase(pair);
-				}
+				++stateIt;
 			}
 		}
 	}
 }
 
 ///=============================================================================
-///						コリジョン同士をチェック
-void CollisionManager::CheckCollisionsBetweenCells(const GridCell &cellA, const GridCell &cellB) {
-	//========================================
-	// 異なるセル間の全てのオブジェクトペアの衝突判定を行う
-	for (auto *objA : cellA.objects) {
-		for (auto *objB : cellB.objects) {
-			bool currentlyColliding = objA->GetCollider()->Intersects(*objB->GetCollider());
-			//========================================
-			// オブジェクトのポインタを比較して順序を決定
-			BaseObject *first = (objA < objB) ? objA : objB;
-			BaseObject *second = (objA < objB) ? objB : objA;
-			auto pair = std::make_pair(first, second);
+///						グリッドインデックス計算
+int CollisionManager::CalculateGridIndex(const Vector3 &position) const {
+	int x = static_cast<int>(std::floor(position.x / cellSize_));
+	int y = static_cast<int>(std::floor(position.y / cellSize_));
+	int z = static_cast<int>(std::floor(position.z / cellSize_));
 
-			//========================================
-			// 衝突しているかどうかを確認
-			if (currentlyColliding) {
-				//========================================
-				// 新たな衝突かどうかを確認
-				if (collidedPairs_.find(pair) == collidedPairs_.end()) {
-					// 新たな衝突
-					objA->OnCollisionEnter(objB);
-					objB->OnCollisionEnter(objA);
-					collidedPairs_.insert(pair);
-				} else {
-					// 継続中の衝突
-					objA->OnCollisionStay(objB);
-					objB->OnCollisionStay(objA);
-				}
-			} else {
-				//========================================
-				// 衝突が終了したかどうかを確認
-				if (collidedPairs_.find(pair) != collidedPairs_.end()) {
-					// 衝突終了
-					objA->OnCollisionExit(objB);
-					objB->OnCollisionExit(objA);
-					collidedPairs_.erase(pair);
-				}
+	return (x * GRID_HASH_PRIME1) ^ (y * GRID_HASH_PRIME2) ^ (z * GRID_HASH_PRIME3);
+}
+
+///=============================================================================
+///						オブジェクトをグリッドに配置
+void CollisionManager::AssignObjectsToGrid() {
+	for (BaseObject *obj : activeObjects_) {
+		if (obj && obj->GetCollider()) {
+			int index = CalculateGridIndex(obj->GetCollider()->GetPosition());
+			grid_[index].objects.push_back(obj);
+		}
+	}
+}
+
+///=============================================================================
+///						セル内の当たり判定をチェック
+void CollisionManager::CheckCollisionsInCell(const GridCell &cell) {
+	if (cell.Size() < 2)
+		return;
+
+	for (size_t i = 0; i < cell.Size(); ++i) {
+		for (size_t j = i + 1; j < cell.Size(); ++j) {
+			BaseObject *objA = cell.objects[i];
+			BaseObject *objB = cell.objects[j];
+
+			if (objA && objB && objA->GetCollider() && objB->GetCollider()) {
+				bool isColliding = objA->GetCollider()->Intersects(*objB->GetCollider());
+				ProcessCollision(objA, objB, isColliding);
+				++collisionChecksThisFrame_;
 			}
 		}
+	}
+}
+
+///=============================================================================
+///						セル間の当たり判定をチェック
+void CollisionManager::CheckCollisionsBetweenCells(const GridCell &cellA, const GridCell &cellB) {
+	for (BaseObject *objA : cellA.objects) {
+		for (BaseObject *objB : cellB.objects) {
+			if (objA && objB && objA->GetCollider() && objB->GetCollider()) {
+				bool isColliding = objA->GetCollider()->Intersects(*objB->GetCollider());
+				ProcessCollision(objA, objB, isColliding);
+				++collisionChecksThisFrame_;
+			}
+		}
+	}
+}
+
+///=============================================================================
+///						衝突処理実行
+void CollisionManager::ProcessCollision(BaseObject *objA, BaseObject *objB, bool isColliding) {
+	CollisionPair pair(objA, objB);
+	auto it = collisionStates_.find(pair);
+	bool wasColliding = (it != collisionStates_.end()) ? it->second : false;
+
+	if (isColliding && !wasColliding) {
+		// 衝突開始
+		objA->OnCollisionEnter(objB);
+		objB->OnCollisionEnter(objA);
+		collisionStates_[pair] = true;
+	} else if (isColliding && wasColliding) {
+		// 衝突継続
+		objA->OnCollisionStay(objB);
+		objB->OnCollisionStay(objA);
+	} else if (!isColliding && wasColliding) {
+		// 衝突終了
+		objA->OnCollisionExit(objB);
+		objB->OnCollisionExit(objA);
+		collisionStates_.erase(pair);
 	}
 }
 
 ///=============================================================================
 ///						すべての当たり判定をチェック
 void CollisionManager::CheckAllCollisions() {
-	//========================================
-	// グリッド内の全てのセルの当たり判定をチェック
-	for (auto &pair : grid_) {
-		CheckCollisionsInCell(pair.second);
-	}
-	//========================================
-	// グリッド間の全てのセルの当たり判定をチェック
-	for (auto it1 = grid_.begin(); it1 != grid_.end(); ++it1) {
-		//========================================
-		// 他のセルとの当たり判定をチェック
-		for (auto it2 = std::next(it1); it2 != grid_.end(); ++it2) {
-			//---------------------------------------
-			// セル間の当たり判定をチェック
-			CheckCollisionsBetweenCells(it1->second, it2->second);
+	// セル内衝突判定
+	for (const auto &pair : grid_) {
+		if (!pair.second.IsEmpty()) {
+			CheckCollisionsInCell(pair.second);
 		}
+	}
+
+	// セル間衝突判定（隣接セルのみ）
+	auto it1 = grid_.begin();
+	while (it1 != grid_.end()) {
+		auto it2 = it1;
+		++it2;
+		while (it2 != grid_.end()) {
+			CheckCollisionsBetweenCells(it1->second, it2->second);
+			++it2;
+		}
+		++it1;
 	}
 }

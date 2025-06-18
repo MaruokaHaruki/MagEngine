@@ -88,9 +88,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	enemy_->SetParticleSystem(particle_.get(), particleSetup);
 
 	//========================================
-	// 当たり判定
+	// 当たり判定（軽量システムで初期化）
 	collisionManager_ = std::make_unique<CollisionManager>();
-	collisionManager_->Initialize();
+	collisionManager_->Initialize(32.0f, 256); // セルサイズ32.0f、最大256オブジェクト
 
 	// 敵の位置にデバッグテキストを配置（固定位置）
 	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
@@ -140,26 +140,26 @@ void GamePlayScene::Update() {
 	}
 
 	//---------------------------------------
-	//  当たり判定
-	//  情報のリセット
-	collisionManager_->Reset();
+	//  当たり判定（最適化済み）
+	//  リセットではなく登録解除/登録で管理
+	collisionManager_->Reset(); // 一旦リセット（簡単のため）
 
-	//  プレイヤーの当たり判定を追加
+	//  プレイヤーの当たり判定を登録
 	if (player_) {
-		collisionManager_->AddCollider(player_.get());
+		collisionManager_->RegisterObject(player_.get());
 	}
 
-	//  敵の当たり判定を追加（生存中のみ）
+	//  敵の当たり判定を登録（生存中のみ）
 	if (enemy_ && enemy_->IsAlive()) {
-		collisionManager_->AddCollider(enemy_.get());
+		collisionManager_->RegisterObject(enemy_.get());
 	}
 
-	//  プレイヤーの弾の当たり判定を追加
+	//  プレイヤーの弾の当たり判定を登録
 	if (player_) {
 		const auto &bullets = player_->GetBullets();
 		for (const auto &bullet : bullets) {
 			if (bullet->IsAlive()) {
-				collisionManager_->AddCollider(bullet.get());
+				collisionManager_->RegisterObject(bullet.get());
 			}
 		}
 	}
