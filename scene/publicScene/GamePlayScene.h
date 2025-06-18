@@ -90,6 +90,4 @@ private:
 
 	//========================================
 	// 雲システム
-	std::unique_ptr<Cloud> cloudSystem_;
-	bool enableCloudEffect_; // 雲エフェクトの有効/無効
 };

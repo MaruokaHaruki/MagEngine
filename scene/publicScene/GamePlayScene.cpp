@@ -75,12 +75,6 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// 雲システムの初期化
-	enableCloudEffect_ = true;
-	cloudSystem_ = std::make_unique<Cloud>();
-	if (player_) {
-		Vector3 playerPos = player_->GetPosition();
-		cloudSystem_->Initialize(particle_.get(), playerPos);
-	}
 
 	//========================================
 	// 敵
@@ -117,9 +111,6 @@ void GamePlayScene::Update() {
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 
 		// 雲システムの更新（プレイヤー位置を渡す）
-		if (cloudSystem_ && enableCloudEffect_) {
-			cloudSystem_->Update(playerPos);
-		}
 
 		// グリッドは自動でアニメーションするため、手動オフセットは不要
 		// LineManager::GetInstance()->SetGridAnimation(true); // 初期化時に設定済み
@@ -219,9 +210,6 @@ void GamePlayScene::ParticleDraw() {
 
 	//========================================
 	// 雲システムの描画
-	if (cloudSystem_ && enableCloudEffect_) {
-		cloudSystem_->Draw();
-	}
 }
 
 ///=============================================================================
@@ -233,29 +221,6 @@ void GamePlayScene::ImGuiDraw() {
 
 	// 雲システムの制御
 	ImGui::Separator();
-	ImGui::Text("Cloud Effect System");
-	ImGui::Checkbox("Enable Cloud Effect", &enableCloudEffect_);
-	
-	// 簡単な操作ボタン
-	if (ImGui::Button("Activate Climax Mode")) {
-		if (cloudSystem_) {
-			cloudSystem_->SetAfterburnerEffect(true, 2.5f);
-			cloudSystem_->SetCloudFlowAmount(5.0f);
-			cloudSystem_->SetSpeedEffect(4.0f);
-		}
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Normal Flight")) {
-		if (cloudSystem_) {
-			cloudSystem_->SetAfterburnerEffect(false, 1.0f);
-			cloudSystem_->SetCloudFlowAmount(1.0f);
-			cloudSystem_->SetSpeedEffect(1.0f);
-		}
-	}
-	
-	if (cloudSystem_) {
-		cloudSystem_->DrawImGui();
-	}
 	ImGui::End();
 
 	//========================================
