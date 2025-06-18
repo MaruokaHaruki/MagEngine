@@ -8,8 +8,9 @@
  *********************************************************************/
 #include "GamePlayScene.h"
 #include "CameraManager.h"
+#include "Cloud.h"
 #include "Enemy.h"
-#include "Input.h" // Inputクラスを使用するためにインクルード
+#include "Input.h"
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Player.h"
@@ -47,19 +48,15 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	skydome_->Initialize(object3dSetup, "skydome.obj");
 
 	//========================================
-	// プレイヤー
-	player_ = std::make_unique<Player>();
-	player_->Initialize(object3dSetup, "jet.obj"); // PlayerにObject3dSetupとモデル名を渡す
-
-	//========================================
 	// パーティクルクラス
 	particle_ = std::make_unique<Particle>();
 	// パーティクルの初期化
 	particle_->Initialize(particleSetup);
 	particle_->SetCustomTextureSize({10.0f, 10.0f});
+	particle_->SetBillboard(true); // ビルボードを有効化
 
-	// 通常のパーティクルグループの作成（Board形状）
-	particle_->CreateParticleGroup("Particle", "sandWind.png", ParticleShape::Board);
+	// 雲パーティクルグループの作成（Board形状、白っぽいテクスチャ）
+	particle_->CreateParticleGroup("CloudParticles", "sandWind.png", ParticleShape::Board);
 
 	// 爆発エフェクト用の複数の形状を作成
 	// 1. メインの爆発エフェクト（Board形状 - 火花）
@@ -71,14 +68,19 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 3. シリンダー形状の煙柱
 	particle_->CreateParticleGroup("ExplosionSmoke", "sandWind.png", ParticleShape::Cylinder);
 
-	// パーティクルエミッター（通常用）
-	particleEmitter_ =
-		std::make_unique<ParticleEmitter>(particle_.get(),
-										  "Particle",
-										  Transform{{0.1f, 0.1f, 0.1f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-										  4,
-										  0.5f,
-										  true);
+	//========================================
+	// プレイヤー
+	player_ = std::make_unique<Player>();
+	player_->Initialize(object3dSetup, "jet.obj");
+
+	//========================================
+	// 雲システムの初期化
+	enableCloudEffect_ = true;
+	cloudSystem_ = std::make_unique<Cloud>();
+	if (player_) {
+		Vector3 playerPos = player_->GetPosition();
+		cloudSystem_->Initialize(particle_.get(), playerPos);
+	}
 
 	//========================================
 	// 敵
@@ -114,6 +116,11 @@ void GamePlayScene::Update() {
 		playerPos.y += 2.0f; // プレイヤーの少し上に表示
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 
+		// 雲システムの更新（プレイヤー位置を渡す）
+		if (cloudSystem_ && enableCloudEffect_) {
+			cloudSystem_->Update(playerPos);
+		}
+
 		// グリッドは自動でアニメーションするため、手動オフセットは不要
 		// LineManager::GetInstance()->SetGridAnimation(true); // 初期化時に設定済み
 	}
@@ -128,9 +135,6 @@ void GamePlayScene::Update() {
 	// パーティクルの更新
 	if (particle_) {
 		particle_->Update();
-	}
-	if (particleEmitter_) {
-		particleEmitter_->Update();
 	}
 
 	//========================================
@@ -212,8 +216,11 @@ void GamePlayScene::ParticleDraw() {
 	if (particle_) {
 		particle_->Draw();
 	}
-	if (particleEmitter_) {
-		particleEmitter_->Draw();
+
+	//========================================
+	// 雲システムの描画
+	if (cloudSystem_ && enableCloudEffect_) {
+		cloudSystem_->Draw();
 	}
 }
 
@@ -223,7 +230,34 @@ void GamePlayScene::ImGuiDraw() {
 #ifdef _DEBUG
 	ImGui::Begin("DebugScene");
 	ImGui::Text("Hello, GamePlayScene!");
+
+	// 雲システムの制御
+	ImGui::Separator();
+	ImGui::Text("Cloud Effect System");
+	ImGui::Checkbox("Enable Cloud Effect", &enableCloudEffect_);
+	
+	// 簡単な操作ボタン
+	if (ImGui::Button("Activate Climax Mode")) {
+		if (cloudSystem_) {
+			cloudSystem_->SetAfterburnerEffect(true, 2.5f);
+			cloudSystem_->SetCloudFlowAmount(5.0f);
+			cloudSystem_->SetSpeedEffect(4.0f);
+		}
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Normal Flight")) {
+		if (cloudSystem_) {
+			cloudSystem_->SetAfterburnerEffect(false, 1.0f);
+			cloudSystem_->SetCloudFlowAmount(1.0f);
+			cloudSystem_->SetSpeedEffect(1.0f);
+		}
+	}
+	
+	if (cloudSystem_) {
+		cloudSystem_->DrawImGui();
+	}
 	ImGui::End();
+
 	//========================================
 	// プレイヤー
 	if (player_) {

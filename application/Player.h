@@ -10,6 +10,7 @@
 #include "Input.h"		// Input処理のために追加
 #include "Object3d.h"
 #include "PlayerBullet.h"
+#include "Cloud.h"
 #include <memory> // For std::unique_ptr
 #include <string> // For std::string
 #include <vector> // For std::vector

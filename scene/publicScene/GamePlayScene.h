@@ -13,6 +13,7 @@
 //========================================
 // Game
 #include "Camera.h"
+#include "Cloud.h"
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
 #include "Enemy.h"
@@ -54,7 +55,6 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
-
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
@@ -87,6 +87,9 @@ private:
 	//========================================
 	// パーティクル
 	std::unique_ptr<Particle> particle_;
-	// エミッター
-	std::unique_ptr<ParticleEmitter> particleEmitter_;
+
+	//========================================
+	// 雲システム
+	std::unique_ptr<Cloud> cloudSystem_;
+	bool enableCloudEffect_; // 雲エフェクトの有効/無効
 };

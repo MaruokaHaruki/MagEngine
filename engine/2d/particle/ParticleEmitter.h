@@ -121,6 +121,19 @@ public:
 		particle_->SetEndRotationRange(min, max);
 	}
 
+	/// @brief SetGravity
+	/// @param gravity 重力ベクトル
+	void SetGravity(const Vector3 &gravity) {
+		particle_->SetGravity(gravity);
+	}
+
+	/// @brief SetFadeInOut
+	/// @param fadeInRatio フェードイン比率
+	/// @param fadeOutRatio フェードアウト比率
+	void SetFadeInOut(float fadeInRatio, float fadeOutRatio) {
+		particle_->SetFadeInOut(fadeInRatio, fadeOutRatio);
+	}
+
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
