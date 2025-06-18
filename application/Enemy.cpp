@@ -129,6 +129,7 @@ Vector3 Enemy::GetPosition() const {
 }
 
 void Enemy::OnCollisionEnter(BaseObject *other) {
+	other;
 	// 既に破壊中または死亡している場合は処理しない
 	if (destroyState_ != DestroyState::Alive) {
 		return;
@@ -186,9 +187,11 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 }
 
 void Enemy::OnCollisionStay(BaseObject *other) {
+	other;
 	// 継続中の衝突処理（必要に応じて実装）
 }
 
 void Enemy::OnCollisionExit(BaseObject *other) {
+	other;
 	// 衝突終了時の処理（必要に応じて実装）
 }
