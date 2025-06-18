@@ -86,7 +86,7 @@ void Enemy::Update() {
 		transform_.translate.x += velocity_.x * frameTime;
 		transform_.translate.y += velocity_.y * frameTime;
 		transform_.translate.z += velocity_.z * frameTime;
-		transform_.rotate.y += rotationSpeed_ * frameTime;
+		transform_.rotate.z += rotationSpeed_ * frameTime;
 
 		// 画面外判定（画面外に出たら削除）
 		if (transform_.translate.z < -20.0f) {

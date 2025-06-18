@@ -90,4 +90,5 @@ private:
 
 	//========================================
 	// 雲システム
+	std::unique_ptr<Cloud> cloudSystem_;
 };

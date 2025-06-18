@@ -75,6 +75,8 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// 雲システムの初期化
+	cloudSystem_ = std::make_unique<Cloud>();
+	cloudSystem_->Initialize(particle_.get(), particleSetup);
 
 	//========================================
 	// 敵
@@ -111,6 +113,9 @@ void GamePlayScene::Update() {
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 
 		// 雲システムの更新（プレイヤー位置を渡す）
+		if (cloudSystem_) {
+			cloudSystem_->Update(playerPos);
+		}
 
 		// グリッドは自動でアニメーションするため、手動オフセットは不要
 		// LineManager::GetInstance()->SetGridAnimation(true); // 初期化時に設定済み
@@ -197,6 +202,12 @@ void GamePlayScene::Object3DDraw() {
 	//========================================
 	// 当たり判定
 	collisionManager_->Draw();
+
+	//========================================
+	// 雲システムの描画
+	if (cloudSystem_) {
+		cloudSystem_->Draw();
+	}
 }
 
 ///=============================================================================
@@ -220,6 +231,9 @@ void GamePlayScene::ImGuiDraw() {
 	ImGui::Text("Hello, GamePlayScene!");
 
 	// 雲システムの制御
+	if (cloudSystem_) {
+		cloudSystem_->DrawImGui();
+	}
 	ImGui::Separator();
 	ImGui::End();
 
