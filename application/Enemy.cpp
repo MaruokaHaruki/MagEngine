@@ -6,40 +6,50 @@
 #include <cmath>
 
 void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
+	//========================================
+	// 3Dオブジェクトの初期化
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
 
-	// 初期設定
-	Transform *transform = obj_->GetTransform();
-	if (transform) {
-		transform->translate = position;
-		transform->scale = {1.0f, 1.0f, 1.0f};
-		transform->rotate = {0.0f, 3.14159f, 0.0f}; // プレイヤーの方向を向く（180度回転）
+	//========================================
+	// メイントランスフォームの初期設定
+	transform_.translate = position;
+	transform_.scale = {1.0f, 1.0f, 1.0f};
+	transform_.rotate = {0.0f, 3.14159f, 0.0f}; // プレイヤーの方向を向く（180度回転）
+
+	// Object3dのトランスフォームに反映
+	Transform *objTransform = obj_->GetTransform();
+	if (objTransform) {
+		*objTransform = transform_;
 	}
 
-	// 移動設定
+	//========================================
+	// 移動パラメータの設定
 	speed_ = 0.0f;					   // 敵の移動速度
 	velocity_ = {0.0f, 0.0f, -speed_}; // プレイヤーに向かって移動（Z軸負方向）
+	rotationSpeed_ = 1.0f;			   // 回転速度（ラジアン/秒）
 
-	// その他の設定
-	isAlive_ = true;
-	radius_ = 1.0f;		   // 当たり判定の半径
-	rotationSpeed_ = 1.0f; // 回転速度（ラジアン/秒）
+	//========================================
+	// 状態パラメータの設定
+	isAlive_ = true; // 生存状態
+	radius_ = 1.0f;	 // 当たり判定の半径
 
+	//========================================
 	// パーティクル関連の初期化
 	particle_ = nullptr;
 	particleSetup_ = nullptr;
 	particleCreated_ = false;
 
+	//========================================
 	// 破壊演出関連の初期化
 	destroyState_ = DestroyState::Alive;
 	destroyTimer_ = 0.0f;
 	destroyDuration_ = 2.0f; // 2秒間破壊演出を表示
 
+	//========================================
 	// BaseObjectの初期化（当たり判定）
-	Vector3 pos = position;
-	BaseObject::Initialize(pos, radius_);
+	BaseObject::Initialize(transform_.translate, radius_);
 }
 
 void Enemy::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
@@ -48,15 +58,12 @@ void Enemy::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) 
 }
 
 void Enemy::Update() {
+	// 死亡状態またはオブジェクトが無効な場合は処理しない
 	if (destroyState_ == DestroyState::Dead || !obj_) {
 		return;
 	}
 
-	Transform *transform = obj_->GetTransform();
-	if (!transform) {
-		return;
-	}
-
+	//========================================
 	// 破壊演出中の処理
 	if (destroyState_ == DestroyState::Destroying) {
 		const float frameTime = 1.0f / 60.0f;
@@ -70,27 +77,34 @@ void Enemy::Update() {
 		return; // 破壊中は移動などの処理をスキップ
 	}
 
+	//========================================
 	// 通常の更新処理（生存中のみ）
 	if (destroyState_ == DestroyState::Alive) {
-		// 移動処理
 		const float frameTime = 1.0f / 60.0f;
-		transform->translate.x += velocity_.x * frameTime;
-		transform->translate.y += velocity_.y * frameTime;
-		transform->translate.z += velocity_.z * frameTime;
 
-		// 回転処理（Y軸周りに回転）
-		transform->rotate.y += rotationSpeed_ * frameTime;
+		// メイントランスフォームの更新
+		transform_.translate.x += velocity_.x * frameTime;
+		transform_.translate.y += velocity_.y * frameTime;
+		transform_.translate.z += velocity_.z * frameTime;
+		transform_.rotate.y += rotationSpeed_ * frameTime;
 
-		// 画面外に出たら削除
-		if (transform->translate.z < -20.0f) {
+		// 画面外判定（画面外に出たら削除）
+		if (transform_.translate.z < -20.0f) {
 			destroyState_ = DestroyState::Dead;
 			isAlive_ = false;
 		}
 
+		// Object3dのトランスフォームに反映
+		Transform *objTransform = obj_->GetTransform();
+		if (objTransform) {
+			*objTransform = transform_;
+		}
+
 		// BaseObjectのコライダー位置を更新
-		BaseObject::Update(transform->translate);
+		BaseObject::Update(transform_.translate);
 	}
 
+	//========================================
 	// Object3dの更新
 	obj_->Update();
 }
@@ -107,25 +121,19 @@ void Enemy::DrawImGui() {
 		return;
 	}
 
-	Transform *transform = obj_->GetTransform();
-	if (transform) {
-		ImGui::Begin("Enemy Debug");
-		ImGui::Text("Position: (%.2f, %.2f, %.2f)",
-					transform->translate.x, transform->translate.y, transform->translate.z);
-		ImGui::Text("Velocity: (%.2f, %.2f, %.2f)", velocity_.x, velocity_.y, velocity_.z);
-		ImGui::Text("Is Alive: %s", isAlive_ ? "Yes" : "No");
-		ImGui::SliderFloat("Speed", &speed_, 0.5f, 10.0f);
-		ImGui::SliderFloat("Rotation Speed", &rotationSpeed_, 0.1f, 5.0f);
-		ImGui::SliderFloat("Radius", &radius_, 0.5f, 3.0f);
-		ImGui::End();
-	}
+	ImGui::Begin("Enemy Debug");
+	ImGui::Text("Position: (%.2f, %.2f, %.2f)",
+				transform_.translate.x, transform_.translate.y, transform_.translate.z);
+	ImGui::Text("Velocity: (%.2f, %.2f, %.2f)", velocity_.x, velocity_.y, velocity_.z);
+	ImGui::Text("Is Alive: %s", isAlive_ ? "Yes" : "No");
+	ImGui::SliderFloat("Speed", &speed_, 0.5f, 10.0f);
+	ImGui::SliderFloat("Rotation Speed", &rotationSpeed_, 0.1f, 5.0f);
+	ImGui::SliderFloat("Radius", &radius_, 0.5f, 3.0f);
+	ImGui::End();
 }
 
 Vector3 Enemy::GetPosition() const {
-	if (obj_) {
-		return obj_->GetPosition();
-	}
-	return {0.0f, 0.0f, 0.0f};
+	return transform_.translate;
 }
 
 void Enemy::OnCollisionEnter(BaseObject *other) {
@@ -134,10 +142,12 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		return;
 	}
 
-	// プレイヤーの弾との衝突時の処理
+	//========================================
+	// パーティクルエフェクトの生成
 	if (particle_ && !particleCreated_) {
-		Vector3 enemyPos = GetPosition();
+		Vector3 enemyPos = transform_.translate; // メイントランスフォームから位置取得
 
+		//========================================
 		// 1. 火花エフェクト（Board形状）- メインの爆発
 		particle_->SetVelocityRange({-10.0f, -5.0f, -10.0f}, {10.0f, 10.0f, 10.0f});
 		particle_->SetTranslateRange({-0.2f, -0.2f, -0.2f}, {0.2f, 0.2f, 0.2f});
@@ -151,6 +161,7 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		particle_->SetFadeInOut(0.02f, 0.8f);
 		particle_->Emit("ExplosionSparks", enemyPos, 30); // 30個の火花
 
+		//========================================
 		// 2. 衝撃波エフェクト（Ring形状）
 		particle_->SetVelocityRange({-2.0f, -1.0f, -2.0f}, {2.0f, 1.0f, 2.0f});
 		particle_->SetTranslateRange({-0.1f, -0.1f, -0.1f}, {0.1f, 0.1f, 0.1f});
@@ -164,6 +175,7 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		particle_->SetFadeInOut(0.1f, 0.6f);
 		particle_->Emit("ExplosionRing", enemyPos, 3); // 3つの衝撃波リング
 
+		//========================================
 		// 3. 煙柱エフェクト（Cylinder形状）
 		particle_->SetVelocityRange({-3.0f, 2.0f, -3.0f}, {3.0f, 8.0f, 3.0f}); // 上向きに強く
 		particle_->SetTranslateRange({-0.3f, 0.0f, -0.3f}, {0.3f, 0.5f, 0.3f});
@@ -180,6 +192,7 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		particleCreated_ = true;
 	}
 
+	//========================================
 	// 破壊状態に移行（すぐには消さない）
 	destroyState_ = DestroyState::Destroying;
 	destroyTimer_ = 0.0f;
