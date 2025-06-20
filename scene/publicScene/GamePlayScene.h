@@ -79,7 +79,7 @@ private:
 
 	//========================================
 	// 敵
-	std::unique_ptr<Enemy> enemy_;
+	std::vector<std::unique_ptr<Enemy>> enemies_;
 
 	//========================================
 	// スプライト
@@ -90,5 +90,4 @@ private:
 
 	//========================================
 	// 雲システム
-	std::unique_ptr<Cloud> cloudSystem_;
 };

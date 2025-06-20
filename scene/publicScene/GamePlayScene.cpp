@@ -75,23 +75,45 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// 雲システムの初期化
-	cloudSystem_ = std::make_unique<Cloud>();
-	cloudSystem_->Initialize(particle_.get(), particleSetup);
 
 	//========================================
 	// 敵
-	enemy_ = std::make_unique<Enemy>();
-	enemy_->Initialize(object3dSetup, "jet.obj", {0.0f, 0.0f, 10.0f}); // 固定位置に配置
-	// 敵にパーティクルシステムを設定
-	enemy_->SetParticleSystem(particle_.get(), particleSetup);
+	// プレイヤーの正面により分散して敵を配置
+	const int enemyCount = 5;
+	const float frontDistance = 15.0f;	// プレイヤー正面からの基本距離
+	const float spreadWidth = 20.0f;	// 横方向の広がりを拡大
+	const float depthVariation = 15.0f; // 奥行き方向のバラつき
+
+	for (int i = 0; i < enemyCount; ++i) {
+		auto enemy = std::make_unique<Enemy>();
+
+		// より分散した配置
+		float offsetX = (i - enemyCount / 2.0f) * (spreadWidth / enemyCount) + ((i % 3) - 1) * 3.0f; // 横方向により分散
+		float offsetZ = frontDistance + (i % 3) * (depthVariation / 3.0f) + ((i % 2) * 8.0f);		 // 奥行きを大きく変化
+		float offsetY = 2.0f + (i % 4) * 3.0f + ((i % 2) * 2.0f);									 // Y座標をより大きく変化
+
+		Vector3 enemyPos = {
+			offsetX,
+			offsetY,
+			offsetZ};
+
+		enemy->Initialize(object3dSetup, "jet.obj", enemyPos);
+		enemy->SetParticleSystem(particle_.get(), particleSetup);
+		enemies_.push_back(std::move(enemy));
+	}
 
 	//========================================
 	// 当たり判定（軽量システムで初期化）
 	collisionManager_ = std::make_unique<CollisionManager>();
 	collisionManager_->Initialize(32.0f, 256); // セルサイズ32.0f、最大256オブジェクト
 
-	// 敵の位置にデバッグテキストを配置（固定位置）
-	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
+	// 敵の位置にデバッグテキストを配置
+	for (size_t i = 0; i < enemies_.size(); ++i) {
+		Vector3 enemyPos = enemies_[i]->GetPosition();
+		enemyPos.y += 2.0f;
+		std::string enemyName = "Enemy" + std::to_string(i);
+		DebugTextManager::GetInstance()->AddText3D(enemyName, enemyPos, {1.0f, 0.0f, 0.0f, 1.0f});
+	}
 }
 
 ///=============================================================================
@@ -113,9 +135,6 @@ void GamePlayScene::Update() {
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 
 		// 雲システムの更新（プレイヤー位置を渡す）
-		if (cloudSystem_) {
-			cloudSystem_->Update(playerPos);
-		}
 
 		// グリッドは自動でアニメーションするため、手動オフセットは不要
 		// LineManager::GetInstance()->SetGridAnimation(true); // 初期化時に設定済み
@@ -123,8 +142,10 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// 敵の更新
-	if (enemy_) {
-		enemy_->Update();
+	for (auto &enemy : enemies_) {
+		if (enemy) {
+			enemy->Update();
+		}
 	}
 
 	//========================================
@@ -150,8 +171,10 @@ void GamePlayScene::Update() {
 	}
 
 	//  敵の当たり判定を登録（生存中のみ）
-	if (enemy_ && enemy_->IsAlive()) {
-		collisionManager_->RegisterObject(enemy_.get());
+	for (auto &enemy : enemies_) {
+		if (enemy && enemy->IsAlive()) {
+			collisionManager_->RegisterObject(enemy.get());
+		}
 	}
 
 	//  プレイヤーの弾の当たり判定を登録
@@ -195,8 +218,10 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// 敵
-	if (enemy_) {
-		enemy_->Draw();
+	for (auto &enemy : enemies_) {
+		if (enemy) {
+			enemy->Draw();
+		}
 	}
 
 	//========================================
@@ -205,9 +230,6 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// 雲システムの描画
-	if (cloudSystem_) {
-		cloudSystem_->Draw();
-	}
 }
 
 ///=============================================================================
@@ -231,9 +253,6 @@ void GamePlayScene::ImGuiDraw() {
 	ImGui::Text("Hello, GamePlayScene!");
 
 	// 雲システムの制御
-	if (cloudSystem_) {
-		cloudSystem_->DrawImGui();
-	}
 	ImGui::Separator();
 	ImGui::End();
 
@@ -245,8 +264,10 @@ void GamePlayScene::ImGuiDraw() {
 
 	//========================================
 	// 敵
-	if (enemy_) {
-		enemy_->DrawImGui();
+	for (auto &enemy : enemies_) {
+		if (enemy) {
+			enemy->DrawImGui();
+		}
 	}
 
 	//========================================

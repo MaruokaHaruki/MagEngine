@@ -16,7 +16,7 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	// メイントランスフォームの初期設定
 	transform_.translate = position;
 	transform_.scale = {1.0f, 1.0f, 1.0f};
-	transform_.rotate = {0.0f, 3.14159f, 0.0f}; // プレイヤーの方向を向く（180度回転）
+	transform_.rotate = {0.0f, 0.0f, 0.0f}; // プレイヤーの方向を向く（180度回転）
 
 	// Object3dのトランスフォームに反映
 	Transform *objTransform = obj_->GetTransform();
@@ -86,7 +86,7 @@ void Enemy::Update() {
 		transform_.translate.x += velocity_.x * frameTime;
 		transform_.translate.y += velocity_.y * frameTime;
 		transform_.translate.z += velocity_.z * frameTime;
-		transform_.rotate.z += rotationSpeed_ * frameTime;
+		// transform_.rotate.z += rotationSpeed_ * frameTime;
 
 		// 画面外判定（画面外に出たら削除）
 		if (transform_.translate.z < -20.0f) {
