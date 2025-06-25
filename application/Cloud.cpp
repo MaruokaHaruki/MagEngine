@@ -18,353 +18,230 @@ void Cloud::Initialize(Particle *particle, ParticleSetup *particleSetup) {
 	// 乱数エンジンの初期化
 	randomEngine_.seed(randomDevice_());
 
-	// 雲パーティクルグループの作成
-	particle_->CreateParticleGroup("CloudSystem", "sandWind.png", ParticleShape::Board);
+	// 霧パーティクルグループの作成
+	particle_->CreateParticleGroup("FogSmoke", "sandWind.png", ParticleShape::Board);
 
-	// パーティクルシステムの設定を強化
-	particle_->SetBillboard(true);
-	particle_->SetCustomTextureSize({15.0f, 15.0f}); // サイズを小さく（密度重視）
+	// 霧効果のセットアップ
+	SetupFogEffect();
 
-	// 雲エミッターの初期化
-	cloudEmitters_.clear();
-	cloudParams_.clear();
-
-	// 広範囲に雲のじゅうたんを初期配置
-	CreateCloudCarpet();
-}
-
-///=============================================================================
-///                        雲のじゅうたん作成
-void Cloud::CreateCloudCarpet() {
-	// グリッド状の基本配置（原点周辺に集中）
-	int gridSize = 10;		  // グリッドサイズを縮小（10x10）
-	float gridSpacing = 8.0f; // グリッド間隔を縮小
-	float baseZ = 30.0f;	  // Z+側の開始位置を原点近くに
-
-	for (int x = -gridSize; x <= gridSize; ++x) {
-		for (int z = 0; z <= gridSize; ++z) { // Z+側の範囲を縮小
-			// 基本位置（原点周辺）
-			Vector3 gridPos = {
-				x * gridSpacing,
-				params_.cloudHeight,
-				baseZ - z * gridSpacing};
-
-			// ランダムなオフセットを追加してグリッド感を薄める
-			std::uniform_real_distribution<float> offsetDist(-gridSpacing * 0.3f, gridSpacing * 0.3f);
-			std::uniform_real_distribution<float> heightDist(-params_.heightVariation * 0.5f, params_.heightVariation * 0.5f);
-
-			gridPos.x += offsetDist(randomEngine_);
-			gridPos.y += heightDist(randomEngine_);
-			gridPos.z += offsetDist(randomEngine_);
-
-			CreateCloudEmitter(gridPos);
-		}
-	}
-
-	// 追加のランダム散布（原点周辺に密集）
-	for (int i = 0; i < params_.cloudCount; ++i) { // 生成数を調整
-		std::uniform_real_distribution<float> xDist(-params_.spawnRadius, params_.spawnRadius);
-		std::uniform_real_distribution<float> yDist(params_.cloudHeight - params_.heightVariation * 0.7f,
-													params_.cloudHeight + params_.heightVariation * 0.7f);
-		std::uniform_real_distribution<float> zDist(5.0f, params_.spawnRadius); // Z+側に限定
-
-		Vector3 randomPos = {
-			xDist(randomEngine_),
-			yDist(randomEngine_),
-			zDist(randomEngine_)};
-
-		CreateCloudEmitter(randomPos);
-	}
+	// エミッターの作成
+	CreateEmitters();
 }
 
 ///=============================================================================
 ///                        更新
 void Cloud::Update(const Vector3 &playerPosition) {
-	spawnTimer_ += 1.0f / 60.0f;
+	if (!isActive_)
+		return;
 
-	// 雲エミッターの更新
-	for (auto &emitter : cloudEmitters_) {
+	// プレイヤー位置を基準に霧の中心を調整
+	fogCenter_ = playerPosition;
+
+	// 全エミッターの更新
+	for (auto &emitter : fogEmitters_) {
 		if (emitter) {
 			emitter->Update();
 		}
 	}
 
-	// 雲パラメータの更新
-	UpdateCloudPositions(playerPosition);
-
-	// より頻繁に新しい雲を生成
-	if (spawnTimer_ >= spawnInterval_) {
-		CheckAndSpawnClouds(playerPosition);
-		spawnTimer_ = 0.0f;
+	// デバッグ可視化の描画
+	if (showDebugVisualization_) {
+		DrawDebugVisualization();
 	}
-
-	// 古い雲の削除チェック
-	RemoveDistantClouds(playerPosition);
 }
 
 ///=============================================================================
 ///                        描画
 void Cloud::Draw() {
-	// パーティクルシステムが描画を担当するため、ここでは特に何もしない
-}
-
-///=============================================================================
-///                        雲エミッターの作成
-void Cloud::CreateCloudEmitter(const Vector3 &basePosition) {
-	// ランダムな位置の計算（原点周辺に集中）
-	std::uniform_real_distribution<float> radiusDist(1.0f, 5.0f); // 分散範囲を縮小
-	std::uniform_real_distribution<float> angleDist(0.0f, 2.0f * std::numbers::pi_v<float>);
-	std::uniform_real_distribution<float> heightDist(-2.0f, 2.0f); // 高さの分散を縮小
-
-	float radius = radiusDist(randomEngine_);
-	float angle = angleDist(randomEngine_);
-	float heightOffset = heightDist(randomEngine_);
-
-	Vector3 spawnPosition = {
-		basePosition.x + radius * std::cos(angle),
-		basePosition.y + heightOffset,
-		basePosition.z + radius * std::sin(angle)};
-
-	// エミッターの作成（高頻度で生成）
-	Transform emitterTransform;
-	emitterTransform.translate = spawnPosition;
-	emitterTransform.rotate = {0.0f, 0.0f, 0.0f};
-	emitterTransform.scale = {1.0f, 1.0f, 1.0f};
-
-	auto emitter = std::make_unique<ParticleEmitter>(
-		particle_, "CloudSystem", emitterTransform, 25, 0.02f, true); // パーティクル数を調整、頻度を上げる
-
-	// 雲の設定
-	ConfigureCloudEmitter(emitter.get());
-
-	// 雲パラメータの追加（寿命を短く）
-	CloudParams cloudParam;
-	cloudParam.position = spawnPosition;
-	cloudParam.velocity = CalculateWindVelocity();
-	cloudParam.lifeTime = 25.0f; // 寿命を大幅短縮（80→25秒）
-	cloudParam.isActive = true;
-
-	cloudEmitters_.push_back(std::move(emitter));
-	cloudParams_.push_back(cloudParam);
-}
-
-///=============================================================================
-///                        雲エミッターの設定
-void Cloud::ConfigureCloudEmitter(ParticleEmitter *emitter) {
-	// パーティクルの基本設定（密度重視）
-	emitter->SetCustomTextureSize({8.0f, 8.0f}); // さらに小さく
-	emitter->SetBillboard(true);
-
-	// 移動範囲の設定（原点周辺に集中）
-	emitter->SetTranslateRange({-8.0f, -2.0f, -8.0f}, {8.0f, 2.0f, 8.0f});
-
-	// 初速度の設定（風の影響を強化）
-	Vector3 windVel = CalculateWindVelocity();
-	emitter->SetVelocityRange(
-		{windVel.x - 1.5f, windVel.y - 0.3f, windVel.z - 1.5f},
-		{windVel.x + 1.5f, windVel.y + 0.3f, windVel.z + 1.5f});
-
-	// 色の設定（より薄く、密度で補う）
-	emitter->SetColorRange(
-		{0.85f, 0.92f, 1.0f, 0.3f}, // 薄い白
-		{1.0f, 1.0f, 1.0f, 0.6f}	// 少し濃い白
-	);
-
-	// 寿命の設定（短めに）
-	emitter->SetLifetimeRange(3.0f, 8.0f); // パーティクル寿命を短縮
-
-	// スケールの設定（小さめで数重視）
-	emitter->SetInitialScaleRange({0.6f, 0.6f, 0.6f}, {1.5f, 1.5f, 1.5f});
-	emitter->SetEndScaleRange({1.5f, 1.5f, 1.5f}, {3.0f, 3.0f, 3.0f});
-
-	// 回転の設定
-	emitter->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.1f});
-	emitter->SetEndRotationRange({0.0f, 0.0f, -0.1f}, {0.0f, 0.0f, 0.1f});
-
-	// 重力の設定（ほぼ無重力）
-	emitter->SetGravity({0.0f, -0.001f, 0.0f});
-
-	// フェードの設定
-	emitter->SetFadeInOut(0.1f, 0.8f);
-}
-
-///=============================================================================
-///                        風の速度計算
-Vector3 Cloud::CalculateWindVelocity() {
-	if (!params_.enableWind) {
-		return {0.0f, 0.0f, 0.0f};
-	}
-
-	// 風速を大幅に強化
-	Vector3 windVelocity = {
-		params_.cloudSpeed * 2.0f * std::cos(params_.windDirection),
-		0.0f,
-		params_.cloudSpeed * 2.0f * std::sin(params_.windDirection)};
-
-	return windVelocity;
-}
-
-///=============================================================================
-///                        雲位置の更新
-void Cloud::UpdateCloudPositions(const Vector3 &playerPosition) {
-	Vector3 windVel = CalculateWindVelocity();
-
-	for (size_t i = 0; i < cloudEmitters_.size() && i < cloudParams_.size(); ++i) {
-		if (cloudParams_[i].isActive) {
-			// 風による移動（より速く）
-			cloudParams_[i].position.x += windVel.x * (1.0f / 60.0f);
-			cloudParams_[i].position.z += windVel.z * (1.0f / 60.0f);
-
-			// エミッターの位置を更新
-			cloudEmitters_[i]->SetTranslate(cloudParams_[i].position);
-
-			// 寿命の減少
-			cloudParams_[i].lifeTime -= 1.0f / 60.0f;
-			if (cloudParams_[i].lifeTime <= 0.0f) {
-				cloudParams_[i].isActive = false;
-			}
-		}
-	}
-}
-
-///=============================================================================
-///                        新しい雲の生成チェック
-void Cloud::CheckAndSpawnClouds(const Vector3 &playerPosition) {
-	// アクティブな雲の数をカウント
-	int activeClouds = 0;
-	for (const auto &param : cloudParams_) {
-		if (param.isActive) {
-			activeClouds++;
-		}
-	}
-
-	// 大量の雲を常に維持（目標数を8倍に）
-	int targetCloudCount = params_.cloudCount * 8; // 目標数を調整
-
-	// 雲が少しでも足りなくなったら即座に補充
-	int shortage = targetCloudCount - activeClouds;
-	if (shortage > 0) {
-		// 不足分に応じて生成（原点周辺に集中）
-		int spawnCount = std::max(20, shortage / 8); // 生成数を調整
-
-		for (int i = 0; i < spawnCount; ++i) {
-			// 原点周辺の風上側（Z+方向）に生成
-			std::uniform_real_distribution<float> xDist(-params_.spawnRadius * 0.8f, params_.spawnRadius * 0.8f);
-			std::uniform_real_distribution<float> yDist(params_.cloudHeight - params_.heightVariation * 0.6f,
-														params_.cloudHeight + params_.heightVariation * 0.6f);
-			std::uniform_real_distribution<float> zDist(params_.spawnRadius * 0.3f, params_.spawnRadius * 1.2f); // 原点近くのZ+側
-
-			Vector3 spawnBase = {
-				xDist(randomEngine_),
-				yDist(randomEngine_),
-				zDist(randomEngine_)};
-
-			CreateCloudEmitter(spawnBase);
-		}
-	}
-
-	// 追加で常時生成（途切れ防止）
-	for (int i = 0; i < 3; ++i) { // 毎回3個追加生成
-		std::uniform_real_distribution<float> xDist(-params_.spawnRadius * 0.6f, params_.spawnRadius * 0.6f);
-		std::uniform_real_distribution<float> yDist(params_.cloudHeight - params_.heightVariation * 0.5f,
-													params_.cloudHeight + params_.heightVariation * 0.5f);
-		std::uniform_real_distribution<float> zDist(params_.spawnRadius * 0.4f, params_.spawnRadius * 1.0f);
-
-		Vector3 continuousSpawn = {
-			xDist(randomEngine_),
-			yDist(randomEngine_),
-			zDist(randomEngine_)};
-
-		CreateCloudEmitter(continuousSpawn);
-	}
-}
-
-///=============================================================================
-///                        遠い雲の削除
-void Cloud::RemoveDistantClouds(const Vector3 &playerPosition) {
-	// 原点からの距離で削除判定
-	for (auto it = cloudEmitters_.begin(); it != cloudEmitters_.end();) {
-		size_t index = std::distance(cloudEmitters_.begin(), it);
-
-		if (index < cloudParams_.size()) {
-			// 原点からの距離を計算
-			Vector3 distance = {
-				cloudParams_[index].position.x,
-				0.0f,
-				cloudParams_[index].position.z};
-			float distanceLength = std::sqrt(distance.x * distance.x + distance.z * distance.z);
-
-			// Z座標が大きくマイナスになった雲も削除（風下側に流れ切った雲）
-			bool tooFarDownwind = cloudParams_[index].position.z < -params_.respawnDistance * 0.7f; // 削除距離を短縮
-			bool tooFarFromOrigin = distanceLength > params_.respawnDistance;
-
-			// 遠すぎるか非アクティブな雲を削除
-			if (tooFarDownwind || tooFarFromOrigin || !cloudParams_[index].isActive) {
-				it = cloudEmitters_.erase(it);
-				cloudParams_.erase(cloudParams_.begin() + index);
-			} else {
-				++it;
-			}
-		} else {
-			++it;
-		}
-	}
+	// パーティクル描画は自動的に行われるため、ここでは特に何もしない
 }
 
 ///=============================================================================
 ///                        ImGui描画
 void Cloud::DrawImGui() {
 #ifdef _DEBUG
-	if (ImGui::TreeNode("Cloud System")) {
-		ImGui::SliderInt("Cloud Count", &params_.cloudCount, 100, 800);			 // 最大数を調整
-		ImGui::SliderFloat("Spawn Radius", &params_.spawnRadius, 20.0f, 100.0f); // 生成半径を原点周辺に制限
-		ImGui::SliderFloat("Cloud Speed", &params_.cloudSpeed, 2.0f, 20.0f);
-		ImGui::SliderFloat("Cloud Height", &params_.cloudHeight, 15.0f, 50.0f);
-		ImGui::SliderFloat("Height Variation", &params_.heightVariation, 5.0f, 30.0f);
-		ImGui::SliderFloat("Wind Direction", &params_.windDirection, 0.0f, 2.0f * std::numbers::pi_v<float>);
-		ImGui::SliderFloat("Respawn Distance", &params_.respawnDistance, 100.0f, 300.0f); // 削除距離を短縮
-		ImGui::Checkbox("Enable Wind", &params_.enableWind);
+	ImGui::Begin("Cloud System");
 
-		ImGui::Text("Active Clouds: %zu", cloudEmitters_.size());
-		ImGui::Text("Active Cloud Params: %zu", cloudParams_.size());
-		ImGui::Text("Target Cloud Count: %d", params_.cloudCount * 8);
-		ImGui::Text("Wind Direction: Z+ to Z- (%.2f rad)", params_.windDirection);
-		ImGui::Text("Spawn Interval: %.3f seconds", spawnInterval_);
+	if (ImGui::CollapsingHeader("Fog Parameters")) {
+		ImGui::Checkbox("Active", &isActive_);
+		ImGui::SliderFloat3("Fog Center", &fogCenter_.x, -100.0f, 100.0f);
+		ImGui::SliderFloat3("Fog Size", &fogSize_.x, 1.0f, 100.0f);
+		ImGui::SliderFloat3("Wind Direction", &windDirection_.x, -5.0f, 5.0f);
+		ImGui::SliderFloat("Wind Strength", &windStrength_, 0.0f, 10.0f);
+		ImGui::SliderInt("Emitter Count", &emitterCount_, 1, 128);
+		ImGui::SliderFloat("Frequency", &emitterFrequency_, 0.01f, 1.0f);
+		ImGui::SliderInt("Particles Per Emitter", &particlesPerEmitter_, 1, 32);
+		ImGui::SliderFloat("Fog Density", &fogDensity_, 0.1f, 1.0f);
 
-		// 各雲の状態を表示
-		for (size_t i = 0; i < cloudParams_.size() && i < 3; ++i) {
-			ImGui::Text("Cloud %zu: Active=%s, Life=%.1f, Pos=(%.1f,%.1f,%.1f)", i,
-						cloudParams_[i].isActive ? "Yes" : "No",
-						cloudParams_[i].lifeTime,
-						cloudParams_[i].position.x,
-						cloudParams_[i].position.y,
-						cloudParams_[i].position.z);
+		if (ImGui::Button("Recreate Emitters")) {
+			fogEmitters_.clear();
+			SetupFogEffect();
+			CreateEmitters();
 		}
 
-		// 雲のじゅうたんを再生成するボタン
-		if (ImGui::Button("Recreate Cloud Carpet")) {
-			cloudEmitters_.clear();
-			cloudParams_.clear();
-			CreateCloudCarpet();
-		}
-
-		// 強制的に原点周辺に雲を生成するボタン
-		if (ImGui::Button("Spawn Origin Clouds")) {
-			for (int i = 0; i < 100; ++i) { // 100個を原点周辺に生成
-				std::uniform_real_distribution<float> xDist(-params_.spawnRadius, params_.spawnRadius);
-				std::uniform_real_distribution<float> yDist(params_.cloudHeight - params_.heightVariation,
-															params_.cloudHeight + params_.heightVariation);
-				std::uniform_real_distribution<float> zDist(5.0f, params_.spawnRadius);
-
-				Vector3 pos = {
-					xDist(randomEngine_),
-					yDist(randomEngine_),
-					zDist(randomEngine_)};
-				CreateCloudEmitter(pos);
-			}
-		}
-
-		ImGui::TreePop();
+		// デバッグ表示設定を追加
+		ImGui::Separator();
+		ImGui::Text("Debug Visualization");
+		ImGui::Checkbox("Show Debug Area", &showDebugVisualization_);
+		ImGui::ColorEdit4("Area Color", &areaColor_.x);
+		ImGui::ColorEdit4("Wind Color", &windColor_.x);
+		ImGui::SliderFloat("Wind Arrow Length", &windArrowLength_, 1.0f, 20.0f);
 	}
+
+	ImGui::Text("Active Emitters: %zu", fogEmitters_.size());
+
+	ImGui::End();
 #endif
+}
+
+///=============================================================================
+///                        エミッターの作成
+void Cloud::CreateEmitters() {
+	fogEmitters_.clear();
+
+	// 指定された数のエミッターを範囲内にランダム配置
+	std::uniform_real_distribution<float> distX(-fogSize_.x * 0.5f, fogSize_.x * 0.5f);
+	std::uniform_real_distribution<float> distY(0.0f, fogSize_.y);
+	std::uniform_real_distribution<float> distZ(-fogSize_.z * 0.5f, fogSize_.z * 0.5f);
+
+	for (int i = 0; i < emitterCount_; ++i) {
+		// エミッターの位置をランダムに決定
+		Vector3 emitterPosition = {
+			fogCenter_.x + distX(randomEngine_),
+			fogCenter_.y + distY(randomEngine_),
+			fogCenter_.z + distZ(randomEngine_)};
+
+		Transform emitterTransform = {};
+		emitterTransform.translate = emitterPosition;
+		emitterTransform.rotate = {0.0f, 0.0f, 0.0f};
+		emitterTransform.scale = {1.0f, 1.0f, 1.0f};
+
+		// エミッターを作成（継続発生するようにrepeat=true）
+		auto emitter = std::make_unique<ParticleEmitter>(
+			particle_,
+			"FogSmoke",
+			emitterTransform,
+			particlesPerEmitter_,
+			emitterFrequency_,
+			true // repeat = true で継続発生
+		);
+
+		fogEmitters_.push_back(std::move(emitter));
+	}
+}
+
+///=============================================================================
+///                        霧効果のセットアップ
+void Cloud::SetupFogEffect() {
+	if (!particle_)
+		return;
+
+	// 霧らしい動きと見た目を設定
+	particle_->SetBillboard(true);
+
+	// 移動範囲（エミッター周辺の小さな範囲）
+	particle_->SetTranslateRange({-1.0f, -0.5f, -1.0f}, {1.0f, 0.5f, 1.0f});
+
+	// 初速度（風の方向に影響される）
+	Vector3 windVel = {
+		windDirection_.x * windStrength_ * 0.5f,
+		windDirection_.y * windStrength_ * 0.2f + 0.1f, // 少し上向きに
+		windDirection_.z * windStrength_ * 0.5f};
+	particle_->SetVelocityRange(
+		{windVel.x - 0.3f, windVel.y - 0.1f, windVel.z - 0.3f},
+		{windVel.x + 0.3f, windVel.y + 0.2f, windVel.z + 0.3f});
+
+	// 色（グレー系の煙色）
+	Vector4 smokeColorMin = {0.6f, 0.6f, 0.6f, 0.2f * fogDensity_};
+	Vector4 smokeColorMax = {0.9f, 0.9f, 0.9f, 0.5f * fogDensity_};
+	particle_->SetColorRange(smokeColorMin, smokeColorMax);
+
+	// 生存時間（長めに設定して霧らしく）
+	particle_->SetLifetimeRange(3.0f, 8.0f);
+
+	// スケール（開始時は小さく、終了時は大きく）
+	particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f});
+	particle_->SetEndScaleRange({3.0f, 3.0f, 3.0f}, {5.0f, 5.0f, 5.0f});
+
+	// 回転（ゆっくりと回転）
+	particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
+	particle_->SetEndRotationRange({-0.2f, -0.2f, -0.2f}, {0.2f, 0.2f, 0.2f});
+
+	// 重力（風の抵抗を表現）
+	Vector3 gravity = {
+		windDirection_.x * windStrength_ * 0.1f,
+		-0.5f, // 軽い下向きの力
+		windDirection_.z * windStrength_ * 0.1f};
+	particle_->SetGravity(gravity);
+
+	// フェードイン・アウト（自然な出現と消失）
+	particle_->SetFadeInOut(0.2f, 0.6f);
+}
+
+///=============================================================================
+///                        デバッグ描画（霧のエリアと風向きの可視化）
+void Cloud::DrawDebugVisualization() {
+	LineManager *lineManager = LineManager::GetInstance();
+	if (!lineManager)
+		return;
+
+	// 霧のエリア（境界ボックス）を描画
+	lineManager->DrawBox(fogCenter_, fogSize_, areaColor_, 2.0f);
+
+	// エミッター位置にマーカーを描画（小さな点）
+	for (const auto &emitter : fogEmitters_) {
+		if (emitter) {
+			// エミッター位置を取得（ParticleEmitterに位置取得機能が必要）
+			// 今回は霧の範囲内にランダム配置されているので、小さなマーカーで代用
+			// lineManager->DrawSphere(emitterPos, 0.2f, {0.0f, 1.0f, 0.0f, 0.5f}, 8, 1.0f);
+		}
+	}
+
+	// 風向きの矢印を描画（霧の中心から風の方向へ）
+	Vector3 windEnd = {
+		fogCenter_.x + windDirection_.x * windArrowLength_,
+		fogCenter_.y + windDirection_.y * windArrowLength_,
+		fogCenter_.z + windDirection_.z * windArrowLength_};
+
+	// 風向き矢印（太めに描画）
+	lineManager->DrawArrow(fogCenter_, windEnd, windColor_, 0.15f, 3.0f);
+
+	// 風の強さを表す追加の矢印（複数描画で強さを表現）
+	int strengthIndicators = static_cast<int>(windStrength_ / 2.0f) + 1;
+	for (int i = 0; i < strengthIndicators && i < 5; ++i) {
+		float offset = (i + 1) * 2.0f;
+		Vector3 offsetStart = {
+			fogCenter_.x + windDirection_.x * offset,
+			fogCenter_.y + windDirection_.y * offset + i * 0.5f,
+			fogCenter_.z + windDirection_.z * offset};
+		Vector3 offsetEnd = {
+			offsetStart.x + windDirection_.x * (windArrowLength_ * 0.6f),
+			offsetStart.y + windDirection_.y * (windArrowLength_ * 0.6f),
+			offsetStart.z + windDirection_.z * (windArrowLength_ * 0.6f)};
+
+		Vector4 fadedColor = windColor_;
+		fadedColor.w *= (1.0f - i * 0.2f); // 段々薄くなる
+		lineManager->DrawArrow(offsetStart, offsetEnd, fadedColor, 0.1f, 2.0f);
+	}
+
+	// 霧の密度を表すグリッド（オプション）
+	if (fogDensity_ > 0.5f) {
+		// 霧が濃い場合のみ内部グリッドを表示
+		float gridStep = fogSize_.x / 8.0f;
+		Vector4 gridColor = areaColor_;
+		gridColor.w *= 0.3f; // 薄くする
+
+		// 縦のグリッドライン
+		for (int i = -3; i <= 3; ++i) {
+			Vector3 lineStart = {
+				fogCenter_.x + i * gridStep,
+				fogCenter_.y - fogSize_.y * 0.5f,
+				fogCenter_.z - fogSize_.z * 0.5f};
+			Vector3 lineEnd = {
+				fogCenter_.x + i * gridStep,
+				fogCenter_.y + fogSize_.y * 0.5f,
+				fogCenter_.z + fogSize_.z * 0.5f};
+			lineManager->DrawLine(lineStart, lineEnd, gridColor, 1.0f);
+		}
+	}
 }
