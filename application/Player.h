@@ -7,10 +7,11 @@
  *********************************************************************/
 #pragma once
 #include "BaseObject.h" // 当たり判定用
-#include "Input.h"		// Input処理のために追加
-#include "Object3d.h"
-#include "PlayerBullet.h"
 #include "Cloud.h"
+#include "Input.h" // Input処理のために追加
+#include "Object3d.h"
+#include "ParticleEmitter.h"
+#include "PlayerBullet.h"
 #include <memory> // For std::unique_ptr
 #include <string> // For std::string
 #include <vector> // For std::vector
@@ -67,12 +68,18 @@ private:
 	/// \brief 弾の更新・削除処理
 	void UpdateBullets();
 
+	/// \brief ジェット煙エミッターの更新
+	void UpdateJetSmoke();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
 	Vector3 GetPosition() const {
 		return obj_->GetPosition();
 	}
+
+	/// \brief パーティクルシステムの設定
+	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
 public:
 	// BaseObjectの純粋仮想関数を実装
@@ -104,4 +111,9 @@ private:
 	Object3dSetup *object3dSetup_; // 弾の初期化用
 	float shootCoolTime_;		   // 射撃のクールタイム
 	float maxShootCoolTime_;	   // 最大クールタイム
+
+	// パーティクルエミッター関連
+	Particle *particleSystem_;
+	ParticleSetup *particleSetup_;
+	std::unique_ptr<ParticleEmitter> jetSmokeEmitter_;
 };

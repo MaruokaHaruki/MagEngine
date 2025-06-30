@@ -128,8 +128,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="LevelDataLoader.cpp" />
-    <ClCompile Include="LightManager.cpp" />
+    <ClCompile Include="engine\base\LevelDataLoader.cpp" />
+    <ClCompile Include="engine\base\LightManager.cpp" />
     <ClCompile Include="application\Player.cpp" />
     <ClCompile Include="application\PlayerBullet.cpp" />
     <ClCompile Include="application\PlayerMissile.cpp" />
@@ -182,8 +182,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
     <ClInclude Include="externals\json.hpp" />
-    <ClInclude Include="LevelDataLoader.h" />
-    <ClInclude Include="LightManager.h" />
+    <ClInclude Include="engine\base\LevelDataLoader.h" />
+    <ClInclude Include="engine\base\LightManager.h" />
     <ClInclude Include="application\Player.h" />
     <ClInclude Include="application\PlayerBullet.h" />
     <ClInclude Include="application\PlayerMissile.h" />

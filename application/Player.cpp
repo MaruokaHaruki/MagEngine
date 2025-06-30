@@ -53,6 +53,10 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	shootCoolTime_ = 0.0f;
 	maxShootCoolTime_ = 0.2f; // 0.2秒間隔で発射
 
+	// パーティクル関連の初期化
+	particleSystem_ = nullptr;
+	particleSetup_ = nullptr;
+
 	if (obj_) {
 		Transform *objTransform = obj_->GetTransform(); // GetTransform() を使用
 		if (objTransform) {
@@ -63,6 +67,35 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 			Vector3 pos = objTransform->translate;
 			BaseObject::Initialize(pos, 1.0f); // プレイヤーの当たり判定半径
 		}
+	}
+}
+
+void Player::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
+	particleSystem_ = particle;
+	particleSetup_ = particleSetup;
+
+	if (particleSystem_) {
+		// ジェット煙用パーティクルグループを作成
+		particleSystem_->CreateParticleGroup("JetSmoke", "sandWind.png", ParticleShape::Board);
+
+		// ジェット煙の設定
+		particleSystem_->SetBillboard(true);
+		particleSystem_->SetCustomTextureSize({5.0f, 5.0f});
+		particleSystem_->SetTranslateRange({-0.2f, -0.2f, -0.2f}, {0.2f, 0.2f, 0.2f});
+		particleSystem_->SetVelocityRange({-0.5f, -0.5f, -2.0f}, {0.5f, 0.5f, -0.5f});
+		particleSystem_->SetColorRange({0.8f, 0.8f, 0.8f, 0.7f}, {1.0f, 1.0f, 1.0f, 0.9f});
+		particleSystem_->SetLifetimeRange(1.0f, 2.5f);
+		particleSystem_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.6f, 0.6f, 0.6f});
+		particleSystem_->SetEndScaleRange({1.2f, 1.2f, 1.2f}, {2.0f, 2.0f, 2.0f});
+		particleSystem_->SetFadeInOut(0.1f, 0.6f);
+
+		// エミッターの作成（プレイヤーの初期位置から）
+		Vector3 initialPos = obj_->GetPosition();
+		Transform emitterTransform = {};
+		emitterTransform.translate = {initialPos.x, initialPos.y, initialPos.z - 1.5f}; // プレイヤーの後方
+
+		jetSmokeEmitter_ = std::make_unique<ParticleEmitter>(
+			particleSystem_, "JetSmoke", emitterTransform, 3, 0.1f, true);
 	}
 }
 
@@ -80,6 +113,9 @@ void Player::Update() {
 	// プレイヤーの動作関係処理を統合
 	UpdateMovement();
 
+	// ジェット煙エミッターの更新
+	UpdateJetSmoke();
+
 	// 弾の発射処理
 	ProcessShooting();
 
@@ -91,6 +127,19 @@ void Player::Update() {
 
 	// Object3dの更新 (ワールド行列の更新など)
 	obj_->Update();
+}
+
+void Player::UpdateJetSmoke() {
+	if (jetSmokeEmitter_ && obj_) {
+		Vector3 playerPos = obj_->GetPosition();
+
+		// エミッターをプレイヤーの後方に配置
+		Vector3 jetSmokePos = {playerPos.x, playerPos.y, playerPos.z - 1.5f};
+		jetSmokeEmitter_->SetTranslate(jetSmokePos);
+
+		// エミッターの更新
+		jetSmokeEmitter_->Update();
+	}
 }
 
 ///=============================================================================
@@ -268,6 +317,17 @@ void Player::DrawImGui() {
 		ImGui::SliderFloat("Rotation Smoothing", &rotationSmoothing_, 0.01f, 0.5f);
 		ImGui::Text("Bullets Count: %zu", bullets_.size());
 		ImGui::SliderFloat("Shoot Cool Time", &maxShootCoolTime_, 0.05f, 1.0f);
+
+		// ジェット煙の制御
+		if (jetSmokeEmitter_) {
+			ImGui::Separator();
+			ImGui::Text("Jet Smoke Control");
+			bool repeat = true; // エミッターのリピート状態を取得する必要があれば追加
+			if (ImGui::Checkbox("Enable Jet Smoke", &repeat)) {
+				jetSmokeEmitter_->SetRepeat(repeat);
+			}
+		}
+
 		ImGui::End();
 	}
 }

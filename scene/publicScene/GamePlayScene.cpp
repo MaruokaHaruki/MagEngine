@@ -73,6 +73,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	player_ = std::make_unique<Player>();
 	player_->Initialize(object3dSetup, "jet.obj");
 
+	// プレイヤーにパーティクルシステムを設定
+	player_->SetParticleSystem(particle_.get(), particleSetup);
+
 	//========================================
 	// 雲システムの初期化
 	cloudSystem_ = std::make_unique<Cloud>();

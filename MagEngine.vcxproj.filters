@@ -108,7 +108,7 @@
     <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="LightManager.cpp" />
+    <ClCompile Include="engine\base\LightManager.cpp" />
     <ClCompile Include="application\Player.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
@@ -117,7 +117,7 @@
     <ClCompile Include="application\Skydome.cpp" />
     <ClCompile Include="application\PlayerBullet.cpp" />
     <ClCompile Include="application\PlayerMissile.cpp" />
-    <ClCompile Include="LevelDataLoader.cpp" />
+    <ClCompile Include="engine\base\LevelDataLoader.cpp" />
     <ClCompile Include="application\Enemy.cpp" />
     <ClCompile Include="application\Cloud.cpp" />
   </ItemGroup>
@@ -277,7 +277,7 @@
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
-    <ClInclude Include="LightManager.h" />
+    <ClInclude Include="engine\base\LightManager.h" />
     <ClInclude Include="application\Player.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
     <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
@@ -286,7 +286,7 @@
     <ClInclude Include="application\Skydome.h" />
     <ClInclude Include="application\PlayerBullet.h" />
     <ClInclude Include="application\PlayerMissile.h" />
-    <ClInclude Include="LevelDataLoader.h" />
+    <ClInclude Include="engine\base\LevelDataLoader.h" />
     <ClInclude Include="externals\json.hpp" />
     <ClInclude Include="application\Enemy.h" />
     <ClInclude Include="application\Cloud.h" />
