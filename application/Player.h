@@ -78,6 +78,11 @@ public:
 		return obj_->GetPosition();
 	}
 
+	/// \brief Object3dオブジェクトの取得（FollowCameraでのアクセス用）
+	Object3d *GetObject3d() const {
+		return obj_.get();
+	}
+
 	/// \brief パーティクルシステムの設定
 	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
@@ -86,6 +91,9 @@ public:
 	void OnCollisionEnter(BaseObject *other) override;
 	void OnCollisionStay(BaseObject *other) override;
 	void OnCollisionExit(BaseObject *other) override;
+
+	// FollowCameraのアクセス許可
+	friend class FollowCamera;
 
 	///--------------------------------------------------------------
 	///							メンバ変数

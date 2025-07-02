@@ -17,6 +17,7 @@
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
 #include "Enemy.h"
+#include "FollowCamera.h"
 #include "LineManager.h"
 #include "MAudioG.h"
 #include "Particle.h"
@@ -66,7 +67,8 @@ private:
 	std::unique_ptr<CollisionManager> collisionManager_;
 
 	//========================================
-	// 地面
+	// カメラ
+	std::unique_ptr<FollowCamera> followCamera_;
 
 	//=========================================
 	// スカイドーム

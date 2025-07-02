@@ -10,6 +10,7 @@
 #include "CameraManager.h"
 #include "Cloud.h"
 #include "Enemy.h"
+#include "FollowCamera.h"
 #include "Input.h"
 #include "LineManager.h"
 #include "ModelManager.h"
@@ -25,11 +26,17 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	particleSetup;
 	//========================================
 	// カメラ設定
+	CameraManager::GetInstance()->AddCamera("FollowCamera");
 	CameraManager::GetInstance()->GetCamera("DefaultCamera")->SetTransform({{1.0f, 1.0f, 1.0f}, {0.3f, 0.0f, 0.0f}, {0.0f, 2.3f, -8.0f}});
 
 	//========================================
+	// FollowCameraの初期化
+	followCamera_ = std::make_unique<FollowCamera>();
+	followCamera_->Initialize("FollowCamera");
+
+	//========================================
 	// DebugTextManagerにカメラを設定
-	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCamera("DefaultCamera"));
+	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCamera("FollowCamera"));
 
 	//========================================
 	// モデルの読み込み
@@ -77,6 +84,12 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// プレイヤーにパーティクルシステムを設定
 	player_->SetParticleSystem(particle_.get(), particleSetup);
 
+	// FollowCameraにプレイヤーを設定
+	followCamera_->SetTarget(player_.get());
+
+	// FollowCameraをメインカメラに設定
+	CameraManager::GetInstance()->SetCurrentCamera("FollowCamera");
+
 	//========================================
 	// 雲システムの初期化
 	cloudSystem_ = std::make_unique<Cloud>();
@@ -106,6 +119,12 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
+	//========================================
+	// FollowCameraの更新
+	if (followCamera_) {
+		followCamera_->Update();
+	}
+
 	//========================================
 	// プレイヤー
 	if (player_) {
@@ -233,6 +252,11 @@ void GamePlayScene::ImGuiDraw() {
 #ifdef _DEBUG
 	ImGui::Begin("DebugScene");
 	ImGui::Text("Hello, GamePlayScene!");
+
+	// FollowCameraの制御
+	if (followCamera_) {
+		followCamera_->DrawImGui();
+	}
 
 	// 雲システムの制御
 	if (cloudSystem_) {
