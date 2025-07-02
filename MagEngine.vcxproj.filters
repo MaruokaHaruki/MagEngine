@@ -120,6 +120,7 @@
     <ClCompile Include="engine\base\LevelDataLoader.cpp" />
     <ClCompile Include="application\Enemy.cpp" />
     <ClCompile Include="application\Cloud.cpp" />
+    <ClCompile Include="FollowCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -290,6 +291,7 @@
     <ClInclude Include="externals\json.hpp" />
     <ClInclude Include="application\Enemy.h" />
     <ClInclude Include="application\Cloud.h" />
+    <ClInclude Include="FollowCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

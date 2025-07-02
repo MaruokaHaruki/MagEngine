@@ -33,8 +33,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadModel("jet.obj");	   // モデルは事前にロードしておく
-	ModelManager::GetInstance()->LoadModel("skydome.obj"); // 地面のモデルもロード
+	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
+	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
 
 	//========================================
 	// スプライトクラス(Game)
