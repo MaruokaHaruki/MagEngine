@@ -18,9 +18,11 @@
 // 最適化されたグリッドセル
 struct GridCell {
 	std::vector<BaseObject *> objects;
+	bool isDirty = false; // 変更フラグ
 
 	void Clear() {
 		objects.clear();
+		isDirty = false;
 	}
 	bool IsEmpty() const {
 		return objects.empty();
@@ -111,19 +113,32 @@ private:
 	/// \brief 衝突処理実行
 	void ProcessCollision(BaseObject *objA, BaseObject *objB, bool isColliding);
 
+	/// \brief 隣接セル取得（最適化済み）
+	std::vector<int> GetAdjacentCells(int cellIndex) const;
+
+	/// \brief 高速衝突判定（AABB事前チェック付き）
+	bool FastIntersects(BaseObject *objA, BaseObject *objB) const;
+
 private:
 	//========================================
 	// グリッドシステム
 	std::unordered_map<int, GridCell> grid_;
 	float cellSize_;
+	float invCellSize_; // 1/cellSize_（除算回避）
 
 	//========================================
 	// オブジェクト管理
 	std::vector<BaseObject *> activeObjects_;
+	std::vector<BaseObject *> objectPool_; // 再利用プール
 
 	//========================================
 	// 衝突状態管理（軽量化）
 	std::unordered_map<CollisionPair, bool, CollisionPairHash> collisionStates_;
+
+	//========================================
+	// 最適化フラグ
+	bool skipDistantCells_; // 遠距離セルスキップ
+	int maxCellDistance_;	// チェック最大距離
 
 	//========================================
 	// デバッグ情報
