@@ -163,6 +163,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\base\framework\MagFramework.cpp" />
     <ClCompile Include="scene\publicScene\TitleScene.cpp" />
     <ClCompile Include="application\Skydome.cpp" />
+    <ClCompile Include="engine\3d\skybox\Skybox.cpp" />
+    <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\Enemy.h" />
@@ -236,6 +238,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="scene\publicScene\GamePlayScene.h" />
     <ClInclude Include="scene\publicScene\TitleScene.h" />
     <ClInclude Include="application\Skydome.h" />
+    <ClInclude Include="engine\3d\skybox\Skybox.h" />
+    <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

@@ -121,6 +121,8 @@
     <ClCompile Include="application\Enemy.cpp" />
     <ClCompile Include="application\Cloud.cpp" />
     <ClCompile Include="application\FollowCamera.cpp" />
+    <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
+    <ClCompile Include="engine\3d\skybox\Skybox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -292,6 +294,8 @@
     <ClInclude Include="application\Enemy.h" />
     <ClInclude Include="application\Cloud.h" />
     <ClInclude Include="application\FollowCamera.h" />
+    <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
+    <ClInclude Include="engine\3d\skybox\Skybox.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
