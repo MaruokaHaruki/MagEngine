@@ -35,6 +35,10 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	positionSmoothness_ = 0.1f;
 	rotationSmoothness_ = 0.08f;
 
+	// 固定位置モードの初期化
+	isFixedPositionMode_ = false;
+	fixedPosition_ = {0.0f, 5.0f, -10.0f}; // デフォルトの固定位置
+
 	// 初期位置・回転の設定
 	currentPosition_ = {0.0f, 2.0f, -8.0f};
 	currentRotation_ = {0.3f, 0.0f, 0.0f};
@@ -60,8 +64,16 @@ void FollowCamera::Update() {
 
 	UpdateCameraTransform();
 
-	// 滑らかに補間
-	currentPosition_ = LerpVector3(currentPosition_, targetPosition_, positionSmoothness_);
+	// 固定位置モードの場合は位置を固定位置に設定
+	if (isFixedPositionMode_) {
+		targetPosition_ = fixedPosition_;
+		currentPosition_ = fixedPosition_; // 即座に固定位置に移動
+	} else {
+		// 通常の追従モードでは位置も滑らかに補間
+		currentPosition_ = LerpVector3(currentPosition_, targetPosition_, positionSmoothness_);
+	}
+
+	// 回転は常に滑らかに補間
 	currentRotation_ = LerpVector3(currentRotation_, targetRotation_, rotationSmoothness_);
 
 	// カメラのトランスフォームを更新
@@ -79,31 +91,30 @@ void FollowCamera::UpdateCameraTransform() {
 		return;
 	}
 
-	// プレイヤーの位置と回転を取得
+	// プレイヤーの位置を取得
 	Vector3 playerPosition = target_->GetPosition();
 
-	// プレイヤーの回転行列を取得（プレイヤーの向きに応じてオフセットを回転）
-	Transform *playerTransform = target_->obj_->GetTransform();
-	if (!playerTransform) {
-		return;
+	if (!isFixedPositionMode_) {
+		// 通常の追従モード：プレイヤーの回転に応じてオフセット位置を計算
+		Transform *playerTransform = target_->obj_->GetTransform();
+		if (!playerTransform) {
+			return;
+		}
+
+		Matrix4x4 playerRotationMatrix = MakeRotateMatrix(playerTransform->rotate);
+		Vector3 rotatedOffset = Conversion(offset_, playerRotationMatrix);
+		targetPosition_ = playerPosition + rotatedOffset;
 	}
+	// 固定位置モードの場合は targetPosition_ は固定位置のまま（Update()で設定される）
 
-	Matrix4x4 playerRotationMatrix = MakeRotateMatrix(playerTransform->rotate);
-
-	// オフセットをプレイヤーの向きに合わせて回転
-	Vector3 rotatedOffset = Conversion(offset_, playerRotationMatrix);
-
-	// 目標位置を計算
-	targetPosition_ = playerPosition + rotatedOffset;
-
-	// カメラがプレイヤーを見るように回転を計算
-	Vector3 forward = Normalize(playerPosition - targetPosition_);
+	// カメラがプレイヤーを見るように回転を計算（両モード共通）
+	Vector3 lookDirection = Normalize(playerPosition - (isFixedPositionMode_ ? fixedPosition_ : targetPosition_));
 
 	// Y軸回転（左右）を計算
-	float yaw = std::atan2(forward.x, forward.z);
+	float yaw = std::atan2(lookDirection.x, lookDirection.z);
 
 	// X軸回転（上下）を計算
-	float pitch = std::asin(-forward.y);
+	float pitch = std::asin(-lookDirection.y);
 
 	// 目標回転を設定
 	targetRotation_ = {pitch, yaw, 0.0f};
@@ -129,9 +140,30 @@ void FollowCamera::DrawImGui() {
 	ImGui::Text("Rotation: (%.2f, %.2f, %.2f)", currentRotation_.x, currentRotation_.y, currentRotation_.z);
 
 	ImGui::Separator();
-	ImGui::Text("Parameters:");
-	ImGui::DragFloat3("Offset", &offset_.x, 0.1f);
-	ImGui::SliderFloat("Position Smoothness", &positionSmoothness_, 0.01f, 1.0f);
+	ImGui::Text("Follow Mode:");
+
+	// モード切り替えボタン
+	if (ImGui::Checkbox("Fixed Position Mode", &isFixedPositionMode_)) {
+		if (isFixedPositionMode_) {
+			// 固定位置モードに切り替わった時、現在の位置を固定位置として設定
+			fixedPosition_ = currentPosition_;
+		}
+	}
+
+	if (isFixedPositionMode_) {
+		ImGui::Text("Mode: Fixed Position + Rotation Tracking");
+		ImGui::DragFloat3("Fixed Position", &fixedPosition_.x, 0.1f);
+
+		// 現在の位置を固定位置として設定するボタン
+		if (ImGui::Button("Set Current Position as Fixed")) {
+			SetCurrentPositionAsFixed();
+		}
+	} else {
+		ImGui::Text("Mode: Full Follow (Position + Rotation)");
+		ImGui::DragFloat3("Offset", &offset_.x, 0.1f);
+		ImGui::SliderFloat("Position Smoothness", &positionSmoothness_, 0.01f, 1.0f);
+	}
+
 	ImGui::SliderFloat("Rotation Smoothness", &rotationSmoothness_, 0.01f, 1.0f);
 
 	if (target_) {
@@ -139,6 +171,11 @@ void FollowCamera::DrawImGui() {
 		ImGui::Separator();
 		ImGui::Text("Target Info:");
 		ImGui::Text("Player Position: (%.2f, %.2f, %.2f)", playerPos.x, playerPos.y, playerPos.z);
+
+		// プレイヤーまでの距離を表示
+		Vector3 distanceVec = playerPos - currentPosition_;
+		float distance = Length(distanceVec);
+		ImGui::Text("Distance to Player: %.2f", distance);
 	}
 
 	ImGui::End();

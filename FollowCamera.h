@@ -42,6 +42,23 @@ public:
 		rotationSmoothness_ = rotationSmoothness;
 	}
 
+	/// \brief 固定位置モードの設定
+	void SetFixedPositionMode(bool enable) {
+		isFixedPositionMode_ = enable;
+	}
+
+	/// \brief 固定位置の設定
+	void SetFixedPosition(const Vector3 &position) {
+		fixedPosition_ = position;
+		isFixedPositionMode_ = true;
+	}
+
+	/// \brief 現在の位置を固定位置として設定
+	void SetCurrentPositionAsFixed() {
+		fixedPosition_ = currentPosition_;
+		isFixedPositionMode_ = true;
+	}
+
 	/// \brief 使用中のカメラを取得
 	Camera *GetCamera() const {
 		return camera_;
@@ -58,6 +75,10 @@ private:
 	Vector3 offset_;		   // プレイヤーからのオフセット
 	float positionSmoothness_; // 位置の滑らかさ (0.0f-1.0f)
 	float rotationSmoothness_; // 回転の滑らかさ (0.0f-1.0f)
+
+	// 固定位置モード
+	bool isFixedPositionMode_; // 固定位置モードのフラグ
+	Vector3 fixedPosition_;	   // 固定位置
 
 	// 内部状態
 	Vector3 currentPosition_; // 現在のカメラ位置
