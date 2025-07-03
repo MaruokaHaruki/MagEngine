@@ -32,13 +32,13 @@
     <ClCompile Include="scene\publicScene\GamePlayScene.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\Line.cpp">
+    <ClCompile Include="engine\3d\line\Line.cpp">
       <Filter>engine\2d\line</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\LineManager.cpp">
+    <ClCompile Include="engine\3d\line\LineManager.cpp">
       <Filter>engine\2d\line</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\LineSetup.cpp">
+    <ClCompile Include="engine\3d\line\LineSetup.cpp">
       <Filter>engine\2d\line</Filter>
     </ClCompile>
     <ClCompile Include="engine\2d\sprite\Sprite.cpp">
@@ -120,7 +120,7 @@
     <ClCompile Include="engine\base\LevelDataLoader.cpp" />
     <ClCompile Include="application\Enemy.cpp" />
     <ClCompile Include="application\Cloud.cpp" />
-    <ClCompile Include="FollowCamera.cpp" />
+    <ClCompile Include="application\FollowCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -153,13 +153,13 @@
     <ClInclude Include="scene\publicScene\GamePlayScene.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\LineSetup.h">
+    <ClInclude Include="engine\3d\line\LineSetup.h">
       <Filter>engine\2d\line</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\Line.h">
+    <ClInclude Include="engine\3d\line\Line.h">
       <Filter>engine\2d\line</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\LineManager.h">
+    <ClInclude Include="engine\3d\line\LineManager.h">
       <Filter>engine\2d\line</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\sprite\SpriteSetup.h">
@@ -291,7 +291,7 @@
     <ClInclude Include="externals\json.hpp" />
     <ClInclude Include="application\Enemy.h" />
     <ClInclude Include="application\Cloud.h" />
-    <ClInclude Include="FollowCamera.h" />
+    <ClInclude Include="application\FollowCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
