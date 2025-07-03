@@ -8,13 +8,13 @@
  *********************************************************************/
 #include "TextureManager.h"
 
- ///=============================================================================
- ///						インスタンス設定
-TextureManager* TextureManager::instance_ = nullptr;
+///=============================================================================
+///						インスタンス設定
+TextureManager *TextureManager::instance_ = nullptr;
 
 ///=============================================================================
 ///							インスタンス生成
-TextureManager* TextureManager::GetInstance() {
+TextureManager *TextureManager::GetInstance() {
 	if (instance_ == nullptr) {
 		instance_ = new TextureManager;
 	}
@@ -23,7 +23,7 @@ TextureManager* TextureManager::GetInstance() {
 
 ///=============================================================================
 ///								初期化
-void TextureManager::Initialize(DirectXCore* dxCore, const std::string& textureDirectoryPath, SrvSetup* srvSetup) {
+void TextureManager::Initialize(DirectXCore *dxCore, const std::string &textureDirectoryPath, SrvSetup *srvSetup) {
 	//---------------------------------------
 	// SRVの数と同期
 	textureDatas_.reserve(SrvSetup::kMaxSRVCount_);
@@ -42,13 +42,13 @@ void TextureManager::Initialize(DirectXCore* dxCore, const std::string& textureD
 
 ///=============================================================================
 ///						テクスチャファイルの読み込み
-void TextureManager::LoadTexture(const std::string& filePath) {
-	//ディレクトリパスを追加
+void TextureManager::LoadTexture(const std::string &filePath) {
+	// ディレクトリパスを追加
 	std::string fullPath = kTextureDirectoryPath + filePath;
 
 	//---------------------------------------
 	// 読み込み済みテクスチャを検索
-	if(textureDatas_.contains(fullPath)) {
+	if (textureDatas_.contains(fullPath)) {
 		return;
 	}
 
@@ -58,67 +58,95 @@ void TextureManager::LoadTexture(const std::string& filePath) {
 
 	//---------------------------------------
 	// テクスチャファイルを読んでプログラムを扱えるようにする
+	// TODO:DDSファイルとWICファイルの読み込みを分ける
 	DirectX::ScratchImage image{};
 	std::wstring filePathW = ConvertString(fullPath);
-	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	HRESULT hr;
+	// ファイル拡張子をチェックして読み込み関数を選択
+	if (filePathW.find(L".dds") != std::wstring::npos) {
+		// DDSファイルの読み込み
+		hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+	} else {
+		// WICファイルの読み込み
+		hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	}
+	// 読み込みに失敗した場合は停止
 	assert(SUCCEEDED(hr));
 
 	//---------------------------------------
 	// mipmapの作成
 	DirectX::ScratchImage mipImages{};
-	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	// 圧縮フォーマットかどうかをチェック
+	if (DirectX::IsCompressed(image.GetMetadata().format)) {
+		mipImages = std::move(image);
+	} else {
+		// mipmapの生成
+
+		hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	}
+	// mipmapの生成に失敗した場合は停止
 	assert(SUCCEEDED(hr));
 
 	//---------------------------------------
-	//追加したテクスチャデータの参照を取得する
-	TextureData& textureData = textureDatas_[fullPath];
+	// 追加したテクスチャデータの参照を取得する
+	TextureData &textureData = textureDatas_[fullPath];
 
 	//---------------------------------------
 	// テクスチャデータの書き込
-	//テクスチャメタデータの取得
+	// テクスチャメタデータの取得
 	textureData.metadata = mipImages.GetMetadata();
-	//テクスチャリソースの作成
+	// テクスチャリソースの作成
 	textureData.resource = dxCore_->CreateTextureResource(textureData.metadata);
-	//テクスチャデータの要素数番号をSRVのインデックスとする
-	//uint32_t srvIndex = srvSetup_->Allocate();
-	//中間リソース
+	// テクスチャデータの要素数番号をSRVのインデックスとする
+	// uint32_t srvIndex = srvSetup_->Allocate();
+	// 中間リソース
 	textureData.interMediateResource = dxCore_->UploadTextureData(textureData.resource, mipImages);
-	//SRVの確保
+	// SRVの確保
 	textureData.srvIndex = srvSetup_->Allocate();
-	//各ハンドルを取得
+	// 各ハンドルを取得
 	textureData.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData.srvIndex);
 	textureData.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData.srvIndex);
 
 	//---------------------------------------
 	// SRVの生成
-	//metaDataを元にSRVの設定
+	// metaDataを元にSRVの設定
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Format = textureData.metadata.format;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;//2Dテクスチャ
-	srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels);
-	//SRVの生成
+	// Cubemapかどうかをチェック
+	if (textureData.metadata.IsCubemap()) {
+		// キューブマップテクスチャ
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		srvDesc.TextureCube.MostDetailedMip = 0;		// 最も詳細なミップレベル
+		srvDesc.TextureCube.MipLevels = UINT_MAX;		// ミップレベルの数
+		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f; // 最小LODクランプ値
+	} else {
+		// 通常のテクスチャ
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+		srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels);
+	}
+	// SRVの生成
 	dxCore_->GetDevice().Get()->CreateShaderResourceView(textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);
 }
 
 ///=============================================================================
 ///								終了処理
 void TextureManager::Finalize() {
-	//インスタンスの削除
+	// インスタンスの削除
 	delete instance_;
 	instance_ = nullptr;
 }
 
 ///=============================================================================
 ///					SRVテクスチャインデックスの開始番号
-uint32_t TextureManager::GetTextureIndex(const std::string& filePath) {
-	//ディレクトリパスを追加
+uint32_t TextureManager::GetTextureIndex(const std::string &filePath) {
+	// ディレクトリパスを追加
 	std::string fullPath = kTextureDirectoryPath + filePath;
 
-	if(textureDatas_.contains(fullPath)) {
-		//読み込み済みなら要素番号を返す
+	if (textureDatas_.contains(fullPath)) {
+		// 読み込み済みなら要素番号を返す
 		auto it = textureDatas_.find(fullPath);
-		uint32_t textureIndex = static_cast<uint32_t>( std::distance(textureDatas_.begin(), it) );
+		uint32_t textureIndex = static_cast<uint32_t>(std::distance(textureDatas_.begin(), it));
 		return textureIndex;
 	}
 	//---------------------------------------
@@ -129,7 +157,7 @@ uint32_t TextureManager::GetTextureIndex(const std::string& filePath) {
 
 ///=============================================================================
 ///						GPUハンドルの取得
-D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& filePath) {
+D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string &filePath) {
 	// ディレクトリパスを追加
 	std::string fullPath = kTextureDirectoryPath + filePath;
 	// レンダーテクスチャの場合は特別処理
@@ -142,7 +170,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string& f
 	// 範囲外指定チェック
 	assert(textureDatas_.contains(fullPath));
 	// テクスチャデータの参照を取得
-	TextureData& textureData = textureDatas_[fullPath];
+	TextureData &textureData = textureDatas_[fullPath];
 	return textureData.srvHandleGPU;
 }
 
@@ -165,32 +193,29 @@ D3D12_CPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleCPU(const std::string &f
 
 ///=============================================================================
 ///						メタデータの取得
-const DirectX::TexMetadata& TextureManager::GetMetadata(const std::string& filePath) {
+const DirectX::TexMetadata &TextureManager::GetMetadata(const std::string &filePath) {
 	// ディレクトリパスを追加
 	std::string fullPath = kTextureDirectoryPath + filePath;
 	// 範囲外指定チェック
 	assert(textureDatas_.contains(fullPath));
 	// テクスチャデータの参照を取得
-	TextureData& textureData = textureDatas_[fullPath];
+	TextureData &textureData = textureDatas_[fullPath];
 	return textureData.metadata;
 }
 
-void TextureManager::CreateRenderTextureMetaData()
-{
-	TextureData& textureData1 = textureDatas_["RenderTexture0"];
+void TextureManager::CreateRenderTextureMetaData() {
+	TextureData &textureData1 = textureDatas_["RenderTexture0"];
 
 	textureData1.srvIndex = srvSetup_->Allocate();
 	textureData1.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData1.srvIndex);
 	textureData1.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData1.srvIndex);
 
-	srvSetup_->CreateOffScreenTexture(textureData1.srvIndex,0);
+	srvSetup_->CreateOffScreenTexture(textureData1.srvIndex, 0);
 
-
-
-	TextureData& textureData2 = textureDatas_["RenderTexture1"];
+	TextureData &textureData2 = textureDatas_["RenderTexture1"];
 
 	textureData2.srvIndex = srvSetup_->Allocate();
 	textureData2.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData2.srvIndex);
 	textureData2.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData2.srvIndex);
-	srvSetup_->CreateOffScreenTexture(textureData2.srvIndex,1);
+	srvSetup_->CreateOffScreenTexture(textureData2.srvIndex, 1);
 }
