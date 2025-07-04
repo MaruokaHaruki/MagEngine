@@ -1,20 +1,23 @@
-#include "Object3d.hlsli"
+#include "Skybox.hlsli"
 
 ///=============================================================================
 ///						コンスタントバッファ
-
-// 変換行列
-ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);
+// ViewProjection行列
+ConstantBuffer<SkyboxViewProjection> gViewProjection : register(b0);
 
 ///=============================================================================
 ///						VertexShader
-VertexShaderOutput main(VertexShaderInput input){
-    VertexShaderOutput output;
-    output.texcoord = input.texcoord;
-    output.position = mul(input.position, gTransformationMatrix.WVP);
-    //NOTE:法線の変換には拡縮回転情報のみが必要なため取り出す処理を行っている
-    output.normal = normalize(mul(input.normal, (float3x3) gTransformationMatrix.WorldInverseTranspose));
-    output.worldPosition = (float3) mul(input.position, gTransformationMatrix.World).xyz; // 修正
+SkyboxVertexOutput main(SkyboxVertexInput input) {
+    SkyboxVertexOutput output;
+    
+    // 位置座標をビュープロジェクション行列で変換
+    output.position = mul(input.position, gViewProjection.viewProjection);
+    
+    // スカイボックスは常に最遠に描画されるよう、Z値をW値に設定
+    output.position.z = output.position.w;
+    
+    // 頂点位置をそのままテクスチャ座標として使用（キューブマップ用）
+    output.texcoord = input.position.xyz;
     
     return output;
 }
