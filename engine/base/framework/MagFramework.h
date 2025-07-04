@@ -13,22 +13,23 @@
 #include "DirectXCore.h"
 #include "ImguiSetup.h"
 #include "Input.h"
-#include "MAudioG.h"
 #include "SrvSetup.h"
 #include "WinApp.h"
-// 共通部
+// Manager
+#include "CameraManager.h"
 #include "DebugTextManager.h"
 #include "LightManager.h"
 #include "LineManager.h"
+#include "MAudioG.h"
 #include "ModelManager.h"
-#include "Object3dSetup.h"
-#include "ParticleSetup.h"
-#include "SpriteSetup.h"
-#include "TextureManager.h"
-// シーン
-#include "CameraManager.h"
 #include "SceneFactory.h"
 #include "SceneManager.h"
+#include "TextureManager.h"
+// Setup
+#include "Object3dSetup.h"
+#include "ParticleSetup.h"
+#include "SkyboxSetup.h"
+#include "SpriteSetup.h"
 
 ///=============================================================================
 ///						FrameWorkクラス
@@ -84,6 +85,9 @@ public:
 	/// @brief オブジェクト3D共通描画設定
 	void Object3DCommonDraw();
 
+	/// @brief Skybox共通描画設定
+	void SkyboxCommonDraw();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
@@ -120,6 +124,8 @@ protected:
 	std::unique_ptr<Object3dSetup> object3dSetup_;
 	// モデルセットアップ
 	std::unique_ptr<ModelSetup> modelSetup_;
+	// Skyboxセットアップ
+	std::unique_ptr<SkyboxSetup> skyboxSetup_;
 	//========================================
 	// マネージャ
 	// シーンマネージャ
