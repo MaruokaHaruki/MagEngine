@@ -133,6 +133,14 @@ void MagFramework::Initialize() {
 	object3dSetup_->SetLightManager(lightManager_.get());
 
 	///--------------------------------------------------------------
+	///						 Skybox共通部
+	skyboxSetup_ = std::make_unique<SkyboxSetup>();
+	// Skyboxの初期化
+	skyboxSetup_->Initialize(dxCore_.get());
+	// Skyboxのカメラ設定
+	skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+
+	///--------------------------------------------------------------
 	///						 パーティクル共通部
 	particleSetup_ = std::make_unique<ParticleSetup>();
 	// パーティクルセットアップの初期化
@@ -332,4 +340,14 @@ void MagFramework::Object3DCommonDraw() {
 	object3dSetup_->CommonDrawSetup();
 	// 3D描画
 	sceneManager_->Object3DDraw();
+}
+
+///=============================================================================
+///						Skybox共通描画設定
+void MagFramework::SkyboxCommonDraw() {
+	//========================================
+	// Skybox共通描画設定
+	skyboxSetup_->CommonDrawSetup();
+	// TODO:Skybox描画
+	// sceneManager_->SkyboxDraw();
 }
