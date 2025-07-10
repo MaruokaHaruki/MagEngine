@@ -506,6 +506,7 @@ void DirectXCore::CheckResourceLeaks() {
 
 ///=============================================================================
 ///						ImGuiの初期化
+/// TODO:消去
 void DirectXCore::ImGuiInitialize() {
 	// IMGUI_CHECKVERSION();
 	// ImGui::CreateContext();
