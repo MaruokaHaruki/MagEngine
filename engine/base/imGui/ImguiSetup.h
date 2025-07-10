@@ -9,13 +9,14 @@
 #pragma once
 //---------------------------------------
 // base
-#include "WinApp.h"
 #include "DirectXCore.h"
+#include "WinApp.h"
 //---------------------------------------
 // ImGui
 #include "imgui.h"
-#include <imgui_impl_win32.h>
+#include "imgui_internal.h"
 #include <imgui_impl_dx12.h>
+#include <imgui_impl_win32.h>
 
 //---------------------------------------
 // imguiStyle
@@ -34,9 +35,8 @@ class ImguiSetup {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
-
 	/// \brief 初期化 使用カラーの設定
-	void Initialize(WinApp* winApp, DirectXCore* dxCore, Style style = Style::DARK);
+	void Initialize(WinApp *winApp, DirectXCore *dxCore, Style style = Style::DARK);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  Begin ImGui受付開始処理
@@ -62,13 +62,13 @@ public:
 	 * \brief  StyleColorsCyberGreen ImGuiのサイバースタイル
 	 * \param  style スタイル
 	 */
-	void StyleColorsCyberGreen(ImGuiStyle& style);
+	void StyleColorsCyberGreen(ImGuiStyle &style);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  StyleColorsDarkGreen
 	 * \param  style
 	 */
-	void StyleColorsDarkGreen(ImGuiStyle& style);
+	void StyleColorsDarkGreen(ImGuiStyle &style);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  ShowPerformanceMonitor
@@ -78,21 +78,17 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
-
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
-
-
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-
 	//========================================
 	// WinAppのポインタ
-	WinApp* winApp_ = nullptr;
+	WinApp *winApp_ = nullptr;
 	// DirectXCoreのポインタ
-	DirectXCore* dxCore_ = nullptr;
+	DirectXCore *dxCore_ = nullptr;
 
 	//========================================
 	// SRV用ディスクリプタヒープ
@@ -101,7 +97,6 @@ private:
 	// 描画コール数などのカウンタ（例: 自身のエンジンやゲームループで管理）
 	int drawCallCount = 0;
 	int triangleCount = 0;
-	float logicTime = 0.0f;      // ゲームロジック処理時間（ms）
-	float renderingTime = 0.0f;  // レンダリング処理時間（ms）
+	float logicTime = 0.0f;		// ゲームロジック処理時間（ms）
+	float renderingTime = 0.0f; // レンダリング処理時間（ms）
 };
-

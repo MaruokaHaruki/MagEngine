@@ -134,11 +134,11 @@ void MagFramework::Initialize() {
 
 	///--------------------------------------------------------------
 	///						 Skybox共通部
-	skyboxSetup_ = std::make_unique<SkyboxSetup>();
-	// Skyboxの初期化
-	skyboxSetup_->Initialize(dxCore_.get());
-	// Skyboxのカメラ設定
-	skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+	// skyboxSetup_ = std::make_unique<SkyboxSetup>();
+	//  Skyboxの初期化
+	// skyboxSetup_->Initialize(dxCore_.get());
+	//  Skyboxのカメラ設定
+	// skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 
 	///--------------------------------------------------------------
 	///						 パーティクル共通部
