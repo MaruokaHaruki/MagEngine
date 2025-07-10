@@ -14,6 +14,12 @@ struct SkyboxVertexOutput {
 };
 
 //========================================
+// SkyboxPixelShaderの出力
+struct PixelShaderOutput {
+    float4 color : SV_TARGET0;
+};
+
+//========================================
 // Skybox ViewProjection行列
 struct SkyboxViewProjection {
     float4x4 viewProjection;
