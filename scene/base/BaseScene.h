@@ -70,6 +70,14 @@ public:
 		return sceneNo = nextNo;
 	}
 
+	/**----------------------------------------------------------------------------
+	 * \brief  GetCurrentSceneNo 現在のシーン番号を取得する（static）
+	 * \return 現在のシーン番号
+	 */
+	static int GetCurrentSceneNo() {
+		return sceneNo;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 protected:
