@@ -19,7 +19,7 @@ void EngineApp::Initialize() {
 ///=============================================================================
 ///						終了処理
 void EngineApp::Finalize() {
-	CameraManager::GetInstance()->Finalize();///
+	CameraManager::GetInstance()->Finalize(); ///
 	//========================================
 	// フレームワークの終了処理
 	MagFramework ::Finalize();
@@ -41,36 +41,36 @@ void EngineApp::Update() {
 void EngineApp::Draw() {
 	//========================================
 	// レンダーテクスチャ前処理
-	MagFramework ::RenderPreDraw();
+	MagFramework::RenderPreDraw();
 
 	//========================================
-	//3Dオブジェクト共通描画設定
-	MagFramework ::Object3DCommonDraw();
+	// 3Dオブジェクト共通描画設定
+	MagFramework::Object3DCommonDraw();
 
 	//========================================
 	// 2Dオブジェクト共通描画設定
-	MagFramework ::Object2DCommonDraw();
+	MagFramework::Object2DCommonDraw();
 
 	//========================================
-	//パーティクル共通描画設定
-	MagFramework ::ParticleCommonDraw();
+	// パーティクル共通描画設定
+	MagFramework::ParticleCommonDraw();
 
 	//========================================
 	// レンダーテクスチャ後処理
-	MagFramework ::RenderPostDraw();
+	MagFramework::RenderPostDraw();
 
 	//========================================
 	// 描画前処理
 	MagFramework::PreDraw();
 
-	MagFramework ::ImGuiPreDraw();
-	//↓この間に書け!!!
-	//↑
-	MagFramework ::ImGuiPostDraw();
+	//========================================
+	// ImGui処理
+	MagFramework::ImGuiPreDraw();
+	// ↓この間に書け!!!
+	// ↑
+	MagFramework::ImGuiPostDraw();
 
 	//========================================
 	// 描画後処理
 	MagFramework::PostDraw();
-
 }
-

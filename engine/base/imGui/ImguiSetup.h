@@ -59,6 +59,21 @@ public:
 	void Finalize();
 
 	/**----------------------------------------------------------------------------
+	 * \brief  SetupDockingSpace ドッキングスペースのセットアップ
+	 */
+	void SetupDockingSpace();
+
+	/**----------------------------------------------------------------------------
+	 * \brief  CreateMenuBar メニューバーの作成
+	 */
+	void CreateMenuBar();
+
+	/**----------------------------------------------------------------------------
+	 * \brief  CreateEditorWindows エディター用ウィンドウ群の作成
+	 */
+	void CreateEditorWindows();
+
+	/**----------------------------------------------------------------------------
 	 * \brief  StyleColorsCyberGreen ImGuiのサイバースタイル
 	 * \param  style スタイル
 	 */
@@ -93,6 +108,16 @@ private:
 	//========================================
 	// SRV用ディスクリプタヒープ
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap_ = nullptr;
+
+	//========================================
+	// ドッキング関連
+	bool showDemoWindow_ = false;
+	bool showInspector_ = true;
+	bool showHierarchy_ = true;
+	bool showScene_ = true;
+	bool showGame_ = true;
+	bool showConsole_ = true;
+	bool showProject_ = true;
 
 	// 描画コール数などのカウンタ（例: 自身のエンジンやゲームループで管理）
 	int drawCallCount = 0;
