@@ -7,9 +7,9 @@
  * \note
  *********************************************************************/
 #pragma once
-#include <memory>
-#include "BaseScene.h"
 #include "AbstractSceneFactory.h"
+#include "BaseScene.h"
+#include <memory>
 
 ///=============================================================================
 ///						シーンマネージャ
@@ -17,9 +17,9 @@ class SceneManager {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
-
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup);
+	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
+					SkyboxSetup *skyboxSetup);
 
 	/// @brief 終了処理
 	void Finalize();
@@ -27,14 +27,17 @@ public:
 	/// @brief 更新処理
 	void Update();
 
-	/// @brief 描画
+	/// @brief Object2D描画
 	void Object2DDraw();
 
-	/// @brief 描画
+	/// @brief Object3D描画
 	void Object3DDraw();
 
-	/// @brief 描画
+	/// @brief Particle描画
 	void ParticleDraw();
+
+	/// @brief Skybox描画
+	void SkyboxDraw();
 
 	/// @brief ImGui描画
 	void ImGuiDraw();
@@ -70,4 +73,6 @@ private:
 	Object3dSetup *object3dSetup_ = nullptr;
 	// パーティクル共通部
 	ParticleSetup *particleSetup_ = nullptr;
+	// Skybox共通部
+	SkyboxSetup *skyboxSetup_ = nullptr;
 };

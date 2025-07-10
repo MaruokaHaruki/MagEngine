@@ -23,7 +23,8 @@ class DebugScene : public BaseScene {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) override;
+	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
+		SkyboxSetup *skyboxSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -39,6 +40,9 @@ public:
 
 	/// \brief パーティクル描画
 	void ParticleDraw() override;
+
+	/// \brief Skybox描画
+	void SkyboxDraw() override;
 
 	/// \brief ImGui描画
 	void ImGuiDraw() override;

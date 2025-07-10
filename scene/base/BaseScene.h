@@ -10,6 +10,7 @@
 #include "DebugTextManager.h"
 #include "Object3dSetup.h"
 #include "ParticleSetup.h"
+#include "SkyboxSetup.h"
 #include "SpriteSetup.h"
 // シーンの種類
 enum SCENE {
@@ -27,7 +28,7 @@ class BaseScene {
 	// NOTE:継承先で実装される関数。抽象クラスなので純粋仮想関数とする。
 public:
 	/// \brief 初期化
-	virtual void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) = 0;
+	virtual void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) = 0;
 
 	/// \brief 終了処理
 	virtual void Finalize() = 0;
@@ -43,6 +44,9 @@ public:
 
 	/// \brief パーティクル描画
 	virtual void ParticleDraw() = 0;
+
+	/// \brief Skybox描画
+	virtual void SkyboxDraw() = 0;
 
 	/// \brief ImGui描画
 	virtual void ImGuiDraw() = 0;

@@ -14,7 +14,7 @@
 
  ///=============================================================================
  ///						初期化
-void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) {
+void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) {
 	//適当に引数を使用
 	//引数を使用しない場合は警告を出さないようにする
 	spriteSetup;
@@ -112,6 +112,11 @@ void TitleScene::Object3DDraw() {
 ///=============================================================================
 ///						パーティクル描画
 void TitleScene::ParticleDraw() {
+}
+
+///=============================================================================
+///						Skybox描画
+void TitleScene::SkyboxDraw() {
 }
 
 ///=============================================================================

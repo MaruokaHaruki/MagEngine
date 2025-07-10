@@ -18,7 +18,7 @@
 
 ///=============================================================================
 ///						初期化
-void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) {
+void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) {
 	// 適当に引数を使用
 	// 引数を使用しない場合は警告を出さないようにする
 	spriteSetup;
@@ -244,6 +244,11 @@ void GamePlayScene::ParticleDraw() {
 
 	//========================================
 	// 雲システムの描画
+}
+
+///=============================================================================
+///						Skybox描画
+void GamePlayScene::SkyboxDraw() {
 }
 
 ///=============================================================================

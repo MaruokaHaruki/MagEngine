@@ -11,7 +11,7 @@
 
 ///=============================================================================
 ///						初期化
-void ClearScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) {
+void ClearScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) {
 	//適当に引数を使用
 	//引数を使用しない場合は警告を出さないようにする
 	spriteSetup;
@@ -51,6 +51,11 @@ void ClearScene::Object3DDraw() {
 ///=============================================================================
 ///						パーティクル描画
 void ClearScene::ParticleDraw() {
+}
+
+///=============================================================================
+///						Skybox描画
+void ClearScene::SkyboxDraw() {
 }
 
 ///=============================================================================

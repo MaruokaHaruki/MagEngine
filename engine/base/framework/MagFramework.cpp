@@ -162,7 +162,8 @@ void MagFramework::Initialize() {
 	///						 シーンマネージャ
 	sceneManager_ = std::make_unique<SceneManager>();
 	// シーンマネージャの初期化
-	sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get());
+	sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get(),
+							  skyboxSetup_.get());
 	// シーンファクトリーのセット
 	sceneFactory_ = std::make_unique<SceneFactory>();
 	sceneManager_->SetSceneFactory(sceneFactory_.get());
@@ -335,7 +336,7 @@ void MagFramework::ParticleCommonDraw() {
 ///=============================================================================
 ///						Object3D共通描画設定
 void MagFramework::Object3DCommonDraw() {
-	//========================================
+	//========================================s
 	// 3D共通描画設定
 	object3dSetup_->CommonDrawSetup();
 	// 3D描画
@@ -348,6 +349,6 @@ void MagFramework::SkyboxCommonDraw() {
 	//========================================
 	// Skybox共通描画設定
 	skyboxSetup_->CommonDrawSetup();
-	// TODO:Skybox描画
-	// sceneManager_->SkyboxDraw();
+	// Skybox描画
+	sceneManager_->SkyboxDraw();
 }

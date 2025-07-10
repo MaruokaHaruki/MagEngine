@@ -1,15 +1,16 @@
 #include "SceneManager.h"
 #include "ImguiSetup.h"
 // public:
-#include "TitleScene.h"
-#include "GamePlayScene.h"
 #include "ClearScene.h"
+#include "GamePlayScene.h"
+#include "TitleScene.h"
 // private:
 #include "DebugScene.h"
 
 ///=============================================================================
 ///						初期化
-void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) {
+void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
+							  SkyboxSetup *skyboxSetup) {
 	//========================================
 	// 2D共通部
 	spriteSetup_ = spriteSetup;
@@ -17,9 +18,11 @@ void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dS
 	object3dSetup_ = object3dSetup;
 	// パーティクル共通部
 	particleSetup_ = particleSetup;
+	// Skybox共通部
+	skyboxSetup_ = skyboxSetup;
 	// 初期シーンを設定（例としてDebugSceneを設定）
 	nowScene_ = std::make_unique<GamePlayScene>();
-	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_);
+	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_);
 
 	// シーンの初期設定
 	currentSceneNo_ = 0;
@@ -29,7 +32,7 @@ void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dS
 ///=============================================================================
 ///						終了処理
 void SceneManager::Finalize() {
-	if(nowScene_) {
+	if (nowScene_) {
 		nowScene_->Finalize();
 	}
 }
@@ -44,20 +47,20 @@ void SceneManager::Update() {
 
 	//========================================
 	// シーンが切り替わった場合
-	if(prevSceneNo_ != currentSceneNo_) {
-		if(nowScene_) {
+	if (prevSceneNo_ != currentSceneNo_) {
+		if (nowScene_) {
 			// 現在のシーンの終了処理
 			nowScene_->Finalize();
 		}
 		// シーンの生成
 		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_);
 		// シーンの初期化
-		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_);
+		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_);
 	}
 
 	//========================================
 	// シーンの更新
-	if(nowScene_) {
+	if (nowScene_) {
 		nowScene_->Update();
 	}
 }
@@ -65,7 +68,7 @@ void SceneManager::Update() {
 ///=============================================================================
 ///						2D描画
 void SceneManager::Object2DDraw() {
-	if(nowScene_) {
+	if (nowScene_) {
 		nowScene_->Object2DDraw();
 	}
 }
@@ -73,7 +76,7 @@ void SceneManager::Object2DDraw() {
 ///=============================================================================
 ///						3D描画
 void SceneManager::Object3DDraw() {
-	if(nowScene_) {
+	if (nowScene_) {
 		nowScene_->Object3DDraw();
 	}
 }
@@ -81,8 +84,16 @@ void SceneManager::Object3DDraw() {
 ///=============================================================================
 ///						パーティクル描画
 void SceneManager::ParticleDraw() {
-	if(nowScene_) {
+	if (nowScene_) {
 		nowScene_->ParticleDraw();
+	}
+}
+
+///=============================================================================
+///						Skybox描画
+void SceneManager::SkyboxDraw() {
+	if (nowScene_) {
+		nowScene_->SkyboxDraw();
 	}
 }
 
@@ -91,28 +102,28 @@ void SceneManager::ParticleDraw() {
 void SceneManager::ImGuiDraw() {
 	//========================================
 
-	if(nowScene_) {
+	if (nowScene_) {
 		nowScene_->ImGuiDraw();
 	}
 	//========================================
 	// シーンを切り替えるボタン
-	//publicScene
+	// publicScene
 	ImGui::Begin("SceneChange");
 	ImGui::Text("publicScene");
-	if(ImGui::Button("TitleScene")) {
+	if (ImGui::Button("TitleScene")) {
 		nowScene_->SetSceneNo(TITLE);
 	}
-	if(ImGui::Button("GamePlayScene")) {
+	if (ImGui::Button("GamePlayScene")) {
 		nowScene_->SetSceneNo(GAMEPLAY);
 	}
-	if(ImGui::Button("ClearScene")) {
+	if (ImGui::Button("ClearScene")) {
 		nowScene_->SetSceneNo(CLEAR);
 	}
 	//========================================
 	// privateScene
 	ImGui::Separator();
 	ImGui::Text("privateScene");
-	if(ImGui::Button("DebugScene")) {
+	if (ImGui::Button("DebugScene")) {
 		nowScene_->SetSceneNo(DEBUG);
 	}
 

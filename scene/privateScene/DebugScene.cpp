@@ -11,7 +11,7 @@
 
 ///=============================================================================
 ///						初期化
-void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup) {
+void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) {
 	spriteSetup;
 	particleSetup;
 
@@ -161,6 +161,11 @@ void DebugScene::Object3DDraw() {
 void DebugScene::ParticleDraw() {
 	// パーティクルの描画
 	particle_->Draw();
+}
+
+///=============================================================================
+///						Skybox描画
+void DebugScene::SkyboxDraw() {
 }
 
 ///=============================================================================
