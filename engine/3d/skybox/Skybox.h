@@ -7,6 +7,7 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "TransformationMatrix.h"
 #include "Matrix4x4.h"
 #include "TextureManager.h"
 #include "Transform.h"
@@ -19,20 +20,14 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-// 前方宣言
-class SkyboxSetup;
-class Camera;
-
 // 頂点データ構造体
 struct SkyboxVertex {
 	Vector4 position;
 };
 
-// ViewProjection行列用構造体
-struct SkyboxViewProjection {
-	Matrix4x4 viewProjection;
-};
-
+// 前方宣言
+class SkyboxSetup;
+class Camera;
 ///=============================================================================
 ///								クラス
 class Skybox {
@@ -54,8 +49,8 @@ private:
 	/// \brief Boxの頂点データ作成
 	void CreateBoxVertices();
 
-	/// \brief ViewProjection行列バッファの作成
-	void CreateViewProjectionBuffer();
+	/// @brief トランスフォーメーションマトリックスバッファの作成
+	void CreateTransformationMatrixBuffer();
 
 	///--------------------------------------------------------------
 	///							入出力関数
@@ -118,21 +113,23 @@ private:
 	SkyboxSetup *skyboxSetup_ = nullptr;
 
 	//========================================
+	// トランスフォーメーションマトリックス
+	Microsoft::WRL::ComPtr <ID3D12Resource> transfomationMatrixBuffer_;
 	// 頂点バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
-	SkyboxVertex *vertexData_ = nullptr;
 
 	//========================================
-	// インデックスバッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
-	uint32_t *indexData_ = nullptr;
-
-	//========================================
+	// バッファリソース内のデータを指すポインタ
+	// トランスフォーメーションマトリックス
+	TransformationMatrix* transformationMatrixData_ = nullptr;
 	// ViewProjection行列バッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> viewProjectionBuffer_;
-	SkyboxViewProjection *viewProjectionData_ = nullptr;
+	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
+	// インデックスデータ
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
+
+	//---------------------------------------
+	// 頂点データ
+	std::vector<LineVertex> vertices_;
 
 	//========================================
 	// カメラ
@@ -145,9 +142,4 @@ private:
 	//========================================
 	// Transform
 	Transform transform_ = {};
-
-	//========================================
-	// 定数
-	static const uint32_t kVertexCount = 8; // Boxの頂点数
-	static const uint32_t kIndexCount = 36; // Boxのインデックス数（6面 × 2三角形 × 3頂点）
 };
