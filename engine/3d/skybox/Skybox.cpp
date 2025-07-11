@@ -29,7 +29,7 @@ void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
 
 	//========================================
 	// ワールド行列の初期化（スカイボックスは大きくする）
-	transform_ = {{100.0f, 100.0f, 100.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	transform_ = {{1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
 	//========================================
 	// カメラの取得
@@ -44,23 +44,27 @@ void Skybox::Update() {
 	camera_ = skyboxSetup_->GetDefaultCamera();
 
 	//========================================
-	// スカイボックスはカメラの位置に追従させる
-	if (camera_) {
-		transform_.translate = camera_->GetTransform().translate;
-	}
-
-	//========================================
-	// TransformからWorld行列を作成
-	Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
+	// TransformからWorld行列を作成（スケールのみ適用）
+	Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
 	Matrix4x4 worldViewProjectionMatrix;
 
 	//========================================
 	// カメラがセットされている場合はビュー行列を作成
 	if (camera_) {
 		// カメラのビュー行列を取得
-		const Matrix4x4 &viewProjectionMatrix = camera_->GetViewProjectionMatrix();
+		Matrix4x4 viewMatrix = camera_->GetViewMatrix();
+		Matrix4x4 projectionMatrix = camera_->GetProjectionMatrix();
+
+		// ビュー行列から平行移動成分を除去（3x3の回転行列のみ使用）
+		Matrix4x4 rotationOnlyViewMatrix = {
+			viewMatrix.m[0][0], viewMatrix.m[0][1], viewMatrix.m[0][2], 0.0f,
+			viewMatrix.m[1][0], viewMatrix.m[1][1], viewMatrix.m[1][2], 0.0f,
+			viewMatrix.m[2][0], viewMatrix.m[2][1], viewMatrix.m[2][2], 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f};
+
 		// ワールドビュープロジェクション行列を計算
-		worldViewProjectionMatrix = Multiply4x4(worldMatrix, viewProjectionMatrix);
+		Matrix4x4 worldViewMatrix = Multiply4x4(worldMatrix, rotationOnlyViewMatrix);
+		worldViewProjectionMatrix = Multiply4x4(worldViewMatrix, projectionMatrix);
 	} else {
 		// カメラがセットされていない場合はワールド行列をそのまま使う
 		worldViewProjectionMatrix = worldMatrix;

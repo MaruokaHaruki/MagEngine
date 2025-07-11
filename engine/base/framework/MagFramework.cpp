@@ -350,6 +350,6 @@ void MagFramework::SkyboxCommonDraw() {
 	//========================================
 	// Skybox共通描画設定
 	skyboxSetup_->CommonDrawSetup();
-	// Skybox描画
+	// Skybox描画（最初に描画して背景として扱う）
 	sceneManager_->SkyboxDraw();
 }

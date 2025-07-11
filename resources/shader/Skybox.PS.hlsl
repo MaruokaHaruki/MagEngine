@@ -3,22 +3,15 @@
 ///=============================================================================
 ///						リソース
 // キューブマップテクスチャ
-TextureCube<float4> gSkyboxTexture : register(t0);
-// サンプラー
-SamplerState gSampler : register(s0);
+TextureCube<float4> gTexture : register(t0);
 
 ///=============================================================================
 ///						PixelShader
-PixelShaderOutput main(SkyboxVertexOutput input) {
+PixelShaderOutput main(VertexShaderOutput input) {
     PixelShaderOutput output;
-    
-    // キューブマップテクスチャをサンプリング
-    // input.texcoordは正規化された3D方向ベクトルとして使用
-    float3 sampleDirection = normalize(input.texcoord);
-    float4 skyboxColor = gSkyboxTexture.Sample(gSampler, sampleDirection);
-    
-    // スカイボックスの色をそのまま出力
-    output.color = skyboxColor;
+    float4 textureColor = gTexture.Sample(gSampler, input.texcoord);
+    // スカイボックスのピクセルシェーダーでは、通常はテクスチャカラーをそのまま出力
+    output.color = textureColor * gMaterial.color; // マテリアルの色を適用
     
     return output;
 }
