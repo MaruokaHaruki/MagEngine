@@ -121,7 +121,7 @@ void SkyboxSetup::CreateGraphicsPipeline() {
 	//========================================
 	// RasterizerStateの設定を行う（スカイボックスは内側から見るため）
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT; // 前面をカリング
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE; // カリングを無効にして内側から見えるようにする
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//========================================

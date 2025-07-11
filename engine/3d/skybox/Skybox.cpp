@@ -122,50 +122,20 @@ void Skybox::CreateCubeVertices() {
 	};
 
 	//========================================
-	// インデックスデータ（時計回り）
+	// インデックスデータ（反時計回りに変更して内側から見えるようにする）
 	indices_ = {
 		// 前面
-		0,
-		1,
-		2,
-		2,
-		3,
-		0,
+		0, 3, 2, 2, 1, 0,
 		// 背面
-		4,
-		5,
-		6,
-		6,
-		7,
-		4,
+		4, 7, 6, 6, 5, 4,
 		// 左面
-		5,
-		0,
-		3,
-		3,
-		6,
-		5,
+		5, 6, 3, 3, 0, 5,
 		// 右面
-		1,
-		4,
-		7,
-		7,
-		2,
-		1,
+		1, 2, 7, 7, 4, 1,
 		// 上面
-		3,
-		2,
-		7,
-		7,
-		6,
-		3,
+		3, 6, 7, 7, 2, 3,
 		// 下面
-		5,
-		4,
-		1,
-		1,
-		0,
-		5,
+		5, 0, 1, 1, 4, 5,
 	};
 
 	//========================================
@@ -215,6 +185,36 @@ void Skybox::CreateCubeVertices() {
 	device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
+		&bufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&indexBuffer_));
+
+	// インデックスデータをバッファに書き込み
+	uint32_t *indexData = nullptr;
+	indexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&indexData));
+	std::memcpy(indexData, indices_.data(), indexBufferSize);
+	indexBuffer_->Unmap(0, nullptr);
+
+	// インデックスバッファビューの設定
+	indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
+	indexBufferView_.SizeInBytes = static_cast<UINT>(indexBufferSize);
+	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+}
+
+void Skybox::CreateTransformationMatrixBuffer() {
+	// 定数バッファのサイズを 256 バイトの倍数に設定
+	size_t bufferSize = (sizeof(TransformationMatrix) + 255) & ~255;
+	transfomationMatrixBuffer_ = skyboxSetup_->GetDXManager()->CreateBufferResource(bufferSize);
+	// 書き込み用変数
+	TransformationMatrix transformationMatrix = {};
+	// 書き込むためのアドレスを取得
+	transfomationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
+	// 書き込み
+	transformationMatrix.WVP = Identity4x4();
+	// 単位行列を書き込む
+	*transformationMatrixData_ = transformationMatrix;
+}
 		&bufferDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,

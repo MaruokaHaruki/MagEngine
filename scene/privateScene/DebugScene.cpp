@@ -11,7 +11,8 @@
 
 ///=============================================================================
 ///						初期化
-void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) {
+void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
+					SkyboxSetup *skyboxSetup) {
 	spriteSetup;
 	particleSetup;
 
@@ -84,8 +85,10 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///						 Skybox系
 	skybox_ = std::make_unique<Skybox>();
 	skybox_->Initialize(skyboxSetup);
-	// Skyboxのモデルを設定
-	skybox_->SetTexture("rostock_laage_airport_4k.dds");
+	// テクスチャの設定
+	skybox_->SetTexture(skyboxTexturePath_);
+	// スケールの設定
+	skybox_->SetScale({skyboxScale_, skyboxScale_, skyboxScale_});
 }
 
 ///=============================================================================
@@ -143,6 +146,11 @@ void DebugScene::Update() {
 	//=========================================
 	// Skyboxの更新
 	if (skybox_) {
+		// カメラの位置に合わせてスカイボックスの位置を更新
+		auto currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+		if (currentCamera) {
+			skybox_->SetPosition(currentCamera->GetTransform().translate);
+		}
 		skybox_->Update();
 	}
 }
@@ -179,7 +187,6 @@ void DebugScene::ParticleDraw() {
 ///=============================================================================
 ///						Skybox描画
 void DebugScene::SkyboxDraw() {
-	// Skyboxの描画
 	if (skybox_) {
 		skybox_->Draw();
 	}
