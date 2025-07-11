@@ -21,13 +21,12 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///--------------------------------------------------------------
 	///						 音声クラス
 	audio_ = MAudioG::GetInstance();
-	MAudioG::GetInstance()->LoadWav("rostock_laage_airport_4k.dds");
 
 	///--------------------------------------------------------------
 	///						 2D系クラス
 	//========================================
 	//// テクスチャマネージャ
-	TextureManager::GetInstance()->LoadTexture("gradationLine_top.png");
+	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
 
 	//========================================
 	// スプライトクラス(Game)
@@ -182,7 +181,7 @@ void DebugScene::ParticleDraw() {
 void DebugScene::SkyboxDraw() {
 	// Skyboxの描画
 	if (skybox_) {
-		//skybox_->Draw();
+		skybox_->Draw();
 	}
 }
 
