@@ -17,6 +17,7 @@
 #include "Particle.h"
 #include "ParticleEmitter.h"
 #include "Sprite.h"
+#include "Skybox.h"
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
@@ -83,6 +84,10 @@ private:
 	std::unique_ptr<Particle> particle_;
 	// パーティクルエミッター
 	std::unique_ptr<ParticleEmitter> particleEmitter_;
+
+	//=========================================
+	// Skybox
+	std::unique_ptr<Skybox> skybox_;
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有

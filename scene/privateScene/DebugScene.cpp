@@ -79,6 +79,13 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 										  4,
 										  2.0f,
 										  true);
+
+	///--------------------------------------------------------------
+	///						 Skybox系
+	skybox_ = std::make_unique<Skybox>();
+	skybox_->Initialize(skyboxSetup);
+	// Skyboxのモデルを設定
+	skybox_->SetTexture("rostock_laage_airport_4k.dds");
 }
 
 ///=============================================================================
@@ -132,6 +139,12 @@ void DebugScene::Update() {
 		// audio_->PlayWavReverse("Duke_Ellington.wav", true, 1.0f, 1.0f);
 		// audio_->PlayWav("Duke_Ellington.wav", true, 1.0f, 1.0f);
 	}
+
+	//=========================================
+	// Skyboxの更新
+	if(skybox_) {
+		skybox_->Update();
+	}
 }
 
 ///=============================================================================
@@ -143,9 +156,9 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	objMonsterBall_->Draw();
+	//objMonsterBall_->Draw();
 	// 地面
-	objTerrain_->Draw();
+	//objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
@@ -166,6 +179,10 @@ void DebugScene::ParticleDraw() {
 ///=============================================================================
 ///						Skybox描画
 void DebugScene::SkyboxDraw() {
+	// Skyboxの描画
+	if(skybox_) {
+		skybox_->Draw();
+	}
 }
 
 ///=============================================================================
@@ -207,6 +224,18 @@ void DebugScene::ImGuiDraw() {
 			}
 		}
 	}
+
+
+	//========================================
+	// SkyBoxの移動
+	ImGui::Separator();
+	// 移動
+	ImGui::SliderFloat3("Skybox Position", &skybox_->GetTransform()->translate.x, -10.0f, 10.0f);
+	// 回転
+	ImGui::SliderFloat3("Skybox Rotation", &skybox_->GetTransform()->rotate.x, -180.0f, 180.0f);
+	// スケール
+	ImGui::SliderFloat3("Skybox Scale", &skybox_->GetTransform()->scale.x, 0.1f, 10.0f);
+
 	ImGui::End();
 
 	DebugTextManager::GetInstance()->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);

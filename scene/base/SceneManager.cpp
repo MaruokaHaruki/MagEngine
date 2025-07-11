@@ -21,7 +21,7 @@ void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dS
 	// Skybox共通部
 	skyboxSetup_ = skyboxSetup;
 	// 初期シーンを設定（例としてDebugSceneを設定）
-	nowScene_ = std::make_unique<GamePlayScene>();
+	nowScene_ = std::make_unique<DebugScene>();
 	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_);
 
 	// シーンの初期設定

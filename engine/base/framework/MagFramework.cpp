@@ -211,7 +211,8 @@ void MagFramework::Update() {
 	object3dSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	// particleのカメラ設定の更新
 	particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
-
+	// skyboxのカメラ設定の更新
+	skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 	//========================================
 	// インプットの更新
 	Input::GetInstance()->Update();

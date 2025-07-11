@@ -29,6 +29,14 @@ void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
 	CreateViewProjectionBuffer();
 
 	//========================================
+	// トランスフォーメーションマトリックスバッファの作成
+	CreateTransformationMatrixBuffer();
+
+	//========================================
+	// ワールド行列の初期化
+	transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+
+	//========================================
 	// カメラの取得
 	camera_ = skyboxSetup_->GetDefaultCamera();
 }
@@ -41,21 +49,31 @@ void Skybox::Update() {
 	camera_ = skyboxSetup_->GetDefaultCamera();
 
 	//========================================
-	// ViewProjection行列の計算
+	// TransformからWorld行列を作成
+	Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
+	Matrix4x4 worldViewProjectionMatrix;
+
+	//========================================
+	// カメラがセットされている場合はビュー行列を作成
 	if (camera_) {
-		// カメラのビュー行列から移動成分を除去（回転のみ）
-		Matrix4x4 viewMatrix = camera_->GetViewMatrix();
-		viewMatrix.m[3][0] = 0.0f; // X移動成分を0に
-		viewMatrix.m[3][1] = 0.0f; // Y移動成分を0に
-		viewMatrix.m[3][2] = 0.0f; // Z移動成分を0に
-
-		// プロジェクション行列と合成
-		Matrix4x4 projectionMatrix = camera_->GetProjectionMatrix();
-		Matrix4x4 viewProjectionMatrix = Multiply4x4(viewMatrix, projectionMatrix);
-
-		// バッファに書き込み
-		viewProjectionData_->viewProjection = viewProjectionMatrix;
+		// カメラのビュー行列を取得
+		const Matrix4x4 &viewProjectionMatrix = camera_->GetViewProjectionMatrix();
+		// ワールドビュープロジェクション行列を計算
+		worldViewProjectionMatrix = Multiply4x4(worldMatrix, viewProjectionMatrix);
+	} else {
+		// カメラがセットされていない場合はワールド行列をそのまま使う
+		// NOTE:カメラがセットされてなくても描画できるようにするため
+		worldViewProjectionMatrix = worldMatrix;
 	}
+	//========================================
+	// トランスフォーメーションマトリックスバッファに書き込む
+	transformationMatrixData_->WVP = worldViewProjectionMatrix;
+	transformationMatrixData_->World = worldMatrix;
+	transformationMatrixData_->WorldInvTranspose = Inverse4x4(worldMatrix);
+
+	//========================================
+	// ViewProjection行列バッファを更新（互換性のため）
+	viewProjectionData_->viewProjection = worldViewProjectionMatrix;
 }
 
 ///=============================================================================
@@ -63,7 +81,7 @@ void Skybox::Update() {
 void Skybox::Draw() {
 	//========================================
 	// バッファが存在しない場合は描画しない
-	if (!vertexBuffer_ || !indexBuffer_ || !viewProjectionBuffer_) {
+	if (!vertexBuffer_ || !indexBuffer_ || !viewProjectionBuffer_ || !transformationMatrixBuffer_) {
 		throw std::runtime_error("Skybox buffers are not initialized.");
 	}
 
@@ -173,4 +191,22 @@ void Skybox::CreateViewProjectionBuffer() {
 	// 単位行列を書き込む
 	viewProjection.viewProjection = Identity4x4();
 	*viewProjectionData_ = viewProjection;
+}
+
+///=============================================================================
+///						トランスフォーメーションマトリックスバッファの作成
+void Skybox::CreateTransformationMatrixBuffer() {
+	// 定数バッファのサイズを 256 バイトの倍数に設定
+	size_t bufferSize = (sizeof(TransformationMatrix) + 255) & ~255;
+	transformationMatrixBuffer_ = skyboxSetup_->GetDXManager()->CreateBufferResource(bufferSize);
+	// 書き込み用変数
+	TransformationMatrix transformationMatrix = {};
+	// 書き込むためのアドレスを取得
+	transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
+	// 書き込み
+	transformationMatrix.WVP = Identity4x4();
+	transformationMatrix.World = Identity4x4();
+	transformationMatrix.WorldInvTranspose = Identity4x4();
+	// 単位行列を書き込む
+	*transformationMatrixData_ = transformationMatrix;
 }
