@@ -10,7 +10,6 @@
 #include "Matrix4x4.h"
 #include "TextureManager.h"
 #include "Transform.h"
-#include "TransformationMatrix.h"
 #include "Vector4.h"
 //========================================
 // DX12include
@@ -57,9 +56,6 @@ private:
 
 	/// \brief ViewProjection行列バッファの作成
 	void CreateViewProjectionBuffer();
-
-	/// \brief トランスフォーメーションマトリックスバッファの作成
-	void CreateTransformationMatrixBuffer();
 
 	///--------------------------------------------------------------
 	///							入出力関数
@@ -137,11 +133,6 @@ private:
 	// ViewProjection行列バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> viewProjectionBuffer_;
 	SkyboxViewProjection *viewProjectionData_ = nullptr;
-
-	//========================================
-	// トランスフォーメーションマトリックスバッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;
-	TransformationMatrix *transformationMatrixData_ = nullptr;
 
 	//========================================
 	// カメラ

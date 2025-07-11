@@ -14,7 +14,8 @@ SkyboxVertexOutput main(SkyboxVertexInput input) {
     output.position = mul(input.position, gViewProjection.viewProjection);
     
     // スカイボックスは常に最遠に描画されるよう、Z値をW値に設定
-    output.position.z = output.position.w;
+    // これにより深度値が1.0（最遠）になる
+    output.position.z = output.position.w * 0.99999f;
     
     // 頂点位置をそのままテクスチャ座標として使用（キューブマップ用）
     output.texcoord = input.position.xyz;

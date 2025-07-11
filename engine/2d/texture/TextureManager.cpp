@@ -7,6 +7,7 @@
  * \note
  *********************************************************************/
 #include "TextureManager.h"
+#include <algorithm>
 
 ///=============================================================================
 ///						インスタンス設定
@@ -58,34 +59,41 @@ void TextureManager::LoadTexture(const std::string &filePath) {
 
 	//---------------------------------------
 	// テクスチャファイルを読んでプログラムを扱えるようにする
-	// TODO:DDSファイルとWICファイルの読み込みを分ける
 	DirectX::ScratchImage image{};
 	std::wstring filePathW = ConvertString(fullPath);
 	HRESULT hr;
+
 	// ファイル拡張子をチェックして読み込み関数を選択
-	if (filePathW.find(L".dds") != std::wstring::npos) {
+	// 小文字に変換してから比較
+	std::string lowerPath = fullPath;
+	std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
+
+	if (lowerPath.find(".dds") != std::string::npos) {
 		// DDSファイルの読み込み
 		hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+		assert(SUCCEEDED(hr));
+
+		// DDSファイルの場合、キューブマップかどうかを確認
+		if (image.GetMetadata().IsCubemap()) {
+			// キューブマップの場合はミップマップ生成をスキップ
+		}
 	} else {
 		// WICファイルの読み込み
 		hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+		assert(SUCCEEDED(hr));
 	}
-	// 読み込みに失敗した場合は停止
-	assert(SUCCEEDED(hr));
 
 	//---------------------------------------
 	// mipmapの作成
 	DirectX::ScratchImage mipImages{};
-	// 圧縮フォーマットかどうかをチェック
-	if (DirectX::IsCompressed(image.GetMetadata().format)) {
+	// 圧縮フォーマットまたはキューブマップの場合はミップマップ生成をスキップ
+	if (DirectX::IsCompressed(image.GetMetadata().format) || image.GetMetadata().IsCubemap()) {
 		mipImages = std::move(image);
 	} else {
 		// mipmapの生成
-
 		hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+		assert(SUCCEEDED(hr));
 	}
-	// mipmapの生成に失敗した場合は停止
-	assert(SUCCEEDED(hr));
 
 	//---------------------------------------
 	// 追加したテクスチャデータの参照を取得する

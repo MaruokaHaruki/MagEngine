@@ -21,12 +21,13 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///--------------------------------------------------------------
 	///						 音声クラス
 	audio_ = MAudioG::GetInstance();
-	MAudioG::GetInstance()->LoadWav("Duke_Ellington.wav");
+	MAudioG::GetInstance()->LoadWav("rostock_laage_airport_4k.dds");
 
 	///--------------------------------------------------------------
 	///						 2D系クラス
 	//========================================
 	//// テクスチャマネージャ
+	TextureManager::GetInstance()->LoadTexture("gradationLine_top.png");
 
 	//========================================
 	// スプライトクラス(Game)
@@ -142,7 +143,7 @@ void DebugScene::Update() {
 
 	//=========================================
 	// Skyboxの更新
-	if(skybox_) {
+	if (skybox_) {
 		skybox_->Update();
 	}
 }
@@ -156,9 +157,9 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	//objMonsterBall_->Draw();
+	// objMonsterBall_->Draw();
 	// 地面
-	//objTerrain_->Draw();
+	// objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
@@ -173,15 +174,15 @@ void DebugScene::Object3DDraw() {
 ///						パーティクル描画
 void DebugScene::ParticleDraw() {
 	// パーティクルの描画
-	particle_->Draw();
+	// particle_->Draw();
 }
 
 ///=============================================================================
 ///						Skybox描画
 void DebugScene::SkyboxDraw() {
 	// Skyboxの描画
-	if(skybox_) {
-		skybox_->Draw();
+	if (skybox_) {
+		//skybox_->Draw();
 	}
 }
 
@@ -224,7 +225,6 @@ void DebugScene::ImGuiDraw() {
 			}
 		}
 	}
-
 
 	//========================================
 	// SkyBoxの移動

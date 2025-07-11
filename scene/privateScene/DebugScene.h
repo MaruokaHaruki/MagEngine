@@ -16,8 +16,8 @@
 #include "Object3d.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
-#include "Sprite.h"
 #include "Skybox.h"
+#include "Sprite.h"
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
@@ -25,7 +25,7 @@ class DebugScene : public BaseScene {
 public:
 	/// \brief 初期化
 	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
-		SkyboxSetup *skyboxSetup) override;
+					SkyboxSetup *skyboxSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -92,4 +92,10 @@ private:
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
 	Transform transform{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+
+	//========================================
+	// Skybox用デバッグフラグ
+	bool showSkyboxDebug_ = true;
+	std::string skyboxTexturePath_ = "/rostock_laage_airport_4k.dds";
+	float skyboxScale_ = 100.0f;
 };

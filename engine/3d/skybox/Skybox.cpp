@@ -12,7 +12,6 @@
 #include "MathFunc4x4.h"
 #include "SkyboxSetup.h"
 #include "TextureManager.h"
-
 ///=============================================================================
 ///						初期化
 void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
@@ -29,12 +28,8 @@ void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
 	CreateViewProjectionBuffer();
 
 	//========================================
-	// トランスフォーメーションマトリックスバッファの作成
-	CreateTransformationMatrixBuffer();
-
-	//========================================
-	// ワールド行列の初期化
-	transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	// ワールド行列の初期化（スカイボックスは大きくする）
+	transform_ = {{100.0f, 100.0f, 100.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
 	//========================================
 	// カメラの取得
@@ -47,6 +42,12 @@ void Skybox::Update() {
 	//========================================
 	// カメラの位置を取得
 	camera_ = skyboxSetup_->GetDefaultCamera();
+
+	//========================================
+	// スカイボックスはカメラの位置に追従させる
+	if (camera_) {
+		transform_.translate = camera_->GetTransform().translate;
+	}
 
 	//========================================
 	// TransformからWorld行列を作成
@@ -62,17 +63,11 @@ void Skybox::Update() {
 		worldViewProjectionMatrix = Multiply4x4(worldMatrix, viewProjectionMatrix);
 	} else {
 		// カメラがセットされていない場合はワールド行列をそのまま使う
-		// NOTE:カメラがセットされてなくても描画できるようにするため
 		worldViewProjectionMatrix = worldMatrix;
 	}
-	//========================================
-	// トランスフォーメーションマトリックスバッファに書き込む
-	transformationMatrixData_->WVP = worldViewProjectionMatrix;
-	transformationMatrixData_->World = worldMatrix;
-	transformationMatrixData_->WorldInvTranspose = Inverse4x4(worldMatrix);
 
 	//========================================
-	// ViewProjection行列バッファを更新（互換性のため）
+	// ViewProjection行列バッファを更新
 	viewProjectionData_->viewProjection = worldViewProjectionMatrix;
 }
 
@@ -81,7 +76,7 @@ void Skybox::Update() {
 void Skybox::Draw() {
 	//========================================
 	// バッファが存在しない場合は描画しない
-	if (!vertexBuffer_ || !indexBuffer_ || !viewProjectionBuffer_ || !transformationMatrixBuffer_) {
+	if (!vertexBuffer_ || !indexBuffer_ || !viewProjectionBuffer_) {
 		throw std::runtime_error("Skybox buffers are not initialized.");
 	}
 
@@ -103,9 +98,9 @@ void Skybox::Draw() {
 
 	//========================================
 	// ルートパラメータの設定
-	// ViewProjection行列の設定
+	// ViewProjection行列の設定（ルートパラメータ0）
 	commandList->SetGraphicsRootConstantBufferView(0, viewProjectionBuffer_->GetGPUVirtualAddress());
-	// テクスチャの設定
+	// テクスチャの設定（ルートパラメータ1）
 	commandList->SetGraphicsRootDescriptorTable(1, TextureManager::GetInstance()->GetSrvHandleGPU(texturePath_));
 
 	//========================================
@@ -138,8 +133,8 @@ void Skybox::CreateBoxVertices() {
 	vertexData_[3].position = {1.0f, -1.0f, -1.0f, 1.0f};  // 右下奥
 	vertexData_[4].position = {-1.0f, -1.0f, 1.0f, 1.0f};  // 左下手前
 	vertexData_[5].position = {-1.0f, 1.0f, 1.0f, 1.0f};   // 左上手前
-	vertexData_[6].position = {1.0f, 1.0f, 1.0f};		   // 右上手前
-	vertexData_[7].position = {1.0f, -1.0f, 1.0f};		   // 右下手前
+	vertexData_[6].position = {1.0f, 1.0f, 1.0f, 1.0f};	   // 右上手前
+	vertexData_[7].position = {1.0f, -1.0f, 1.0f, 1.0f};   // 右下手前
 
 	//========================================
 	// インデックスバッファの作成
@@ -191,22 +186,4 @@ void Skybox::CreateViewProjectionBuffer() {
 	// 単位行列を書き込む
 	viewProjection.viewProjection = Identity4x4();
 	*viewProjectionData_ = viewProjection;
-}
-
-///=============================================================================
-///						トランスフォーメーションマトリックスバッファの作成
-void Skybox::CreateTransformationMatrixBuffer() {
-	// 定数バッファのサイズを 256 バイトの倍数に設定
-	size_t bufferSize = (sizeof(TransformationMatrix) + 255) & ~255;
-	transformationMatrixBuffer_ = skyboxSetup_->GetDXManager()->CreateBufferResource(bufferSize);
-	// 書き込み用変数
-	TransformationMatrix transformationMatrix = {};
-	// 書き込むためのアドレスを取得
-	transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
-	// 書き込み
-	transformationMatrix.WVP = Identity4x4();
-	transformationMatrix.World = Identity4x4();
-	transformationMatrix.WorldInvTranspose = Identity4x4();
-	// 単位行列を書き込む
-	*transformationMatrixData_ = transformationMatrix;
 }
