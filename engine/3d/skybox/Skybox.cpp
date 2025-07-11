@@ -12,6 +12,7 @@
 #include "MathFunc4x4.h"
 #include "SkyboxSetup.h"
 #include "TextureManager.h"
+
 ///=============================================================================
 ///						初期化
 void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
@@ -20,8 +21,8 @@ void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
 	this->skyboxSetup_ = skyboxSetup;
 
 	//========================================
-	// Boxの頂点データ作成
-	CreateBoxVertices();
+	// キューブの頂点データ作成
+	CreateCubeVertices();
 
 	//========================================
 	// ViewProjection行列バッファの作成
@@ -29,7 +30,7 @@ void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
 
 	//========================================
 	// ワールド行列の初期化（スカイボックスは大きくする）
-	transform_ = {{1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	transform_ = {{100.0f, 100.0f, 100.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
 	//========================================
 	// カメラの取得
@@ -57,7 +58,6 @@ void Skybox::Update() {
 		worldViewProjectionMatrix = Multiply4x4(worldMatrix, viewProjectionMatrix);
 	} else {
 		// カメラがセットされていない場合はワールド行列をそのまま使う
-		// NOTE:カメラがセットされてなくても描画できるようにするため
 		worldViewProjectionMatrix = worldMatrix;
 	}
 	//========================================
@@ -72,7 +72,7 @@ void Skybox::Update() {
 void Skybox::Draw() {
 	//========================================
 	// バッファが存在しない場合は描画しない
-	if (!vertexBuffer_ ){
+	if (!vertexBuffer_ || !indexBuffer_) {
 		throw std::runtime_error("Skybox buffers are not initialized.");
 	}
 
@@ -87,65 +87,149 @@ void Skybox::Draw() {
 	auto commandList = skyboxSetup_->GetDXManager()->GetCommandList();
 
 	//========================================
-	// 頂点バッファの設定
+	// 頂点バッファとインデックスバッファの設定
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
-	// インデックスバッファの設定
 	commandList->IASetIndexBuffer(&indexBufferView_);
 
 	//========================================
 	// ルートパラメータの設定
 	// トランスフォーメーションマトリックスバッファの設定
-	commandList->SetGraphicsRootConstantBufferView(1, transfomationMatrixBuffer_->GetGPUVirtualAddress());
-	// テクスチャの設定（ルートパラメータ1）
+	commandList->SetGraphicsRootConstantBufferView(0, transfomationMatrixBuffer_->GetGPUVirtualAddress());
+	// テクスチャの設定
 	commandList->SetGraphicsRootDescriptorTable(1, TextureManager::GetInstance()->GetSrvHandleGPU(texturePath_));
 
 	//========================================
 	// 描画コール
-	commandList->DrawInstanced(vertices_.size(), 1, 0, 0);
+	commandList->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
 }
 
 ///=============================================================================
-///						Boxの頂点データ作成
-void Skybox::CreateBoxVertices() {
+///						キューブの頂点データ作成
+void Skybox::CreateCubeVertices() {
+	//========================================
+	// キューブの頂点データを作成
+	vertices_ = {
+		// 前面
+		{{-1.0f, -1.0f, -1.0f, 1.0f}},
+		{{1.0f, -1.0f, -1.0f, 1.0f}},
+		{{1.0f, 1.0f, -1.0f, 1.0f}},
+		{{-1.0f, 1.0f, -1.0f, 1.0f}},
+		// 背面
+		{{1.0f, -1.0f, 1.0f, 1.0f}},
+		{{-1.0f, -1.0f, 1.0f, 1.0f}},
+		{{-1.0f, 1.0f, 1.0f, 1.0f}},
+		{{1.0f, 1.0f, 1.0f, 1.0f}},
+	};
+
+	//========================================
+	// インデックスデータ（時計回り）
+	indices_ = {
+		// 前面
+		0,
+		1,
+		2,
+		2,
+		3,
+		0,
+		// 背面
+		4,
+		5,
+		6,
+		6,
+		7,
+		4,
+		// 左面
+		5,
+		0,
+		3,
+		3,
+		6,
+		5,
+		// 右面
+		1,
+		4,
+		7,
+		7,
+		2,
+		1,
+		// 上面
+		3,
+		2,
+		7,
+		7,
+		6,
+		3,
+		// 下面
+		5,
+		4,
+		1,
+		1,
+		0,
+		5,
+	};
+
 	//========================================
 	// デバイスの取得
 	auto device = skyboxSetup_->GetDXManager()->GetDevice();
-	// バッファサイズ
-	// NOTE: 1000本のラインを描画できるようにしている
-	auto bufferSize = sizeof(LineVertex) * 100000000;
+
 	//========================================
-	// バーテックスバッファの作成
+	// 頂点バッファの作成
+	auto vertexBufferSize = sizeof(SkyboxVertex) * vertices_.size();
 	D3D12_HEAP_PROPERTIES heapProps = {};
-	// ヒープタイプ
 	heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-	//========================================
-	// リソースの設定
+
 	D3D12_RESOURCE_DESC bufferDesc = {};
 	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	bufferDesc.Width = bufferSize;
+	bufferDesc.Width = vertexBufferSize;
 	bufferDesc.Height = 1;
 	bufferDesc.DepthOrArraySize = 1;
 	bufferDesc.MipLevels = 1;
 	bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
 	bufferDesc.SampleDesc.Count = 1;
 	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	//========================================
-	// リソースの作成
+
 	device->CreateCommittedResource(
 		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
 		&bufferDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
-		IID_PPV_ARGS(&vertexBuffer_)
-	);
-	//========================================
-	// バーテックスバッファビューの設定
+		IID_PPV_ARGS(&vertexBuffer_));
+
+	// 頂点データをバッファに書き込み
+	SkyboxVertex *vertexData = nullptr;
+	vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
+	std::memcpy(vertexData, vertices_.data(), vertexBufferSize);
+	vertexBuffer_->Unmap(0, nullptr);
+
+	// 頂点バッファビューの設定
 	vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
-	// バイトサイズ
-	vertexBufferView_.SizeInBytes = static_cast<UINT>( bufferSize );
-	// ストライド
-	vertexBufferView_.StrideInBytes = sizeof(LineVertex);
+	vertexBufferView_.SizeInBytes = static_cast<UINT>(vertexBufferSize);
+	vertexBufferView_.StrideInBytes = sizeof(SkyboxVertex);
+
+	//========================================
+	// インデックスバッファの作成
+	auto indexBufferSize = sizeof(uint32_t) * indices_.size();
+	bufferDesc.Width = indexBufferSize;
+
+	device->CreateCommittedResource(
+		&heapProps,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&indexBuffer_));
+
+	// インデックスデータをバッファに書き込み
+	uint32_t *indexData = nullptr;
+	indexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&indexData));
+	std::memcpy(indexData, indices_.data(), indexBufferSize);
+	indexBuffer_->Unmap(0, nullptr);
+
+	// インデックスバッファビューの設定
+	indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
+	indexBufferView_.SizeInBytes = static_cast<UINT>(indexBufferSize);
+	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 }
 
 void Skybox::CreateTransformationMatrixBuffer() {

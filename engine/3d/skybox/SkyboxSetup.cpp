@@ -1,6 +1,6 @@
 /*********************************************************************
  * \file   SkyboxSetup.cpp
- * \brief  Skybox描画用セットアップクラス
+ * \brief  スカイボックス共通設定クラス
  *
  * \author Harukichimaru
  * \date   November 2024
@@ -45,15 +45,14 @@ void SkyboxSetup::CreateRootSignature() {
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	// ルートパラメータを2つに設定（VP行列とテクスチャ）
+	// スカイボックス用のルートパラメータ（変換行列とテクスチャ）
 	D3D12_ROOT_PARAMETER rootParameters[2] = {};
-
-	// ViewProjection行列用
+	// 変換行列用
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 	rootParameters[0].Descriptor.ShaderRegister = 0;
 
-	// テクスチャ用
+	// テクスチャ用（キューブマップ）
 	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[1].DescriptorTable.pDescriptorRanges = descriptorRange;
@@ -98,7 +97,7 @@ void SkyboxSetup::CreateGraphicsPipeline() {
 	//========================================
 	// InputLayoutの設定を行う
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
-	// 頂点データ
+	// 頂点データ（位置のみ）
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -120,9 +119,9 @@ void SkyboxSetup::CreateGraphicsPipeline() {
 	blendDesc.RenderTarget[0] = renderTargetBlendDesc;
 
 	//========================================
-	// RasterizerStateの設定を行う（スカイボックスは内側から見るのでCull Frontに設定）
+	// RasterizerStateの設定を行う（スカイボックスは内側から見るため）
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT; // 前面をカリング
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//========================================
@@ -155,10 +154,10 @@ void SkyboxSetup::CreateGraphicsPipeline() {
 	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
 	//========================================
-	// DepthStencilStateの設定を行う（スカイボックスは常に最奥に描画）
+	// DepthStencilStateの設定を行う（スカイボックスは最遠にする）
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
 	depthStencilDesc.DepthEnable = true;
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度書き込み無効
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度書き込みを無効
 	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;

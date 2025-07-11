@@ -1,6 +1,6 @@
 /*********************************************************************
  * \file   SkyboxSetup.h
- * \brief  Skybox描画用セットアップクラス
+ * \brief  スカイボックス共通設定クラス
  *
  * \author Harukichimaru
  * \date   November 2024

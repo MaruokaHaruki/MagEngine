@@ -7,10 +7,10 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "TransformationMatrix.h"
 #include "Matrix4x4.h"
 #include "TextureManager.h"
 #include "Transform.h"
+#include "TransformationMatrix.h"
 #include "Vector4.h"
 //========================================
 // DX12include
@@ -46,8 +46,8 @@ public:
 	///--------------------------------------------------------------
 	///						 静的メンバ関数
 private:
-	/// \brief Boxの頂点データ作成
-	void CreateBoxVertices();
+	/// \brief キューブの頂点データ作成
+	void CreateCubeVertices();
 
 	/// @brief トランスフォーメーションマトリックスバッファの作成
 	void CreateTransformationMatrixBuffer();
@@ -114,22 +114,25 @@ private:
 
 	//========================================
 	// トランスフォーメーションマトリックス
-	Microsoft::WRL::ComPtr <ID3D12Resource> transfomationMatrixBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_;
 	// 頂点バッファ
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
+	// インデックスバッファ
+	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;
 
 	//========================================
 	// バッファリソース内のデータを指すポインタ
 	// トランスフォーメーションマトリックス
-	TransformationMatrix* transformationMatrixData_ = nullptr;
-	// ViewProjection行列バッファ
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
-	// インデックスデータ
+	TransformationMatrix *transformationMatrixData_ = nullptr;
+	// 頂点バッファビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
+	// インデックスバッファビュー
+	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
 
 	//---------------------------------------
-	// 頂点データ
-	std::vector<LineVertex> vertices_;
+	// 頂点データとインデックスデータ
+	std::vector<SkyboxVertex> vertices_;
+	std::vector<uint32_t> indices_;
 
 	//========================================
 	// カメラ
