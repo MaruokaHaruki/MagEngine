@@ -25,7 +25,7 @@ ConstantBuffer<SpotLight> gSpotLight : register(b4);
 //SRVのRegister
 Texture2D<float4> gTexture : register(t0);
 
-// 周囲の映り込み
+// 環境マップ
 TextureCube<float4> gEnvironmentTexture : register(t1);
 
 //SamplerのRegister
@@ -168,14 +168,41 @@ PixelShaderOutput main(VertexShaderOutput input)
         
         //---------------------------------------
         // 全ての光源を合成
-        // TODO: 環境光(Ambient Light)をここに追加することも検討してください (例: float3 ambient = 0.1f * gMaterial.color.rgb;)
-        output.color.rgb = totalDiffuse + totalSpecular; // + ambient;
+        output.color.rgb = totalDiffuse + totalSpecular;
         output.color.a = gMaterial.color.a * textureColor.a;
+        
+        //---------------------------------------
+        // 環境マップの計算
+        if (gMaterial.enableEnvironmentMap != 0)
+        {
+            // 反射ベクトルの計算
+            float3 reflectDir = reflect(-toEye, normalizedNormal);
+            
+            // 環境マップからのサンプリング
+            float4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectDir);
+            
+            // フレネル効果を考慮した環境マップの適用
+            float fresnel = pow(1.0f - saturate(dot(normalizedNormal, toEye)), 2.0f);
+            float3 environmentContribution = environmentColor.rgb * gMaterial.environmentMapStrength * fresnel;
+            
+            // 環境マップを最終色に追加
+            output.color.rgb += environmentContribution;
+        }
     }
     else
     {
         // Lightingを使用しない場合
         output.color = gMaterial.color * textureColor;
+        
+        // 環境マップの計算（ライティング無効時）
+        if (gMaterial.enableEnvironmentMap != 0)
+        {
+            float3 reflectDir = reflect(-toEye, normalizedNormal);
+            float4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectDir);
+            float fresnel = pow(1.0f - saturate(dot(normalizedNormal, toEye)), 2.0f);
+            float3 environmentContribution = environmentColor.rgb * gMaterial.environmentMapStrength * fresnel;
+            output.color.rgb += environmentContribution;
+        }
     }
     
     // アルファテスト

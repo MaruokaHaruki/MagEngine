@@ -39,14 +39,18 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	ModelManager::GetInstance()->LoadModel("terrain.obj");
 	//========================================
 	// 3Dオブジェクトクラス
+	// 映り込みの設定
+	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("rostock_laage_airport_4k.dds");
 	// モンスターボール
 	objMonsterBall_ = std::make_unique<Object3d>();
 	objMonsterBall_->Initialize(object3dSetup);
 	objMonsterBall_->SetModel("ball.obj");
+	objMonsterBall_->SetEnvironmentMapEnabled(true);
 	// 地面
 	objTerrain_ = std::make_unique<Object3d>();
 	objTerrain_->Initialize(object3dSetup);
 	objTerrain_->SetModel("terrain.obj");
+	objTerrain_->SetEnvironmentMapEnabled(true);
 
 	//========================================
 	// レベルデータローダーの初期化と読み込み
@@ -156,9 +160,9 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	// objMonsterBall_->Draw();
+	objMonsterBall_->Draw();
 	// 地面
-	// objTerrain_->Draw();
+	objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画

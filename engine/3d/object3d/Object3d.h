@@ -7,22 +7,22 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "TransformationMatrix.h"
 #include "Light.h"
-#include "Transform.h"
 #include "Model.h"
 #include "ModelManager.h"
- //========================================
- // DX12include
-#include<d3d12.h>
-#include<dxgi1_6.h>
+#include "Transform.h"
+#include "TransformationMatrix.h"
+//========================================
+// DX12include
+#include <d3d12.h>
+#include <dxgi1_6.h>
 #include <wrl/client.h>
-#pragma comment(lib,"d3d12.lib")
-#pragma comment(lib,"dxgi.lib")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 //========================================
 // DXC
 #include <dxcapi.h>
-#pragma comment(lib,"dxcompiler.lib")
+#pragma comment(lib, "dxcompiler.lib")
 
 struct CameraForGpu {
 	Vector3 worldPosition;
@@ -34,14 +34,13 @@ class Object3d {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
-
 	/// \brief 初期化
-	void Initialize(Object3dSetup* object3dSetup);
+	void Initialize(Object3dSetup *object3dSetup);
 
 	/// \brief 更新
 	void Update();
 
-	/// \brief 描画 
+	/// \brief 描画
 	void Draw();
 
 	/// \brief ImGui描画
@@ -61,14 +60,14 @@ private:
 	void CreateDirectionalLight();
 
 	/**----------------------------------------------------------------------------
-     * \brief  CreatePointLight ポイントライトの作成
-     */
-    void CreatePointLight();
+	 * \brief  CreatePointLight ポイントライトの作成
+	 */
+	void CreatePointLight();
 
 	/**----------------------------------------------------------------------------
-     * \brief  CreateSpotLight スポットライトの作成
-     */
-    void CreateSpotLight();
+	 * \brief  CreateSpotLight スポットライトの作成
+	 */
+	void CreateSpotLight();
 
 	/**----------------------------------------------------------------------------
 	 * \brief  カメラバッファの作成
@@ -79,57 +78,76 @@ private:
 	///							入出力関数
 public:
 	/**----------------------------------------------------------------------------
-	* \brief  SetModel モデルの設定
-	* \param  filePath ファイルパス
-	*/
-	void SetModel(const std::string& filePath) {model_ = ModelManager::GetInstance()->FindModel(filePath);}
+	 * \brief  SetModel モデルの設定
+	 * \param  filePath ファイルパス
+	 */
+	void SetModel(const std::string &filePath) {
+		model_ = ModelManager::GetInstance()->FindModel(filePath);
+	}
 
-
-	Transform *GetTransform() { return &transform_; } // Transformのポインタを取得する関数
+	Transform *GetTransform() {
+		return &transform_;
+	} // Transformのポインタを取得する関数
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTransform トランスフォーメーションの設定
 	 * \param  transform トランスフォーメーション
 	 */
-	void SetTransform(const Transform& transform) { transform_ = transform; }
+	void SetTransform(const Transform &transform) {
+		transform_ = transform;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetModel モデルの設定
 	 * \param  model モデル
 	 */
-	void SetScale(const Vector3& scale) { transform_.scale = scale; }
+	void SetScale(const Vector3 &scale) {
+		transform_.scale = scale;
+	}
 	/*
 	 * \brief  GetScale スケールの取得
 	 * \return Vector3 スケール
 	 */
-	const Vector3& GetScale() const { return transform_.scale; }
+	const Vector3 &GetScale() const {
+		return transform_.scale;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetRotate 回転の設定
 	 * \param  rotate 回転
 	 */
-	void SetRotation(const Vector3& rotate) { transform_.rotate = rotate; }
+	void SetRotation(const Vector3 &rotate) {
+		transform_.rotate = rotate;
+	}
 	/*
 	 * \brief  GetRotate 回転の取得
 	 * \return Vector3 回転
 	 */
-	const Vector3& GetRotation() const { return transform_.rotate; }
+	const Vector3 &GetRotation() const {
+		return transform_.rotate;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTranslate 移動の設定
 	 * \param  translate 移動
 	 */
-	void SetPosition(const Vector3& translate) { transform_.translate = translate; } 
+	void SetPosition(const Vector3 &translate) {
+		transform_.translate = translate;
+	}
 	/*
 	 * \brief  GetTranslate 移動の取得
 	 * \return Vector3 移動
 	 */
-	const Vector3& GetPosition() const { return transform_.translate; }
+	const Vector3 &GetPosition() const {
+		return transform_.translate;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetCamera カメラの設定
 	 * \param  camera
 	 */
-	void SetCamera(Camera* camera) { this->camera_ = camera; }
+	void SetCamera(Camera *camera) {
+		this->camera_ = camera;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetDirectionalLight 並行光源の設定
@@ -145,7 +163,9 @@ public:
 	/*
 	 * \brief  GetDirectionalLight 並行光源の取得
 	 */
-	const DirectionalLight &GetDirectionalLight() const { return *directionalLightData_; }
+	const DirectionalLight &GetDirectionalLight() const {
+		return *directionalLightData_;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetPointLight ポイントライトの設定（拡張版）
@@ -155,105 +175,148 @@ public:
 	 * \param  radius ライトの影響範囲
 	 * \param  decay 減衰の度合い（1.0が線形、2.0が二乗減衰）
 	 */
-	void SetPointLight(const Vector4& color, const Vector3& position, float intensity, 
-		float radius = 10.0f, float decay = 2.0f){
-			pointLightData_->color = color;
-			pointLightData_->position = position;
-			pointLightData_->intensity = intensity;
-			pointLightData_->radius = radius;
-			pointLightData_->decay = decay;
-		}
+	void SetPointLight(const Vector4 &color, const Vector3 &position, float intensity,
+					   float radius = 10.0f, float decay = 2.0f) {
+		pointLightData_->color = color;
+		pointLightData_->position = position;
+		pointLightData_->intensity = intensity;
+		pointLightData_->radius = radius;
+		pointLightData_->decay = decay;
+	}
 	/*
-	* \brief  GetPointLight ポイントライトの取得
-	* \return 現在設定されているポイントライト情報
-	*/
-	const PointLight& GetPointLight() const { return *pointLightData_; }
+	 * \brief  GetPointLight ポイントライトの取得
+	 * \return 現在設定されているポイントライト情報
+	 */
+	const PointLight &GetPointLight() const {
+		return *pointLightData_;
+	}
 
-    /**----------------------------------------------------------------------------
-     * \brief  SetSpotLight スポットライトの設定
-     * \param  color ライトの色
-     * \param  position ライトの位置
-     * \param  direction ライトの方向
-     * \param  intensity 光の強度
-     * \param  distance 光の届く距離
-     * \param  decay 減衰の度合い
-     * \param  angle スポットライトの角度（ラジアン）
-     */
-    void SetSpotLight(const Vector4& color, const Vector3& position, 
-        const Vector3& direction, float intensity,
-        float distance = 15.0f, float decay = 2.0f, 
-        float angle = 0.5f){
-			spotLightData_->color = color;
-			spotLightData_->position = position;
-			spotLightData_->direction = direction;
-			spotLightData_->intensity = intensity;
-			spotLightData_->distance = distance;
-			spotLightData_->decay = decay;
-			spotLightData_->cosAngle = cosf(angle);
-		}
-    /*
-     * \brief  GetSpotLight スポットライトの取得
-     * \return 現在設定されているスポットライト情報
-     */
-    const SpotLight& GetSpotLight() const { return *spotLightData_; }
+	/**----------------------------------------------------------------------------
+	 * \brief  SetSpotLight スポットライトの設定
+	 * \param  color ライトの色
+	 * \param  position ライトの位置
+	 * \param  direction ライトの方向
+	 * \param  intensity 光の強度
+	 * \param  distance 光の届く距離
+	 * \param  decay 減衰の度合い
+	 * \param  angle スポットライトの角度（ラジアン）
+	 */
+	void SetSpotLight(const Vector4 &color, const Vector3 &position,
+					  const Vector3 &direction, float intensity,
+					  float distance = 15.0f, float decay = 2.0f,
+					  float angle = 0.5f) {
+		spotLightData_->color = color;
+		spotLightData_->position = position;
+		spotLightData_->direction = direction;
+		spotLightData_->intensity = intensity;
+		spotLightData_->distance = distance;
+		spotLightData_->decay = decay;
+		spotLightData_->cosAngle = cosf(angle);
+	}
+	/*
+	 * \brief  GetSpotLight スポットライトの取得
+	 * \return 現在設定されているスポットライト情報
+	 */
+	const SpotLight &GetSpotLight() const {
+		return *spotLightData_;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetMaterialColor マテリアルカラーの設定
 	 * \param  color
 	 */
-	void SetMaterialColor(const Vector4 &color) { model_->SetMaterialColor(color); }
+	void SetMaterialColor(const Vector4 &color) {
+		model_->SetMaterialColor(color);
+	}
 	/*
 	 * \brief  GetMaterialColor マテリアルカラーの取得
 	 */
-	Vector4 GetMaterialColor() const { return model_->GetMaterialColor(); }
+	Vector4 GetMaterialColor() const {
+		return model_->GetMaterialColor();
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetShininess 光沢度の設定
 	 * \param  shininess
 	 */
-	void SetShininess(float shininess) { model_->SetShininess(shininess); }
+	void SetShininess(float shininess) {
+		model_->SetShininess(shininess);
+	}
 	/*
 	 * \brief  GetShininess 光沢度の取得
 	 */
-	float GetShininess() const { return model_->GetShininess(); }
+	float GetShininess() const {
+		return model_->GetShininess();
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEnvironmentMapEnabled 環境マップの有効/無効設定
+	 * \param  enabled 有効フラグ
+	 */
+	void SetEnvironmentMapEnabled(bool enabled) {
+		model_->SetEnvironmentMapEnabled(enabled);
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  GetEnvironmentMapEnabled 環境マップの有効/無効取得
+	 * \return
+	 */
+	bool GetEnvironmentMapEnabled() const {
+		return model_->GetEnvironmentMapEnabled();
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEnvironmentMapStrength 環境マップの強度設定
+	 * \param  strength 強度
+	 */
+	void SetEnvironmentMapStrength(float strength) {
+		model_->SetEnvironmentMapStrength(strength);
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  GetEnvironmentMapStrength 環境マップの強度取得
+	 * \return
+	 */
+	float GetEnvironmentMapStrength() const {
+		return model_->GetEnvironmentMapStrength();
+	}
 
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
 	//========================================
 	// オブジェクト3Dセットアップポインタ
-	Object3dSetup* object3dSetup_ = nullptr;
+	Object3dSetup *object3dSetup_ = nullptr;
 	//========================================
 	// モデルデータ
-	Model* model_ = nullptr;
+	Model *model_ = nullptr;
 	//========================================
 	// トランスフォーメーションマトリックス
-	Microsoft::WRL::ComPtr <ID3D12Resource> transfomationMatrixBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_;
 	// カメラ
-	Microsoft::WRL::ComPtr <ID3D12Resource> cameraBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> cameraBuffer_;
 	// 並行光源
-	Microsoft::WRL::ComPtr <ID3D12Resource> directionalLightBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightBuffer_;
 	// 点光源
-	Microsoft::WRL::ComPtr <ID3D12Resource> pointLightBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightBuffer_;
 	// TODO:スポットライト
-	Microsoft::WRL::ComPtr <ID3D12Resource> spotLightBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightBuffer_;
 	//========================================
 	// バッファリソース内のデータを指すポインタ
 	// トランスフォーメーションマトリックス
-	TransformationMatrix* transformationMatrixData_ = nullptr;
+	TransformationMatrix *transformationMatrixData_ = nullptr;
 	// カメラ
 	CameraForGpu *cameraData_ = nullptr;
 	// 並行光源
-	DirectionalLight* directionalLightData_ = nullptr;
+	DirectionalLight *directionalLightData_ = nullptr;
 	// 点光源
-	PointLight* pointLightData_ = nullptr;
+	PointLight *pointLightData_ = nullptr;
 	// TODO:スポットライト
-	SpotLight* spotLightData_ = nullptr;
+	SpotLight *spotLightData_ = nullptr;
 	//========================================
 	// Transform
 	Transform transform_ = {};
 	//========================================
 	// カメラ
-	Camera* camera_ = nullptr;
+	Camera *camera_ = nullptr;
 };
-

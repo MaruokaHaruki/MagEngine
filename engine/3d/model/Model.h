@@ -7,25 +7,25 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "Material.h"
 #include "ModelData.h"
 #include "VertexData.h"
-#include "Material.h"
- //========================================
- // DX12include
-#include<d3d12.h>
-#include<dxgi1_6.h>
+//========================================
+// DX12include
+#include <d3d12.h>
+#include <dxgi1_6.h>
 #include <wrl/client.h>
-#pragma comment(lib,"d3d12.lib")
-#pragma comment(lib,"dxgi.lib")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 //========================================
 // DXC
 #include <dxcapi.h>
-#pragma comment(lib,"dxcompiler.lib")
+#pragma comment(lib, "dxcompiler.lib")
 //---------------------------------------
 // assimpライブラリ
 #include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 class ModelSetup;
 class Model {
@@ -33,14 +33,13 @@ class Model {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
-
 	/// \brief 初期化
 	void Initialize(ModelSetup *modelSetup, const std::string &directorypath, const std::string &filename);
 
 	/// \brief 更新
 	void Update();
 
-	/// \brief 描画 
+	/// \brief 描画
 	void Draw();
 
 	// TODO: この関数はどこで使われているのか？
@@ -59,7 +58,7 @@ private:
 	 * \param  filename ファイルネーム
 	 * \return materialData マテリアルデータ
 	 * \note
-	*/
+	 */
 	MaterialData LoadMaterialTemplateFile(const std::string &directoryPath, const std::string &filename);
 
 	/**----------------------------------------------------------------------------
@@ -73,7 +72,7 @@ private:
 	/// @brief ReadNode ノードの読み込み
 	/// @param node ノード
 	/// @return ノードデータ
-	Node ReadNode(aiNode* node);
+	Node ReadNode(aiNode *node);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  頂点バッファの作成
@@ -90,30 +89,69 @@ private:
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
-
 	/**----------------------------------------------------------------------------
 	 * \brief  SetMaterialColor マテリアルカラーの設定
 	 * \param  color カラー
 	 */
-	void SetMaterialColor(const Vector4 &color) { materialData_->color = color; }
+	void SetMaterialColor(const Vector4 &color) {
+		materialData_->color = color;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetMaterialColor マテリアルカラーの取得
-	 * \return 
+	 * \return
 	 */
-	Vector4 GetMaterialColor() const { return materialData_->color; }
+	Vector4 GetMaterialColor() const {
+		return materialData_->color;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetShininess 光沢度の設定
 	 * \param  shininess
 	 */
-	void SetShininess(float shininess) { materialData_->shininess = shininess; }
+	void SetShininess(float shininess) {
+		materialData_->shininess = shininess;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetShininess 光沢度の取得
-	 * \return 
+	 * \return
 	 */
-	float GetShininess() const { return materialData_->shininess; }
+	float GetShininess() const {
+		return materialData_->shininess;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEnvironmentMapEnabled 環境マップの有効/無効設定
+	 * \param  enabled 有効フラグ
+	 */
+	void SetEnvironmentMapEnabled(bool enabled) {
+		materialData_->enableEnvironmentMap = enabled ? 1 : 0;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  GetEnvironmentMapEnabled 環境マップの有効/無効取得
+	 * \return
+	 */
+	bool GetEnvironmentMapEnabled() const {
+		return materialData_->enableEnvironmentMap != 0;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  SetEnvironmentMapStrength 環境マップの強度設定
+	 * \param  strength 強度
+	 */
+	void SetEnvironmentMapStrength(float strength) {
+		materialData_->environmentMapStrength = strength;
+	}
+
+	/**----------------------------------------------------------------------------
+	 * \brief  GetEnvironmentMapStrength 環境マップの強度取得
+	 * \return
+	 */
+	float GetEnvironmentMapStrength() const {
+		return materialData_->environmentMapStrength;
+	}
 
 	///--------------------------------------------------------------
 	///							メンバ変数
@@ -129,23 +167,22 @@ private:
 	//---------------------------------------
 	// 頂点データ
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
-	//マテリアル
-	Microsoft::WRL::ComPtr <ID3D12Resource> materialBuffer_;
+	// マテリアル
+	Microsoft::WRL::ComPtr<ID3D12Resource> materialBuffer_;
 
 	///---------------------------------------
 	/// バッファリソース内のデータを指すポインタ
-	//頂点
+	// 頂点
 	VertexData *vertexData_ = nullptr;
-	//マテリアル
+	// マテリアル
 	Material *materialData_ = nullptr;
 
 	///---------------------------------------
 	/// バッファリソースの使い道を指すポインタ
-	//頂点
+	// 頂点
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};
 
 	//---------------------------------------
 	// テクスチャ用変数
 	uint32_t textureIndex_ = 0;
 };
-

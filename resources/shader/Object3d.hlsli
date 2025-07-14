@@ -41,6 +41,8 @@ struct Material
     int enableLighting;
     float4x4 uvTransform;
     float shininess;
+    int enableEnvironmentMap;
+    float environmentMapStrength;
 };
 //========================================
 //カメラ
