@@ -24,6 +24,10 @@ ConstantBuffer<SpotLight> gSpotLight : register(b4);
 
 //SRVのRegister
 Texture2D<float4> gTexture : register(t0);
+
+// 周囲の映り込み
+TextureCube<float4> gEnvironmentTexture : register(t1);
+
 //SamplerのRegister
 SamplerState gSampler : register(s0); 
 
