@@ -208,8 +208,13 @@ void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelO
 
 	// モデルファイルが指定されている場合は設定
 	if (!levelObject->file_name.empty()) {
-		object3d->SetModel(levelObject->file_name);
-		Logger::Log("Set model: " + levelObject->file_name + " for object: " + levelObject->name, Logger::LogLevel::Info);
+		try {
+			object3d->SetModel(levelObject->file_name);
+			Logger::Log("Set model: " + levelObject->file_name + " for object: " + levelObject->name, Logger::LogLevel::Info);
+		} catch (const std::exception &e) {
+			Logger::Log("Failed to set model " + levelObject->file_name + " for object " + levelObject->name + ": " + e.what(), Logger::LogLevel::Error);
+			// モデル設定に失敗してもオブジェクトは作成する
+		}
 	} else {
 		Logger::Log("No model file specified for object: " + levelObject->name + " (Empty object)", Logger::LogLevel::Info);
 	}

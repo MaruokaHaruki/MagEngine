@@ -57,7 +57,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	levelDataLoader_ = std::make_unique<LevelDataLoader>();
 	levelDataLoader_->Initialize();
 	// テスト用JSONファイルを読み込み（ファイルパスは適宜変更）
-	bool loadResult = levelDataLoader_->LoadLevelFromJson("resources/levels/test_level.json");
+	bool loadResult = levelDataLoader_->LoadLevelFromJson("resources/levels/test.json");
 	if (loadResult) {
 		// レベルデータからObject3Dを作成
 		levelDataLoader_->CreateObjectsFromLevelData(object3dSetup, levelObjects_);
@@ -160,9 +160,9 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	objMonsterBall_->Draw();
+	//objMonsterBall_->Draw();
 	// 地面
-	objTerrain_->Draw();
+	//objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
