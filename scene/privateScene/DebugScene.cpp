@@ -160,9 +160,9 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	//objMonsterBall_->Draw();
+	// objMonsterBall_->Draw();
 	// 地面
-	//objTerrain_->Draw();
+	// objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
@@ -221,12 +221,17 @@ void DebugScene::ImGuiDraw() {
 		// 再読み込みボタン
 		if (ImGui::Button("Reload Level Data")) {
 			levelObjects_.clear(); // 既存オブジェクトをクリア
-			bool reloadResult = levelDataLoader_->LoadLevelFromJson("resources/levels/test_level.json");
+			bool reloadResult = levelDataLoader_->LoadLevelFromJson("resources/levels/test.json");
 			if (reloadResult) {
 				// レベルデータからObject3Dを再作成
 				levelDataLoader_->CreateObjectsFromLevelData(object3dSetup_, levelObjects_);
 			}
 		}
+
+		ImGui::Separator();
+		// レベルオブジェクトの操作UI
+		ImGui::Text("Level Object Controls");
+		levelDataLoader_->ImGuiDraw(levelObjects_);
 	}
 
 	//========================================

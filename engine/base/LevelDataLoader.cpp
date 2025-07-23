@@ -5,7 +5,8 @@
 ///                        初期化
 void LevelDataLoader::Initialize() {
 	isLoaded_ = false;
-	levelData_ = {}; // 空のレベルデータで初期化
+	levelData_ = {};		   // 空のレベルデータで初期化
+	selectedObjectIndex_ = -1; // 選択なし
 	Logger::Log("LevelDataLoader initialized", Logger::LogLevel::Info);
 }
 
@@ -212,11 +213,22 @@ void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelO
 			object3d->SetModel(levelObject->file_name);
 			Logger::Log("Set model: " + levelObject->file_name + " for object: " + levelObject->name, Logger::LogLevel::Info);
 		} catch (const std::exception &e) {
-			Logger::Log("Failed to set model " + levelObject->file_name + " for object " + levelObject->name + ": " + e.what(), Logger::LogLevel::Error);
-			// モデル設定に失敗してもオブジェクトは作成する
+			Logger::Log("Failed to set model " + levelObject->file_name + " for object " + levelObject->name + ": " + e.what() + " - Using default axisPlus.obj", Logger::LogLevel::Warning);
+			// モデル設定に失敗した場合、デフォルトのaxisPlus.objを設定
+			try {
+				object3d->SetModel("axisPlus.obj");
+			} catch (const std::exception &defaultError) {
+				Logger::Log("Failed to set default model axisPlus.obj: " + std::string(defaultError.what()), Logger::LogLevel::Error);
+			}
 		}
 	} else {
-		Logger::Log("No model file specified for object: " + levelObject->name + " (Empty object)", Logger::LogLevel::Info);
+		Logger::Log("No model file specified for object: " + levelObject->name + " - Using default axisPlus.obj", Logger::LogLevel::Info);
+		// モデルファイルが指定されていない場合もデフォルトのaxisPlus.objを設定
+		try {
+			object3d->SetModel("axisPlus.obj");
+		} catch (const std::exception &e) {
+			Logger::Log("Failed to set default model axisPlus.obj: " + std::string(e.what()), Logger::LogLevel::Error);
+		}
 	}
 
 	// 親のトランスフォームと現在のオブジェクトのトランスフォームを合成
@@ -267,4 +279,65 @@ Transform LevelDataLoader::CombineTransforms(const Transform &parent, const Tran
 	combined.translate.z = parent.translate.z + (child.translate.z * parent.scale.z);
 
 	return combined;
+}
+
+///=============================================================================
+///                        ImGui描画（デバッグ用）
+void LevelDataLoader::ImGuiDraw(std::vector<std::unique_ptr<Object3d>> &outObjectList) {
+	if (!isLoaded_ || outObjectList.empty()) {
+		ImGui::Text("No level objects loaded");
+		return;
+	}
+
+	ImGui::Text("Level Objects: %zu", outObjectList.size());
+
+	// オブジェクト選択コンボボックス
+	if (ImGui::BeginCombo("Select Object", selectedObjectIndex_ >= 0 ? std::to_string(selectedObjectIndex_).c_str() : "None")) {
+		for (int i = 0; i < static_cast<int>(outObjectList.size()); i++) {
+			bool isSelected = (selectedObjectIndex_ == i);
+			if (ImGui::Selectable(("Object " + std::to_string(i)).c_str(), isSelected)) {
+				selectedObjectIndex_ = i;
+			}
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	// 選択されたオブジェクトの操作
+	if (selectedObjectIndex_ >= 0 && selectedObjectIndex_ < static_cast<int>(outObjectList.size())) {
+		auto &selectedObject = outObjectList[selectedObjectIndex_];
+		if (selectedObject) {
+			ImGui::Separator();
+			ImGui::Text("Object %d Controls", selectedObjectIndex_);
+
+			// 現在の位置を取得
+			Vector3 position = selectedObject->GetPosition();
+			Vector3 rotation = selectedObject->GetRotation();
+			Vector3 scale = selectedObject->GetScale();
+
+			// 位置の編集
+			if (ImGui::SliderFloat3("Position", &position.x, -50.0f, 50.0f)) {
+				selectedObject->SetPosition(position);
+			}
+
+			// 回転の編集
+			if (ImGui::SliderFloat3("Rotation", &rotation.x, -180.0f, 180.0f)) {
+				selectedObject->SetRotation(rotation);
+			}
+
+			// スケールの編集
+			if (ImGui::SliderFloat3("Scale", &scale.x, 0.1f, 10.0f)) {
+				selectedObject->SetScale(scale);
+			}
+
+			// リセットボタン
+			if (ImGui::Button("Reset Transform")) {
+				selectedObject->SetPosition({0.0f, 0.0f, 0.0f});
+				selectedObject->SetRotation({0.0f, 0.0f, 0.0f});
+				selectedObject->SetScale({1.0f, 1.0f, 1.0f});
+			}
+		}
+	}
 }

@@ -76,6 +76,10 @@ public:
 		return isLoaded_;
 	}
 
+	/// \brief ImGui描画（デバッグ用）
+	/// \param outObjectList 操作対象のObject3Dリスト
+	void ImGuiDraw(std::vector<std::unique_ptr<Object3d>> &outObjectList);
+
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
@@ -132,4 +136,7 @@ public:
 private:
 	LevelData levelData_; // 読み込まれたレベルデータ
 	bool isLoaded_;		  // データが正常に読み込まれたかのフラグ
+
+	// ImGui用の選択されたオブジェクトのインデックス
+	int selectedObjectIndex_;
 };
