@@ -27,7 +27,10 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	//========================================
 	//// テクスチャマネージャ
 	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
-
+	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
 	//========================================
 	// スプライトクラス(Game)
 
@@ -40,7 +43,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	//========================================
 	// 3Dオブジェクトクラス
 	// 映り込みの設定
-	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("rostock_laage_airport_4k.dds");
+	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
 	// モンスターボール
 	objMonsterBall_ = std::make_unique<Object3d>();
 	objMonsterBall_->Initialize(object3dSetup);
@@ -89,7 +92,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	skybox_ = std::make_unique<Skybox>();
 	skybox_->Initialize(skyboxSetup);
 	// Skyboxのモデルを設定
-	skybox_->SetTexture("rostock_laage_airport_4k.dds");
+	skybox_->SetTexture("overcast_soil_puresky_4k.dds");
 }
 
 ///=============================================================================
@@ -160,9 +163,9 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	// objMonsterBall_->Draw();
+	objMonsterBall_->Draw();
 	// 地面
-	// objTerrain_->Draw();
+	objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
