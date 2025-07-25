@@ -267,7 +267,6 @@ void MagFramework::PreDraw() {
 	//========================================
 	// ループ前処理
 	dxCore_->PreDraw();
-	// srvSetup_->PreDraw();
 	//========================================
 	//  Lineの描画
 	LineManager::GetInstance()->Draw();
