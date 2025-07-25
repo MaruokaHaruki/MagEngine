@@ -123,6 +123,8 @@
     <ClCompile Include="application\FollowCamera.cpp" />
     <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
     <ClCompile Include="engine\3d\skybox\Skybox.cpp" />
+    <ClCompile Include="PostEffectManager.cpp" />
+    <ClCompile Include="GrayscaleEffect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -296,6 +298,8 @@
     <ClInclude Include="application\FollowCamera.h" />
     <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
     <ClInclude Include="engine\3d\skybox\Skybox.h" />
+    <ClInclude Include="PostEffectManager.h" />
+    <ClInclude Include="GrayscaleEffect.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

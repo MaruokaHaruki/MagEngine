@@ -43,7 +43,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	//========================================
 	// 3Dオブジェクトクラス
 	// 映り込みの設定
-	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
+	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("moonless_golf_4k.dds");
 	// モンスターボール
 	objMonsterBall_ = std::make_unique<Object3d>();
 	objMonsterBall_->Initialize(object3dSetup);
@@ -92,7 +92,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	skybox_ = std::make_unique<Skybox>();
 	skybox_->Initialize(skyboxSetup);
 	// Skyboxのモデルを設定
-	skybox_->SetTexture("overcast_soil_puresky_4k.dds");
+	skybox_->SetTexture("moonless_golf_4k.dds");
 }
 
 ///=============================================================================
@@ -171,7 +171,7 @@ void DebugScene::Object3DDraw() {
 	// レベルデータオブジェクトの描画
 	for (auto &levelObj : levelObjects_) {
 		if (levelObj) {
-			levelObj->Draw();
+			//levelObj->Draw();
 		}
 	}
 }
