@@ -108,7 +108,7 @@
     <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="engine\base\LightManager.cpp" />
+    <ClCompile Include="engine\light\LightManager.cpp" />
     <ClCompile Include="application\Player.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
@@ -123,8 +123,8 @@
     <ClCompile Include="application\FollowCamera.cpp" />
     <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
     <ClCompile Include="engine\3d\skybox\Skybox.cpp" />
-    <ClCompile Include="PostEffectManager.cpp" />
-    <ClCompile Include="GrayscaleEffect.cpp" />
+    <ClCompile Include="engine\postEffect\PostEffectManager.cpp" />
+    <ClCompile Include="engine\postEffect\GrayscaleEffect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -282,7 +282,7 @@
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
-    <ClInclude Include="engine\base\LightManager.h" />
+    <ClInclude Include="engine\light\LightManager.h" />
     <ClInclude Include="application\Player.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
     <ClInclude Include="engine\2d\particle\ParticleSetup.h" />
@@ -298,8 +298,8 @@
     <ClInclude Include="application\FollowCamera.h" />
     <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
     <ClInclude Include="engine\3d\skybox\Skybox.h" />
-    <ClInclude Include="PostEffectManager.h" />
-    <ClInclude Include="GrayscaleEffect.h" />
+    <ClInclude Include="engine\postEffect\PostEffectManager.h" />
+    <ClInclude Include="engine\postEffect\GrayscaleEffect.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
