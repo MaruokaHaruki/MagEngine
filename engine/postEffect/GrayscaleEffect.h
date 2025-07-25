@@ -4,14 +4,13 @@ class GrayscaleEffect {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
-
 	/// \brief 初期化
 	void Initialize();
 
 	/// \brief 更新
 	void Update();
 
-	/// \brief 描画 
+	/// \brief 描画
 	void Draw();
 
 	///--------------------------------------------------------------
@@ -22,12 +21,9 @@ private:
 public:
 	void CreatePipeline();
 
-
 	void CreateRootSignature();
 
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-
 };
-

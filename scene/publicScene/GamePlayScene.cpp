@@ -38,11 +38,21 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// DebugTextManagerにカメラを設定
 	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCamera("FollowCamera"));
 
+	//=======================================
+	// テクスチャの読み込み
+	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
+
 	//========================================
 	// モデルの読み込み
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
+	// モデルの環境マップ設定
+	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
 
 	//========================================
 	// スプライトクラス(Game)
@@ -54,6 +64,15 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// スカイドーム
 	skydome_ = std::make_unique<Skydome>();
 	skydome_->Initialize(object3dSetup, "skydome.obj");
+
+	//========================================
+	// スカイボックス
+	skybox_ = std::make_unique<Skybox>();
+	skybox_->Initialize(skyboxSetup);
+	// Skyboxのモデルを設定
+	skybox_->SetTexture("overcast_soil_puresky_4k.dds");
+	// SkyboxのTransformを設定
+	skybox_->SetTransform({ {1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
 
 	//========================================
 	// パーティクルクラス
@@ -162,6 +181,12 @@ void GamePlayScene::Update() {
 		skydome_->Update();
 	}
 
+	//=========================================
+	// Skyboxの更新
+	if (skybox_) {
+		skybox_->Update();
+	}
+
 	//---------------------------------------
 	//  当たり判定（最適化済み）
 	//  リセットではなく登録解除/登録で管理
@@ -249,6 +274,11 @@ void GamePlayScene::ParticleDraw() {
 ///=============================================================================
 ///						Skybox描画
 void GamePlayScene::SkyboxDraw() {
+	//=========================================
+	// Skyboxの描画
+	if (skybox_) {
+		skybox_->Draw();
+	}
 }
 
 ///=============================================================================

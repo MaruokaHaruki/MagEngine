@@ -96,6 +96,5 @@ private:
 	//========================================
 	// Skybox用デバッグフラグ
 	bool showSkyboxDebug_ = true;
-	std::string skyboxTexturePath_ = "/rostock_laage_airport_4k.dds";
 	float skyboxScale_ = 100.0f;
 };

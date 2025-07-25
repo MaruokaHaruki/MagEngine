@@ -25,6 +25,7 @@
 #include "Player.h"
 #include "Skydome.h"
 #include "Sprite.h"
+#include "Skybox.h"
 
 ///=============================================================================
 ///						ゲームプレイシーンクラス
@@ -95,4 +96,8 @@ private:
 	//========================================
 	// 雲システム
 	std::unique_ptr<Cloud> cloudSystem_;
+
+	//=========================================
+	// Skybox
+	std::unique_ptr<Skybox> skybox_;
 };
