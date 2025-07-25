@@ -101,7 +101,7 @@ void Line::Draw() {
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 	//========================================
 	// 描画
-	commandList->DrawInstanced(vertices_.size(), 1, 0, 0);
+	commandList->DrawInstanced(static_cast<UINT>( vertices_.size() ), 1, 0, 0);
 	// NOTE:描画した後はラインをクリアするのを忘れるな
 }
 

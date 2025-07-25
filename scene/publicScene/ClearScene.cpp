@@ -17,6 +17,7 @@ void ClearScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	spriteSetup;
 	object3dSetup;
 	particleSetup;
+	skyboxSetup;
 }
 
 ///=============================================================================

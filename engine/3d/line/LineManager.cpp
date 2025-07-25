@@ -137,6 +137,7 @@ void LineManager::ClearLines() {
 ///=============================================================================
 ///						ラインの追加
 void LineManager::DrawLine(const Vector3 &start, const Vector3 &end, const Vector4 &color, float thickness) {
+	thickness;
 	if (!isDrawLine_) {
 		return;
 	}
@@ -266,6 +267,7 @@ void LineManager::DrawSphere(const Vector3 &center, float radius, const Vector4 
 ///=============================================================================
 ///						3Dテキスト描画（プレースホルダー）
 void LineManager::DrawText3D(const Vector3 &position, const std::string &text, const Vector4 &color) {
+	text;
 	// 実装は別途DirectXのフォント機能やベクターフォント描画などで実装する必要があります
 	// ここではダミーの実装として、テキストの位置に小さなマーカーを描画します
 	DrawLine(position, {position.x + 0.1f, position.y + 0.1f, position.z}, color);
