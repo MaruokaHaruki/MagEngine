@@ -133,5 +133,5 @@ protected:
 	// シーンファクトリー
 	std::unique_ptr<SceneFactory> sceneFactory_;
 	// ライトマネージャ
-	std::unique_ptr<LightManager> lightManager_; // ライトマネージャーのインスタンス
+	std::unique_ptr<LightManager> lightManager_;
 };
