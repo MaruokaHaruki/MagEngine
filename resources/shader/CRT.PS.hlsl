@@ -86,10 +86,10 @@ PixelShaderOutput main(VertexShaderOutput input)
     // 明るさ補正（わずかにトーンアップ）
     color = pow(color, 1.0f / 1.1f);
 
-    // 軽度のグレイスケール変換（彩度80%カット）
-    float gray = dot(color, float3(0.299f, 0.587f, 0.114f)); // 標準グレイスケール変換
-    float desaturationRate = 0.8f; // 彩度減少率（0.0 = フルカラー、1.0 = モノクロ）
-    color = lerp(color, gray.xxx, desaturationRate);
+    //// 軽度のグレイスケール変換（彩度80%カット）
+    //float gray = dot(color, float3(0.299f, 0.587f, 0.114f)); // 標準グレイスケール変換
+    //float desaturationRate = 0.8f; // 彩度減少率（0.0 = フルカラー、1.0 = モノクロ）
+    //color = lerp(color, gray.xxx, desaturationRate);
 
     // 色数制限（15段階）
     color = Posterize(color, 15);
