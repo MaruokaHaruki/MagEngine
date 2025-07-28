@@ -125,6 +125,7 @@
     <ClCompile Include="engine\3d\skybox\Skybox.cpp" />
     <ClCompile Include="engine\postEffect\PostEffectManager.cpp" />
     <ClCompile Include="engine\postEffect\GrayscaleEffect.cpp" />
+    <ClCompile Include="application\EnemyManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -300,6 +301,7 @@
     <ClInclude Include="engine\3d\skybox\Skybox.h" />
     <ClInclude Include="engine\postEffect\PostEffectManager.h" />
     <ClInclude Include="engine\postEffect\GrayscaleEffect.h" />
+    <ClInclude Include="application\EnemyManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

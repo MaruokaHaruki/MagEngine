@@ -999,7 +999,10 @@ void DirectXCore::CreateOffScreenRootSignature() {
 	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers); // サンプラーの数
 
 	// シリアライズしてバイナリにする
-
+	// D3D12SerializeRootSignatureは、ルートシグネチャをバイナリ形式に変換する関数
+	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob_ = nullptr;
+	// エラーが発生した場合のBlob
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob_ = nullptr;
 	hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob_, &errorBlob_);
 	if (FAILED(hr)) {
 		Logger::Log(reinterpret_cast<char *>(errorBlob_->GetBufferPointer()));

@@ -1,19 +1,20 @@
 /*********************************************************************
- * \file   GrayscaleEffect.h
- * \brief  グレースケールエフェクトクラス
+ * \file   EnemyManager.h
+ * \brief  敵の一括管理管理クラス
  *
  * \author Harukichimaru
- * \date   July 2025
+ * \date   January 2025
+ * \note
  *********************************************************************/
 #pragma once
-#include "DirectXCore.h"
-class GrayscaleEffect {
+#include "Enemy.h"
 
+class EnemyManager {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(DirectXCore *dxCore);
+	void Initialize();
 
 	/// \brief 更新
 	void Update();
@@ -24,25 +25,13 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
+	/// \brief 敵のスポーン処理(通常)
+	void EnemySpawnNormal();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
-	void CreatePipeline();
-
-	void CreateRootSignature();
-
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	//========================================
-	// DirectXCoreポインタ
-	DirectXCore *dxCore_ = nullptr;
-
-	//========================================
-	// RootSignature
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
-
-	//========================================
-	// グラフィックスパイプライン
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;
 };

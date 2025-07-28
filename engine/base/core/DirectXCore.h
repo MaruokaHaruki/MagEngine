@@ -8,21 +8,21 @@
 #pragma once
 //========================================
 // 標準ライブラリ
-#include <cstdint>
-#include <string>
-#include <format>
 #include <cassert>
-#include <wrl.h>
 #include <chrono>
+#include <cstdint>
+#include <format>
+#include <string>
 #include <thread>
+#include <wrl.h>
 //========================================
 // 自作関数
 #include "WstringUtility.h"
 using namespace WstringUtility;
 #include "Logger.h"
 using namespace Logger;
-#include "WinApp.h"
 #include "Vector4.h"
+#include "WinApp.h"
 //========================================
 // ReportLiveObj
 #include <dxgidebug.h>
@@ -194,7 +194,6 @@ public:
 	 */
 	void CreateDXCCompiler();
 
-
 	///--------------------------------------------------------------
 	///						 生成系メンバ関数
 	/**----------------------------------------------------------------------------
@@ -203,7 +202,7 @@ public:
 	 * \param  height
 	 * \return
 	 */
-	Microsoft::WRL::ComPtr <ID3D12Resource> CreateDepthStencilTextureResource(int32_t width, int32_t height);
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(int32_t width, int32_t height);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  CreateDescriptorHeap ディスクリプタヒープの生成
@@ -212,7 +211,7 @@ public:
 	 * \param  shaderVisible シェーダーから見えるか
 	 * \return
 	 */
-	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  CompileShader シェーダーのコンパイル
@@ -227,14 +226,14 @@ public:
 	 * \param  sizeInByte サイズ
 	 * \return
 	 */
-	Microsoft::WRL::ComPtr <ID3D12Resource> CreateBufferResource(size_t sizeInByte);
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInByte);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  CreateTextureResource テクスチャリソースの生成
 	 * \param  metadata メタデータ
 	 * \return
 	 */
-	Microsoft::WRL::ComPtr <ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata &metadata);
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata &metadata);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  UploadTextureData テクスチャデータのアップロード
@@ -242,7 +241,7 @@ public:
 	 * \param  mipImages ミップマップ
 	 * \return
 	 */
-	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(Microsoft::WRL::ComPtr <ID3D12Resource> texture, const DirectX::ScratchImage &mipImages);
+	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(Microsoft::WRL::ComPtr<ID3D12Resource> texture, const DirectX::ScratchImage &mipImages);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  LoadTexture テクスチャの読み込み
@@ -266,9 +265,9 @@ public:
 	/// @param format フォーマット
 	/// @param clearColor クリアカラー
 	/// @return
-	Microsoft::WRL::ComPtr<ID3D12Resource> 
-		CreateRenderTextureResource(
-			uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor, D3D12_RESOURCE_STATES initialState);
+	Microsoft::WRL::ComPtr<ID3D12Resource>
+	CreateRenderTextureResource(
+		uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 &clearColor, D3D12_RESOURCE_STATES initialState);
 
 	/// @brief CreateRenderTextureRTV レンダーテクスチャのRTVを生成
 	/// @param SRVはマネージャの方にあるので、RTVだけ生成する
@@ -277,25 +276,25 @@ public:
 	void CreateOffScreenRootSignature();
 
 	void CreateOffScreenPipeLine();
-		
+
 	///--------------------------------------------------------------
 	///                        静的メンバ関数
 private:
 	/// ===CPU=== ///
 	/// @brief GetCPUDescriptorHandle CPUディスクリプタハンドルの取得
 	/// @param descriptorHeap ディスクリプタヒープ
-	/// @param descriptorSize 
-	/// @param index 
-	/// @return 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
+	/// @param descriptorSize
+	/// @param index
+	/// @return
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
 	/// ===GPU=== ///
 	/// @brief GetGPUDescriptorHandle GPUディスクリプタハンドルの取得
-	/// @param descriptorHeap 
-	/// @param descriptorSize 
-	/// @param index 
-	/// @return 
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
+	/// @param descriptorHeap
+	/// @param descriptorSize
+	/// @param index
+	/// @return
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
 	/// @brief InitializeFixFPS FPS固定更新の初期化
 	void InitializeFixFPS();
@@ -303,68 +302,88 @@ private:
 	/// @brief UpdateFixFPS FPS固定更新
 	void UpdateFixFPS();
 
-
 	///--------------------------------------------------------------
 	///						 入出力関数
 public:
-
 	/**----------------------------------------------------------------------------
 	 * \brief  GetWinApp WindowsAPI取得
 	 */
-	WinApp GetWinApp() { return *winApp_; }
+	WinApp GetWinApp() {
+		return *winApp_;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetHr HRESULT型の変数を設定するセッター関数。
 	 * \param  sHr HRESULT型の変数
 	 */
-	void SetHr(HRESULT sHr) { this->hr_ = sHr; }
+	void SetHr(HRESULT sHr) {
+		this->hr_ = sHr;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetHr HRESULT型の変数を取得するゲッター関数。
 	 */
-	HRESULT GetHr() const { return hr_; }
+	HRESULT GetHr() const {
+		return hr_;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetDevice デバイスの設定
 	 * \param  sDevice デバイス
 	 */
-	void SetDevice(Microsoft::WRL::ComPtr <ID3D12Device> sDevice) { this->device_ = sDevice; }
+	void SetDevice(Microsoft::WRL::ComPtr<ID3D12Device> sDevice) {
+		this->device_ = sDevice;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetDevice デバイスの取得
 	 */
-	Microsoft::WRL::ComPtr <ID3D12Device> GetDevice() { return device_; }
+	Microsoft::WRL::ComPtr<ID3D12Device> GetDevice() {
+		return device_;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetCommandList コマンドリストの設定
 	 * \param  sCommandList
 	 */
-	void SetCommandList(Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> sCommandList) { this->commandList_ = sCommandList; }
+	void SetCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> sCommandList) {
+		this->commandList_ = sCommandList;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetCommandList コマンドリストの取得
 	 * \return
 	 */
-	Microsoft::WRL::ComPtr <ID3D12GraphicsCommandList> GetCommandList() { return commandList_.Get(); }
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> GetCommandList() {
+		return commandList_.Get();
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetSwapChainDesc スワップチェーンの設定の取得
 	 */
-	DXGI_SWAP_CHAIN_DESC1 GetSwapChainDesc() const { return swapChainDesc_; }
+	DXGI_SWAP_CHAIN_DESC1 GetSwapChainDesc() const {
+		return swapChainDesc_;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetRtvDesc RTVディスクリプタの取得
 	 */
-	D3D12_RENDER_TARGET_VIEW_DESC GetRtvDesc() const { return rtvDesc_; }
+	D3D12_RENDER_TARGET_VIEW_DESC GetRtvDesc() const {
+		return rtvDesc_;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetRtvDescriptorHeap RTVディスクリプタヒープの取得
 	 */
-	Microsoft::WRL::ComPtr <ID3D12DescriptorHeap> GetRtvDescriptorHeap() { return rtvDescriptorHeap_; }
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetRtvDescriptorHeap() {
+		return rtvDescriptorHeap_;
+	}
 
 	/// @brief GetRenderTextureResources レンダーテクスチャリソースの取得
 	/// @return
-	Microsoft::WRL::ComPtr<ID3D12Resource> GetRenderTextureResource(uint32_t index) { return renderTextureResources_[index]; }
+	Microsoft::WRL::ComPtr<ID3D12Resource> GetRenderTextureResource(uint32_t index) {
+		return renderTextureResources_[index];
+	}
 
 private:
 	//========================================
@@ -382,7 +401,7 @@ private:
 	//========================================
 	// DXGIファクトリーの生成
 	Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
-	HRESULT hr_ = S_OK;  // Initialize HRESULT to S_OK
+	HRESULT hr_ = S_OK; // Initialize HRESULT to S_OK
 
 	//========================================
 	// 使用するアダプタ用変数
@@ -395,7 +414,7 @@ private:
 	//========================================
 	// エラー・警告の場合即停止(初期化完了のあとに行う)
 	Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue_;
-	//アダプターの情報を取得
+	// アダプターの情報を取得
 	DXGI_ADAPTER_DESC3 adapterDesc_{};
 
 	//========================================
@@ -416,7 +435,7 @@ private:
 	// Fenceの生成
 	Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
 	uint64_t fenceValue_ = 0;
-	HANDLE fenceEvent_ = nullptr;  // Initialize to nullptr
+	HANDLE fenceEvent_ = nullptr; // Initialize to nullptr
 
 	//========================================
 	// 深度バッファ
@@ -426,29 +445,29 @@ private:
 
 	//========================================
 	// DescriptorHeapサイズ
-	//uint32_t descriptorSizeSRV = 0;  // SRV
-	uint32_t descriptorSizeRTV = 0;  // RTV
-	uint32_t descriptorSizeDSV = 0;  // DSV
+	// uint32_t descriptorSizeSRV = 0;  // SRV
+	uint32_t descriptorSizeRTV = 0; // RTV
+	uint32_t descriptorSizeDSV = 0; // DSV
 
 	//========================================
 	// RTVディスクリプタヒープ
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap_;
-	//RTVの数
+	// RTVの数
 	D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc_{};
-	//RTVの設定
+	// RTVの設定
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc_{};
-	//ディスクリプタの先頭を取得する
+	// ディスクリプタの先頭を取得する
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle_{};
-	//RTVを2つ作るのでディスクリプタを2つ用意
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[4]{}; //2つ分のRTVを作るので4つ用意する
-	//これから書き込むバックバッファのインデックスを取得
+	// RTVを2つ作るのでディスクリプタを2つ用意
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[4]{}; // 2つ分のRTVを作るので4つ用意する
+	// これから書き込むバックバッファのインデックスを取得
 	UINT backBufferIndex_ = 0;
-	//TransitionBarrierの設定
+	// TransitionBarrierの設定
 	D3D12_RESOURCE_BARRIER barrier_{};
 
 	//========================================
 	// SwapChainからResource
-	Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResource_[2] = { nullptr, nullptr };
+	Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResource_[2] = {nullptr, nullptr};
 
 	//========================================
 	// DXCコンパイラ
@@ -468,18 +487,13 @@ private:
 
 	//========================================
 	// レンダーテクスチャリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources_[2] = { nullptr, nullptr };
+	Microsoft::WRL::ComPtr<ID3D12Resource> renderTextureResources_[2] = {nullptr, nullptr};
 	// レンダーリソース
 	uint32_t renderResourceIndex_ = 0;
 	// レンダーターゲットインデックス
 	uint32_t renderTargetIndex_ = 1;
 	/// @brief rootSignature_ レンダーテクスチャのルートシグネチャ
-	Microsoft::WRL::ComPtr< ID3D12RootSignature> renderTextureRootSignature_;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> renderTextureRootSignature_;
 	/// @brief graphicsPipelineState_ レンダーテクスチャのパイプラインステート
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> renderTextureGraphicsPipelineState_;
-	/// @brief signatureBlob_ レンダーテクスチャのシグネチャ
-	Microsoft::WRL::ComPtr< ID3DBlob> signatureBlob_ = nullptr;
-	/// @brief errorBlob_ レンダーテクスチャのエラーログ
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob_ = nullptr;
 };
-
