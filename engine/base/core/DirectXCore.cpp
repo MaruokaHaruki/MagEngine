@@ -33,6 +33,8 @@ void DirectXCore::PreDraw() {
 
 	commandList_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	//========================================
+	// 以下の内容を繰り返す
 	commandList_->SetGraphicsRootSignature(renderTextureRootSignature_.Get());
 	commandList_->SetPipelineState(renderTextureGraphicsPipelineState_.Get());
 
