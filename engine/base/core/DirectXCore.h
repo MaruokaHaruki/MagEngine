@@ -21,6 +21,7 @@
 using namespace WstringUtility;
 #include "Logger.h"
 using namespace Logger;
+#include "GrayscaleEffect.h"
 #include "Vector4.h"
 #include "WinApp.h"
 //========================================
@@ -496,4 +497,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> renderTextureRootSignature_;
 	/// @brief graphicsPipelineState_ レンダーテクスチャのパイプラインステート
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> renderTextureGraphicsPipelineState_;
+
+	//========================================
+	// グレースケール
+	GrayscaleEffect grayscaleEffect_;
 };

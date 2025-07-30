@@ -52,6 +52,22 @@ void DirectXCore::PreDraw() {
 	commandList_->SetGraphicsRootDescriptorTable(0, srvHandle);
 
 	commandList_->DrawInstanced(3, 1, 0, 0);
+
+	// グレースケールエフェクトの前描画処理
+	grayscaleEffect_.PreDraw();
+
+	if (renderResourceIndex_ == 0) {
+		srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture0");
+	} else {
+		srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture1");
+	}
+
+	// srvHandle.ptr が 0 または異常な値でないか確認
+	assert(srvHandle.ptr != 0);
+
+	commandList_->SetGraphicsRootDescriptorTable(0, srvHandle);
+
+	commandList_->DrawInstanced(3, 1, 0, 0);
 }
 
 ///=============================================================================
@@ -129,6 +145,10 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	//=======================================
 	// オフスクリーンの初期化
 	CreateOffScreenPipeLine();
+
+	//=======================================
+	// グレースケール
+	grayscaleEffect_.Initialize(this);
 }
 
 ///=============================================================================

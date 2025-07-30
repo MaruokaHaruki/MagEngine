@@ -6,7 +6,15 @@
  * \date   July 2025
  *********************************************************************/
 #pragma once
-#include "DirectXCore.h"
+//========================================
+// DX12 include
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl/client.h>
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+
+class DirectXCore;
 class GrayscaleEffect {
 
 	///--------------------------------------------------------------
@@ -15,11 +23,11 @@ public:
 	/// \brief 初期化
 	void Initialize(DirectXCore *dxCore);
 
-	/// \brief 更新
-	void Update();
+	/// \brief 前描画処理
+	void PreDraw();
 
-	/// \brief 描画
-	void Draw();
+	/// \brief 後描画処理
+	void PostDraw();
 
 	///--------------------------------------------------------------
 	///							静的メンバ関数
