@@ -126,6 +126,7 @@
     <ClCompile Include="engine\postEffect\PostEffectManager.cpp" />
     <ClCompile Include="engine\postEffect\GrayscaleEffect.cpp" />
     <ClCompile Include="application\EnemyManager.cpp" />
+    <ClCompile Include="engine\postEffect\FullScreen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -302,6 +303,7 @@
     <ClInclude Include="engine\postEffect\PostEffectManager.h" />
     <ClInclude Include="engine\postEffect\GrayscaleEffect.h" />
     <ClInclude Include="application\EnemyManager.h" />
+    <ClInclude Include="engine\postEffect\FullScreen.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
