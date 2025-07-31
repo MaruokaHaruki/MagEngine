@@ -61,12 +61,9 @@ void DirectXCore::PreDraw() {
 	} else {
 		srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture1");
 	}
-
 	// srvHandle.ptr が 0 または異常な値でないか確認
 	assert(srvHandle.ptr != 0);
-
 	commandList_->SetGraphicsRootDescriptorTable(0, srvHandle);
-
 	commandList_->DrawInstanced(3, 1, 0, 0);
 }
 
@@ -83,15 +80,18 @@ void DirectXCore::PostDraw() {
 ///=============================================================================
 ///						DirectXの初期化
 void DirectXCore::InitializeDirectX(WinApp *winApp) {
+	//=======================================
 	// FPS固定初期化
 	InitializeFixFPS();
 
-	/// ===WinApp=== ///
+	//=======================================
+	/// WinApp
 	/// NULL検出
 	assert(winApp);
 	/// メンバ変数に記録
 	this->winApp_ = winApp;
 
+	//=======================================
 	// ウィンドウハンドルの取得
 	CreateDebugLayer();
 	// DXGIファクトリーの生成
@@ -121,8 +121,11 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	// RTVの生成
 	CreateRenderTargetViews();
 
+	//=======================================
+	// レンダーテクスチャのRTVを生成
 	CreateRenderTextureRTV();
 
+	//=======================================
 	// コマンドリストの決定
 	SettleCommandList();
 	// バリアの設定
@@ -130,7 +133,7 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	// DXCコンパイラーの初期化
 	CreateDXCCompiler();
 	// ビューポートとシザーレクトの生成
-	CreateVirePortAndScissorRect();
+	CreateViewportAndScissorRect();
 
 	//=======================================
 	// コマンドリストの設定
@@ -443,7 +446,7 @@ void DirectXCore::RenderTargetPreference() {
 
 ///=============================================================================
 ///						ビューポートとシザーレクトの生成
-void DirectXCore::CreateVirePortAndScissorRect() {
+void DirectXCore::CreateViewportAndScissorRect() {
 	//========================================
 	// ビューポート
 	// クライアント領域のサイズと一緒にして画面全体に表示
@@ -524,21 +527,6 @@ void DirectXCore::CheckResourceLeaks() {
 		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
 		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 	}
-}
-
-///=============================================================================
-///						ImGuiの初期化
-void DirectXCore::ImGuiInitialize() {
-	// IMGUI_CHECKVERSION();
-	// ImGui::CreateContext();
-	// ImGui::StyleColorsDark();
-	// ImGui_ImplWin32_Init(winApp_->GetWindowHandle());
-	// ImGui_ImplDX12_Init(device_.Get(),
-	//	swapChainDesc_.BufferCount,
-	//	rtvDesc_.Format,
-	//	srvDescriptorHeap_.Get(),
-	//	srvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart(),
-	//	srvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart());
 }
 
 ///=============================================================================
@@ -861,7 +849,7 @@ void DirectXCore::RenderTexturePreDraw() {
 
 ///--------------------------------------------------------------
 ///						 レンダーテクスチャの後処理
-void DirectXCore::RendertexturePostDraw() {
+void DirectXCore::RenderTexturePostDraw() {
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -979,6 +967,8 @@ void DirectXCore::CreateRenderTextureRTV() {
 	renderTargetIndex_ = 1;
 }
 
+///--------------------------------------------------------------
+///                        オフスクリーン用のルートシグネチャを生成
 void DirectXCore::CreateOffScreenRootSignature() {
 	HRESULT hr;
 
@@ -1037,6 +1027,8 @@ void DirectXCore::CreateOffScreenRootSignature() {
 	assert(SUCCEEDED(hr));
 }
 
+///--------------------------------------------------------------
+///                        オフスクリーン用のパイプラインを生成
 void DirectXCore::CreateOffScreenPipeLine() {
 	CreateOffScreenRootSignature();
 

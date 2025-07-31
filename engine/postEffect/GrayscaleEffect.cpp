@@ -14,6 +14,11 @@ using namespace Logger;
 ///=============================================================================
 ///                        初期化
 void GrayscaleEffect::Initialize(DirectXCore *dxCore) {
+	//========================================
+	// シェーダーパスの設定
+	vertexShaderPath_ = L"resources/shader/FullScreen.VS.hlsl";
+	pixelShaderPath_ = L"resources/shader/Grayscale.PS.hlsl";
+	//=======================================
 	// DirectXCoreのポインタを取得
 	dxCore_ = dxCore;
 	// パイプラインの作成
@@ -72,10 +77,10 @@ void GrayscaleEffect::CreatePipeline() {
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	// Shaderをコンパイルする
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(L"resources/shader/FullScreen.VS.hlsl", L"vs_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(vertexShaderPath_, L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Grayscale.PS.hlsl", L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(pixelShaderPath_, L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilStateの設定

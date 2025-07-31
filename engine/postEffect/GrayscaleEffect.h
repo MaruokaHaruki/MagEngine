@@ -7,6 +7,9 @@
  *********************************************************************/
 #pragma once
 //========================================
+// 標準ライブラリ
+#include <string>
+//========================================
 // DX12 include
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -53,4 +56,11 @@ private:
 	//========================================
 	// グラフィックスパイプライン
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;
+
+	//========================================
+	// Shaderパス
+	// 頂点シェーダーのパス
+	std::wstring vertexShaderPath_;
+	// ピクセルシェーダーのパス
+	std::wstring pixelShaderPath_;
 };

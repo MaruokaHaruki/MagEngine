@@ -258,7 +258,7 @@ void MagFramework::RenderPreDraw() {
 ///=============================================================================
 ///                        レンダーテクスチャ後処理
 void MagFramework::RenderPostDraw() {
-	dxCore_->RendertexturePostDraw();
+	dxCore_->RenderTexturePostDraw();
 }
 
 ///=============================================================================

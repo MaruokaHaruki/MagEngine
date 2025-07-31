@@ -15,8 +15,18 @@ class PostEffectManager {
 public:
 	// 利用可能なエフェクト種別
 	enum class EffectType {
+		// 基本エフェクト
 		Grayscale,
-		// 今後追加する場合はここに列挙
+		Vignette,
+		Smooth,
+		GaussianBlur,
+		Outline,
+		RadisleBlur,
+		Dissolve,
+		RandomNoise,
+		// 特殊エフェクト
+		CRT,
+		PS1,
 		Count
 	};
 
