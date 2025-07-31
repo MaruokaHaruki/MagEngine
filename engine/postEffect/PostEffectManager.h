@@ -1,15 +1,41 @@
+/*********************************************************************
+ * \file   PostEffectManager.h
+ * \brief  ポストエフェクトマネージャークラス
+ *
+ * \author Harukichimaru
+ * \date   July 2025
+ *********************************************************************/
 #pragma once
-//#include "GrayscaleEffect.h"
+#include "GrayscaleEffect.h"
 #include <memory>
-#include <vector>
-// 今後グリッチ等も追加予定
+
+class DirectXCore;
 
 class PostEffectManager {
 public:
-	void Initialize();
-	//void AddEffect(std::shared_ptr<GrayscaleEffect> effect); // 今後は基底クラス化推奨
+	// 利用可能なエフェクト種別
+	enum class EffectType {
+		Grayscale,
+		// 今後追加する場合はここに列挙
+		Count
+	};
+
+	void Initialize(DirectXCore *dxCore);
+
+	// エフェクトのON/OFF切り替え
+	void SetEffectEnabled(EffectType type, bool enabled);
+
+	// エフェクトが有効かどうか取得
+	bool IsEffectEnabled(EffectType type) const;
+
+	// 有効なエフェクトを適用
 	void ApplyEffects();
 
 private:
-	//std::vector<std::shared_ptr<GrayscaleEffect>> effects_; // 今後は基底クラス化推奨
+	// 各エフェクトのON/OFF状態
+	bool effectEnabled_[static_cast<size_t>(EffectType::Count)] = {};
+
+	// 各エフェクトのインスタンス
+	std::unique_ptr<GrayscaleEffect> grayscaleEffect_;
+	// 今後追加する場合はここにメンバ追加
 };
