@@ -73,15 +73,18 @@ Vector3 PlayerBullet::GetPosition() const {
 }
 
 void PlayerBullet::OnCollisionEnter(BaseObject *other) {
+	other;
 	// 敵との衝突時の処理
 	// 弾を削除
 	SetDead();
 }
 
 void PlayerBullet::OnCollisionStay(BaseObject *other) {
+	other;
 	// 継続中の衝突処理（必要に応じて実装）
 }
 
 void PlayerBullet::OnCollisionExit(BaseObject *other) {
+	other;
 	// 衝突終了時の処理（必要に応じて実装）
 }

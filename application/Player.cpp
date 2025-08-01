@@ -31,6 +31,7 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
+	obj_->SetEnvironmentMapEnabled(true); // 環境マップを有効化
 
 	// Object3dSetupを保存（弾の初期化で使用）
 	object3dSetup_ = object3dSetup;
@@ -335,14 +336,17 @@ void Player::DrawImGui() {
 ///=============================================================================
 ///						衝突処理
 void Player::OnCollisionEnter(BaseObject *other) {
+	other;
 	// 敵との衝突時の処理
 	// ダメージを受ける処理などを実装
 }
 
 void Player::OnCollisionStay(BaseObject *other) {
+	other;
 	// 継続中の衝突処理（必要に応じて実装）
 }
 
 void Player::OnCollisionExit(BaseObject *other) {
+	other;
 	// 衝突終了時の処理（必要に応じて実装）
 }
