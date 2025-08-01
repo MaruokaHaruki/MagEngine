@@ -1,6 +1,6 @@
 /*********************************************************************
- * \file   GrayscaleEffect.h
- * \brief  グレースケールエフェクトクラス
+ * \file   FullscreenPassRendere.h
+ * \brief  フルスクリーンエフェクトクラス
  *
  * \author Harukichimaru
  * \date   July 2025
@@ -18,7 +18,7 @@
 #pragma comment(lib, "dxgi.lib")
 
 class DirectXCore;
-class GrayscaleEffect {
+class FullscreenPassRendere {
 
 	///--------------------------------------------------------------
 	///							メンバ関数
@@ -59,6 +59,8 @@ private:
 
 	//========================================
 	// Shaderパス
+	// 頂点シェーダーのパス
 	std::wstring vertexShaderPath_;
+	// ピクセルシェーダーのパス
 	std::wstring pixelShaderPath_;
 };

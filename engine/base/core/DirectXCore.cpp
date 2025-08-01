@@ -142,8 +142,6 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	ExecuteCommandList();
 	// フェンス生成
 	FenceGeneration();
-	// Imguiの初期化
-	ImGuiInitialize();
 
 	//=======================================
 	// オフスクリーンの初期化

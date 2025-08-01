@@ -21,6 +21,7 @@
 using namespace WstringUtility;
 #include "Logger.h"
 using namespace Logger;
+#include "FullscreenPassRendere.h"
 #include "GrayscaleEffect.h"
 #include "Vector4.h"
 #include "WinApp.h"
@@ -164,10 +165,6 @@ public:
 	//========================================
 	/// @brief CheckResourceLeaks リソースリークのチェック
 	void CheckResourceLeaks();
-
-	//========================================
-	/// @brief ImGuiInitialize ImGuiの初期化
-	void ImGuiInitialize();
 
 	//========================================
 	/// @brief CreateDXCCompiler DXCコンパイラーの初期化
