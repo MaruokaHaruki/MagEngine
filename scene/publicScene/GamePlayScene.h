@@ -100,4 +100,8 @@ private:
 	//=========================================
 	// Skybox
 	std::unique_ptr<Skybox> skybox_;
+
+	//========================================
+	// 地面
+	std::unique_ptr<Object3d> objTerrain_;
 };

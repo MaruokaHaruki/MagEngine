@@ -13,6 +13,9 @@ public:
 	/// \brief 描画
 	void Draw();
 
+	/// \brief ImGui描画
+	void DrawImGui();
+
 private:
 	std::unique_ptr<Object3d> object3d_;
 };

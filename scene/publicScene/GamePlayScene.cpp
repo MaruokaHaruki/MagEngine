@@ -51,6 +51,8 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
+	ModelManager::GetInstance()->LoadModel("ground.obj"); // 地形のモデル
+
 	// モデルの環境マップ設定
 	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
 
@@ -59,6 +61,10 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// 地面
+	objTerrain_ = std::make_unique<Object3d>();
+	objTerrain_->Initialize(object3dSetup);
+	objTerrain_->SetModel("ground.obj");
+	objTerrain_->SetEnvironmentMapEnabled(false);
 
 	//========================================
 	// スカイドーム
@@ -181,6 +187,13 @@ void GamePlayScene::Update() {
 		skydome_->Update();
 	}
 
+	//========================================
+	// 地面
+	objTerrain_->SetScale(Vector3{100.0f, 1.0f, 100.0f});
+	objTerrain_->SetRotation(Vector3{0.0f, 0.0f, 0.0f});
+	objTerrain_->SetPosition(Vector3{0.0f, 0.0f, 0.0f});
+	objTerrain_->Update();
+
 	//=========================================
 	// Skyboxの更新
 	if (skybox_) {
@@ -226,6 +239,7 @@ void GamePlayScene::Object2DDraw() {
 void GamePlayScene::Object3DDraw() {
 	//========================================
 	// 地面
+	objTerrain_->Draw();
 
 	//=========================================
 	// スカイドーム
