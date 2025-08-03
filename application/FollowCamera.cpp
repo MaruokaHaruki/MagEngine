@@ -31,9 +31,9 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 
 	// 初期パラメータの設定
 	target_ = nullptr;
-	offset_ = {0.0f, 2.0f, -8.0f}; // プレイヤーの後方上方
-	positionSmoothness_ = 0.1f;
-	rotationSmoothness_ = 0.08f;
+	offset_ = {0.0f, 1.0f, -16.0f}; // プレイヤーの後方上方
+	positionSmoothness_ = 0.01f;
+	rotationSmoothness_ = 0.01f;
 
 	// 固定位置モードの初期化
 	isFixedPositionMode_ = false;

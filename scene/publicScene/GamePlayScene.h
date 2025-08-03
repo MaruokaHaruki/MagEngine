@@ -23,9 +23,9 @@
 #include "Particle.h"
 #include "ParticleEmitter.h"
 #include "Player.h"
+#include "Skybox.h"
 #include "Skydome.h"
 #include "Sprite.h"
-#include "Skybox.h"
 
 ///=============================================================================
 ///						ゲームプレイシーンクラス
@@ -89,6 +89,7 @@ private:
 	//========================================
 	// スプライト
 	std::unique_ptr<Sprite> moveSprite_;
+
 	//========================================
 	// パーティクル
 	std::unique_ptr<Particle> particle_;
@@ -103,5 +104,5 @@ private:
 
 	//========================================
 	// 地面
-	std::unique_ptr<Object3d> objTerrain_;
+	// std::unique_ptr<Object3d> objTerrain_;
 };

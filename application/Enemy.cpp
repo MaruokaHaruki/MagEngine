@@ -4,7 +4,8 @@
 #include "Particle.h"
 #include "ParticleEmitter.h"
 #include <cmath>
-
+///=============================================================================
+///                        初期化
 void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
 	//========================================
 	// 3Dオブジェクトの初期化
@@ -51,71 +52,93 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	// BaseObjectの初期化（当たり判定）
 	BaseObject::Initialize(transform_.translate, radius_);
 }
-
+///=============================================================================
+///                        パーティクルシステムの設定
 void Enemy::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
 	particle_ = particle;
 	particleSetup_ = particleSetup;
 }
-
+///=============================================================================
+///                        更新
 void Enemy::Update() {
 	// 死亡状態またはオブジェクトが無効な場合は処理しない
 	if (destroyState_ == DestroyState::Dead || !obj_) {
 		return;
 	}
 
-	//========================================
-	// 破壊演出中の処理
+	// 破壊演出の更新
 	if (destroyState_ == DestroyState::Destroying) {
-		const float frameTime = 1.0f / 60.0f;
-		destroyTimer_ += frameTime;
-
-		// 破壊演出時間が経過したら完全に消滅
-		if (destroyTimer_ >= destroyDuration_) {
-			destroyState_ = DestroyState::Dead;
-			isAlive_ = false;
-		}
-		return; // 破壊中は移動などの処理をスキップ
+		UpdateDestruction();
+		return;
 	}
 
-	//========================================
-	// 通常の更新処理（生存中のみ）
+	// 通常状態の更新
 	if (destroyState_ == DestroyState::Alive) {
-		const float frameTime = 1.0f / 60.0f;
-
-		// メイントランスフォームの更新
-		transform_.translate.x += velocity_.x * frameTime;
-		transform_.translate.y += velocity_.y * frameTime;
-		transform_.translate.z += velocity_.z * frameTime;
-		transform_.rotate.z += rotationSpeed_ * frameTime;
-
-		// 画面外判定（画面外に出たら削除）
-		if (transform_.translate.z < -20.0f) {
-			destroyState_ = DestroyState::Dead;
-			isAlive_ = false;
-		}
-
-		// Object3dのトランスフォームに反映
-		Transform *objTransform = obj_->GetTransform();
-		if (objTransform) {
-			*objTransform = transform_;
-		}
+		UpdateMovement();
+		CheckOutOfBounds();
 
 		// BaseObjectのコライダー位置を更新
 		BaseObject::Update(transform_.translate);
 	}
 
-	//========================================
-	// Object3dの更新
+	// オブジェクトの更新
+	UpdateObject();
+}
+///=============================================================================
+///                        破壊演出の更新
+void Enemy::UpdateDestruction() {
+	const float frameTime = 1.0f / 60.0f;
+	destroyTimer_ += frameTime;
+
+	// 破壊演出時間が経過したら完全に消滅
+	if (destroyTimer_ >= destroyDuration_) {
+		destroyState_ = DestroyState::Dead;
+		isAlive_ = false;
+	}
+}
+///=============================================================================
+///                        通常状態の更新（移動・回転）
+void Enemy::UpdateMovement() {
+	const float frameTime = 1.0f / 60.0f;
+
+	// 位置の更新
+	transform_.translate.x += velocity_.x * frameTime;
+	transform_.translate.y += velocity_.y * frameTime;
+	transform_.translate.z += velocity_.z * frameTime;
+
+	// 回転の更新
+	transform_.rotate.z += rotationSpeed_ * frameTime;
+
+	// Object3dのトランスフォームに反映
+	Transform *objTransform = obj_->GetTransform();
+	if (objTransform) {
+		*objTransform = transform_;
+	}
+}
+///=============================================================================
+///                        画面外判定
+void Enemy::CheckOutOfBounds() {
+	// 画面外に出たら削除
+	if (transform_.translate.z < -20.0f) {
+		destroyState_ = DestroyState::Dead;
+		isAlive_ = false;
+	}
+}
+///=============================================================================
+///                        オブジェクトの更新
+void Enemy::UpdateObject() {
 	obj_->Update();
 }
-
+///=============================================================================
+///                        描画
 void Enemy::Draw() {
 	// 生存中のみ描画
 	if (destroyState_ == DestroyState::Alive && obj_) {
 		obj_->Draw();
 	}
 }
-
+///=============================================================================
+///                        ImGui描画
 void Enemy::DrawImGui() {
 	if (!obj_) {
 		return;
@@ -131,11 +154,13 @@ void Enemy::DrawImGui() {
 	ImGui::SliderFloat("Radius", &radius_, 0.5f, 3.0f);
 	ImGui::End();
 }
-
+///=============================================================================
+///                        位置取得
 Vector3 Enemy::GetPosition() const {
 	return transform_.translate;
 }
-
+///=============================================================================
+///                        衝突処理関数
 void Enemy::OnCollisionEnter(BaseObject *other) {
 	// 既に破壊中または死亡している場合は処理しない
 	if (destroyState_ != DestroyState::Alive) {
@@ -197,11 +222,13 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 	destroyState_ = DestroyState::Destroying;
 	destroyTimer_ = 0.0f;
 }
-
+///=============================================================================
+///                        衝突継続処理
 void Enemy::OnCollisionStay(BaseObject *other) {
 	// 継続中の衝突処理（必要に応じて実装）
 }
-
+///=============================================================================
+///                        衝突終了処理
 void Enemy::OnCollisionExit(BaseObject *other) {
 	// 衝突終了時の処理（必要に応じて実装）
 }

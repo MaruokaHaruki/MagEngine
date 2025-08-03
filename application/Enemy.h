@@ -66,6 +66,18 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	/// \brief 破壊演出の更新
+	void UpdateDestruction();
+
+	/// \brief 通常状態の更新（移動・回転）
+	void UpdateMovement();
+
+	/// \brief 画面外判定
+	void CheckOutOfBounds();
+
+	/// \brief オブジェクトの更新
+	void UpdateObject();
+
 	//========================================
 	// 3Dオブジェクト
 	std::unique_ptr<Object3d> obj_;

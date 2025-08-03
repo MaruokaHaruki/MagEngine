@@ -49,22 +49,14 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	//========================================
 	// モデルの読み込み
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
-	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
-	ModelManager::GetInstance()->LoadModel("ground.obj"); // 地形のモデル
-
+	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
+	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
 	// モデルの環境マップ設定
 	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
 
 	//========================================
 	// スプライトクラス(Game)
-
-	//========================================
-	// 地面
-	objTerrain_ = std::make_unique<Object3d>();
-	objTerrain_->Initialize(object3dSetup);
-	objTerrain_->SetModel("ground.obj");
-	objTerrain_->SetEnvironmentMapEnabled(false);
 
 	//========================================
 	// スカイドーム
@@ -78,7 +70,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// Skyboxのモデルを設定
 	skybox_->SetTexture("overcast_soil_puresky_4k.dds");
 	// SkyboxのTransformを設定
-	skybox_->SetTransform({ {1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+	skybox_->SetTransform({{1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
 
 	//========================================
 	// パーティクルクラス
@@ -87,17 +79,13 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	particle_->Initialize(particleSetup);
 	particle_->SetCustomTextureSize({10.0f, 10.0f});
 	particle_->SetBillboard(true); // ビルボードを有効化
-
 	// 雲パーティクルグループの作成（Board形状、白っぽいテクスチャ）
 	particle_->CreateParticleGroup("CloudParticles", "sandWind.png", ParticleShape::Board);
-
 	// 爆発エフェクト用の複数の形状を作成
 	// 1. メインの爆発エフェクト（Board形状 - 火花）
 	particle_->CreateParticleGroup("ExplosionSparks", "sandWind.png", ParticleShape::Board);
-
 	// 2. リング形状の衝撃波
 	particle_->CreateParticleGroup("ExplosionRing", "sandWind.png", ParticleShape::Ring);
-
 	// 3. シリンダー形状の煙柱
 	particle_->CreateParticleGroup("ExplosionSmoke", "sandWind.png", ParticleShape::Cylinder);
 
@@ -105,13 +93,10 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// プレイヤー
 	player_ = std::make_unique<Player>();
 	player_->Initialize(object3dSetup, "jet.obj");
-
 	// プレイヤーにパーティクルシステムを設定
 	player_->SetParticleSystem(particle_.get(), particleSetup);
-
 	// FollowCameraにプレイヤーを設定
 	followCamera_->SetTarget(player_.get());
-
 	// FollowCameraをメインカメラに設定
 	CameraManager::GetInstance()->SetCurrentCamera("FollowCamera");
 
@@ -132,6 +117,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	collisionManager_ = std::make_unique<CollisionManager>();
 	collisionManager_->Initialize(32.0f, 256); // セルサイズ32.0f、最大256オブジェクト
 
+	//========================================
 	// 敵の位置にデバッグテキストを配置（固定位置）
 	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
 }
@@ -164,9 +150,6 @@ void GamePlayScene::Update() {
 		if (cloudSystem_) {
 			cloudSystem_->Update(playerPos);
 		}
-
-		// グリッドは自動でアニメーションするため、手動オフセットは不要
-		// LineManager::GetInstance()->SetGridAnimation(true); // 初期化時に設定済み
 	}
 
 	//========================================
@@ -187,34 +170,24 @@ void GamePlayScene::Update() {
 		skydome_->Update();
 	}
 
-	//========================================
-	// 地面
-	objTerrain_->SetScale(Vector3{100.0f, 1.0f, 100.0f});
-	objTerrain_->SetRotation(Vector3{0.0f, 0.0f, 0.0f});
-	objTerrain_->SetPosition(Vector3{0.0f, 0.0f, 0.0f});
-	objTerrain_->Update();
-
 	//=========================================
 	// Skyboxの更新
 	if (skybox_) {
 		skybox_->Update();
 	}
 
-	//---------------------------------------
+	//=========================================
 	//  当たり判定（最適化済み）
 	//  リセットではなく登録解除/登録で管理
 	collisionManager_->Reset(); // 一旦リセット（簡単のため）
-
 	//  プレイヤーの当たり判定を登録
 	if (player_) {
 		collisionManager_->RegisterObject(player_.get());
 	}
-
 	//  敵の当たり判定を登録（生存中のみ）
 	if (enemy_ && enemy_->IsAlive()) {
 		collisionManager_->RegisterObject(enemy_.get());
 	}
-
 	//  プレイヤーの弾の当たり判定を登録
 	if (player_) {
 		const auto &bullets = player_->GetBullets();
@@ -224,7 +197,6 @@ void GamePlayScene::Update() {
 			}
 		}
 	}
-
 	//  当たり判定の更新
 	collisionManager_->Update();
 }
@@ -237,9 +209,6 @@ void GamePlayScene::Object2DDraw() {
 ///=============================================================================
 ///                        3D描画
 void GamePlayScene::Object3DDraw() {
-	//========================================
-	// 地面
-	objTerrain_->Draw();
 
 	//=========================================
 	// スカイドーム
