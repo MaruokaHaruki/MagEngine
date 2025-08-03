@@ -40,6 +40,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj");
 	ModelManager::GetInstance()->LoadModel("ball.obj");
 	ModelManager::GetInstance()->LoadModel("terrain.obj");
+	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	//========================================
 	// 3Dオブジェクトクラス
 	// 映り込みの設定
@@ -163,15 +164,15 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	objMonsterBall_->Draw();
+	//objMonsterBall_->Draw();
 	// 地面
-	objTerrain_->Draw();
+	//objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
 	for (auto &levelObj : levelObjects_) {
 		if (levelObj) {
-			//levelObj->Draw();
+			levelObj->Draw();
 		}
 	}
 }
