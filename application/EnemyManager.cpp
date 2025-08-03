@@ -149,21 +149,22 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	switch (type) {
 	case EnemyType::Normal:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
+		enemy->SetMovementParams(3.0f, {0.0f, 0.0f, -10.0f});
 		break;
 
 	case EnemyType::Fast:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		// 高速敵の設定（速度を上げる等、将来的にEnemyクラスで対応）
+		enemy->SetMovementParams(6.0f, {0.0f, 0.0f, -10.0f});
 		break;
 
 	case EnemyType::Heavy:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		// 重装敵の設定
+		enemy->SetMovementParams(2.0f, {0.0f, 0.0f, -10.0f});
 		break;
 
 	case EnemyType::Bomber:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		// 爆撃機の設定
+		enemy->SetMovementParams(4.0f, {0.0f, 0.0f, -10.0f});
 		break;
 	}
 

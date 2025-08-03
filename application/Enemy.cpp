@@ -30,7 +30,7 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	speed_ = 0.0f;					   // 敵の移動速度
 	velocity_ = {0.0f, 0.0f, -speed_}; // プレイヤーに向かって移動（Z軸負方向）
 	rotationSpeed_ = 1.0f;			   // 回転速度（ラジアン/秒）
-	hasTarget_ = false;                // 目標位置なし
+	hasTarget_ = false;				   // 目標位置なし
 
 	//========================================
 	// 状態パラメータの設定
@@ -61,18 +61,17 @@ void Enemy::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) 
 }
 ///=============================================================================
 ///                        移動パラメータの設定
-void Enemy::SetMovementParams(float speed, const Vector3& targetPosition) {
+void Enemy::SetMovementParams(float speed, const Vector3 &targetPosition) {
 	speed_ = speed;
 	targetPosition_ = targetPosition;
 	hasTarget_ = true;
-	
+
 	// 目標位置への方向ベクトルを計算
 	Vector3 direction = {
 		targetPosition_.x - transform_.translate.x,
 		targetPosition_.y - transform_.translate.y,
-		targetPosition_.z - transform_.translate.z
-	};
-	
+		targetPosition_.z - transform_.translate.z};
+
 	// 正規化
 	float length = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
 	if (length > 0.0f) {
@@ -80,13 +79,12 @@ void Enemy::SetMovementParams(float speed, const Vector3& targetPosition) {
 		direction.y /= length;
 		direction.z /= length;
 	}
-	
+
 	// 速度ベクトルを設定
 	velocity_ = {
 		direction.x * speed_,
 		direction.y * speed_,
-		direction.z * speed_
-	};
+		direction.z * speed_};
 }
 ///=============================================================================
 ///                        更新
@@ -158,11 +156,10 @@ void Enemy::UpdateAIMovement() {
 	Vector3 toTarget = {
 		targetPosition_.x - transform_.translate.x,
 		targetPosition_.y - transform_.translate.y,
-		targetPosition_.z - transform_.translate.z
-	};
-	
+		targetPosition_.z - transform_.translate.z};
+
 	float distanceToTarget = sqrtf(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
-	
+
 	// 目標位置に近づいたら通常移動に切り替え
 	if (distanceToTarget < 2.0f) {
 		hasTarget_ = false;
@@ -253,9 +250,9 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		particle_->SetColorRange({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.3f, 1.0f}); // オレンジ～黄色
 		particle_->SetLifetimeRange(0.5f, 1.5f);
 		particle_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.8f, 0.8f, 0.8f});
-		particle_->SetEndScaleRange({0.05f, 0.05f, 0.05f}, {0.15f, 0.15f, 0.15f}); // 0.0f回避
-		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {6.28f, 6.28f, 6.28f});
-		particle_->SetEndRotationRange({6.28f, 6.28f, 6.28f}, {12.56f, 12.56f, 12.56f}); // min < max確保
+		particle_->SetEndScaleRange({0.1f, 0.1f, 0.1f}, {0.3f, 0.3f, 0.3f}); // 最小値を0.0fから変更
+		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {3.14f, 3.14f, 3.14f});
+		particle_->SetEndRotationRange({3.14f, 3.14f, 3.14f}, {6.28f, 6.28f, 6.28f}); // min < max確保
 		particle_->SetGravity({0.0f, -8.0f, 0.0f});
 		particle_->SetFadeInOut(0.02f, 0.8f);
 		particle_->Emit("ExplosionSparks", enemyPos, 30); // 30個の火花
@@ -264,13 +261,13 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		// 2. 衝撃波エフェクト（Ring形状）
 		particle_->SetVelocityRange({-2.0f, -1.0f, -2.0f}, {2.0f, 1.0f, 2.0f});
 		particle_->SetTranslateRange({-0.1f, -0.1f, -0.1f}, {0.1f, 0.1f, 0.1f});
-		particle_->SetColorRange({1.0f, 0.8f, 0.4f, 0.8f}, {1.0f, 1.0f, 0.8f, 0.9f}); // alpha値修正
+		particle_->SetColorRange({1.0f, 0.8f, 0.4f, 0.6f}, {1.0f, 1.0f, 0.8f, 0.8f}); // alpha値調整
 		particle_->SetLifetimeRange(0.8f, 1.2f);
 		particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f});
 		particle_->SetEndScaleRange({3.0f, 3.0f, 3.0f}, {5.0f, 5.0f, 5.0f}); // 大きく広がる
-		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {6.28f, 6.28f, 6.28f});
-		particle_->SetEndRotationRange({6.28f, 6.28f, 6.28f}, {12.56f, 12.56f, 12.56f}); // min < max確保
-		particle_->SetGravity({0.0f, 0.0f, 0.0f});										 // 重力なし
+		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {3.14f, 3.14f, 3.14f});
+		particle_->SetEndRotationRange({3.14f, 3.14f, 3.14f}, {6.28f, 6.28f, 6.28f}); // min < max確保
+		particle_->SetGravity({0.0f, 0.0f, 0.0f});									  // 重力なし
 		particle_->SetFadeInOut(0.1f, 0.6f);
 		particle_->Emit("ExplosionRing", enemyPos, 3); // 3つの衝撃波リング
 
@@ -278,12 +275,12 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		// 3. 煙柱エフェクト（Cylinder形状）
 		particle_->SetVelocityRange({-3.0f, 2.0f, -3.0f}, {3.0f, 8.0f, 3.0f}); // 上向きに強く
 		particle_->SetTranslateRange({-0.3f, 0.0f, -0.3f}, {0.3f, 0.5f, 0.3f});
-		particle_->SetColorRange({0.4f, 0.4f, 0.4f, 0.5f}, {0.8f, 0.8f, 0.8f, 0.8f}); // alpha値修正
+		particle_->SetColorRange({0.4f, 0.4f, 0.4f, 0.3f}, {0.8f, 0.8f, 0.8f, 0.6f}); // alpha値調整
 		particle_->SetLifetimeRange(1.5f, 3.0f);									  // 長く残る
 		particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 1.0f});
 		particle_->SetEndScaleRange({1.5f, 2.0f, 1.5f}, {2.5f, 3.0f, 2.5f}); // 徐々に大きく
-		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {3.14f, 3.14f, 3.14f});
-		particle_->SetEndRotationRange({3.14f, 3.14f, 3.14f}, {9.42f, 9.42f, 9.42f}); // min < max確保
+		particle_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {1.57f, 1.57f, 1.57f});
+		particle_->SetEndRotationRange({1.57f, 1.57f, 1.57f}, {4.71f, 4.71f, 4.71f}); // min < max確保
 		particle_->SetGravity({0.0f, -1.0f, 0.0f});									  // 軽い重力
 		particle_->SetFadeInOut(0.2f, 0.7f);
 		particle_->Emit("ExplosionSmoke", enemyPos, 8); // 8個の煙柱

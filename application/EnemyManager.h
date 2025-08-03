@@ -28,21 +28,9 @@ enum class EnemyType {
 /// \brief スポーン情報
 struct SpawnInfo {
 	EnemyType type;
-	Vector3 startPosition;   // 開始位置（画面外）
-	Vector3 targetPosition;  // 目標位置（画面内）
-	float speed;             // 移動速度
-	float spawnTime;         // スポーンする時間
-	bool spawned;            // スポーン済みフラグ
-};
-
-/// \brief スポーンパターン
-enum class SpawnPattern {
-	FromLeft,       // 左から
-	FromRight,      // 右から
-	FromTop,        // 上から
-	FromBack,       // 奥から
-	FromFront,      // 手前から
-	Random          // ランダム
+	Vector3 position;
+	float spawnTime; // スポーンする時間
+	bool spawned;	 // スポーン済みフラグ
 };
 
 ///=============================================================================
@@ -84,15 +72,6 @@ private:
 	/// \brief スポーン情報の初期化
 	void InitializeSpawnData();
 
-	/// \brief パターンベースのスポーン位置生成
-	SpawnInfo CreateSpawnInfo(EnemyType type, SpawnPattern pattern, float gameTime, float speed = 5.0f);
-
-	/// \brief ランダムスポーン位置の生成
-	Vector3 GenerateRandomSpawnPosition(SpawnPattern pattern);
-
-	/// \brief ランダム目標位置の生成
-	Vector3 GenerateRandomTargetPosition();
-
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
@@ -126,13 +105,6 @@ private:
 
 	//========================================
 	// 設定パラメータ
-	int maxEnemies_;                     // 最大敵数
-	bool autoSpawn_;                     // 自動スポーンフラグ
-	std::vector<SpawnPattern> spawnPatterns_; // 使用するスポーンパターン
-	
-	//========================================
-	// スポーン範囲設定
-	float spawnDistance_;                // スポーン距離（画面外の距離）
-	Vector3 playAreaMin_;               // プレイエリアの最小値
-	Vector3 playAreaMax_;               // プレイエリアの最大値
+	int maxEnemies_; // 最大敵数
+	bool autoSpawn_; // 自動スポーンフラグ
 };
