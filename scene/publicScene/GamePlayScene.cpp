@@ -10,6 +10,7 @@
 #include "CameraManager.h"
 #include "Cloud.h"
 #include "Enemy.h"
+#include "EnemyManager.h"
 #include "FollowCamera.h"
 #include "Input.h"
 #include "LineManager.h"
@@ -106,11 +107,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	cloudSystem_->Initialize(particle_.get(), particleSetup);
 
 	//========================================
-	// 敵
-	enemy_ = std::make_unique<Enemy>();
-	enemy_->Initialize(object3dSetup, "jet.obj", {0.0f, 0.0f, 10.0f}); // 固定位置に配置
-	// 敵にパーティクルシステムを設定
-	enemy_->SetParticleSystem(particle_.get(), particleSetup);
+	// 敵マネージャー
+	enemyManager_ = std::make_unique<EnemyManager>();
+	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup);
 
 	//========================================
 	// 当たり判定（軽量システムで初期化）
@@ -154,8 +153,8 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// 敵の更新
-	if (enemy_) {
-		enemy_->Update();
+	if (enemyManager_) {
+		enemyManager_->Update();
 	}
 
 	//========================================
@@ -184,9 +183,9 @@ void GamePlayScene::Update() {
 	if (player_) {
 		collisionManager_->RegisterObject(player_.get());
 	}
-	//  敵の当たり判定を登録（生存中のみ）
-	if (enemy_ && enemy_->IsAlive()) {
-		collisionManager_->RegisterObject(enemy_.get());
+	//  敵の当たり判定を登録
+	if (enemyManager_) {
+		enemyManager_->RegisterCollisions(collisionManager_.get());
 	}
 	//  プレイヤーの弾の当たり判定を登録
 	if (player_) {
@@ -225,9 +224,9 @@ void GamePlayScene::Object3DDraw() {
 	}
 
 	//========================================
-	// 敵
-	if (enemy_) {
-		enemy_->Draw();
+	// 敵マネージャー
+	if (enemyManager_) {
+		enemyManager_->Draw();
 	}
 
 	//========================================
@@ -290,9 +289,9 @@ void GamePlayScene::ImGuiDraw() {
 	}
 
 	//========================================
-	// 敵
-	if (enemy_) {
-		enemy_->DrawImGui();
+	// 敵マネージャー
+	if (enemyManager_) {
+		enemyManager_->DrawImGui();
 	}
 
 	//========================================

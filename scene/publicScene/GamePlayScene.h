@@ -17,6 +17,7 @@
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
 #include "Enemy.h"
+#include "EnemyManager.h"
 #include "FollowCamera.h"
 #include "LineManager.h"
 #include "MAudioG.h"
@@ -84,7 +85,7 @@ private:
 
 	//========================================
 	// 敵
-	std::unique_ptr<Enemy> enemy_;
+	std::unique_ptr<EnemyManager> enemyManager_;
 
 	//========================================
 	// スプライト

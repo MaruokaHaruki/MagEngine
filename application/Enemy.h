@@ -29,6 +29,9 @@ public:
 	/// \brief パーティクルシステムの設定
 	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
+	/// \brief 移動パラメータの設定
+	void SetMovementParams(float speed, const Vector3& targetPosition);
+
 	/// \brief 更新
 	void Update();
 
@@ -72,6 +75,9 @@ private:
 	/// \brief 通常状態の更新（移動・回転）
 	void UpdateMovement();
 
+	/// \brief AI移動の更新
+	void UpdateAIMovement();
+
 	/// \brief 画面外判定
 	void CheckOutOfBounds();
 
@@ -86,8 +92,10 @@ private:
 	// 移動・位置関連（メイン管理）
 	Transform transform_; // メインのトランスフォーム（位置情報の一括管理）
 	Vector3 velocity_;	  // 移動ベクトル
+	Vector3 targetPosition_; // 目標位置
 	float speed_;		  // 移動速度
 	float rotationSpeed_; // 回転速度
+	bool hasTarget_;      // 目標位置があるかどうか
 
 	//========================================
 	// 状態管理

@@ -17,7 +17,7 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	// メイントランスフォームの初期設定
 	transform_.translate = position;
 	transform_.scale = {1.0f, 1.0f, 1.0f};
-	transform_.rotate = {0.0f, 3.14159f, 0.0f}; // プレイヤーの方向を向く（180度回転）
+	transform_.rotate = {0.0f, 0.0f, 0.0f}; // プレイヤーの方向を向く（180度回転）
 
 	// Object3dのトランスフォームに反映
 	Transform *objTransform = obj_->GetTransform();
@@ -30,6 +30,7 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	speed_ = 0.0f;					   // 敵の移動速度
 	velocity_ = {0.0f, 0.0f, -speed_}; // プレイヤーに向かって移動（Z軸負方向）
 	rotationSpeed_ = 1.0f;			   // 回転速度（ラジアン/秒）
+	hasTarget_ = false;                // 目標位置なし
 
 	//========================================
 	// 状態パラメータの設定
@@ -59,6 +60,35 @@ void Enemy::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) 
 	particleSetup_ = particleSetup;
 }
 ///=============================================================================
+///                        移動パラメータの設定
+void Enemy::SetMovementParams(float speed, const Vector3& targetPosition) {
+	speed_ = speed;
+	targetPosition_ = targetPosition;
+	hasTarget_ = true;
+	
+	// 目標位置への方向ベクトルを計算
+	Vector3 direction = {
+		targetPosition_.x - transform_.translate.x,
+		targetPosition_.y - transform_.translate.y,
+		targetPosition_.z - transform_.translate.z
+	};
+	
+	// 正規化
+	float length = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+	if (length > 0.0f) {
+		direction.x /= length;
+		direction.y /= length;
+		direction.z /= length;
+	}
+	
+	// 速度ベクトルを設定
+	velocity_ = {
+		direction.x * speed_,
+		direction.y * speed_,
+		direction.z * speed_
+	};
+}
+///=============================================================================
 ///                        更新
 void Enemy::Update() {
 	// 死亡状態またはオブジェクトが無効な場合は処理しない
@@ -74,7 +104,11 @@ void Enemy::Update() {
 
 	// 通常状態の更新
 	if (destroyState_ == DestroyState::Alive) {
-		UpdateMovement();
+		if (hasTarget_) {
+			UpdateAIMovement();
+		} else {
+			UpdateMovement();
+		}
 		CheckOutOfBounds();
 
 		// BaseObjectのコライダー位置を更新
@@ -105,6 +139,46 @@ void Enemy::UpdateMovement() {
 	transform_.translate.x += velocity_.x * frameTime;
 	transform_.translate.y += velocity_.y * frameTime;
 	transform_.translate.z += velocity_.z * frameTime;
+
+	// 回転の更新
+	transform_.rotate.z += rotationSpeed_ * frameTime;
+
+	// Object3dのトランスフォームに反映
+	Transform *objTransform = obj_->GetTransform();
+	if (objTransform) {
+		*objTransform = transform_;
+	}
+}
+///=============================================================================
+///                        AI移動の更新
+void Enemy::UpdateAIMovement() {
+	const float frameTime = 1.0f / 60.0f;
+
+	// 目標位置への距離を計算
+	Vector3 toTarget = {
+		targetPosition_.x - transform_.translate.x,
+		targetPosition_.y - transform_.translate.y,
+		targetPosition_.z - transform_.translate.z
+	};
+	
+	float distanceToTarget = sqrtf(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+	
+	// 目標位置に近づいたら通常移動に切り替え
+	if (distanceToTarget < 2.0f) {
+		hasTarget_ = false;
+		velocity_ = {0.0f, 0.0f, -speed_}; // プレイヤー方向への直進
+	}
+
+	// 位置の更新
+	transform_.translate.x += velocity_.x * frameTime;
+	transform_.translate.y += velocity_.y * frameTime;
+	transform_.translate.z += velocity_.z * frameTime;
+
+	// 移動方向に向けて回転
+	if (velocity_.x != 0.0f || velocity_.z != 0.0f) {
+		float targetAngle = atan2f(velocity_.x, velocity_.z);
+		transform_.rotate.y = targetAngle;
+	}
 
 	// 回転の更新
 	transform_.rotate.z += rotationSpeed_ * frameTime;
