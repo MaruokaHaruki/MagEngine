@@ -33,6 +33,13 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	hasTarget_ = false;				   // 目標位置なし
 
 	//========================================
+	// 行動状態の初期化
+	behaviorState_ = BehaviorState::Approaching;
+	hoverTime_ = 0.0f;
+	maxHoverTime_ = 3.0f + static_cast<float>(rand() % 3); // 3-5秒ランダム
+	hoverOffset_ = {0.0f, 0.0f, 0.0f};
+
+	//========================================
 	// 状態パラメータの設定
 	isAlive_ = true; // 生存状態
 	radius_ = 1.0f;	 // 当たり判定の半径
@@ -65,6 +72,7 @@ void Enemy::SetMovementParams(float speed, const Vector3 &targetPosition) {
 	speed_ = speed;
 	targetPosition_ = targetPosition;
 	hasTarget_ = true;
+	behaviorState_ = BehaviorState::Approaching;
 
 	// 目標位置への方向ベクトルを計算
 	Vector3 direction = {
@@ -152,6 +160,26 @@ void Enemy::UpdateMovement() {
 void Enemy::UpdateAIMovement() {
 	const float frameTime = 1.0f / 60.0f;
 
+	switch (behaviorState_) {
+	case BehaviorState::Approaching:
+		UpdateApproaching(frameTime);
+		break;
+	case BehaviorState::Hovering:
+		UpdateHovering(frameTime);
+		break;
+	case BehaviorState::Attacking:
+		// 将来の拡張用
+		break;
+	}
+
+	// Object3dのトランスフォームに反映
+	Transform *objTransform = obj_->GetTransform();
+	if (objTransform) {
+		*objTransform = transform_;
+	}
+}
+
+void Enemy::UpdateApproaching(float frameTime) {
 	// 目標位置への距離を計算
 	Vector3 toTarget = {
 		targetPosition_.x - transform_.translate.x,
@@ -160,10 +188,15 @@ void Enemy::UpdateAIMovement() {
 
 	float distanceToTarget = sqrtf(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
 
-	// 目標位置に近づいたら通常移動に切り替え
-	if (distanceToTarget < 2.0f) {
-		hasTarget_ = false;
-		velocity_ = {0.0f, 0.0f, -speed_}; // プレイヤー方向への直進
+	// 目標位置に近づいたらホバリング状態に移行
+	if (distanceToTarget < 3.0f) {
+		behaviorState_ = BehaviorState::Hovering;
+		hoverTime_ = 0.0f;
+		// ホバリング用の初期オフセットを設定
+		hoverOffset_.x = static_cast<float>((rand() % 21) - 10) * 0.1f; // -1.0 ～ 1.0
+		hoverOffset_.y = static_cast<float>((rand() % 11) - 5) * 0.1f;	// -0.5 ～ 0.5
+		hoverOffset_.z = static_cast<float>((rand() % 11) - 5) * 0.1f;	// -0.5 ～ 0.5
+		return;
 	}
 
 	// 位置の更新
@@ -179,18 +212,48 @@ void Enemy::UpdateAIMovement() {
 
 	// 回転の更新
 	transform_.rotate.z += rotationSpeed_ * frameTime;
+}
 
-	// Object3dのトランスフォームに反映
-	Transform *objTransform = obj_->GetTransform();
-	if (objTransform) {
-		*objTransform = transform_;
+void Enemy::UpdateHovering(float frameTime) {
+	hoverTime_ += frameTime;
+
+	// ホバリング時間が経過したら画面外に向かって移動
+	if (hoverTime_ >= maxHoverTime_) {
+		behaviorState_ = BehaviorState::Approaching;
+		hasTarget_ = false;
+		velocity_.x = 0.0f;
+		velocity_.y = 0.0f;
+		velocity_.z = speed_; // 前方に直進
+		return;
 	}
+
+	// ホバリング中の微細な動き
+	float hoverFactor = sinf(hoverTime_ * 2.0f) * 0.5f;
+	Vector3 currentOffset;
+	currentOffset.x = hoverOffset_.x * hoverFactor;
+	currentOffset.y = hoverOffset_.y * hoverFactor;
+	currentOffset.z = hoverOffset_.z * hoverFactor;
+
+	// 目標位置周辺でゆっくり動く
+	Vector3 hoverTarget;
+	hoverTarget.x = targetPosition_.x + currentOffset.x;
+	hoverTarget.y = targetPosition_.y + currentOffset.y;
+	hoverTarget.z = targetPosition_.z + currentOffset.z;
+
+	// ホバリング位置への緩やかな移動
+	float lerpFactor = 0.02f; // ゆっくりとした動き
+	transform_.translate.x += (hoverTarget.x - transform_.translate.x) * lerpFactor;
+	transform_.translate.y += (hoverTarget.y - transform_.translate.y) * lerpFactor;
+	transform_.translate.z += (hoverTarget.z - transform_.translate.z) * lerpFactor;
+
+	// ゆっくりとした回転
+	transform_.rotate.z += rotationSpeed_ * 0.3f * frameTime;
 }
 ///=============================================================================
 ///                        画面外判定
 void Enemy::CheckOutOfBounds() {
-	// 画面外に出たら削除
-	if (transform_.translate.z < -20.0f) {
+	// 画面外に出たら削除（前方に向かった場合も含む）
+	if (transform_.translate.z < -20.0f || transform_.translate.z > 30.0f) {
 		destroyState_ = DestroyState::Dead;
 		isAlive_ = false;
 	}

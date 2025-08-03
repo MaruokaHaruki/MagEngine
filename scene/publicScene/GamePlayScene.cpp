@@ -110,6 +110,8 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 敵マネージャー
 	enemyManager_ = std::make_unique<EnemyManager>();
 	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup);
+	// プレイヤー参照を設定
+	enemyManager_->SetPlayer(player_.get());
 
 	//========================================
 	// 当たり判定（軽量システムで初期化）

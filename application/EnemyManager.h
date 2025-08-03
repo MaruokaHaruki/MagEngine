@@ -16,6 +16,7 @@ class Object3dSetup;
 class Particle;
 class ParticleSetup;
 class CollisionManager;
+class Player;
 
 /// \brief 敵のタイプ
 enum class EnemyType {
@@ -41,6 +42,11 @@ class EnemyManager {
 public:
 	/// \brief 初期化
 	void Initialize(Object3dSetup *object3dSetup, Particle *particle, ParticleSetup *particleSetup);
+
+	/// \brief プレイヤー参照の設定
+	void SetPlayer(Player *player) {
+		player_ = player;
+	}
 
 	/// \brief 更新
 	void Update();
@@ -102,6 +108,7 @@ private:
 	Object3dSetup *object3dSetup_;
 	Particle *particle_;
 	ParticleSetup *particleSetup_;
+	Player *player_; // プレイヤー参照
 
 	//========================================
 	// 設定パラメータ

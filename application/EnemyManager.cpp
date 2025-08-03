@@ -8,6 +8,7 @@
 #include "EnemyManager.h"
 #include "CollisionManager.h"
 #include "ImguiSetup.h"
+#include "Player.h" // Playerクラスのインクルードを追加
 #include <algorithm>
 
 ///=============================================================================
@@ -18,6 +19,7 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	object3dSetup_ = object3dSetup;
 	particle_ = particle;
 	particleSetup_ = particleSetup;
+	player_ = nullptr; // プレイヤー参照初期化
 
 	//========================================
 	// パラメータ初期化
@@ -127,12 +129,17 @@ void EnemyManager::UpdateSpawning() {
 		GetAliveEnemyCount() < static_cast<size_t>(maxEnemies_) &&
 		gameTime_ - lastSpawnTime_ >= spawnInterval_) {
 
-		// ランダムな位置と敵タイプでスポーン
-		Vector3 spawnPos = {
-			static_cast<float>((rand() % 21) - 10), // -10 ～ 10
-			0.0f,
-			static_cast<float>((rand() % 11) + 10) // 10 ～ 20
-		};
+		// プレイヤーの後方にスポーン位置を設定
+		Vector3 spawnPos = {0.0f, 0.0f, 15.0f}; // デフォルト位置
+		if (player_) {
+			Vector3 playerPos = player_->GetPosition();
+			// プレイヤーの後方10～15ユニット、左右にランダムオフセット
+			spawnPos = {
+				playerPos.x + static_cast<float>((rand() % 11) - 5), // -5 ～ 5
+				playerPos.y + static_cast<float>((rand() % 3) - 1),	 // -1 ～ 1
+				playerPos.z - static_cast<float>((rand() % 6) + 10)	 // -10 ～ -15
+			};
+		}
 
 		EnemyType type = static_cast<EnemyType>(rand() % 2); // Normal または Fast
 		SpawnEnemy(type, spawnPos);
@@ -145,26 +152,37 @@ void EnemyManager::UpdateSpawning() {
 void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	auto enemy = std::make_unique<Enemy>();
 
+	// プレイヤーの少し前の位置を目標とする
+	Vector3 targetPos = {0.0f, 0.0f, 5.0f}; // デフォルト
+	if (player_) {
+		Vector3 playerPos = player_->GetPosition();
+		targetPos = {
+			playerPos.x + static_cast<float>((rand() % 5) - 2), // 少しずらす
+			playerPos.y,
+			playerPos.z + 8.0f // プレイヤーの8ユニット前
+		};
+	}
+
 	// 敵タイプ別の設定
 	switch (type) {
 	case EnemyType::Normal:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(3.0f, {0.0f, 0.0f, -10.0f});
+		enemy->SetMovementParams(8.0f, targetPos); // 速度を上げて追い越し感を演出
 		break;
 
 	case EnemyType::Fast:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(6.0f, {0.0f, 0.0f, -10.0f});
+		enemy->SetMovementParams(12.0f, targetPos); // より高速
 		break;
 
 	case EnemyType::Heavy:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(2.0f, {0.0f, 0.0f, -10.0f});
+		enemy->SetMovementParams(6.0f, targetPos);
 		break;
 
 	case EnemyType::Bomber:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(4.0f, {0.0f, 0.0f, -10.0f});
+		enemy->SetMovementParams(10.0f, targetPos);
 		break;
 	}
 

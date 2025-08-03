@@ -30,7 +30,7 @@ public:
 	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
 	/// \brief 移動パラメータの設定
-	void SetMovementParams(float speed, const Vector3& targetPosition);
+	void SetMovementParams(float speed, const Vector3 &targetPosition);
 
 	/// \brief 更新
 	void Update();
@@ -84,18 +84,36 @@ private:
 	/// \brief オブジェクトの更新
 	void UpdateObject();
 
+	/// \brief 接近状態の更新
+	void UpdateApproaching(float frameTime);
+
+	/// \brief ホバリング状態の更新
+	void UpdateHovering(float frameTime);
+
 	//========================================
 	// 3Dオブジェクト
 	std::unique_ptr<Object3d> obj_;
 
 	//========================================
 	// 移動・位置関連（メイン管理）
-	Transform transform_; // メインのトランスフォーム（位置情報の一括管理）
-	Vector3 velocity_;	  // 移動ベクトル
+	Transform transform_;	 // メインのトランスフォーム（位置情報の一括管理）
+	Vector3 velocity_;		 // 移動ベクトル
 	Vector3 targetPosition_; // 目標位置
-	float speed_;		  // 移動速度
-	float rotationSpeed_; // 回転速度
-	bool hasTarget_;      // 目標位置があるかどうか
+	float speed_;			 // 移動速度
+	float rotationSpeed_;	 // 回転速度
+	bool hasTarget_;		 // 目標位置があるかどうか
+
+	//========================================
+	// 行動状態管理
+	enum class BehaviorState {
+		Approaching, // 目標位置に向かっている
+		Hovering,	 // 目標位置付近でホバリング
+		Attacking	 // 攻撃状態（将来の拡張用）
+	};
+	BehaviorState behaviorState_; // 現在の行動状態
+	float hoverTime_;			  // ホバリング時間
+	float maxHoverTime_;		  // 最大ホバリング時間
+	Vector3 hoverOffset_;		  // ホバリング時の微細な動き
 
 	//========================================
 	// 状態管理
