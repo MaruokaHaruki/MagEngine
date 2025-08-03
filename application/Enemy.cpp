@@ -1,8 +1,11 @@
+#define _USE_MATH_DEFINES
+#define NOMINMAX
 #include "Enemy.h"
 #include "ImguiSetup.h"
 #include "Object3d.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
+#include <algorithm> // std::min, std::maxのために追加
 #include <cmath>
 ///=============================================================================
 ///                        初期化
@@ -31,6 +34,16 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	velocity_ = {0.0f, 0.0f, -speed_}; // プレイヤーに向かって移動（Z軸負方向）
 	rotationSpeed_ = 1.0f;			   // 回転速度（ラジアン/秒）
 	hasTarget_ = false;				   // 目標位置なし
+
+	//========================================
+	// 戦闘機らしい飛行制御の初期化
+	currentDirection_ = {0.0f, 0.0f, 1.0f};			// 初期方向（前方）
+	targetDirection_ = {0.0f, 0.0f, 1.0f};			// 初期目標方向
+	currentSpeed_ = 0.0f;							// 初期速度
+	maxTurnRate_ = 1.5f;							// 最大旋回速度（ラジアン/秒）
+	acceleration_ = 8.0f;							// 加速度
+	bankingAngle_ = 0.0f;							// バンク角
+	maxBankingAngle_ = 45.0f * (3.14159f / 180.0f); // 最大45度のバンク角
 
 	//========================================
 	// 行動状態の初期化
@@ -88,11 +101,13 @@ void Enemy::SetMovementParams(float speed, const Vector3 &targetPosition) {
 		direction.z /= length;
 	}
 
-	// 速度ベクトルを設定
-	velocity_ = {
-		direction.x * speed_,
-		direction.y * speed_,
-		direction.z * speed_};
+	// 目標方向を設定（急激な方向転換を避ける）
+	targetDirection_ = direction;
+
+	// 初期速度は現在の速度から徐々に変化
+	if (currentSpeed_ < 1.0f) {
+		currentSpeed_ = speed_ * 0.3f; // 初期は30%の速度から開始
+	}
 }
 ///=============================================================================
 ///                        更新
@@ -180,7 +195,7 @@ void Enemy::UpdateAIMovement() {
 }
 
 void Enemy::UpdateApproaching(float frameTime) {
-	// 目標位置への距離を計算
+	// 目標位置への方向を再計算
 	Vector3 toTarget = {
 		targetPosition_.x - transform_.translate.x,
 		targetPosition_.y - transform_.translate.y,
@@ -189,29 +204,43 @@ void Enemy::UpdateApproaching(float frameTime) {
 	float distanceToTarget = sqrtf(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
 
 	// 目標位置に近づいたらホバリング状態に移行
-	if (distanceToTarget < 3.0f) {
+	if (distanceToTarget < 4.0f) {
 		behaviorState_ = BehaviorState::Hovering;
 		hoverTime_ = 0.0f;
-		// ホバリング用の初期オフセットを設定
-		hoverOffset_.x = static_cast<float>((rand() % 21) - 10) * 0.1f; // -1.0 ～ 1.0
-		hoverOffset_.y = static_cast<float>((rand() % 11) - 5) * 0.1f;	// -0.5 ～ 0.5
-		hoverOffset_.z = static_cast<float>((rand() % 11) - 5) * 0.1f;	// -0.5 ～ 0.5
+		hoverOffset_.x = static_cast<float>((rand() % 21) - 10) * 0.15f; // -1.5 ～ 1.5
+		hoverOffset_.y = static_cast<float>((rand() % 11) - 5) * 0.1f;	 // -0.5 ～ 0.5
+		hoverOffset_.z = static_cast<float>((rand() % 11) - 5) * 0.15f;	 // -0.75 ～ 0.75
 		return;
 	}
 
-	// 位置の更新
-	transform_.translate.x += velocity_.x * frameTime;
-	transform_.translate.y += velocity_.y * frameTime;
-	transform_.translate.z += velocity_.z * frameTime;
-
-	// 移動方向に向けて回転
-	if (velocity_.x != 0.0f || velocity_.z != 0.0f) {
-		float targetAngle = atan2f(velocity_.x, velocity_.z);
-		transform_.rotate.y = targetAngle;
+	// 目標方向を更新
+	if (distanceToTarget > 0.1f) {
+		targetDirection_.x = toTarget.x / distanceToTarget;
+		targetDirection_.y = toTarget.y / distanceToTarget;
+		targetDirection_.z = toTarget.z / distanceToTarget;
 	}
 
-	// 回転の更新
-	transform_.rotate.z += rotationSpeed_ * frameTime;
+	// 戦闘機らしい飛行制御を更新
+	UpdateFlightDynamics(frameTime);
+
+	// 減速処理（目標に近づいたら）
+	float targetSpeed = speed_;
+	if (distanceToTarget < 8.0f) {
+		targetSpeed = speed_ * (distanceToTarget / 8.0f) * 0.5f + speed_ * 0.3f; // 最低30%の速度は維持
+	}
+
+	// 速度を滑らかに変更
+	currentSpeed_ += (targetSpeed - currentSpeed_) * acceleration_ * frameTime * 0.1f;
+	if (currentSpeed_ < 0.1f)
+		currentSpeed_ = 0.1f;
+
+	// 位置を更新
+	transform_.translate.x += currentDirection_.x * currentSpeed_ * frameTime;
+	transform_.translate.y += currentDirection_.y * currentSpeed_ * frameTime;
+	transform_.translate.z += currentDirection_.z * currentSpeed_ * frameTime;
+
+	// 機体の向きと傾きを更新
+	UpdateAircraftOrientation(frameTime);
 }
 
 void Enemy::UpdateHovering(float frameTime) {
@@ -221,33 +250,126 @@ void Enemy::UpdateHovering(float frameTime) {
 	if (hoverTime_ >= maxHoverTime_) {
 		behaviorState_ = BehaviorState::Approaching;
 		hasTarget_ = false;
-		velocity_.x = 0.0f;
-		velocity_.y = 0.0f;
-		velocity_.z = speed_; // 前方に直進
+
+		// 前方に向かう方向を設定
+		targetDirection_ = {0.0f, 0.0f, 1.0f};
+		currentSpeed_ = speed_ * 0.8f; // 離脱時は80%の速度
 		return;
 	}
 
-	// ホバリング中の微細な動き
-	float hoverFactor = sinf(hoverTime_ * 2.0f) * 0.5f;
-	Vector3 currentOffset;
-	currentOffset.x = hoverOffset_.x * hoverFactor;
-	currentOffset.y = hoverOffset_.y * hoverFactor;
-	currentOffset.z = hoverOffset_.z * hoverFactor;
-
-	// 目標位置周辺でゆっくり動く
+	// ホバリング中の目標位置を計算
+	float hoverFactor = sinf(hoverTime_ * 1.5f) * 0.7f; // ゆっくりとした周期
 	Vector3 hoverTarget;
-	hoverTarget.x = targetPosition_.x + currentOffset.x;
-	hoverTarget.y = targetPosition_.y + currentOffset.y;
-	hoverTarget.z = targetPosition_.z + currentOffset.z;
+	hoverTarget.x = targetPosition_.x + hoverOffset_.x * hoverFactor;
+	hoverTarget.y = targetPosition_.y + hoverOffset_.y * hoverFactor;
+	hoverTarget.z = targetPosition_.z + hoverOffset_.z * hoverFactor;
 
-	// ホバリング位置への緩やかな移動
-	float lerpFactor = 0.02f; // ゆっくりとした動き
-	transform_.translate.x += (hoverTarget.x - transform_.translate.x) * lerpFactor;
-	transform_.translate.y += (hoverTarget.y - transform_.translate.y) * lerpFactor;
-	transform_.translate.z += (hoverTarget.z - transform_.translate.z) * lerpFactor;
+	// ホバリング位置への方向を計算
+	Vector3 toHoverTarget = {
+		hoverTarget.x - transform_.translate.x,
+		hoverTarget.y - transform_.translate.y,
+		hoverTarget.z - transform_.translate.z};
 
-	// ゆっくりとした回転
-	transform_.rotate.z += rotationSpeed_ * 0.3f * frameTime;
+	float distance = sqrtf(toHoverTarget.x * toHoverTarget.x + toHoverTarget.y * toHoverTarget.y + toHoverTarget.z * toHoverTarget.z);
+
+	if (distance > 0.1f) {
+		targetDirection_.x = toHoverTarget.x / distance;
+		targetDirection_.y = toHoverTarget.y / distance;
+		targetDirection_.z = toHoverTarget.z / distance;
+	}
+
+	// ホバリング中は低速で移動
+	float hoverSpeed = speed_ * 0.3f;
+	currentSpeed_ += (hoverSpeed - currentSpeed_) * frameTime * 2.0f;
+
+	// 戦闘機らしい飛行制御を更新
+	UpdateFlightDynamics(frameTime);
+
+	// 位置を更新
+	transform_.translate.x += currentDirection_.x * currentSpeed_ * frameTime;
+	transform_.translate.y += currentDirection_.y * currentSpeed_ * frameTime;
+	transform_.translate.z += currentDirection_.z * currentSpeed_ * frameTime;
+
+	// 機体の向きと傾きを更新
+	UpdateAircraftOrientation(frameTime);
+}
+
+void Enemy::UpdateFlightDynamics(float frameTime) {
+	// 現在の方向から目標方向への角度差を計算
+	float dotProduct = currentDirection_.x * targetDirection_.x +
+					   currentDirection_.y * targetDirection_.y +
+					   currentDirection_.z * targetDirection_.z;
+
+	// 角度差が小さい場合は直接設定
+	if (dotProduct > 0.99f) {
+		currentDirection_ = targetDirection_;
+		return;
+	}
+
+	// 外積で回転軸を計算
+	Vector3 crossProduct = {
+		currentDirection_.y * targetDirection_.z - currentDirection_.z * targetDirection_.y,
+		currentDirection_.z * targetDirection_.x - currentDirection_.x * targetDirection_.z,
+		currentDirection_.x * targetDirection_.y - currentDirection_.y * targetDirection_.x};
+
+	float crossLength = sqrtf(crossProduct.x * crossProduct.x + crossProduct.y * crossProduct.y + crossProduct.z * crossProduct.z);
+
+	if (crossLength > 0.001f) {
+		// 最大旋回速度に基づいて回転量を制限
+		float maxRotation = maxTurnRate_ * frameTime;
+		float actualRotation = std::min(acosf(std::max(-1.0f, std::min(1.0f, dotProduct))), maxRotation);
+
+		// 単位外積ベクトルを計算
+		Vector3 axis = {crossProduct.x / crossLength, crossProduct.y / crossLength, crossProduct.z / crossLength};
+
+		// ロドリゲスの回転公式で方向を更新
+		float cosAngle = cosf(actualRotation);
+		float sinAngle = sinf(actualRotation);
+
+		Vector3 newDirection;
+		newDirection.x = currentDirection_.x * cosAngle +
+						 (axis.y * currentDirection_.z - axis.z * currentDirection_.y) * sinAngle +
+						 axis.x * (axis.x * currentDirection_.x + axis.y * currentDirection_.y + axis.z * currentDirection_.z) * (1 - cosAngle);
+		newDirection.y = currentDirection_.y * cosAngle +
+						 (axis.z * currentDirection_.x - axis.x * currentDirection_.z) * sinAngle +
+						 axis.y * (axis.x * currentDirection_.x + axis.y * currentDirection_.y + axis.z * currentDirection_.z) * (1 - cosAngle);
+		newDirection.z = currentDirection_.z * cosAngle +
+						 (axis.x * currentDirection_.y - axis.y * currentDirection_.x) * sinAngle +
+						 axis.z * (axis.x * currentDirection_.x + axis.y * currentDirection_.y + axis.z * currentDirection_.z) * (1 - cosAngle);
+
+		currentDirection_ = newDirection;
+
+		// バンク角を計算（旋回時の傾き）
+		float turnIntensity = actualRotation / maxRotation;
+		float targetBanking = 0.0f;
+
+		// Y軸周りの回転成分でバンク方向を決定
+		if (crossProduct.y > 0.001f) {
+			targetBanking = -maxBankingAngle_ * turnIntensity; // 左旋回時は右バンク
+		} else if (crossProduct.y < -0.001f) {
+			targetBanking = maxBankingAngle_ * turnIntensity; // 右旋回時は左バンク
+		}
+
+		// バンク角を滑らかに変更
+		bankingAngle_ += (targetBanking - bankingAngle_) * frameTime * 3.0f;
+	} else {
+		// バンク角を0に戻す
+		bankingAngle_ += (0.0f - bankingAngle_) * frameTime * 2.0f;
+	}
+}
+
+void Enemy::UpdateAircraftOrientation(float frameTime) {
+	// 機体の向きを飛行方向に設定
+	if (currentDirection_.x != 0.0f || currentDirection_.z != 0.0f) {
+		transform_.rotate.y = atan2f(currentDirection_.x, currentDirection_.z);
+	}
+
+	// ピッチ角を計算（上昇・下降）
+	float pitch = -asinf(std::max(-1.0f, std::min(1.0f, currentDirection_.y)));
+	transform_.rotate.x = pitch;
+
+	// バンク角を適用
+	transform_.rotate.z = bankingAngle_;
 }
 ///=============================================================================
 ///                        画面外判定

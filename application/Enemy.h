@@ -9,6 +9,7 @@
 #include "BaseObject.h"
 #include "Object3d.h"
 #include "Vector3.h"
+#include <algorithm> // std::min, std::max 用
 #include <memory>
 #include <string>
 
@@ -90,6 +91,12 @@ private:
 	/// \brief ホバリング状態の更新
 	void UpdateHovering(float frameTime);
 
+	/// \brief 戦闘機の飛行制御を更新
+	void UpdateFlightDynamics(float frameTime);
+
+	/// \brief 機体の向きと傾きを更新
+	void UpdateAircraftOrientation(float frameTime);
+
 	//========================================
 	// 3Dオブジェクト
 	std::unique_ptr<Object3d> obj_;
@@ -102,6 +109,16 @@ private:
 	float speed_;			 // 移動速度
 	float rotationSpeed_;	 // 回転速度
 	bool hasTarget_;		 // 目標位置があるかどうか
+
+	//========================================
+	// 戦闘機らしい飛行制御
+	Vector3 currentDirection_; // 現在の飛行方向
+	Vector3 targetDirection_;  // 目標飛行方向
+	float currentSpeed_;	   // 現在の速度
+	float maxTurnRate_;		   // 最大旋回速度（ラジアン/秒）
+	float acceleration_;	   // 加速度
+	float bankingAngle_;	   // バンク角（旋回時の傾き）
+	float maxBankingAngle_;	   // 最大バンク角
 
 	//========================================
 	// 行動状態管理
