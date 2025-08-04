@@ -9,7 +9,6 @@
 #include "BaseObject.h"
 #include "Object3d.h"
 #include "Vector3.h"
-#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -49,11 +48,6 @@ public:
 		return isAlive_;
 	}
 
-	/// \brief 削除フラグの設定
-	void SetDead() {
-		isAlive_ = false;
-	}
-
 	/// \brief 位置の取得
 	Vector3 GetPosition() const;
 
@@ -70,32 +64,14 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	/// \brief 破壊演出の更新
-	void UpdateDestruction();
-
 	/// \brief 通常状態の更新（移動・回転）
 	void UpdateMovement();
-
-	/// \brief AI移動の更新
-	void UpdateAIMovement();
-
-	/// \brief 画面外判定
-	void CheckOutOfBounds();
-
-	/// \brief オブジェクトの更新
-	void UpdateObject();
-
-	/// \brief 接近状態の更新
-	void UpdateApproaching(float frameTime);
-
-	/// \brief ホバリング状態の更新
-	void UpdateHovering(float frameTime);
 
 	/// \brief 戦闘機の飛行制御を更新
 	void UpdateFlightDynamics(float frameTime);
 
-	/// \brief 機体の向きと傾きを更新
-	void UpdateAircraftOrientation(float frameTime);
+	/// \brief 画面外判定
+	void CheckOutOfBounds();
 
 	//========================================
 	// 3Dオブジェクト
@@ -103,34 +79,16 @@ private:
 
 	//========================================
 	// 移動・位置関連（メイン管理）
-	Transform transform_;	 // メインのトランスフォーム（位置情報の一括管理）
-	Vector3 velocity_;		 // 移動ベクトル
-	Vector3 targetPosition_; // 目標位置
-	float speed_;			 // 移動速度
-	float rotationSpeed_;	 // 回転速度
-	bool hasTarget_;		 // 目標位置があるかどうか
+	Transform transform_; // メインのトランスフォーム（位置情報の一括管理）
 
 	//========================================
 	// 戦闘機らしい飛行制御
 	Vector3 currentDirection_; // 現在の飛行方向
 	Vector3 targetDirection_;  // 目標飛行方向
+	float speed_;			   // 移動速度
 	float currentSpeed_;	   // 現在の速度
 	float maxTurnRate_;		   // 最大旋回速度（ラジアン/秒）
-	float acceleration_;	   // 加速度
-	float bankingAngle_;	   // バンク角（旋回時の傾き）
-	float maxBankingAngle_;	   // 最大バンク角
-
-	//========================================
-	// 行動状態管理
-	enum class BehaviorState {
-		Approaching, // 目標位置に向かっている
-		Hovering,	 // 目標位置付近でホバリング
-		Attacking	 // 攻撃状態（将来の拡張用）
-	};
-	BehaviorState behaviorState_; // 現在の行動状態
-	float hoverTime_;			  // ホバリング時間
-	float maxHoverTime_;		  // 最大ホバリング時間
-	Vector3 hoverOffset_;		  // ホバリング時の微細な動き
+	bool hasTarget_;		   // 目標位置があるかどうか
 
 	//========================================
 	// 状態管理

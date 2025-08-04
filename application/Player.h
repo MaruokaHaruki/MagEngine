@@ -6,122 +6,72 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "BaseObject.h" // 当たり判定用
-#include "Cloud.h"
-#include "Input.h" // Input処理のために追加
+#include "BaseObject.h"
+#include "Input.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include "PlayerBullet.h"
-#include <memory> // For std::unique_ptr
-#include <string> // For std::string
-#include <vector> // For std::vector
+#include <memory>
+#include <string>
+#include <vector>
 
-// Forward declarations
-class Object3d;
 class Object3dSetup;
 
 class Player : public BaseObject {
-	///--------------------------------------------------------------
-	///							メンバ関数
 public:
-	/// \brief 初期化
 	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath);
-
-	/// \brief 更新
 	void Update();
-
-	/// \brief 描画
 	void Draw();
-
-	/// @brief ImGui描画
 	void DrawImGui();
-
-	/// \brief 弾の描画
 	void DrawBullets();
+	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
-	/// \brief 弾のリストを取得
+	Vector3 GetPosition() const {
+		return obj_->GetPosition();
+	}
+	Object3d *GetObject3d() const {
+		return obj_.get();
+	}
 	const std::vector<std::unique_ptr<PlayerBullet>> &GetBullets() const {
 		return bullets_;
 	}
 
-	///--------------------------------------------------------------
-	///							静的メンバ関数
-private:
-	/// \brief プレイヤーの動作関係処理（入力処理、移動、回転を統合）
-	void UpdateMovement();
-
-	/// \brief 入力に基づいて目標速度と目標回転を設定
-	void ProcessMovementInput(bool pressW, bool pressS, bool pressA, bool pressD);
-
-	/// \brief 現在の速度を目標速度に向けて更新
-	void UpdateVelocity();
-
-	/// \brief 位置を速度に基づいて更新
-	void UpdatePosition();
-
-	/// \brief 回転（傾き）を更新
-	void UpdateRotation();
-
-	/// \brief 弾の発射処理
-	void ProcessShooting();
-
-	/// \brief 弾の更新・削除処理
-	void UpdateBullets();
-
-	/// \brief ジェット煙エミッターの更新
-	void UpdateJetSmoke();
-
-	///--------------------------------------------------------------
-	///							入出力関数
-public:
-	Vector3 GetPosition() const {
-		return obj_->GetPosition();
-	}
-
-	/// \brief Object3dオブジェクトの取得（FollowCameraでのアクセス用）
-	Object3d *GetObject3d() const {
-		return obj_.get();
-	}
-
-	/// \brief パーティクルシステムの設定
-	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
-
-public:
-	// BaseObjectの純粋仮想関数を実装
 	void OnCollisionEnter(BaseObject *other) override;
 	void OnCollisionStay(BaseObject *other) override;
 	void OnCollisionExit(BaseObject *other) override;
 
-	// FollowCameraのアクセス許可
-	friend class FollowCamera;
-
-	///--------------------------------------------------------------
-	///							メンバ変数
 private:
-	std::unique_ptr<Object3d> obj_; // プレイヤーの3Dオブジェクト
+	void UpdateMovement();
+	void ProcessMovementInput(bool pressW, bool pressS, bool pressA, bool pressD);
+	void UpdateVelocity();
+	void UpdatePosition();
+	void UpdateRotation();
+	void ProcessShooting();
+	void UpdateBullets();
+	void UpdateJetSmoke();
+
+	std::unique_ptr<Object3d> obj_;
 
 	// 移動関連
 	Vector3 currentVelocity_;
 	Vector3 targetVelocity_;
+	Vector3 targetRotationEuler_;
 	float moveSpeed_;
-	float acceleration_; // 加速/減速の速さ (補間係数として使用)
-
-	// 回転（傾き）関連
-	Vector3 targetRotationEuler_; // 目標の傾き（オイラー角）
-	float rollSpeed_;			  // ロール（Z軸回転）の速さ
-	float pitchSpeed_;			  // ピッチ（X軸回転）の速さ
-	float rotationSmoothing_;	  // 傾きの滑らかさ (補間係数として使用)
-	float maxRollAngle_;		  // 最大ロール角
-	float maxPitchAngle_;		  // 最大ピッチ角
+	float acceleration_;
+	float rotationSmoothing_;
+	float maxRollAngle_;
+	float maxPitchAngle_;
 
 	// 弾関連
 	std::vector<std::unique_ptr<PlayerBullet>> bullets_;
-	Object3dSetup *object3dSetup_; // 弾の初期化用
-	float shootCoolTime_;		   // 射撃のクールタイム
-	float maxShootCoolTime_;	   // 最大クールタイム
+	Object3dSetup *object3dSetup_;
+	float shootCoolTime_;
+	float maxShootCoolTime_;
 
-	// パーティクルエミッター関連
+	// パーティクル関連
 	Particle *particleSystem_;
 	ParticleSetup *particleSetup_;
 	std::unique_ptr<ParticleEmitter> jetSmokeEmitter_;
+
+	friend class FollowCamera;
 };

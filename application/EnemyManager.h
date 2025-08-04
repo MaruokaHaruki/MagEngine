@@ -20,10 +20,8 @@ class Player;
 
 /// \brief 敵のタイプ
 enum class EnemyType {
-	Normal, // 通常敵
-	Fast,	// 高速敵
-	Heavy,	// 重装敵
-	Bomber	// 爆撃機
+	Normal,
+	Fast
 };
 
 /// \brief スポーン情報
@@ -74,9 +72,6 @@ private:
 
 	/// \brief 死んだ敵の削除
 	void RemoveDeadEnemies();
-
-	/// \brief スポーン情報の初期化
-	void InitializeSpawnData();
 
 	///--------------------------------------------------------------
 	///							入出力関数

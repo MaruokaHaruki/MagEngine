@@ -8,7 +8,7 @@
 #include "EnemyManager.h"
 #include "CollisionManager.h"
 #include "ImguiSetup.h"
-#include "Player.h" // Playerクラスのインクルードを追加
+#include "Player.h"
 #include <algorithm>
 
 ///=============================================================================
@@ -31,7 +31,10 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 
 	//========================================
 	// スポーンデータの初期化
-	InitializeSpawnData();
+	spawnQueue_.clear();
+	spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 15.0f}, 2.0f, false});
+	spawnQueue_.push_back({EnemyType::Fast, {5.0f, 0.0f, 20.0f}, 5.0f, false});
+	spawnQueue_.push_back({EnemyType::Normal, {-5.0f, 0.0f, 18.0f}, 8.0f, false});
 }
 
 ///=============================================================================
@@ -163,26 +166,16 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 		};
 	}
 
-	// 敵タイプ別の設定（全体的に速度を上げる）
+	// 簡略化された敵タイプ処理
 	switch (type) {
 	case EnemyType::Normal:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(15.0f, targetPos); // 速度を大幅に上げる
+		enemy->SetMovementParams(15.0f, targetPos);
 		break;
 
 	case EnemyType::Fast:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(22.0f, targetPos); // より高速
-		break;
-
-	case EnemyType::Heavy:
-		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(12.0f, targetPos);
-		break;
-
-	case EnemyType::Bomber:
-		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(18.0f, targetPos);
+		enemy->SetMovementParams(22.0f, targetPos);
 		break;
 	}
 
@@ -201,17 +194,6 @@ void EnemyManager::RemoveDeadEnemies() {
 						   return !enemy || !enemy->IsAlive();
 					   }),
 		enemies_.end());
-}
-
-///=============================================================================
-///                        スポーン情報の初期化
-void EnemyManager::InitializeSpawnData() {
-	spawnQueue_.clear();
-
-	// 予定されたスポーンの例
-	spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 15.0f}, 2.0f, false});
-	spawnQueue_.push_back({EnemyType::Fast, {5.0f, 0.0f, 20.0f}, 5.0f, false});
-	spawnQueue_.push_back({EnemyType::Normal, {-5.0f, 0.0f, 18.0f}, 8.0f, false});
 }
 
 ///=============================================================================

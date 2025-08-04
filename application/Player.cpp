@@ -43,8 +43,6 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 
 	// 回転（傾き）関連の初期化
 	targetRotationEuler_ = {0.0f, 0.0f, 0.0f};
-	rollSpeed_ = 60.0f;		   // 度/秒
-	pitchSpeed_ = 30.0f;	   // 度/秒
 	rotationSmoothing_ = 0.1f; // 傾き変化の滑らかさ
 	maxRollAngle_ = 30.0f;	   // 度
 	maxPitchAngle_ = 15.0f;	   // 度
