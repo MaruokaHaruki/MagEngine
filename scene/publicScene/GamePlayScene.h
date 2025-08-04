@@ -81,7 +81,7 @@ private:
 
 	//========================================
 	// プレイヤー
-	std::unique_ptr<Player> player_; // Object3dからPlayerに変更
+	std::unique_ptr<Player> player_;
 
 	//========================================
 	// 敵

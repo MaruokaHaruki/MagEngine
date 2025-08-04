@@ -9,7 +9,7 @@
 #include "BaseObject.h"
 #include "Object3d.h"
 #include "Vector3.h"
-#include <algorithm> // std::min, std::max 用
+#include <algorithm>
 #include <memory>
 #include <string>
 

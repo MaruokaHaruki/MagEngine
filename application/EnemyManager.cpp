@@ -82,7 +82,7 @@ void EnemyManager::DrawImGui() {
 	ImGui::Checkbox("Auto Spawn", &autoSpawn_);
 
 	if (ImGui::Button("Spawn Normal Enemy")) {
-		SpawnEnemy(EnemyType::Normal, {0.0f, 0.0f, 15.0f});
+		SpawnEnemy(EnemyType::Normal, {0.0f, 0.0f, 30.0f});
 	}
 	if (ImGui::Button("Spawn Fast Enemy")) {
 		SpawnEnemy(EnemyType::Fast, {3.0f, 0.0f, 15.0f});
@@ -152,37 +152,37 @@ void EnemyManager::UpdateSpawning() {
 void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	auto enemy = std::make_unique<Enemy>();
 
-	// プレイヤーの少し前の位置を目標とする
-	Vector3 targetPos = {0.0f, 0.0f, 5.0f}; // デフォルト
+	// プレイヤーのかなり前の位置を目標とする（通過させるため）
+	Vector3 targetPos = {0.0f, 0.0f, 20.0f}; // デフォルト
 	if (player_) {
 		Vector3 playerPos = player_->GetPosition();
 		targetPos = {
-			playerPos.x + static_cast<float>((rand() % 5) - 2), // 少しずらす
+			playerPos.x + static_cast<float>((rand() % 7) - 3), // 少しずらす
 			playerPos.y,
-			playerPos.z + 8.0f // プレイヤーの8ユニット前
+			playerPos.z + 20.0f // プレイヤーの20ユニット前（通過用）
 		};
 	}
 
-	// 敵タイプ別の設定
+	// 敵タイプ別の設定（全体的に速度を上げる）
 	switch (type) {
 	case EnemyType::Normal:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(8.0f, targetPos); // 速度を上げて追い越し感を演出
+		enemy->SetMovementParams(15.0f, targetPos); // 速度を大幅に上げる
 		break;
 
 	case EnemyType::Fast:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(12.0f, targetPos); // より高速
+		enemy->SetMovementParams(22.0f, targetPos); // より高速
 		break;
 
 	case EnemyType::Heavy:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(6.0f, targetPos);
+		enemy->SetMovementParams(12.0f, targetPos);
 		break;
 
 	case EnemyType::Bomber:
 		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(10.0f, targetPos);
+		enemy->SetMovementParams(18.0f, targetPos);
 		break;
 	}
 
