@@ -41,6 +41,12 @@ public:
 	/// \brief ImGui描画
 	void DrawImGui();
 
+	/// \brief AI行動の開始（将来の拡張用）
+	void StartAIBehavior();
+
+	/// \brief 離脱の開始
+	void StartDisengagement();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 	/// \brief 生存フラグの取得
@@ -69,6 +75,18 @@ private:
 
 	/// \brief 戦闘機の飛行制御を更新
 	void UpdateFlightDynamics(float frameTime);
+
+	/// \brief 飛行制御の更新
+	void UpdateFlightControl(float frameTime);
+
+	/// \brief ピッチとロールの計算
+	void CalculatePitchAndRoll();
+
+	/// \brief ステート別の更新
+	void UpdateSpawnState(float frameTime);
+	void UpdateMoveToTargetState(float frameTime);
+	void UpdateAIBehaviorState(float frameTime);
+	void UpdateDisengagementState(float frameTime);
 
 	/// \brief 画面外判定
 	void CheckOutOfBounds();
@@ -111,4 +129,29 @@ private:
 	DestroyState destroyState_; // 破壊状態
 	float destroyTimer_;		// 破壊演出タイマー
 	float destroyDuration_;		// 破壊演出の持続時間
+
+	//========================================
+	// 戦闘機らしい飛行制御（Playerを参考）
+	Vector3 currentVelocity_;	  // 現在の速度ベクトル
+	Vector3 targetVelocity_;	  // 目標速度ベクトル
+	Vector3 targetRotationEuler_; // 目標回転角（オイラー角）
+	float acceleration_;		  // 加速度
+	float rotationSmoothing_;	  // 回転の滑らかさ
+	float maxRollAngle_;		  // 最大ロール角
+	float maxPitchAngle_;		  // 最大ピッチ角
+	float bankingFactor_;		  // バンキング（旋回時のロール）係数
+
+	//========================================
+	// ステートマシン
+	enum class FlightState {
+		Spawn,		  // リスポーン後の初期状態
+		MoveToTarget, // 指定位置への移動
+		AIBehavior,	  // AI挙動（将来実装）
+		Disengagement // 離脱
+	};
+	FlightState currentState_;
+	Vector3 spawnPosition_;	  // スポーン位置
+	Vector3 targetPosition_;  // 目標位置
+	Vector3 disengageTarget_; // 離脱目標位置
+	float stateTimer_;		  // ステート継続時間
 };

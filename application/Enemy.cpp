@@ -28,12 +28,24 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 
 	//========================================
 	// 飛行制御の初期化
-	currentDirection_ = {0.0f, 0.0f, 1.0f};			// 初期方向（前方）
-	targetDirection_ = {0.0f, 0.0f, 1.0f};			// 初期目標方向
-	speed_ = 0.0f;									// 敵の移動速度
-	currentSpeed_ = 0.0f;							// 初期速度
-	maxTurnRate_ = 2.5f;							// 最大旋回速度を上げる（ラジアン/秒）
-	hasTarget_ = false;								// 目標位置なし
+	currentVelocity_ = {0.0f, 0.0f, 0.0f};
+	targetVelocity_ = {0.0f, 0.0f, 0.0f};
+	targetRotationEuler_ = {0.0f, 0.0f, 0.0f};
+	acceleration_ = 8.0f;					  // 加速度
+	rotationSmoothing_ = 8.0f;				  // 回転の滑らかさ
+	maxRollAngle_ = 45.0f * (M_PI / 180.0f);  // 最大ロール角（45度）
+	maxPitchAngle_ = 30.0f * (M_PI / 180.0f); // 最大ピッチ角（30度）
+	bankingFactor_ = 1.5f;					  // バンキング係数
+
+	//========================================
+	// ステートマシンの初期化
+	currentState_ = FlightState::Spawn;
+	spawnPosition_ = position;
+	stateTimer_ = 0.0f;
+
+	// 初期方向を前方（Z+）に設定
+	currentDirection_ = {0.0f, 0.0f, 1.0f};
+	targetDirection_ = {0.0f, 0.0f, 1.0f};
 
 	//========================================
 	// 状態の初期化
@@ -62,20 +74,29 @@ void Enemy::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) 
 ///                        移動パラメータの設定
 void Enemy::SetMovementParams(float speed, const Vector3 &targetPosition) {
 	speed_ = speed;
-	hasTarget_ = true;
+	targetPosition_ = targetPosition;
 
-	// 目標方向を計算
-	Vector3 direction = {
-		targetPosition.x - transform_.translate.x,
-		targetPosition.y - transform_.translate.y,
-		targetPosition.z - transform_.translate.z};
-
-	float length = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
-	if (length > 0.0f) {
-		targetDirection_ = {direction.x / length, direction.y / length, direction.z / length};
+	// MoveToTargetステートに移行
+	if (currentState_ == FlightState::Spawn) {
+		currentState_ = FlightState::MoveToTarget;
+		stateTimer_ = 0.0f;
 	}
+}
+///=============================================================================
+///                        AI行動の開始
+void Enemy::StartAIBehavior() {
+	currentState_ = FlightState::AIBehavior;
+	stateTimer_ = 0.0f;
+}
+///=============================================================================
+///                        離脱の開始
+void Enemy::StartDisengagement() {
+	currentState_ = FlightState::Disengagement;
+	stateTimer_ = 0.0f;
 
-	currentSpeed_ = speed_ * 0.5f;
+	// 離脱目標位置を設定（画面奥に向かう）
+	disengageTarget_ = transform_.translate;
+	disengageTarget_.z += 50.0f; // Z方向に50ユニット先
 }
 ///=============================================================================
 ///                        更新
@@ -95,86 +116,157 @@ void Enemy::Update() {
 		return;
 	}
 
-	UpdateMovement();
+	const float frameTime = 1.0f / 60.0f;
+	stateTimer_ += frameTime;
+
+	// ステート別の更新
+	switch (currentState_) {
+	case FlightState::Spawn:
+		UpdateSpawnState(frameTime);
+		break;
+	case FlightState::MoveToTarget:
+		UpdateMoveToTargetState(frameTime);
+		break;
+	case FlightState::AIBehavior:
+		UpdateAIBehaviorState(frameTime);
+		break;
+	case FlightState::Disengagement:
+		UpdateDisengagementState(frameTime);
+		break;
+	}
+
+	UpdateFlightControl(frameTime);
+	CalculatePitchAndRoll();
 	CheckOutOfBounds();
 	BaseObject::Update(transform_.translate);
 	obj_->Update();
 }
 ///=============================================================================
-///                        通常状態の更新（移動・回転）
-void Enemy::UpdateMovement() {
-	const float frameTime = 1.0f / 60.0f;
+///                        ステート別更新：スポーン
+void Enemy::UpdateSpawnState(float frameTime) {
+	// スポーン直後は直進
+	targetVelocity_ = {0.0f, 0.0f, speed_};
 
-	if (hasTarget_) {
-		UpdateFlightDynamics(frameTime);
-		currentSpeed_ = std::min(currentSpeed_ + speed_ * frameTime, speed_ * 1.2f);
-	} else {
-		// 直進
-		currentSpeed_ = speed_;
-	}
-
-	// 位置更新
-	transform_.translate.x += currentDirection_.x * currentSpeed_ * frameTime;
-	transform_.translate.y += currentDirection_.y * currentSpeed_ * frameTime;
-	transform_.translate.z += currentDirection_.z * currentSpeed_ * frameTime;
-
-	// 機体の向き更新
-	if (currentDirection_.x != 0.0f || currentDirection_.z != 0.0f) {
-		transform_.rotate.y = atan2f(currentDirection_.x, currentDirection_.z);
-	}
-	transform_.rotate.x = -asinf(std::max(-1.0f, std::min(1.0f, currentDirection_.y)));
-
-	if (Transform *objTransform = obj_->GetTransform()) {
-		*objTransform = transform_;
+	// 一定時間後に自動的にMoveToTargetに移行（設定されていない場合）
+	if (stateTimer_ > 1.0f && currentState_ == FlightState::Spawn) {
+		StartDisengagement(); // 目標が設定されていない場合は離脱
 	}
 }
 ///=============================================================================
-///                        飛行力学の更新
-void Enemy::UpdateFlightDynamics(float frameTime) {
-	// 現在方向から目標方向への補間
-	float dotProduct = currentDirection_.x * targetDirection_.x +
-					   currentDirection_.y * targetDirection_.y +
-					   currentDirection_.z * targetDirection_.z;
+///                        ステート別更新：目標位置への移動
+void Enemy::UpdateMoveToTargetState(float frameTime) {
+	Vector3 direction = {
+		targetPosition_.x - transform_.translate.x,
+		targetPosition_.y - transform_.translate.y,
+		targetPosition_.z - transform_.translate.z};
 
-	// 角度差が小さい場合は直接設定
-	if (dotProduct > 0.98f) {
-		currentDirection_ = targetDirection_;
-		hasTarget_ = false; // 目標に向いたら直進モードに
-		return;
+	float distance = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+
+	if (distance > 1.0f) {
+		// 正規化した方向に速度を設定
+		float invLength = 1.0f / distance;
+		targetVelocity_ = {
+			direction.x * invLength * speed_,
+			direction.y * invLength * speed_,
+			direction.z * invLength * speed_};
+	} else {
+		// 目標に到達したらAI行動に移行
+		StartAIBehavior();
+	}
+}
+///=============================================================================
+///                        ステート別更新：AI挙動
+void Enemy::UpdateAIBehaviorState(float frameTime) {
+	// 現在は簡単な円運動を実装（将来的にはより複雑なAIに置き換え）
+	// float circleRadius = 5.0f;
+	// float angularSpeed = 1.0f;
+	// float angle = stateTimer_ * angularSpeed;
+
+	// Vector3 circleCenter = targetPosition_;
+	// targetVelocity_ = {
+	//	cosf(angle + M_PI * 0.5f) * angularSpeed * circleRadius,
+	//	0.0f,
+	//	sinf(angle + M_PI * 0.5f) * angularSpeed * circleRadius};
+
+	// 一定時間後に離脱
+	if (stateTimer_ > 5.0f) {
+		StartDisengagement();
+	}
+}
+///=============================================================================
+///                        ステート別更新：離脱
+void Enemy::UpdateDisengagementState(float frameTime) {
+	Vector3 direction = {
+		disengageTarget_.x - transform_.translate.x,
+		disengageTarget_.y - transform_.translate.y,
+		disengageTarget_.z - transform_.translate.z};
+
+	float distance = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+
+	if (distance > 1.0f) {
+		float invLength = 1.0f / distance;
+		targetVelocity_ = {
+			direction.x * invLength * speed_ * 1.5f, // 離脱時は高速
+			direction.y * invLength * speed_ * 1.5f,
+			direction.z * invLength * speed_ * 1.5f};
+	}
+}
+///=============================================================================
+///                        飛行制御の更新
+void Enemy::UpdateFlightControl(float frameTime) {
+	// 速度の補間（Playerと同様）
+	currentVelocity_.x += (targetVelocity_.x - currentVelocity_.x) * acceleration_ * frameTime;
+	currentVelocity_.y += (targetVelocity_.y - currentVelocity_.y) * acceleration_ * frameTime;
+	currentVelocity_.z += (targetVelocity_.z - currentVelocity_.z) * acceleration_ * frameTime;
+
+	// 位置更新
+	transform_.translate.x += currentVelocity_.x * frameTime;
+	transform_.translate.y += currentVelocity_.y * frameTime;
+	transform_.translate.z += currentVelocity_.z * frameTime;
+}
+///=============================================================================
+///                        ピッチとロールの計算
+void Enemy::CalculatePitchAndRoll() {
+	// 速度ベクトルから機体の向きを計算
+	float speed = sqrtf(currentVelocity_.x * currentVelocity_.x +
+						currentVelocity_.y * currentVelocity_.y +
+						currentVelocity_.z * currentVelocity_.z);
+
+	if (speed > 0.1f) {
+		// ヨー角（Y軸回転）
+		targetRotationEuler_.y = atan2f(currentVelocity_.x, currentVelocity_.z);
+
+		// ピッチ角（X軸回転）
+		float pitchAngle = -asinf(std::max(-1.0f, std::min(1.0f, currentVelocity_.y / speed)));
+		targetRotationEuler_.x = std::max(-maxPitchAngle_, std::min(maxPitchAngle_, pitchAngle));
+
+		// ロール角（Z軸回転）- 旋回時のバンキング
+		Vector3 velocityChange = {
+			targetVelocity_.x - currentVelocity_.x,
+			targetVelocity_.y - currentVelocity_.y,
+			targetVelocity_.z - currentVelocity_.z};
+
+		float lateralAccel = velocityChange.x;
+		float rollAngle = lateralAccel * bankingFactor_;
+		targetRotationEuler_.z = std::max(-maxRollAngle_, std::min(maxRollAngle_, rollAngle));
 	}
 
-	// 外積で回転軸を計算
-	Vector3 crossProduct = {
-		currentDirection_.y * targetDirection_.z - currentDirection_.z * targetDirection_.y,
-		currentDirection_.z * targetDirection_.x - currentDirection_.x * targetDirection_.z,
-		currentDirection_.x * targetDirection_.y - currentDirection_.y * targetDirection_.x};
+	// 回転の補間
+	const float frameTime = 1.0f / 60.0f;
+	transform_.rotate.x += (targetRotationEuler_.x - transform_.rotate.x) * rotationSmoothing_ * frameTime;
+	transform_.rotate.y += (targetRotationEuler_.y - transform_.rotate.y) * rotationSmoothing_ * frameTime;
+	transform_.rotate.z += (targetRotationEuler_.z - transform_.rotate.z) * rotationSmoothing_ * frameTime;
 
-	float crossLength = sqrtf(crossProduct.x * crossProduct.x +
-							  crossProduct.y * crossProduct.y +
-							  crossProduct.z * crossProduct.z);
-
-	if (crossLength > 0.001f) {
-		float maxRotation = maxTurnRate_ * frameTime;
-		float actualRotation = std::min(acosf(std::max(-1.0f, std::min(1.0f, dotProduct))), maxRotation);
-
-		Vector3 axis = {crossProduct.x / crossLength, crossProduct.y / crossLength, crossProduct.z / crossLength};
-
-		// ロドリゲスの回転公式
-		float cosAngle = cosf(actualRotation);
-		float sinAngle = sinf(actualRotation);
-		float dot = axis.x * currentDirection_.x + axis.y * currentDirection_.y + axis.z * currentDirection_.z;
-
-		currentDirection_ = {
-			currentDirection_.x * cosAngle + (axis.y * currentDirection_.z - axis.z * currentDirection_.y) * sinAngle + axis.x * dot * (1 - cosAngle),
-			currentDirection_.y * cosAngle + (axis.z * currentDirection_.x - axis.x * currentDirection_.z) * sinAngle + axis.y * dot * (1 - cosAngle),
-			currentDirection_.z * cosAngle + (axis.x * currentDirection_.y - axis.y * currentDirection_.x) * sinAngle + axis.z * dot * (1 - cosAngle)};
+	// Object3dのトランスフォームに反映
+	if (Transform *objTransform = obj_->GetTransform()) {
+		*objTransform = transform_;
 	}
 }
 ///=============================================================================
 ///                        画面外判定
 void Enemy::CheckOutOfBounds() {
 	// 画面外に出たら削除（前方に向かった場合も含む）
-	if (transform_.translate.z < -20.0f || transform_.translate.z > 30.0f) {
+	if (transform_.translate.z < -100.0f || transform_.translate.z > 100.0f) {
 		destroyState_ = DestroyState::Dead;
 		isAlive_ = false;
 	}
