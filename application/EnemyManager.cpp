@@ -33,8 +33,8 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	// スポーンデータの初期化
 	spawnQueue_.clear();
 	spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 15.0f}, 2.0f, false});
-	spawnQueue_.push_back({EnemyType::Fast, {5.0f, 0.0f, 20.0f}, 5.0f, false});
-	spawnQueue_.push_back({EnemyType::Normal, {-5.0f, 0.0f, 18.0f}, 8.0f, false});
+	spawnQueue_.push_back({EnemyType::Fast, {0.0f, 0.0f, 20.0f}, 5.0f, false});
+	spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 18.0f}, 8.0f, false});
 }
 
 ///=============================================================================
