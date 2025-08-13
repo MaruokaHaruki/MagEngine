@@ -1,4 +1,6 @@
 #pragma once
+#include "Camera.h"
+#include "CameraManager.h"
 #include "LineManager.h"
 #include "Player.h"
 #include "Vector3.h"
@@ -26,10 +28,15 @@ private:
 	void DrawFlightPathMarker(const Vector3 &velocity);
 	void DrawHUDFrame();
 
+	// スクリーン座標変換
+	Vector3 GetHUDPosition(float screenX, float screenY);
+
 	// HUDの設定値
 	Vector3 screenCenter_;
 	float hudScale_;
 	Vector4 hudColor_;
+	float hudDistance_; // カメラからHUDまでの距離
+	float hudSize_;		// HUD全体のサイズ
 
 	// プレイヤーデータ
 	Vector3 playerPosition_;
