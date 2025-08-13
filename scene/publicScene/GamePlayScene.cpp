@@ -12,6 +12,7 @@
 #include "Enemy.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
+#include "HUD.h"
 #include "Input.h"
 #include "LineManager.h"
 #include "ModelManager.h"
@@ -121,6 +122,11 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	//========================================
 	// 敵の位置にデバッグテキストを配置（固定位置）
 	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
+
+	//========================================
+	// HUDの初期化
+	hud_ = std::make_unique<HUD>();
+	hud_->Initialize();
 }
 
 ///=============================================================================
@@ -200,6 +206,12 @@ void GamePlayScene::Update() {
 	}
 	//  当たり判定の更新
 	collisionManager_->Update();
+
+	//========================================
+	// HUDの更新
+	if (hud_ && player_) {
+		hud_->Update(player_.get());
+	}
 }
 
 ///=============================================================================
@@ -239,6 +251,12 @@ void GamePlayScene::Object3DDraw() {
 	// 雲システムの描画
 	if (cloudSystem_) {
 		cloudSystem_->Draw();
+	}
+
+	//========================================
+	// HUDの描画
+	if (hud_) {
+		hud_->Draw();
 	}
 }
 
@@ -299,5 +317,11 @@ void GamePlayScene::ImGuiDraw() {
 	//========================================
 	// 当たり判定
 	collisionManager_->DrawImGui();
+
+	//========================================
+	// HUD
+	if (hud_) {
+		hud_->DrawImGui();
+	}
 #endif // _DEBUG
 }

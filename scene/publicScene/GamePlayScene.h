@@ -19,6 +19,7 @@
 #include "Enemy.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
+#include "HUD.h"
 #include "LineManager.h"
 #include "MAudioG.h"
 #include "Particle.h"
@@ -103,5 +104,7 @@ private:
 	// Skybox
 	std::unique_ptr<Skybox> skybox_;
 
-
+	//========================================
+	// HUD
+	std::unique_ptr<HUD> hud_;
 };
