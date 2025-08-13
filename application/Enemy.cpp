@@ -43,7 +43,7 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	spawnPosition_ = position;
 	stateTimer_ = 0.0f;
 
-	// 初期方向を前方（Z+）に設定
+	// 初期方向を前方（+Z）に設定
 	currentDirection_ = {0.0f, 0.0f, 1.0f};
 	targetDirection_ = {0.0f, 0.0f, 1.0f};
 
@@ -94,9 +94,29 @@ void Enemy::StartDisengagement() {
 	currentState_ = FlightState::Disengagement;
 	stateTimer_ = 0.0f;
 
-	// 離脱目標位置を設定（画面奥に向かう）
+	// 離脱目標位置を設定（+Z方向の画面奥に向かう）
 	disengageTarget_ = transform_.translate;
-	disengageTarget_.z += 50.0f; // Z方向に50ユニット先
+	disengageTarget_.z += 50.0f; // +Z方向に50ユニット先
+}
+///=============================================================================
+///                        移動方向の設定（新規追加）
+void Enemy::SetMovementDirection(float speed, const Vector3 &direction) {
+	speed_ = speed;
+
+	// 方向を正規化
+	float length = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+	if (length > 0.001f) {
+		float invLength = 1.0f / length;
+		currentDirection_ = {
+			direction.x * invLength,
+			direction.y * invLength,
+			direction.z * invLength};
+		targetDirection_ = currentDirection_;
+	}
+
+	// 直進飛行ステートに設定
+	currentState_ = FlightState::StraightFlight;
+	stateTimer_ = 0.0f;
 }
 ///=============================================================================
 ///                        更新
@@ -124,6 +144,9 @@ void Enemy::Update() {
 	case FlightState::Spawn:
 		UpdateSpawnState(frameTime);
 		break;
+	case FlightState::StraightFlight:
+		UpdateStraightFlightState(frameTime);
+		break;
 	case FlightState::MoveToTarget:
 		UpdateMoveToTargetState(frameTime);
 		break;
@@ -144,13 +167,25 @@ void Enemy::Update() {
 ///=============================================================================
 ///                        ステート別更新：スポーン
 void Enemy::UpdateSpawnState(float frameTime) {
-	// スポーン直後は直進
+	// スポーン直後は+Z方向に直進
 	targetVelocity_ = {0.0f, 0.0f, speed_};
 
 	// 一定時間後に自動的にMoveToTargetに移行（設定されていない場合）
 	if (stateTimer_ > 1.0f && currentState_ == FlightState::Spawn) {
 		StartDisengagement(); // 目標が設定されていない場合は離脱
 	}
+}
+///=============================================================================
+///                        ステート別更新：直進飛行（新規追加）
+void Enemy::UpdateStraightFlightState(float frameTime) {
+	// 常に設定された方向に直進
+	targetVelocity_ = {
+		currentDirection_.x * speed_,
+		currentDirection_.y * speed_,
+		currentDirection_.z * speed_};
+
+	// 機体の向きを飛行方向に合わせる
+	targetDirection_ = currentDirection_;
 }
 ///=============================================================================
 ///                        ステート別更新：目標位置への移動
@@ -227,29 +262,28 @@ void Enemy::UpdateFlightControl(float frameTime) {
 ///=============================================================================
 ///                        ピッチとロールの計算
 void Enemy::CalculatePitchAndRoll() {
-	// 速度ベクトルから機体の向きを計算
-	float speed = sqrtf(currentVelocity_.x * currentVelocity_.x +
-						currentVelocity_.y * currentVelocity_.y +
-						currentVelocity_.z * currentVelocity_.z);
+	// 飛行方向から機体の向きを計算（+Z方向を基本とする）
+	Vector3 forwardDir = targetDirection_;
 
-	if (speed > 0.1f) {
-		// ヨー角（Y軸回転）
-		targetRotationEuler_.y = atan2f(currentVelocity_.x, currentVelocity_.z);
+	// ヨー角（Y軸回転）を計算 - +Z方向を0度とする
+	targetRotationEuler_.y = atan2f(forwardDir.x, forwardDir.z);
 
-		// ピッチ角（X軸回転）
-		float pitchAngle = -asinf(std::max(-1.0f, std::min(1.0f, currentVelocity_.y / speed)));
+	// ピッチ角（X軸回転）を計算
+	float horizontalDistance = sqrtf(forwardDir.x * forwardDir.x + forwardDir.z * forwardDir.z);
+	if (horizontalDistance > 0.001f) {
+		float pitchAngle = atan2f(forwardDir.y, horizontalDistance);
 		targetRotationEuler_.x = std::max(-maxPitchAngle_, std::min(maxPitchAngle_, pitchAngle));
-
-		// ロール角（Z軸回転）- 旋回時のバンキング
-		Vector3 velocityChange = {
-			targetVelocity_.x - currentVelocity_.x,
-			targetVelocity_.y - currentVelocity_.y,
-			targetVelocity_.z - currentVelocity_.z};
-
-		float lateralAccel = velocityChange.x;
-		float rollAngle = lateralAccel * bankingFactor_;
-		targetRotationEuler_.z = std::max(-maxRollAngle_, std::min(maxRollAngle_, rollAngle));
 	}
+
+	// ロール角（Z軸回転）- 旋回時のバンキング
+	Vector3 velocityChange = {
+		targetVelocity_.x - currentVelocity_.x,
+		targetVelocity_.y - currentVelocity_.y,
+		targetVelocity_.z - currentVelocity_.z};
+
+	float lateralAccel = velocityChange.x;
+	float rollAngle = lateralAccel * bankingFactor_;
+	targetRotationEuler_.z = std::max(-maxRollAngle_, std::min(maxRollAngle_, rollAngle));
 
 	// 回転の補間
 	const float frameTime = 1.0f / 60.0f;

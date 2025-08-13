@@ -68,11 +68,6 @@ void ParticleSetup::CreateRootSignature() {
 	rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRangeForInstancing;
 	rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForInstancing);
 
-	/// ====DirectionalLight=== ///
-	// rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;	   //CBV
-	// rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;    //PixelShader
-	// rootParameters[3].Descriptor.ShaderRegister = 1; // b1
-
 	descriptionRootSignature.pParameters = rootParameters;			   // ルートパラメータ配列へのポインタ
 	descriptionRootSignature.NumParameters = _countof(rootParameters); // 配列の長さ
 

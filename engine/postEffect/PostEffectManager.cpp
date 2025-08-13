@@ -7,6 +7,9 @@
  *********************************************************************/
 #include "PostEffectManager.h"
 #include "DirectXCore.h"
+
+// TODO: DXCore内に実装すること
+//       また､本当に重ねて実行できるかを確認すること
 ///=============================================================================
 ///                        初期化処理
 void PostEffectManager::Initialize(DirectXCore *dxCore) {

@@ -32,6 +32,9 @@ public:
 	/// \brief 移動パラメータの設定
 	void SetMovementParams(float speed, const Vector3 &targetPosition);
 
+	/// \brief 移動方向の設定（新規追加）
+	void SetMovementDirection(float speed, const Vector3 &direction);
+
 	/// \brief 更新
 	void Update();
 
@@ -71,10 +74,7 @@ public:
 	///							メンバ変数
 private:
 	/// \brief 通常状態の更新（移動・回転）
-	void UpdateMovement();
-
-	/// \brief 戦闘機の飛行制御を更新
-	void UpdateFlightDynamics(float frameTime);
+	void UpdateStraightFlightState(float frameTime);
 
 	/// \brief 飛行制御の更新
 	void UpdateFlightControl(float frameTime);
@@ -144,7 +144,8 @@ private:
 	//========================================
 	// ステートマシン
 	enum class FlightState {
-		Spawn,		  // リスポーン後の初期状態
+		Spawn, // リスポーン後の初期状態
+		StraightFlight,
 		MoveToTarget, // 指定位置への移動
 		AIBehavior,	  // AI挙動（将来実装）
 		Disengagement // 離脱

@@ -94,13 +94,14 @@ void FollowCamera::UpdateCameraTransform() {
 	// プレイヤーの位置を取得
 	Vector3 playerPosition = target_->GetPosition();
 
+	// プレイヤーのトランスフォームを取得
+	Transform *playerTransform = target_->obj_->GetTransform();
+	if (!playerTransform) {
+		return;
+	}
+
 	if (!isFixedPositionMode_) {
 		// 通常の追従モード：プレイヤーの回転に応じてオフセット位置を計算
-		Transform *playerTransform = target_->obj_->GetTransform();
-		if (!playerTransform) {
-			return;
-		}
-
 		Matrix4x4 playerRotationMatrix = MakeRotateMatrix(playerTransform->rotate);
 		Vector3 rotatedOffset = Conversion(offset_, playerRotationMatrix);
 		targetPosition_ = playerPosition + rotatedOffset;
@@ -116,8 +117,11 @@ void FollowCamera::UpdateCameraTransform() {
 	// X軸回転（上下）を計算
 	float pitch = std::asin(-lookDirection.y);
 
-	// 目標回転を設定
-	targetRotation_ = {pitch, yaw, 0.0f};
+	// プレイヤーのZ軸回転を取得してカメラに反映
+	float roll = playerTransform->rotate.z;
+
+	// 目標回転を設定（プレイヤーの傾きを反映）
+	targetRotation_ = {pitch, yaw, roll};
 }
 
 ///=============================================================================

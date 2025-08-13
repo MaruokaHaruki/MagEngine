@@ -132,15 +132,15 @@ void EnemyManager::UpdateSpawning() {
 		GetAliveEnemyCount() < static_cast<size_t>(maxEnemies_) &&
 		gameTime_ - lastSpawnTime_ >= spawnInterval_) {
 
-		// プレイヤーの後方にスポーン位置を設定
-		Vector3 spawnPos = {0.0f, 0.0f, 15.0f}; // デフォルト位置
+		// プレイヤーの後方にスポーン位置を設定（+Z方向に進行するため後方は-Z）
+		Vector3 spawnPos = {0.0f, 0.0f, -15.0f}; // デフォルト位置（プレイヤーの後方）
 		if (player_) {
 			Vector3 playerPos = player_->GetPosition();
 			// プレイヤーの後方10～15ユニット、左右にランダムオフセット
 			spawnPos = {
 				playerPos.x + static_cast<float>((rand() % 11) - 5), // -5 ～ 5
 				playerPos.y + static_cast<float>((rand() % 3) - 1),	 // -1 ～ 1
-				playerPos.z - static_cast<float>((rand() % 6) + 10)	 // -10 ～ -15
+				playerPos.z - static_cast<float>((rand() % 6) + 10)	 // -10 ～ -15（プレイヤーの後方）
 			};
 		}
 
@@ -155,27 +155,17 @@ void EnemyManager::UpdateSpawning() {
 void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	auto enemy = std::make_unique<Enemy>();
 
-	// プレイヤーのかなり前の位置を目標とする（通過させるため）
-	Vector3 targetPos = {0.0f, 0.0f, 20.0f}; // デフォルト
-	if (player_) {
-		Vector3 playerPos = player_->GetPosition();
-		targetPos = {
-			playerPos.x + static_cast<float>((rand() % 7) - 3), // 少しずらす
-			playerPos.y,
-			playerPos.z + 20.0f // プレイヤーの20ユニット前（通過用）
-		};
-	}
+	// 敵の初期化
+	enemy->Initialize(object3dSetup_, "jet.obj", position);
 
-	// 簡略化された敵タイプ処理
+	// +Z方向への直進飛行を設定
 	switch (type) {
 	case EnemyType::Normal:
-		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(15.0f, targetPos);
+		enemy->SetMovementDirection(15.0f, {0.0f, 0.0f, 1.0f}); // +Z方向に15.0fの速度
 		break;
 
 	case EnemyType::Fast:
-		enemy->Initialize(object3dSetup_, "jet.obj", position);
-		enemy->SetMovementParams(22.0f, targetPos);
+		enemy->SetMovementDirection(22.0f, {0.0f, 0.0f, 1.0f}); // +Z方向に22.0fの速度
 		break;
 	}
 
