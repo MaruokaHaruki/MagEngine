@@ -27,6 +27,10 @@ void HUD::Initialize() {
 	hudSizeX_ = 0.4f;					  // HUD横幅サイズ倍率
 	hudSizeY_ = 0.250f;					  // HUD縦幅サイズ倍率
 
+	// プレイヤー正面HUD要素の位置調整初期化
+	boresightOffset_ = {0.0f, 0.0f, 0.0f}; // ガンボアサイトのオフセット
+	rollScaleOffset_ = {0.0f, 8.0f, 0.0f}; // ロールスケールのオフセット（デフォルトで上方に配置）
+
 	// FollowCameraの参照を初期化
 	followCamera_ = nullptr;
 
@@ -158,6 +162,56 @@ Vector3 HUD::GetPlayerFrontPosition(float screenX, float screenY) {
 }
 
 ///=============================================================================
+///                        プレイヤー正面座標変換（オフセット付き）
+Vector3 HUD::GetPlayerFrontPositionWithOffset(float screenX, float screenY, const Vector3 &offset) {
+	// プレイヤーデータがない場合はカメラベース
+	if (playerPosition_.x == 0.0f && playerPosition_.y == 0.0f && playerPosition_.z == 0.0f) {
+		return GetHUDPosition(screenX + offset.x, screenY + offset.y);
+	}
+
+	// プレイヤーのY軸回転のみを使用（機首方向）
+	float playerYaw = playerRotation_.y;
+
+	// プレイヤーの前方ベクトル（Y軸回転のみ、傾きは無視）
+	Vector3 forward = {
+		sinf(playerYaw),
+		0.0f, // Y成分は0で水平を保つ
+		cosf(playerYaw)};
+
+	// プレイヤーの右ベクトル（水平面での右方向）
+	Vector3 right = {
+		cosf(playerYaw),
+		0.0f,
+		-sinf(playerYaw)};
+
+	// 上ベクトル（常にワールドY軸正方向）
+	Vector3 up = {0.0f, 1.0f, 0.0f};
+
+	// ベース位置（プレイヤーから前方に一定距離、水平に配置）
+	Vector3 baseCenter = {
+		playerPosition_.x + forward.x * hudDistance_,
+		playerPosition_.y + hudDistance_ * 0.1f, // プレイヤーより少し上に配置
+		playerPosition_.z + forward.z * hudDistance_};
+
+	// オフセットを適用
+	Vector3 offsetCenter = {
+		baseCenter.x + right.x * offset.x * hudSizeX_ + up.x * offset.y * hudSizeY_,
+		baseCenter.y + right.y * offset.x * hudSizeX_ + up.y * offset.y * hudSizeY_,
+		baseCenter.z + right.z * offset.x * hudSizeX_ + up.z * offset.y * hudSizeY_};
+
+	// スクリーン座標をワールド座標に変換（HUD縦横サイズを個別に適用）
+	float scaledX = screenX * hudSizeX_;
+	float scaledY = screenY * hudSizeY_;
+
+	Vector3 worldPos = {
+		offsetCenter.x + right.x * scaledX + up.x * scaledY,
+		offsetCenter.y + right.y * scaledX + up.y * scaledY,
+		offsetCenter.z + right.z * scaledX + up.z * scaledY};
+
+	return worldPos;
+}
+
+///=============================================================================
 ///                        更新
 void HUD::Update(const Player *player) {
 	if (!player)
@@ -264,12 +318,12 @@ void HUD::DrawBoresight() {
 	// 十字線（ボアサイト）
 	float size = 2.0f * hudScale_;
 
-	// プレイヤー正面座標系での位置を計算
-	Vector3 leftPos = GetPlayerFrontPosition(-size, 0.0f);
-	Vector3 rightPos = GetPlayerFrontPosition(size, 0.0f);
-	Vector3 topPos = GetPlayerFrontPosition(0.0f, size);
-	Vector3 bottomPos = GetPlayerFrontPosition(0.0f, -size);
-	Vector3 centerPos = GetPlayerFrontPosition(0.0f, 0.0f);
+	// プレイヤー正面座標系での位置を計算（オフセット適用）
+	Vector3 leftPos = GetPlayerFrontPositionWithOffset(-size + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
+	Vector3 rightPos = GetPlayerFrontPositionWithOffset(size + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
+	Vector3 topPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, size + boresightOffset_.y, boresightOffset_);
+	Vector3 bottomPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, -size + boresightOffset_.y, boresightOffset_);
+	Vector3 centerPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
 
 	// 水平線
 	lineManager->DrawLine(leftPos, rightPos, hudColor_);
@@ -328,7 +382,7 @@ void HUD::DrawRollScale(float rollAngle) {
 
 	// ロールスケールの円弧
 	float radius = 8.0f * hudScale_;
-	Vector3 arcCenter = GetPlayerFrontPosition(0.0f, radius);
+	Vector3 arcCenter = GetPlayerFrontPositionWithOffset(0.0f + rollScaleOffset_.x, radius + rollScaleOffset_.y, rollScaleOffset_);
 
 	// スケール目盛り（-60度から+60度まで30度間隔）
 	for (int angle = -60; angle <= 60; angle += 30) {
@@ -340,8 +394,8 @@ void HUD::DrawRollScale(float rollAngle) {
 		float innerX = sinf(radians) * (radius - tickLength);
 		float innerY = radius - cosf(radians) * (radius - tickLength);
 
-		Vector3 outerPoint = GetPlayerFrontPosition(outerX, outerY);
-		Vector3 innerPoint = GetPlayerFrontPosition(innerX, innerY);
+		Vector3 outerPoint = GetPlayerFrontPositionWithOffset(outerX + rollScaleOffset_.x, outerY + rollScaleOffset_.y, rollScaleOffset_);
+		Vector3 innerPoint = GetPlayerFrontPositionWithOffset(innerX + rollScaleOffset_.x, innerY + rollScaleOffset_.y, rollScaleOffset_);
 
 		lineManager->DrawLine(outerPoint, innerPoint, hudColor_);
 	}
@@ -351,9 +405,9 @@ void HUD::DrawRollScale(float rollAngle) {
 	float indicatorX = sinf(rollRad) * (radius - 0.5f);
 	float indicatorY = radius - cosf(rollRad) * (radius - 0.5f);
 
-	Vector3 rollIndicator = GetPlayerFrontPosition(indicatorX, indicatorY);
-	Vector3 tri1 = GetPlayerFrontPosition(indicatorX - 0.5f, indicatorY - 1.0f);
-	Vector3 tri2 = GetPlayerFrontPosition(indicatorX + 0.5f, indicatorY - 1.0f);
+	Vector3 rollIndicator = GetPlayerFrontPositionWithOffset(indicatorX + rollScaleOffset_.x, indicatorY + rollScaleOffset_.y, rollScaleOffset_);
+	Vector3 tri1 = GetPlayerFrontPositionWithOffset(indicatorX - 0.5f + rollScaleOffset_.x, indicatorY - 1.0f + rollScaleOffset_.y, rollScaleOffset_);
+	Vector3 tri2 = GetPlayerFrontPositionWithOffset(indicatorX + 0.5f + rollScaleOffset_.x, indicatorY - 1.0f + rollScaleOffset_.y, rollScaleOffset_);
 
 	// 三角形の指示器
 	lineManager->DrawLine(rollIndicator, tri1, hudColor_);
@@ -648,6 +702,11 @@ void HUD::DrawImGui() {
 	ImGui::SliderFloat("HUD Width", &hudSizeX_, 0.1f, 3.0f);
 	ImGui::SliderFloat("HUD Height", &hudSizeY_, 0.1f, 3.0f);
 	ImGui::ColorEdit4("HUD Color", &hudColor_.x);
+
+	ImGui::Separator();
+	ImGui::Text("Player Front HUD Positions:");
+	ImGui::DragFloat3("Boresight Offset", &boresightOffset_.x, 0.1f, -20.0f, 20.0f);
+	ImGui::DragFloat3("Roll Scale Offset", &rollScaleOffset_.x, 0.1f, -20.0f, 20.0f);
 
 	ImGui::Separator();
 	ImGui::Text("Current Values:");

@@ -34,7 +34,8 @@ private:
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);
-	Vector3 GetPlayerFrontPosition(float screenX, float screenY); // ガンボアサイト専用
+	Vector3 GetPlayerFrontPosition(float screenX, float screenY);								   // ガンボアサイト専用
+	Vector3 GetPlayerFrontPositionWithOffset(float screenX, float screenY, const Vector3 &offset); // オフセット付き
 
 	// HUDの設定値
 	Vector3 screenCenter_;
@@ -43,6 +44,10 @@ private:
 	float hudDistance_; // カメラからHUDまでの距離
 	float hudSizeX_;	// HUD横幅サイズ
 	float hudSizeY_;	// HUD縦幅サイズ
+
+	// プレイヤー正面HUD要素の位置調整
+	Vector3 boresightOffset_; // ガンボアサイトのオフセット
+	Vector3 rollScaleOffset_; // ロールスケールのオフセット
 
 	// カメラ参照
 	FollowCamera *followCamera_; // FollowCameraの参照
