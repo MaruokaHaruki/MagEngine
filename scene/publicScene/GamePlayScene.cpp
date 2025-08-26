@@ -224,7 +224,7 @@ void GamePlayScene::Object3DDraw() {
 	//=========================================
 	// スカイドーム
 	if (skydome_) {
-		skydome_->Draw();
+		//skydome_->Draw();
 	}
 
 	//========================================
@@ -274,7 +274,7 @@ void GamePlayScene::SkyboxDraw() {
 	//=========================================
 	// Skyboxの描画
 	if (skybox_) {
-		//skybox_->Draw();
+		skybox_->Draw();
 	}
 }
 
