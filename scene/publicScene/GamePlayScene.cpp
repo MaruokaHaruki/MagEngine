@@ -104,8 +104,6 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 
 	//========================================
 	// 雲システムの初期化
-	cloudSystem_ = std::make_unique<Cloud>();
-	cloudSystem_->Initialize(particle_.get(), particleSetup);
 
 	//========================================
 	// 敵マネージャー
@@ -157,11 +155,6 @@ void GamePlayScene::Update() {
 		Vector3 playerPos = player_->GetPosition();
 		playerPos.y += 2.0f; // プレイヤーの少し上に表示
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
-
-		// 雲システムの更新（プレイヤー位置を渡す）
-		if (cloudSystem_) {
-			cloudSystem_->Update(playerPos);
-		}
 	}
 
 	//========================================
@@ -254,9 +247,6 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// 雲システムの描画
-	if (cloudSystem_) {
-		cloudSystem_->Draw();
-	}
 
 	//========================================
 	// HUDの描画
@@ -284,7 +274,7 @@ void GamePlayScene::SkyboxDraw() {
 	//=========================================
 	// Skyboxの描画
 	if (skybox_) {
-		skybox_->Draw();
+		//skybox_->Draw();
 	}
 }
 
@@ -299,11 +289,8 @@ void GamePlayScene::ImGuiDraw() {
 	if (followCamera_) {
 		followCamera_->DrawImGui();
 	}
-
 	// 雲システムの制御
-	if (cloudSystem_) {
-		cloudSystem_->DrawImGui();
-	}
+
 	ImGui::Separator();
 	ImGui::End();
 
