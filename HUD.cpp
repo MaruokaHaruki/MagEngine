@@ -28,8 +28,8 @@ void HUD::Initialize() {
 	hudSizeY_ = 0.250f;					  // HUD縦幅サイズ倍率
 
 	// プレイヤー正面HUD要素の位置調整初期化
-	boresightOffset_ = {0.0f, 0.0f, 0.0f}; // ガンボアサイトのオフセット
-	rollScaleOffset_ = {0.0f, 8.0f, 0.0f}; // ロールスケールのオフセット（デフォルトで上方に配置）
+	boresightOffset_ = {0.0f, -3.0f, 0.0f}; // ガンボアサイトのオフセット
+	rollScaleOffset_ = {0.0f, -3.0f, 0.0f}; // ロールスケールのオフセット（デフォルトで上方に配置）
 
 	// FollowCameraの参照を初期化
 	followCamera_ = nullptr;
