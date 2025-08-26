@@ -24,7 +24,8 @@ void HUD::Initialize() {
 	hudScale_ = 1.0f;
 	hudColor_ = {0.0f, 1.0f, 0.0f, 1.0f}; // 緑色のHUD
 	hudDistance_ = 15.0f;				  // カメラから15単位前方にHUDを配置
-	hudSize_ = 1.0f;					  // HUD全体のサイズ倍率
+	hudSizeX_ = 0.4f;					  // HUD横幅サイズ倍率
+	hudSizeY_ = 0.250f;					  // HUD縦幅サイズ倍率
 
 	// FollowCameraの参照を初期化
 	followCamera_ = nullptr;
@@ -100,14 +101,58 @@ Vector3 HUD::GetHUDPosition(float screenX, float screenY) {
 		cameraPos.y + forward.y * hudDistance_,
 		cameraPos.z + forward.z * hudDistance_};
 
-	// スクリーン座標をワールド座標に変換（HUD全体のサイズを適用）
-	float scaledX = screenX * hudSize_;
-	float scaledY = screenY * hudSize_;
+	// スクリーン座標をワールド座標に変換（HUD縦横サイズを個別に適用）
+	float scaledX = screenX * hudSizeX_;
+	float scaledY = screenY * hudSizeY_;
 
 	Vector3 worldPos = {
 		hudCenter.x + right.x * scaledX + up.x * scaledY,
 		hudCenter.y + right.y * scaledX + up.y * scaledY,
 		hudCenter.z + right.z * scaledX + up.z * scaledY};
+
+	return worldPos;
+}
+
+///=============================================================================
+///                        プレイヤー正面座標変換（ガンボアサイト専用）
+Vector3 HUD::GetPlayerFrontPosition(float screenX, float screenY) {
+	// プレイヤーデータがない場合はカメラベース
+	if (playerPosition_.x == 0.0f && playerPosition_.y == 0.0f && playerPosition_.z == 0.0f) {
+		return GetHUDPosition(screenX, screenY);
+	}
+
+	// プレイヤーのY軸回転のみを使用（機首方向）
+	float playerYaw = playerRotation_.y;
+
+	// プレイヤーの前方ベクトル（Y軸回転のみ、傾きは無視）
+	Vector3 forward = {
+		sinf(playerYaw),
+		0.0f, // Y成分は0で水平を保つ
+		cosf(playerYaw)};
+
+	// プレイヤーの右ベクトル（水平面での右方向）
+	Vector3 right = {
+		cosf(playerYaw),
+		0.0f,
+		-sinf(playerYaw)};
+
+	// 上ベクトル（常にワールドY軸正方向）
+	Vector3 up = {0.0f, 1.0f, 0.0f};
+
+	// ガンボアサイトの基準位置（プレイヤーから前方に一定距離、水平に配置）
+	Vector3 boresightCenter = {
+		playerPosition_.x + forward.x * hudDistance_,
+		playerPosition_.y + hudDistance_ * 0.1f, // プレイヤーより少し上に配置
+		playerPosition_.z + forward.z * hudDistance_};
+
+	// スクリーン座標をワールド座標に変換（HUD縦横サイズを個別に適用）
+	float scaledX = screenX * hudSizeX_;
+	float scaledY = screenY * hudSizeY_;
+
+	Vector3 worldPos = {
+		boresightCenter.x + right.x * scaledX + up.x * scaledY,
+		boresightCenter.y + right.y * scaledX + up.y * scaledY,
+		boresightCenter.z + right.z * scaledX + up.z * scaledY};
 
 	return worldPos;
 }
@@ -219,11 +264,12 @@ void HUD::DrawBoresight() {
 	// 十字線（ボアサイト）
 	float size = 2.0f * hudScale_;
 
-	// スクリーン座標系での位置を計算
-	Vector3 leftPos = GetHUDPosition(-size, 0.0f);
-	Vector3 rightPos = GetHUDPosition(size, 0.0f);
-	Vector3 topPos = GetHUDPosition(0.0f, size);
-	Vector3 bottomPos = GetHUDPosition(0.0f, -size);
+	// プレイヤー正面座標系での位置を計算
+	Vector3 leftPos = GetPlayerFrontPosition(-size, 0.0f);
+	Vector3 rightPos = GetPlayerFrontPosition(size, 0.0f);
+	Vector3 topPos = GetPlayerFrontPosition(0.0f, size);
+	Vector3 bottomPos = GetPlayerFrontPosition(0.0f, -size);
+	Vector3 centerPos = GetPlayerFrontPosition(0.0f, 0.0f);
 
 	// 水平線
 	lineManager->DrawLine(leftPos, rightPos, hudColor_);
@@ -231,8 +277,9 @@ void HUD::DrawBoresight() {
 	// 垂直線
 	lineManager->DrawLine(topPos, bottomPos, hudColor_);
 
-	// 中央の小さな円
-	lineManager->DrawCircle(screenCenter_, 0.5f * hudScale_ * hudSize_, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
+	// 中央の小さな円（縦横サイズの平均を使用）
+	float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
+	lineManager->DrawCircle(centerPos, 0.5f * hudScale_ * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
 }
 
 ///=============================================================================
@@ -281,7 +328,7 @@ void HUD::DrawRollScale(float rollAngle) {
 
 	// ロールスケールの円弧
 	float radius = 8.0f * hudScale_;
-	Vector3 arcCenter = GetHUDPosition(0.0f, radius);
+	Vector3 arcCenter = GetPlayerFrontPosition(0.0f, radius);
 
 	// スケール目盛り（-60度から+60度まで30度間隔）
 	for (int angle = -60; angle <= 60; angle += 30) {
@@ -293,8 +340,8 @@ void HUD::DrawRollScale(float rollAngle) {
 		float innerX = sinf(radians) * (radius - tickLength);
 		float innerY = radius - cosf(radians) * (radius - tickLength);
 
-		Vector3 outerPoint = GetHUDPosition(outerX, outerY);
-		Vector3 innerPoint = GetHUDPosition(innerX, innerY);
+		Vector3 outerPoint = GetPlayerFrontPosition(outerX, outerY);
+		Vector3 innerPoint = GetPlayerFrontPosition(innerX, innerY);
 
 		lineManager->DrawLine(outerPoint, innerPoint, hudColor_);
 	}
@@ -304,9 +351,9 @@ void HUD::DrawRollScale(float rollAngle) {
 	float indicatorX = sinf(rollRad) * (radius - 0.5f);
 	float indicatorY = radius - cosf(rollRad) * (radius - 0.5f);
 
-	Vector3 rollIndicator = GetHUDPosition(indicatorX, indicatorY);
-	Vector3 tri1 = GetHUDPosition(indicatorX - 0.5f, indicatorY - 1.0f);
-	Vector3 tri2 = GetHUDPosition(indicatorX + 0.5f, indicatorY - 1.0f);
+	Vector3 rollIndicator = GetPlayerFrontPosition(indicatorX, indicatorY);
+	Vector3 tri1 = GetPlayerFrontPosition(indicatorX - 0.5f, indicatorY - 1.0f);
+	Vector3 tri2 = GetPlayerFrontPosition(indicatorX + 0.5f, indicatorY - 1.0f);
 
 	// 三角形の指示器
 	lineManager->DrawLine(rollIndicator, tri1, hudColor_);
@@ -418,8 +465,9 @@ void HUD::DrawCompass(float heading) {
 	// 上部にコンパス表示
 	Vector3 compassCenter = GetHUDPosition(0.0f, 10.0f);
 
-	// コンパスの円
-	lineManager->DrawCircle(compassCenter, 3.0f * hudSize_, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 24);
+	// コンパスの円（縦横サイズの平均を使用）
+	float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
+	lineManager->DrawCircle(compassCenter, 3.0f * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 24);
 
 	// 方位目盛り（N, E, S, W）
 	for (int dir = 0; dir < 4; dir++) {
@@ -518,8 +566,9 @@ void HUD::DrawFlightPathMarker(const Vector3 &velocity) {
 	// 速度方向に基づくオフセット（簡易版）
 	Vector3 markerPos = GetHUDPosition(velocity.x * 0.1f, velocity.y * 0.1f);
 
-	// フライトパスマーカー（円と十字）
-	lineManager->DrawCircle(markerPos, 1.0f * hudSize_, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
+	// フライトパスマーカー（円と十字）（縦横サイズの平均を使用）
+	float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
+	lineManager->DrawCircle(markerPos, 1.0f * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
 
 	// 中央の十字
 	Vector3 crossLeft = GetHUDPosition(velocity.x * 0.1f - 0.5f, velocity.y * 0.1f);
@@ -596,7 +645,8 @@ void HUD::DrawImGui() {
 	ImGui::Separator();
 	ImGui::SliderFloat("HUD Scale", &hudScale_, 0.5f, 2.0f);
 	ImGui::SliderFloat("HUD Distance", &hudDistance_, 5.0f, 50.0f);
-	ImGui::SliderFloat("HUD Size", &hudSize_, 0.1f, 3.0f);
+	ImGui::SliderFloat("HUD Width", &hudSizeX_, 0.1f, 3.0f);
+	ImGui::SliderFloat("HUD Height", &hudSizeY_, 0.1f, 3.0f);
 	ImGui::ColorEdit4("HUD Color", &hudColor_.x);
 
 	ImGui::Separator();

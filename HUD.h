@@ -34,13 +34,15 @@ private:
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);
+	Vector3 GetPlayerFrontPosition(float screenX, float screenY); // ガンボアサイト専用
 
 	// HUDの設定値
 	Vector3 screenCenter_;
 	float hudScale_;
 	Vector4 hudColor_;
 	float hudDistance_; // カメラからHUDまでの距離
-	float hudSize_;		// HUD全体のサイズ
+	float hudSizeX_;	// HUD横幅サイズ
+	float hudSizeY_;	// HUD縦幅サイズ
 
 	// カメラ参照
 	FollowCamera *followCamera_; // FollowCameraの参照
