@@ -127,6 +127,11 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// HUDの初期化
 	hud_ = std::make_unique<HUD>();
 	hud_->Initialize();
+
+	// HUDにFollowCameraを設定（FollowCameraが初期化された後）
+	if (followCamera_) {
+		hud_->SetFollowCamera(followCamera_.get());
+	}
 }
 
 ///=============================================================================

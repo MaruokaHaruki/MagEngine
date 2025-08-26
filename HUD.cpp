@@ -26,6 +26,9 @@ void HUD::Initialize() {
 	hudDistance_ = 15.0f;				  // カメラから15単位前方にHUDを配置
 	hudSize_ = 1.0f;					  // HUD全体のサイズ倍率
 
+	// FollowCameraの参照を初期化
+	followCamera_ = nullptr;
+
 	// 表示設定の初期化
 	showBoresight_ = true;
 	showPitchScale_ = true;
@@ -45,10 +48,26 @@ void HUD::Initialize() {
 }
 
 ///=============================================================================
+///                        FollowCameraの設定
+void HUD::SetFollowCamera(FollowCamera *followCamera) {
+	followCamera_ = followCamera;
+}
+
+///=============================================================================
 ///                        スクリーン座標変換
 Vector3 HUD::GetHUDPosition(float screenX, float screenY) {
-	// 現在のカメラを取得
-	Camera *currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+	// FollowCameraが設定されている場合はそれを優先使用
+	Camera *currentCamera = nullptr;
+
+	if (followCamera_) {
+		currentCamera = followCamera_->GetCamera();
+	}
+
+	// FollowCameraが取得できない場合はCameraManagerから取得
+	if (!currentCamera) {
+		currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+	}
+
 	if (!currentCamera) {
 		return {screenX, screenY, hudDistance_};
 	}
@@ -133,8 +152,17 @@ void HUD::Update(const Player *player) {
 ///=============================================================================
 ///                        描画
 void HUD::Draw() {
-	// カメラが存在しない場合は描画しない
-	Camera *currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+	// FollowCameraまたは現在のカメラが存在しない場合は描画しない
+	Camera *currentCamera = nullptr;
+
+	if (followCamera_) {
+		currentCamera = followCamera_->GetCamera();
+	}
+
+	if (!currentCamera) {
+		currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+	}
+
 	if (!currentCamera) {
 		return;
 	}
@@ -455,7 +483,6 @@ void HUD::DrawAltitudeIndicator(float altitude) {
 
 	lineManager->DrawLine(triBase, triTop, hudColor_);
 	lineManager->DrawLine(triBase, triBottom, hudColor_);
-	lineManager->DrawLine(triTop, triBottom, hudColor_);
 }
 
 ///=============================================================================
@@ -581,10 +608,26 @@ void HUD::DrawImGui() {
 	// デバッグ情報追加
 	ImGui::Separator();
 	ImGui::Text("Debug Info:");
-	Camera *cam = CameraManager::GetInstance()->GetCurrentCamera();
-	if (cam) {
-		Vector3 camPos = cam->GetTransform().translate;
-		Vector3 camRot = cam->GetTransform().rotate;
+
+	// 使用中のカメラ情報を表示
+	Camera *currentCamera = nullptr;
+	std::string cameraSource = "None";
+
+	if (followCamera_) {
+		currentCamera = followCamera_->GetCamera();
+		cameraSource = "FollowCamera";
+	}
+
+	if (!currentCamera) {
+		currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+		cameraSource = "CameraManager";
+	}
+
+	ImGui::Text("Camera Source: %s", cameraSource.c_str());
+
+	if (currentCamera) {
+		Vector3 camPos = currentCamera->GetTransform().translate;
+		Vector3 camRot = currentCamera->GetTransform().rotate;
 		ImGui::Text("Camera Pos: (%.2f, %.2f, %.2f)", camPos.x, camPos.y, camPos.z);
 		ImGui::Text("Camera Rot: (%.2f, %.2f, %.2f)",
 					RadiansToDegrees(camRot.x),

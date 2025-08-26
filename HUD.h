@@ -1,6 +1,7 @@
 #pragma once
 #include "Camera.h"
 #include "CameraManager.h"
+#include "FollowCamera.h"
 #include "LineManager.h"
 #include "Player.h"
 #include "Vector3.h"
@@ -13,6 +14,9 @@ public:
 	void Update(const Player *player);
 	void Draw();
 	void DrawImGui();
+
+	// FollowCameraの設定
+	void SetFollowCamera(FollowCamera *followCamera);
 
 private:
 	// HUDの各要素を描画する関数
@@ -37,6 +41,9 @@ private:
 	Vector4 hudColor_;
 	float hudDistance_; // カメラからHUDまでの距離
 	float hudSize_;		// HUD全体のサイズ
+
+	// カメラ参照
+	FollowCamera *followCamera_; // FollowCameraの参照
 
 	// プレイヤーデータ
 	Vector3 playerPosition_;
