@@ -9,6 +9,7 @@
 #pragma once
 #include "BaseObject.h"
 #include "Enemy.h"
+#include "LineManaegr.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include <memory>
