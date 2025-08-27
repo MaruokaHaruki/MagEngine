@@ -9,6 +9,7 @@
 // 以下はstd::maxを使用する場合に必要
 #define NOMINMAX
 #include "Player.h"
+#include "EnemyManager.h"
 #include "ImguiSetup.h"
 #include "ModelManager.h"
 #include "Object3d.h"
@@ -53,6 +54,8 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	// === 射撃関連の初期化 ===
 	shootCoolTime_ = 0.0f;
 	maxShootCoolTime_ = 0.2f;
+	missileCoolTime_ = 0.0f;
+	maxMissileCoolTime_ = 2.0f; // ミサイルは2秒間隔
 
 	// === HP関連の初期化 ===
 	maxHP_ = 100;
@@ -76,6 +79,14 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 			BaseObject::Initialize(pos, 1.0f);
 		}
 	}
+
+	// === システム参照の初期化 ===
+	enemyManager_ = nullptr;
+
+	// === ロックオン関連の初期化 ===
+	lockOnTarget_ = nullptr;
+	lockOnRange_ = 30.0f;
+	lockOnMode_ = false;
 }
 
 void Player::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
@@ -128,26 +139,88 @@ void Player::Update() {
 
 	// === プレイヤーの各種更新処理 ===
 	UpdateMovement();
-	UpdateJetSmoke();
+	UpdateLockOn();
 	ProcessShooting();
 	UpdateBullets();
+	UpdateMissiles();
 
 	// === 当たり判定・オブジェクト更新 ===
 	BaseObject::Update(objTransform->translate);
 	obj_->Update();
 }
 
-void Player::UpdateJetSmoke() {
-	if (jetSmokeEmitter_ && obj_) {
-		Vector3 playerPos = obj_->GetPosition();
+void Player::UpdateLockOn() {
+	Input *input = Input::GetInstance();
 
-		// エミッターをプレイヤーの後方に配置
-		Vector3 jetSmokePos = {playerPos.x, playerPos.y, playerPos.z - 1.5f};
-		jetSmokeEmitter_->SetTranslate(jetSmokePos);
-
-		// エミッターの更新
-		jetSmokeEmitter_->Update();
+	// Lキーでロックオンモード切り替え
+	static bool prevLockKey = false;
+	bool currentLockKey = input->PushKey(DIK_L);
+	if (currentLockKey && !prevLockKey) {
+		lockOnMode_ = !lockOnMode_;
+		if (lockOnMode_) {
+			// ロックオンモード開始 - 最寄りの敵をロックオン
+			lockOnTarget_ = GetNearestEnemy();
+		} else {
+			// ロックオンモード終了
+			lockOnTarget_ = nullptr;
+		}
 	}
+	prevLockKey = currentLockKey;
+
+	// ロックオンターゲットが無効になったらクリア
+	if (lockOnTarget_ && !lockOnTarget_->IsAlive()) {
+		lockOnTarget_ = nullptr;
+		lockOnMode_ = false;
+	}
+
+	// ロックオンターゲットが範囲外に出たらクリア
+	if (lockOnTarget_) {
+		Vector3 playerPos = GetPosition();
+		Vector3 targetPos = lockOnTarget_->GetPosition();
+		Vector3 toTarget = {
+			targetPos.x - playerPos.x,
+			targetPos.y - playerPos.y,
+			targetPos.z - playerPos.z};
+		float distance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+
+		if (distance > lockOnRange_) {
+			lockOnTarget_ = nullptr;
+			lockOnMode_ = false;
+		}
+	}
+}
+
+Enemy *Player::GetNearestEnemy() const {
+	if (!enemyManager_) {
+		return nullptr;
+	}
+
+	Vector3 playerPos = GetPosition();
+	Enemy *nearestEnemy = nullptr;
+	float nearestDistance = lockOnRange_;
+
+	const auto &enemies = enemyManager_->GetEnemies();
+
+	for (const auto &enemy : enemies) {
+		if (!enemy || !enemy->IsAlive()) {
+			continue;
+		}
+
+		Vector3 enemyPos = enemy->GetPosition();
+		Vector3 toEnemy = {
+			enemyPos.x - playerPos.x,
+			enemyPos.y - playerPos.y,
+			enemyPos.z - playerPos.z};
+
+		float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+
+		if (distance < nearestDistance) {
+			nearestDistance = distance;
+			nearestEnemy = enemy.get();
+		}
+	}
+
+	return nearestEnemy;
 }
 
 //=============================================================================
@@ -253,19 +326,40 @@ void Player::ProcessShooting() {
 	if (shootCoolTime_ > 0.0f) {
 		shootCoolTime_ -= 1.0f / 60.0f;
 	}
+	if (missileCoolTime_ > 0.0f) {
+		missileCoolTime_ -= 1.0f / 60.0f;
+	}
 
 	// スペースキーで弾を発射
 	if (input->PushKey(DIK_SPACE) && shootCoolTime_ <= 0.0f) {
 		Vector3 playerPos = obj_->GetPosition();
-		Vector3 shootDirection = {0.0f, 0.0f, 1.0f}; // 前方向に発射
+		Vector3 shootDirection = {0.0f, 0.0f, 1.0f};
 
-		// 弾を生成
 		auto bullet = std::make_unique<PlayerBullet>();
 		bullet->Initialize(object3dSetup_, "axisPlus.obj", playerPos, shootDirection);
 		bullets_.push_back(std::move(bullet));
 
-		// クールタイムをリセット
 		shootCoolTime_ = maxShootCoolTime_;
+	}
+
+	// Mキーでミサイル発射
+	if (input->PushKey(DIK_M) && missileCoolTime_ <= 0.0f) {
+		Vector3 playerPos = obj_->GetPosition();
+		Vector3 shootDirection = {0.0f, 0.0f, 1.0f};
+
+		auto missile = std::make_unique<PlayerMissile>();
+		missile->Initialize(object3dSetup_, "axisPlus.obj", playerPos, shootDirection);
+		missile->SetParticleSystem(particleSystem_, particleSetup_);
+		missile->SetEnemyManager(enemyManager_);
+
+		// ロックオンターゲットがある場合は設定
+		if (lockOnTarget_) {
+			missile->SetTarget(lockOnTarget_);
+			missile->StartLockOn();
+		}
+
+		missiles_.push_back(std::move(missile));
+		missileCoolTime_ = maxMissileCoolTime_;
 	}
 }
 
@@ -286,6 +380,21 @@ void Player::UpdateBullets() {
 		bullets_.end());
 }
 
+void Player::UpdateMissiles() {
+	// ミサイルの更新
+	for (auto &missile : missiles_) {
+		missile->Update();
+	}
+
+	// 死んだミサイルを削除
+	missiles_.erase(
+		std::remove_if(missiles_.begin(), missiles_.end(),
+					   [](const std::unique_ptr<PlayerMissile> &missile) {
+						   return !missile->IsAlive();
+					   }),
+		missiles_.end());
+}
+
 //=============================================================================
 // 描画
 void Player::Draw() {
@@ -299,6 +408,12 @@ void Player::Draw() {
 void Player::DrawBullets() {
 	for (auto &bullet : bullets_) {
 		bullet->Draw();
+	}
+}
+
+void Player::DrawMissiles() {
+	for (auto &missile : missiles_) {
+		missile->Draw();
 	}
 }
 
@@ -354,16 +469,39 @@ void Player::DrawImGui() {
 		// === 射撃情報 ===
 		ImGui::Text("=== Shooting Status ===");
 		ImGui::Text("Bullets Count: %zu", bullets_.size());
+		ImGui::Text("Missiles Count: %zu", missiles_.size());
 		ImGui::SliderFloat("Shoot Cool Time", &maxShootCoolTime_, 0.05f, 1.0f);
+		ImGui::SliderFloat("Missile Cool Time", &maxMissileCoolTime_, 0.5f, 5.0f);
+		ImGui::Text("Controls: SPACE = Bullet, M = Missile, L = Lock-On");
 
-		// === ジェット煙制御 ===
-		if (jetSmokeEmitter_) {
-			ImGui::Separator();
-			ImGui::Text("=== Jet Smoke Control ===");
-			bool repeat = true;
-			if (ImGui::Checkbox("Enable Jet Smoke", &repeat)) {
-				jetSmokeEmitter_->SetRepeat(repeat);
-			}
+		ImGui::Separator();
+
+		// === ロックオン情報 ===
+		ImGui::Text("=== Lock-On Status ===");
+		ImGui::Text("Lock-On Mode: %s", lockOnMode_ ? "ON" : "OFF");
+		ImGui::Text("Has Target: %s", HasLockOnTarget() ? "YES" : "NO");
+		if (HasLockOnTarget()) {
+			Vector3 targetPos = lockOnTarget_->GetPosition();
+			ImGui::Text("Target Pos: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
+
+			Vector3 playerPos = GetPosition();
+			Vector3 toTarget = {
+				targetPos.x - playerPos.x,
+				targetPos.y - playerPos.y,
+				targetPos.z - playerPos.z};
+			float distance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+			ImGui::Text("Distance: %.2f", distance);
+		}
+		ImGui::SliderFloat("Lock-On Range", &lockOnRange_, 10.0f, 100.0f);
+
+		if (ImGui::Button("Manual Lock-On")) {
+			lockOnTarget_ = GetNearestEnemy();
+			lockOnMode_ = lockOnTarget_ != nullptr;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Clear Lock-On")) {
+			lockOnTarget_ = nullptr;
+			lockOnMode_ = false;
 		}
 
 		ImGui::End();

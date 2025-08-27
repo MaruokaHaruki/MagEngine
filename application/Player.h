@@ -11,6 +11,7 @@
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include "PlayerBullet.h"
+#include "PlayerMissile.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,6 +19,8 @@
 //========================================
 // 前方宣言
 class Object3dSetup;
+class EnemyManager;
+class Enemy;
 ///=============================================================================
 ///						クラス定義
 class Player : public BaseObject {
@@ -29,7 +32,25 @@ public:
 	void Draw();
 	void DrawImGui();
 	void DrawBullets();
+	void DrawMissiles();
 	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
+
+	//========================================
+	// EnemyManager設定（ミサイル用）
+	void SetEnemyManager(EnemyManager *enemyManager) {
+		enemyManager_ = enemyManager;
+	}
+
+	//========================================
+	// ロックオン機能
+	void UpdateLockOn();
+	Enemy *GetNearestEnemy() const;
+	bool HasLockOnTarget() const {
+		return lockOnTarget_ != nullptr;
+	}
+	Enemy *GetLockOnTarget() const {
+		return lockOnTarget_;
+	}
 
 	///--------------------------------------------------------------
 	///                        ゲッター
@@ -41,6 +62,9 @@ public:
 	}
 	const std::vector<std::unique_ptr<PlayerBullet>> &GetBullets() const {
 		return bullets_;
+	}
+	const std::vector<std::unique_ptr<PlayerMissile>> &GetMissiles() const {
+		return missiles_;
 	}
 
 	//========================================
@@ -77,7 +101,7 @@ private:
 	void UpdateRotation();
 	void ProcessShooting();
 	void UpdateBullets();
-	void UpdateJetSmoke();
+	void UpdateMissiles();
 
 	///--------------------------------------------------------------
 	///                        静的メンバ変数
@@ -102,9 +126,12 @@ private:
 
 	//========================================
 	// 射撃関連
-	std::vector<std::unique_ptr<PlayerBullet>> bullets_; // 弾のリスト
-	float shootCoolTime_;								 // 現在のクールタイム
-	float maxShootCoolTime_;							 // 最大クールタイム
+	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト
+	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // ミサイルリスト
+	float shootCoolTime_;								   // 現在のクールタイム
+	float maxShootCoolTime_;							   // 最大クールタイム
+	float missileCoolTime_;								   // ミサイルクールタイム
+	float maxMissileCoolTime_;							   // 最大ミサイルクールタイム
 
 	//========================================
 	// HP関連
@@ -119,6 +146,16 @@ private:
 	Particle *particleSystem_;						   // パーティクルシステム
 	ParticleSetup *particleSetup_;					   // パーティクル設定
 	std::unique_ptr<ParticleEmitter> jetSmokeEmitter_; // ジェット煙エミッター
+
+	//========================================
+	// システム参照
+	EnemyManager *enemyManager_; // 敵管理への参照（ミサイルターゲット用）
+
+	//========================================
+	// ロックオン関連
+	Enemy *lockOnTarget_; // ロックオンターゲット
+	float lockOnRange_;	  // ロックオン範囲
+	bool lockOnMode_;	  // ロックオンモード
 
 	//========================================
 	//

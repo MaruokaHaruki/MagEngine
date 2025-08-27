@@ -112,6 +112,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// プレイヤー参照を設定
 	enemyManager_->SetPlayer(player_.get());
 
+	// プレイヤーにEnemyManagerを設定（ミサイル用）
+	player_->SetEnemyManager(enemyManager_.get());
+
 	//========================================
 	// 当たり判定（軽量システムで初期化）
 	collisionManager_ = std::make_unique<CollisionManager>();
@@ -193,12 +196,19 @@ void GamePlayScene::Update() {
 	if (enemyManager_) {
 		enemyManager_->RegisterCollisions(collisionManager_.get());
 	}
-	//  プレイヤーの弾の当たり判定を登録
+	//  プレイヤーの弾とミサイルの当たり判定を登録
 	if (player_) {
 		const auto &bullets = player_->GetBullets();
 		for (const auto &bullet : bullets) {
 			if (bullet->IsAlive()) {
 				collisionManager_->RegisterObject(bullet.get());
+			}
+		}
+
+		const auto &missiles = player_->GetMissiles();
+		for (const auto &missile : missiles) {
+			if (missile->IsAlive()) {
+				collisionManager_->RegisterObject(missile.get());
 			}
 		}
 	}
@@ -224,15 +234,16 @@ void GamePlayScene::Object3DDraw() {
 	//=========================================
 	// スカイドーム
 	if (skydome_) {
-		//skydome_->Draw();
+		// skydome_->Draw();
 	}
 
 	//========================================
 	// プレイヤー
 	if (player_) {
 		player_->Draw();
-		// プレイヤーの弾も描画
+		// プレイヤーの弾とミサイルも描画
 		player_->DrawBullets();
+		player_->DrawMissiles();
 	}
 
 	//========================================
@@ -298,6 +309,14 @@ void GamePlayScene::ImGuiDraw() {
 	// プレイヤー
 	if (player_) {
 		player_->DrawImGui();
+
+		// ミサイルのImGui表示
+		const auto &missiles = player_->GetMissiles();
+		for (size_t i = 0; i < missiles.size(); ++i) {
+			if (missiles[i] && missiles[i]->IsAlive()) {
+				missiles[i]->DrawImGui();
+			}
+		}
 	}
 
 	//========================================
