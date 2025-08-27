@@ -9,11 +9,11 @@
 #pragma once
 #include "BaseObject.h"
 #include "Enemy.h"
-#include "LineManaegr.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 // 前方宣言
 class Object3dSetup;
@@ -73,6 +73,10 @@ public:
 		return lockedTarget_;
 	}
 
+	//========================================
+	// 視覚化機能
+	void DrawDebugInfo();
+
 private:
 	//========================================
 	// 内部処理
@@ -130,4 +134,14 @@ private:
 	ParticleSetup *particleSetup_;					 // パーティクル設定
 	std::unique_ptr<ParticleEmitter> trailEmitter_;	 // 軌跡エミッター
 	std::unique_ptr<ParticleEmitter> thrustEmitter_; // 推進エミッター
+
+	//========================================
+	// デバッグ・視覚化関連
+	std::vector<Vector3> trajectoryPoints_; // 軌跡記録用
+	int maxTrajectoryPoints_;				// 最大軌跡点数
+	bool showDebugInfo_;					// デバッグ表示フラグ
+	bool showTrajectory_;					// 軌跡表示フラグ
+	bool showTargetLine_;					// ターゲットライン表示フラグ
+	bool showVelocityVector_;				// 速度ベクトル表示フラグ
+	bool showForwardVector_;				// 前方向ベクトル表示フラグ
 };

@@ -414,6 +414,8 @@ void Player::DrawBullets() {
 void Player::DrawMissiles() {
 	for (auto &missile : missiles_) {
 		missile->Draw();
+		// デバッグ情報も描画
+		missile->DrawDebugInfo();
 	}
 }
 
@@ -502,6 +504,18 @@ void Player::DrawImGui() {
 		if (ImGui::Button("Clear Lock-On")) {
 			lockOnTarget_ = nullptr;
 			lockOnMode_ = false;
+		}
+
+		// ミサイル個別情報
+		ImGui::Separator();
+		ImGui::Text("=== Active Missiles ===");
+		for (size_t i = 0; i < missiles_.size(); ++i) {
+			if (missiles_[i] && missiles_[i]->IsAlive()) {
+				ImGui::Text("Missile %zu: Locked=%s, Target=%s",
+							i,
+							missiles_[i]->IsLockedOn() ? "Yes" : "No",
+							missiles_[i]->HasTarget() ? "Yes" : "No");
+			}
 		}
 
 		ImGui::End();

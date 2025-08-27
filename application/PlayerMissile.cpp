@@ -12,6 +12,7 @@
 #include "PlayerMissile.h"
 #include "EnemyManager.h"
 #include "ImguiSetup.h"
+#include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
 #include <algorithm>
@@ -107,6 +108,17 @@ void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &
 			BaseObject::Initialize(pos, 0.3f);
 		}
 	}
+
+	//========================================
+	// デバッグ・視覚化関連初期化
+	maxTrajectoryPoints_ = 100;
+	showDebugInfo_ = true;
+	showTrajectory_ = true;
+	showTargetLine_ = true;
+	showVelocityVector_ = true;
+	showForwardVector_ = true;
+	trajectoryPoints_.clear();
+	trajectoryPoints_.reserve(maxTrajectoryPoints_);
 }
 
 void PlayerMissile::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
@@ -142,6 +154,16 @@ void PlayerMissile::Update() {
 
 	const float deltaTime = 1.0f / 60.0f;
 	lifetime_ += deltaTime;
+
+	//========================================
+	// 軌跡記録
+	Vector3 currentPos = obj_->GetPosition();
+	trajectoryPoints_.push_back(currentPos);
+
+	// 軌跡点数制限
+	if (trajectoryPoints_.size() > static_cast<size_t>(maxTrajectoryPoints_)) {
+		trajectoryPoints_.erase(trajectoryPoints_.begin());
+	}
 
 	//========================================
 	// ロックオン時間の更新
@@ -397,6 +419,73 @@ void PlayerMissile::Draw() {
 	}
 }
 
+void PlayerMissile::DrawDebugInfo() {
+	if (!showDebugInfo_ || !obj_)
+		return;
+
+	LineManager *lineManager = LineManager::GetInstance();
+	Vector3 missilePos = obj_->GetPosition();
+
+	//========================================
+	// 軌跡の描画
+	if (showTrajectory_ && trajectoryPoints_.size() > 1) {
+		for (size_t i = 1; i < trajectoryPoints_.size(); ++i) {
+			// 軌跡の色を時間経過で変化（古い点ほど薄く）
+			float alpha = static_cast<float>(i) / trajectoryPoints_.size();
+			Vector4 trailColor = {0.0f, 1.0f, 1.0f, alpha * 0.8f}; // シアン色
+
+			lineManager->DrawLine(trajectoryPoints_[i - 1], trajectoryPoints_[i], trailColor, 2.0f);
+		}
+	}
+
+	//========================================
+	// ターゲットラインの描画
+	if (showTargetLine_ && target_ && target_->IsAlive()) {
+		Vector3 targetPos = target_->GetPosition();
+		Vector4 lineColor = isLockedOn_ ? Vector4{1.0f, 0.0f, 0.0f, 1.0f} : // ロックオン時は赤
+								Vector4{1.0f, 1.0f, 0.0f, 1.0f};			// 通常追尾時は黄色
+
+		lineManager->DrawLine(missilePos, targetPos, lineColor, 3.0f);
+
+		// ターゲット周辺に円を描画
+		lineManager->DrawCircle(targetPos, 2.0f, lineColor, 2.0f);
+	}
+
+	//========================================
+	// 速度ベクトルの描画
+	if (showVelocityVector_) {
+		Vector3 velocityEnd = {
+			missilePos.x + velocity_.x * 0.1f,
+			missilePos.y + velocity_.y * 0.1f,
+			missilePos.z + velocity_.z * 0.1f};
+		lineManager->DrawArrow(missilePos, velocityEnd, {0.0f, 1.0f, 0.0f, 1.0f}, 0.2f, 3.0f);
+	}
+
+	//========================================
+	// 前方向ベクトルの描画
+	if (showForwardVector_) {
+		Vector3 forwardEnd = {
+			missilePos.x + forward_.x * 3.0f,
+			missilePos.y + forward_.y * 3.0f,
+			missilePos.z + forward_.z * 3.0f};
+		lineManager->DrawArrow(missilePos, forwardEnd, {1.0f, 0.5f, 0.0f, 1.0f}, 0.15f, 4.0f);
+	}
+
+	//========================================
+	// ロックオン範囲の描画
+	if (isTracking_) {
+		lineManager->DrawCircle(missilePos, lockOnRange_, {1.0f, 1.0f, 1.0f, 0.3f}, 1.0f);
+	}
+
+	//========================================
+	// ミサイル周辺の情報表示
+	// 座標軸表示
+	lineManager->DrawCoordinateAxes(missilePos, 1.0f, 2.0f);
+
+	// 当たり判定範囲表示
+	lineManager->DrawSphere(missilePos, 0.3f, {1.0f, 0.0f, 1.0f, 0.5f}, 12, 1.0f);
+}
+
 //=============================================================================
 // ImGui描画
 void PlayerMissile::DrawImGui() {
@@ -404,6 +493,18 @@ void PlayerMissile::DrawImGui() {
 		return;
 
 	ImGui::Begin("Missile Debug");
+
+	//========================================
+	// 視覚化制御
+	ImGui::Text("=== Visualization Controls ===");
+	ImGui::Checkbox("Show Debug Info", &showDebugInfo_);
+	ImGui::Checkbox("Show Trajectory", &showTrajectory_);
+	ImGui::Checkbox("Show Target Line", &showTargetLine_);
+	ImGui::Checkbox("Show Velocity Vector", &showVelocityVector_);
+	ImGui::Checkbox("Show Forward Vector", &showForwardVector_);
+	ImGui::SliderInt("Max Trajectory Points", &maxTrajectoryPoints_, 10, 500);
+
+	ImGui::Separator();
 
 	//========================================
 	// 基本情報
@@ -420,6 +521,19 @@ void PlayerMissile::DrawImGui() {
 	ImGui::Text("Tracking: %s", isTracking_ ? "Yes" : "No");
 	ImGui::Text("Has Target: %s", HasTarget() ? "Yes" : "No");
 	ImGui::Text("Locked On: %s", isLockedOn_ ? "Yes" : "No");
+
+	if (HasTarget()) {
+		Vector3 targetPos = target_->GetPosition();
+		Vector3 missilePos = GetPosition();
+		Vector3 toTarget = {
+			targetPos.x - missilePos.x,
+			targetPos.y - missilePos.y,
+			targetPos.z - missilePos.z};
+		float distance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+
+		ImGui::Text("Target Distance: %.2f", distance);
+		ImGui::Text("Target Pos: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
+	}
 
 	if (isLockedOn_) {
 		ImGui::Text("Lock-On Time: %.2f / %.2f", lockOnTime_, maxLockOnTime_);
@@ -439,6 +553,9 @@ void PlayerMissile::DrawImGui() {
 	float currentSpeed = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
 	ImGui::Text("Current Speed: %.2f / %.2f", currentSpeed, maxSpeed_);
 	ImGui::ProgressBar(currentSpeed / maxSpeed_, ImVec2(200, 20), "Speed");
+
+	// 軌跡情報
+	ImGui::Text("Trajectory Points: %zu / %d", trajectoryPoints_.size(), maxTrajectoryPoints_);
 
 	ImGui::Separator();
 
@@ -469,6 +586,10 @@ void PlayerMissile::DrawImGui() {
 		lockedTarget_ = nullptr;
 		lockOnTime_ = 0.0f;
 	}
+	if (ImGui::Button("Clear Trajectory")) {
+		trajectoryPoints_.clear();
+	}
+	ImGui::SameLine();
 	if (ImGui::Button("Explode Now")) {
 		Explode();
 	}

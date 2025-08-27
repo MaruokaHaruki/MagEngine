@@ -8,6 +8,7 @@
 #include "EnemyManager.h"
 #include "CollisionManager.h"
 #include "ImguiSetup.h"
+#include "LineManager.h"
 #include "Player.h"
 #include <algorithm>
 
@@ -66,6 +67,16 @@ void EnemyManager::Draw() {
 	for (auto &enemy : enemies_) {
 		if (enemy && enemy->IsAlive()) {
 			enemy->Draw();
+
+			// 敵の視覚化（デバッグ用）
+			LineManager *lineManager = LineManager::GetInstance();
+			Vector3 enemyPos = enemy->GetPosition();
+
+			// 敵の周辺に赤い円を描画
+			lineManager->DrawCircle(enemyPos, 1.0f, {1.0f, 0.0f, 0.0f, 0.7f}, 2.0f);
+
+			// 敵の座標軸表示
+			lineManager->DrawCoordinateAxes(enemyPos, 0.5f, 1.0f);
 		}
 	}
 }

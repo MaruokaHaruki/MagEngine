@@ -220,6 +220,10 @@ void GamePlayScene::Update() {
 	if (hud_ && player_) {
 		hud_->Update(player_.get());
 	}
+
+	//========================================
+	// LineManagerの更新（ミサイルデバッグ表示用）
+	LineManager::GetInstance()->Update();
 }
 
 ///=============================================================================
@@ -251,6 +255,10 @@ void GamePlayScene::Object3DDraw() {
 	if (enemyManager_) {
 		enemyManager_->Draw();
 	}
+
+	//========================================
+	// LineManagerの描画（デバッグライン）
+	LineManager::GetInstance()->Draw();
 
 	//========================================
 	// 当たり判定
@@ -334,5 +342,9 @@ void GamePlayScene::ImGuiDraw() {
 	if (hud_) {
 		hud_->DrawImGui();
 	}
+
+	//========================================
+	// LineManagerのImGui
+	LineManager::GetInstance()->DrawImGui();
 #endif // _DEBUG
 }
