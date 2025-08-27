@@ -11,6 +11,7 @@
 #include "Player.h"
 #include "EnemyManager.h"
 #include "ImguiSetup.h"
+#include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
 #include <algorithm>
@@ -416,6 +417,22 @@ void Player::DrawMissiles() {
 		missile->Draw();
 		// デバッグ情報も描画
 		missile->DrawDebugInfo();
+	}
+
+	// プレイヤーのロックオン範囲も表示
+	if (lockOnMode_ && lockOnTarget_) {
+		LineManager *lineManager = LineManager::GetInstance();
+		Vector3 playerPos = GetPosition();
+		Vector3 targetPos = lockOnTarget_->GetPosition();
+
+		// プレイヤーからターゲットへのライン
+		lineManager->DrawLine(playerPos, targetPos, {0.0f, 1.0f, 0.0f, 1.0f}, 2.0f);
+
+		// ロックオン範囲の表示
+		lineManager->DrawCircle(playerPos, lockOnRange_, {0.0f, 1.0f, 0.0f, 0.3f}, 1.0f);
+
+		// ターゲット位置のマーカー
+		lineManager->DrawCoordinateAxes(targetPos, 2.0f, 3.0f);
 	}
 }
 

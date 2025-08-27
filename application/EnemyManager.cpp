@@ -77,6 +77,22 @@ void EnemyManager::Draw() {
 
 			// 敵の座標軸表示
 			lineManager->DrawCoordinateAxes(enemyPos, 0.5f, 1.0f);
+
+			// 敵の識別マーカー（頭上に表示）
+			Vector3 markerPos = {enemyPos.x, enemyPos.y + 3.0f, enemyPos.z};
+			lineManager->DrawSphere(markerPos, 0.3f, {1.0f, 0.0f, 0.0f, 1.0f}, 8, 2.0f);
+
+			// 敵の移動方向表示
+			// TODO: 敵の速度ベクトルが取得できる場合
+			// Vector3 velocity = enemy->GetVelocity(); // この関数が実装されている場合
+			// if (velocity.x != 0.0f || velocity.y != 0.0f || velocity.z != 0.0f) {
+			//     Vector3 velocityEnd = {
+			//         enemyPos.x + velocity.x * 0.5f,
+			//         enemyPos.y + velocity.y * 0.5f,
+			//         enemyPos.z + velocity.z * 0.5f
+			//     };
+			//     lineManager->DrawArrow(enemyPos, velocityEnd, {1.0f, 0.5f, 0.0f, 1.0f}, 0.1f, 2.0f);
+			// }
 		}
 	}
 }

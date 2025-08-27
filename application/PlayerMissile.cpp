@@ -439,16 +439,126 @@ void PlayerMissile::DrawDebugInfo() {
 	}
 
 	//========================================
-	// ターゲットラインの描画
+	// 検知範囲の描画
+	if (showTargetLine_) {
+		// 検知範囲の球体を表示
+		Vector4 detectionColor = isTracking_ ? Vector4{1.0f, 0.5f, 0.0f, 0.3f} : // 追尾中はオレンジ
+									 Vector4{0.5f, 0.5f, 1.0f, 0.2f};			 // 待機中は青
+
+		lineManager->DrawSphere(missilePos, lockOnRange_, detectionColor, 16, 1.0f);
+
+		// 検知範囲の境界円を描画（水平面）
+		lineManager->DrawCircle(missilePos, lockOnRange_, detectionColor, 2.0f, {0.0f, 1.0f, 0.0f}, 32);
+	}
+
+	//========================================
+	// 検知した敵の表示
+	if (enemyManager_) {
+		const auto &enemies = enemyManager_->GetEnemies();
+
+		for (const auto &enemy : enemies) {
+			if (!enemy || !enemy->IsAlive()) {
+				continue;
+			}
+
+			Vector3 enemyPos = enemy->GetPosition();
+			Vector3 toEnemy = {
+				enemyPos.x - missilePos.x,
+				enemyPos.y - missilePos.y,
+				enemyPos.z - missilePos.z};
+
+			float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+
+			// 検知範囲内の敵の場合
+			if (distance <= lockOnRange_) {
+				// ロックオン状態に応じてマーカーを描画
+				bool isCurrentTarget = (target_ == enemy.get());
+				bool isLockedTarget = (lockedTarget_ == enemy.get());
+
+				Vector4 markerColor;
+				float markerSize;
+
+				if (isLockedTarget && isLockedOn_) {
+					// ロックオン中のターゲット - 赤色の大きなマーカー
+					markerColor = {1.0f, 0.0f, 0.0f, 1.0f};
+					markerSize = 3.0f;
+
+					// ロックオンマーカー（十字）
+					lineManager->DrawLine(
+						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
+						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
+						markerColor, 4.0f);
+					lineManager->DrawLine(
+						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
+						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+						markerColor, 4.0f);
+
+					// ロックオン進行度の表示
+					float lockOnProgress = std::min(lockOnTime_ / maxLockOnTime_, 1.0f);
+					lineManager->DrawCircle(enemyPos, markerSize * 1.5f,
+											{1.0f, 0.0f, 0.0f, lockOnProgress}, 3.0f, {0.0f, 1.0f, 0.0f}, 16);
+
+				} else if (isCurrentTarget) {
+					// 現在追尾中のターゲット - 黄色のマーカー
+					markerColor = {1.0f, 1.0f, 0.0f, 1.0f};
+					markerSize = 2.5f;
+
+					// 追尾マーカー（ダイヤモンド）
+					lineManager->DrawLine(
+						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
+						markerColor, 3.0f);
+					lineManager->DrawLine(
+						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
+						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
+						markerColor, 3.0f);
+					lineManager->DrawLine(
+						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
+						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
+						markerColor, 3.0f);
+					lineManager->DrawLine(
+						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
+						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+						markerColor, 3.0f);
+
+				} else {
+					// 検知中だが未ロックオンの敵 - 緑色の小さなマーカー
+					markerColor = {0.0f, 1.0f, 0.0f, 0.8f};
+					markerSize = 1.5f;
+
+					// 検知マーカー（三角）
+					lineManager->DrawLine(
+						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+						{enemyPos.x + markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+						markerColor, 2.0f);
+					lineManager->DrawLine(
+						{enemyPos.x + markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+						{enemyPos.x - markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+						markerColor, 2.0f);
+					lineManager->DrawLine(
+						{enemyPos.x - markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+						markerColor, 2.0f);
+				}
+
+				// 距離表示用のライン
+				Vector4 distanceLineColor = {0.8f, 0.8f, 0.8f, 0.5f};
+				lineManager->DrawLine(missilePos, enemyPos, distanceLineColor, 1.0f);
+
+				// 敵の周りに円を描画
+				lineManager->DrawCircle(enemyPos, markerSize * 0.8f, markerColor, 2.0f);
+			}
+		}
+	}
+
+	//========================================
+	// ターゲットラインの描画（メインターゲットのみ）
 	if (showTargetLine_ && target_ && target_->IsAlive()) {
 		Vector3 targetPos = target_->GetPosition();
 		Vector4 lineColor = isLockedOn_ ? Vector4{1.0f, 0.0f, 0.0f, 1.0f} : // ロックオン時は赤
 								Vector4{1.0f, 1.0f, 0.0f, 1.0f};			// 通常追尾時は黄色
 
 		lineManager->DrawLine(missilePos, targetPos, lineColor, 3.0f);
-
-		// ターゲット周辺に円を描画
-		lineManager->DrawCircle(targetPos, 2.0f, lineColor, 2.0f);
 	}
 
 	//========================================
@@ -472,18 +582,39 @@ void PlayerMissile::DrawDebugInfo() {
 	}
 
 	//========================================
-	// ロックオン範囲の描画
-	if (isTracking_) {
-		lineManager->DrawCircle(missilePos, lockOnRange_, {1.0f, 1.0f, 1.0f, 0.3f}, 1.0f);
-	}
-
-	//========================================
 	// ミサイル周辺の情報表示
 	// 座標軸表示
 	lineManager->DrawCoordinateAxes(missilePos, 1.0f, 2.0f);
 
 	// 当たり判定範囲表示
 	lineManager->DrawSphere(missilePos, 0.3f, {1.0f, 0.0f, 1.0f, 0.5f}, 12, 1.0f);
+
+	//========================================
+	// 状態表示のためのテキスト情報（ミサイル上部に）
+	Vector3 textPos = {missilePos.x, missilePos.y + 2.0f, missilePos.z};
+
+	if (isLockedOn_) {
+		// ロックオン状態の表示
+		lineManager->DrawLine(
+			{textPos.x - 1.0f, textPos.y, textPos.z},
+			{textPos.x + 1.0f, textPos.y, textPos.z},
+			{1.0f, 0.0f, 0.0f, 1.0f}, 3.0f);
+		lineManager->DrawText3D(textPos, "LOCKED", {1.0f, 0.0f, 0.0f, 1.0f});
+	} else if (isTracking_) {
+		// 追尾状態の表示
+		lineManager->DrawLine(
+			{textPos.x - 0.8f, textPos.y, textPos.z},
+			{textPos.x + 0.8f, textPos.y, textPos.z},
+			{1.0f, 1.0f, 0.0f, 1.0f}, 2.0f);
+		lineManager->DrawText3D(textPos, "TRACKING", {1.0f, 1.0f, 0.0f, 1.0f});
+	} else {
+		// 検索状態の表示
+		lineManager->DrawLine(
+			{textPos.x - 0.6f, textPos.y, textPos.z},
+			{textPos.x + 0.6f, textPos.y, textPos.z},
+			{0.0f, 1.0f, 0.0f, 1.0f}, 1.0f);
+		lineManager->DrawText3D(textPos, "SEARCH", {0.0f, 1.0f, 0.0f, 1.0f});
+	}
 }
 
 //=============================================================================
@@ -499,10 +630,44 @@ void PlayerMissile::DrawImGui() {
 	ImGui::Text("=== Visualization Controls ===");
 	ImGui::Checkbox("Show Debug Info", &showDebugInfo_);
 	ImGui::Checkbox("Show Trajectory", &showTrajectory_);
-	ImGui::Checkbox("Show Target Line", &showTargetLine_);
+	ImGui::Checkbox("Show Target Detection", &showTargetLine_);
 	ImGui::Checkbox("Show Velocity Vector", &showVelocityVector_);
 	ImGui::Checkbox("Show Forward Vector", &showForwardVector_);
 	ImGui::SliderInt("Max Trajectory Points", &maxTrajectoryPoints_, 10, 500);
+
+	ImGui::Separator();
+
+	//========================================
+	// 検知情報
+	ImGui::Text("=== Detection Status ===");
+	ImGui::Text("Detection Range: %.2f", lockOnRange_);
+
+	// 検知した敵の数をカウント
+	int detectedEnemies = 0;
+	if (enemyManager_) {
+		Vector3 missilePos = GetPosition();
+		const auto &enemies = enemyManager_->GetEnemies();
+
+		for (const auto &enemy : enemies) {
+			if (!enemy || !enemy->IsAlive())
+				continue;
+
+			Vector3 enemyPos = enemy->GetPosition();
+			Vector3 toEnemy = {
+				enemyPos.x - missilePos.x,
+				enemyPos.y - missilePos.y,
+				enemyPos.z - missilePos.z};
+
+			float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+			if (distance <= lockOnRange_) {
+				detectedEnemies++;
+			}
+		}
+	}
+
+	ImGui::Text("Detected Enemies: %d", detectedEnemies);
+	ImGui::Text("Current Target: %s", HasTarget() ? "YES" : "NO");
+	ImGui::Text("Locked Target: %s", isLockedOn_ ? "YES" : "NO");
 
 	ImGui::Separator();
 
