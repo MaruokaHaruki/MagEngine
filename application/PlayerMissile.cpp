@@ -56,13 +56,29 @@ void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &
 	object3dSetup_ = object3dSetup;
 
 	//========================================
-	// 物理パラメータ初期化
-	velocity_ = {initialDirection.x * 15.0f, initialDirection.y * 15.0f, initialDirection.z * 15.0f};
+	// 物理パラメータ初期化（リアルな初期値）
+	velocity_ = {initialDirection.x * 3.0f, initialDirection.y * 3.0f, initialDirection.z * 3.0f}; // 初期速度を大幅に低下
 	acceleration_ = {0.0f, 0.0f, 0.0f};
-	forward_ = NormalizeVector(initialDirection); // 関数名を変更
-	thrustPower_ = 25.0f;						  // 推進力
-	maxSpeed_ = 30.0f;							  // 最大速度
-	drag_ = 0.02f;								  // 空気抵抗
+	forward_ = NormalizeVector(initialDirection);
+
+	// 推進力システム初期化
+	initialThrustPower_ = 5.0f; // 低い初期推進力
+	maxThrustPower_ = 128.0f;	// 最大推進力
+	thrustPower_ = initialThrustPower_;
+	thrustAcceleration_ = 32.0f; // 推進力の立ち上がり速度
+	thrustBuildupTime_ = 1.5f;	 // 1.5秒で最大推進力に到達
+
+	// 燃料システム初期化
+	fuelRemaining_ = 1.0f;	  // 満タン状態
+	fuelConsumption_ = 0.08f; // 燃料消費率（秒あたり）
+
+	// ブースター初期化
+	isBoosterActive_ = true; // 発射時はブースター段階
+	boosterDuration_ = 2.0f; // 2秒間のブースター
+	boosterTime_ = 0.0f;
+
+	maxSpeed_ = 128.0f; // 最大速度を増加
+	drag_ = 0.01f;		// 空気抵抗を減少（高高度での動作を想定）
 
 	//========================================
 	// 追尾パラメータ初期化
@@ -199,6 +215,51 @@ void PlayerMissile::UpdateMovement() {
 		return;
 
 	//========================================
+	// 燃料消費処理
+	if (fuelRemaining_ > 0.0f) {
+		fuelRemaining_ -= fuelConsumption_ * deltaTime;
+		fuelRemaining_ = std::max(0.0f, fuelRemaining_);
+	}
+
+	//========================================
+	// ブースター段階の処理
+	if (isBoosterActive_) {
+		boosterTime_ += deltaTime;
+		if (boosterTime_ >= boosterDuration_) {
+			isBoosterActive_ = false;
+		}
+	}
+
+	//========================================
+	// 推進力の時間変化（リアルな加速カーブ）
+	float currentThrustPower = 0.0f;
+
+	if (fuelRemaining_ > 0.0f) {
+		// 推進力の立ち上がり（指数関数的な増加）
+		float thrustRatio = std::min(lifetime_ / thrustBuildupTime_, 1.0f);
+		float smoothRatio = 1.0f - std::pow(1.0f - thrustRatio, 2.0f); // イーズアウト曲線
+
+		currentThrustPower = Lerp(initialThrustPower_, maxThrustPower_, smoothRatio);
+
+		// ブースター段階では推進力を増幅
+		if (isBoosterActive_) {
+			float boosterMultiplier = 1.5f - (boosterTime_ / boosterDuration_) * 0.3f; // 徐々に減衰
+			currentThrustPower *= boosterMultiplier;
+		}
+
+		// 燃料残量による推進力減衰
+		if (fuelRemaining_ < 0.2f) {
+			float fuelRatio = fuelRemaining_ / 0.2f;
+			currentThrustPower *= fuelRatio;
+		}
+
+		thrustPower_ = currentThrustPower;
+	} else {
+		// 燃料切れ時は慣性のみ
+		thrustPower_ = 0.0f;
+	}
+
+	//========================================
 	// 推進力を前方向に適用
 	Vector3 thrust = {
 		forward_.x * thrustPower_,
@@ -287,25 +348,37 @@ void PlayerMissile::UpdatePhysics() {
 	const float deltaTime = 1.0f / 60.0f;
 
 	//========================================
-	// 速度に加速度を適用
+	// 速度に加速度を適用（リアルな物理）
 	velocity_.x += acceleration_.x * deltaTime;
 	velocity_.y += acceleration_.y * deltaTime;
 	velocity_.z += acceleration_.z * deltaTime;
 
 	//========================================
-	// 空気抵抗を適用
-	velocity_.x *= (1.0f - drag_);
-	velocity_.y *= (1.0f - drag_);
-	velocity_.z *= (1.0f - drag_);
+	// 空気抵抗を適用（速度の二乗に比例）
+	float currentSpeed = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
+	float dragForce = drag_ * currentSpeed * currentSpeed;
+
+	if (currentSpeed > 0.001f) {
+		Vector3 dragDirection = {
+			-velocity_.x / currentSpeed,
+			-velocity_.y / currentSpeed,
+			-velocity_.z / currentSpeed};
+
+		velocity_.x += dragDirection.x * dragForce * deltaTime;
+		velocity_.y += dragDirection.y * dragForce * deltaTime;
+		velocity_.z += dragDirection.z * dragForce * deltaTime;
+	}
 
 	//========================================
-	// 最大速度制限
-	float currentSpeed = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
-	if (currentSpeed > maxSpeed_) {
-		float speedRatio = maxSpeed_ / currentSpeed;
-		velocity_.x *= speedRatio;
-		velocity_.y *= speedRatio;
-		velocity_.z *= speedRatio;
+	// 最大速度制限（燃料がある場合のみ）
+	if (fuelRemaining_ > 0.0f) {
+		currentSpeed = std::sqrt(velocity_.x * velocity_.x + velocity_.y * velocity_.y + velocity_.z * velocity_.z);
+		if (currentSpeed > maxSpeed_) {
+			float speedRatio = maxSpeed_ / currentSpeed;
+			velocity_.x *= speedRatio;
+			velocity_.y *= speedRatio;
+			velocity_.z *= speedRatio;
+		}
 	}
 }
 
@@ -354,6 +427,10 @@ void PlayerMissile::UpdateTrailEffect() {
 	Vector3 missilePos = obj_->GetPosition();
 
 	//========================================
+	// 推進炎の強度を燃料と推進力に応じて調整
+	float thrustIntensity = (thrustPower_ / maxThrustPower_) * fuelRemaining_;
+
+	//========================================
 	// 軌跡エミッター更新（ミサイルの後方）
 	Vector3 trailPos = {
 		missilePos.x - forward_.x * 0.5f,
@@ -363,13 +440,18 @@ void PlayerMissile::UpdateTrailEffect() {
 	trailEmitter_->Update();
 
 	//========================================
-	// 推進炎エミッター更新（ミサイルの後方）
+	// 推進炎エミッター更新（強度に応じた距離調整）
+	float thrustDistance = 0.3f + thrustIntensity * 0.8f; // 推進力に応じて炎の長さを変更
 	Vector3 thrustPos = {
-		missilePos.x - forward_.x * 0.8f,
-		missilePos.y - forward_.y * 0.8f,
-		missilePos.z - forward_.z * 0.8f};
+		missilePos.x - forward_.x * thrustDistance,
+		missilePos.y - forward_.y * thrustDistance,
+		missilePos.z - forward_.z * thrustDistance};
 	thrustEmitter_->SetTranslate(thrustPos);
-	thrustEmitter_->Update();
+
+	// 燃料切れ時は推進炎を停止
+	if (fuelRemaining_ > 0.0f) {
+		thrustEmitter_->Update();
+	}
 }
 
 Enemy *PlayerMissile::FindNearestTarget() {
@@ -431,10 +513,10 @@ void PlayerMissile::DrawDebugInfo() {
 	if (showTrajectory_ && trajectoryPoints_.size() > 1) {
 		for (size_t i = 1; i < trajectoryPoints_.size(); ++i) {
 			// 軌跡の色を時間経過で変化（古い点ほど薄く）
-			float alpha = static_cast<float>(i) / trajectoryPoints_.size();
-			Vector4 trailColor = {0.0f, 1.0f, 1.0f, alpha * 0.8f}; // シアン色
+			// 			float alpha = static_cast<float>(i) / trajectoryPoints_.size();
+			// 			Vector4 trailColor = {0.0f, 1.0f, 1.0f, alpha * 0.8f}; // シアン色
 
-			lineManager->DrawLine(trajectoryPoints_[i - 1], trajectoryPoints_[i], trailColor, 2.0f);
+			// 			lineManager->DrawLine(trajectoryPoints_[i - 1], trajectoryPoints_[i], trailColor, 2.0f);
 		}
 	}
 
@@ -448,7 +530,7 @@ void PlayerMissile::DrawDebugInfo() {
 		lineManager->DrawSphere(missilePos, lockOnRange_, detectionColor, 16, 1.0f);
 
 		// 検知範囲の境界円を描画（水平面）
-		lineManager->DrawCircle(missilePos, lockOnRange_, detectionColor, 2.0f, {0.0f, 1.0f, 0.0f}, 32);
+		// 		lineManager->DrawCircle(missilePos, lockOnRange_, detectionColor, 2.0f, {0.0f, 1.0f, 0.0f}, 32);
 	}
 
 	//========================================
@@ -484,14 +566,14 @@ void PlayerMissile::DrawDebugInfo() {
 					markerSize = 3.0f;
 
 					// ロックオンマーカー（十字）
-					lineManager->DrawLine(
-						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
-						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
-						markerColor, 4.0f);
-					lineManager->DrawLine(
-						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
-						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
-						markerColor, 4.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
+					// 						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
+					// 						markerColor, 4.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
+					// 						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+					// 						markerColor, 4.0f);
 
 					// ロックオン進行度の表示
 					float lockOnProgress = std::min(lockOnTime_ / maxLockOnTime_, 1.0f);
@@ -504,22 +586,22 @@ void PlayerMissile::DrawDebugInfo() {
 					markerSize = 2.5f;
 
 					// 追尾マーカー（ダイヤモンド）
-					lineManager->DrawLine(
-						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
-						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
-						markerColor, 3.0f);
-					lineManager->DrawLine(
-						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
-						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
-						markerColor, 3.0f);
-					lineManager->DrawLine(
-						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
-						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
-						markerColor, 3.0f);
-					lineManager->DrawLine(
-						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
-						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
-						markerColor, 3.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+					// 						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
+					// 						markerColor, 3.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x + markerSize, enemyPos.y, enemyPos.z},
+					// 						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
+					// 						markerColor, 3.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x, enemyPos.y - markerSize, enemyPos.z},
+					// 						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
+					// 						markerColor, 3.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x - markerSize, enemyPos.y, enemyPos.z},
+					// 						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+					// 						markerColor, 3.0f);
 
 				} else {
 					// 検知中だが未ロックオンの敵 - 緑色の小さなマーカー
@@ -527,18 +609,18 @@ void PlayerMissile::DrawDebugInfo() {
 					markerSize = 1.5f;
 
 					// 検知マーカー（三角）
-					lineManager->DrawLine(
-						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
-						{enemyPos.x + markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
-						markerColor, 2.0f);
-					lineManager->DrawLine(
-						{enemyPos.x + markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
-						{enemyPos.x - markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
-						markerColor, 2.0f);
-					lineManager->DrawLine(
-						{enemyPos.x - markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
-						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
-						markerColor, 2.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+					// 						{enemyPos.x + markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+					// 						markerColor, 2.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x + markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+					// 						{enemyPos.x - markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+					// 						markerColor, 2.0f);
+					// 					lineManager->DrawLine(
+					// 						{enemyPos.x - markerSize * 0.866f, enemyPos.y - markerSize * 0.5f, enemyPos.z},
+					// 						{enemyPos.x, enemyPos.y + markerSize, enemyPos.z},
+					// 						markerColor, 2.0f);
 				}
 
 				// 距離表示用のライン
@@ -591,30 +673,30 @@ void PlayerMissile::DrawDebugInfo() {
 
 	//========================================
 	// 状態表示のためのテキスト情報（ミサイル上部に）
-	Vector3 textPos = {missilePos.x, missilePos.y + 2.0f, missilePos.z};
+	// 	Vector3 textPos = {missilePos.x, missilePos.y + 2.0f, missilePos.z};
 
-	if (isLockedOn_) {
-		// ロックオン状態の表示
-		lineManager->DrawLine(
-			{textPos.x - 1.0f, textPos.y, textPos.z},
-			{textPos.x + 1.0f, textPos.y, textPos.z},
-			{1.0f, 0.0f, 0.0f, 1.0f}, 3.0f);
-		lineManager->DrawText3D(textPos, "LOCKED", {1.0f, 0.0f, 0.0f, 1.0f});
-	} else if (isTracking_) {
-		// 追尾状態の表示
-		lineManager->DrawLine(
-			{textPos.x - 0.8f, textPos.y, textPos.z},
-			{textPos.x + 0.8f, textPos.y, textPos.z},
-			{1.0f, 1.0f, 0.0f, 1.0f}, 2.0f);
-		lineManager->DrawText3D(textPos, "TRACKING", {1.0f, 1.0f, 0.0f, 1.0f});
-	} else {
-		// 検索状態の表示
-		lineManager->DrawLine(
-			{textPos.x - 0.6f, textPos.y, textPos.z},
-			{textPos.x + 0.6f, textPos.y, textPos.z},
-			{0.0f, 1.0f, 0.0f, 1.0f}, 1.0f);
-		lineManager->DrawText3D(textPos, "SEARCH", {0.0f, 1.0f, 0.0f, 1.0f});
-	}
+	// 	if (isLockedOn_) {
+	// 		// ロックオン状態の表示
+	// 		lineManager->DrawLine(
+	// 			{textPos.x - 1.0f, textPos.y, textPos.z},
+	// 			{textPos.x + 1.0f, textPos.y, textPos.z},
+	// 			{1.0f, 0.0f, 0.0f, 1.0f}, 3.0f);
+	// 		lineManager->DrawText3D(textPos, "LOCKED", {1.0f, 0.0f, 0.0f, 1.0f});
+	// 	} else if (isTracking_) {
+	// 		// 追尾状態の表示
+	// 		lineManager->DrawLine(
+	// 			{textPos.x - 0.8f, textPos.y, textPos.z},
+	// 			{textPos.x + 0.8f, textPos.y, textPos.z},
+	// 			{1.0f, 1.0f, 0.0f, 1.0f}, 2.0f);
+	// 		lineManager->DrawText3D(textPos, "TRACKING", {1.0f, 1.0f, 0.0f, 1.0f});
+	// 	} else {
+	// 		// 検索状態の表示
+	// 		lineManager->DrawLine(
+	// 			{textPos.x - 0.6f, textPos.y, textPos.z},
+	// 			{textPos.x + 0.6f, textPos.y, textPos.z},
+	// 			{0.0f, 1.0f, 0.0f, 1.0f}, 1.0f);
+	// 		lineManager->DrawText3D(textPos, "SEARCH", {0.0f, 1.0f, 0.0f, 1.0f});
+	// 	}
 }
 
 //=============================================================================
@@ -725,17 +807,35 @@ void PlayerMissile::DrawImGui() {
 	ImGui::Separator();
 
 	//========================================
+	// 推進力システム情報
+	ImGui::Text("=== Propulsion System ===");
+	ImGui::Text("Current Thrust: %.2f / %.2f", thrustPower_, maxThrustPower_);
+	ImGui::ProgressBar(thrustPower_ / maxThrustPower_, ImVec2(200, 20), "Thrust Power");
+
+	ImGui::Text("Fuel Remaining: %.1f%%", fuelRemaining_ * 100.0f);
+	ImGui::ProgressBar(fuelRemaining_, ImVec2(200, 20), "Fuel");
+
+	ImGui::Text("Booster Active: %s", isBoosterActive_ ? "YES" : "NO");
+	if (isBoosterActive_) {
+		ImGui::Text("Booster Time: %.2f / %.2f", boosterTime_, boosterDuration_);
+		ImGui::ProgressBar(boosterTime_ / boosterDuration_, ImVec2(200, 20), "Booster");
+	}
+
+	// 推進力立ち上がり進行度
+	float thrustBuildupProgress = std::min(lifetime_ / thrustBuildupTime_, 1.0f);
+	ImGui::Text("Thrust Buildup: %.1f%%", thrustBuildupProgress * 100.0f);
+	ImGui::ProgressBar(thrustBuildupProgress, ImVec2(200, 20), "Thrust Buildup");
+
+	ImGui::Separator();
+
+	//========================================
 	// パラメータ調整
-	ImGui::Text("=== Parameters ===");
-	ImGui::SliderFloat("Thrust Power", &thrustPower_, 10.0f, 50.0f);
-	ImGui::SliderFloat("Max Speed", &maxSpeed_, 15.0f, 50.0f);
-	ImGui::SliderFloat("Tracking Strength", &trackingStrength_, 1.0f, 10.0f);
-	ImGui::SliderFloat("Lock-on Range", &lockOnRange_, 5.0f, 50.0f);
-	ImGui::SliderFloat("Tracking Delay", &trackingDelay_, 0.0f, 2.0f);
-	ImGui::SliderFloat("Rotation Speed", &rotationSpeed_, 1.0f, 10.0f);
-	ImGui::SliderFloat("Air Drag", &drag_, 0.0f, 0.1f);
-	ImGui::SliderFloat("Max Lifetime", &maxLifetime_, 3.0f, 15.0f);
-	ImGui::SliderFloat("Max Lock-On Time", &maxLockOnTime_, 1.0f, 5.0f);
+	ImGui::Text("=== Propulsion Parameters ===");
+	ImGui::SliderFloat("Initial Thrust", &initialThrustPower_, 1.0f, 15.0f);
+	ImGui::SliderFloat("Max Thrust", &maxThrustPower_, 20.0f, 60.0f);
+	ImGui::SliderFloat("Thrust Buildup Time", &thrustBuildupTime_, 0.5f, 3.0f);
+	ImGui::SliderFloat("Fuel Consumption", &fuelConsumption_, 0.02f, 0.2f);
+	ImGui::SliderFloat("Booster Duration", &boosterDuration_, 1.0f, 5.0f);
 
 	ImGui::Separator();
 

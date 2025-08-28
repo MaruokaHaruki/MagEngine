@@ -103,6 +103,17 @@ private:
 	float maxSpeed_;	   // 最大速度
 	float drag_;		   // 空気抵抗係数
 
+	// 新しい推進力システム
+	float initialThrustPower_; // 初期推進力
+	float maxThrustPower_;	   // 最大推進力
+	float thrustAcceleration_; // 推進力加速度
+	float fuelRemaining_;	   // 残り燃料（0.0〜1.0）
+	float fuelConsumption_;	   // 燃料消費率
+	bool isBoosterActive_;	   // ブースター段階フラグ
+	float boosterDuration_;	   // ブースター持続時間
+	float boosterTime_;		   // ブースター経過時間
+	float thrustBuildupTime_;  // 推進力立ち上がり時間
+
 	//========================================
 	// 追尾関連
 	Enemy *target_;				 // 追尾対象
