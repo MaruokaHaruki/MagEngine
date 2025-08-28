@@ -121,7 +121,7 @@ void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &
 
 			// 当たり判定初期化（const参照問題を修正）
 			Vector3 pos = startPos; // constを外すためにコピー
-			BaseObject::Initialize(pos, 0.3f);
+			BaseObject::Initialize(pos, 1.0f);
 		}
 	}
 
