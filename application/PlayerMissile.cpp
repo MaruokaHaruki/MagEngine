@@ -776,7 +776,9 @@ void PlayerMissile::SetTarget(Enemy *target) {
 // 衝突処理
 void PlayerMissile::OnCollisionEnter(BaseObject *other) {
 	// 敵との衝突で爆発
-	Explode();
+	if (dynamic_cast<Enemy *>(other)) {
+		Explode();
+	}
 }
 
 void PlayerMissile::OnCollisionStay(BaseObject *other) {
