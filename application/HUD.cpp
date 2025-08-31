@@ -386,7 +386,7 @@ void HUD::DrawRollScale(float rollAngle) {
 
 	// スケール目盛り（-60度から+60度まで30度間隔）
 	for (int angle = -60; angle <= 60; angle += 30) {
-		float radians = DegreesToRadians(angle);
+		float radians = DegreesToRadians(static_cast<float>(angle));
 		float tickLength = (angle == 0) ? 1.5f : 1.0f;
 
 		float outerX = sinf(radians) * radius;

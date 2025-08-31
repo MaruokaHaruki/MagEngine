@@ -81,7 +81,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
@@ -92,7 +92,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/input;$(ProjectDir)engine/utils;$(ProjectDir)engine/math;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/input;$(ProjectDir)engine/light;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/utils;$(ProjectDir)engine/math;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -138,7 +138,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\postEffect\GrayscaleEffect.cpp" />
     <ClCompile Include="engine\postEffect\PostEffectManager.cpp" />
     <ClCompile Include="engine\postEffect\FullscreenPassRendere.cpp" />
-    <ClCompile Include="HUD.cpp" />
+    <ClCompile Include="application\HUD.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -200,7 +200,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\postEffect\GrayscaleEffect.h" />
     <ClInclude Include="engine\postEffect\PostEffectManager.h" />
     <ClInclude Include="engine\postEffect\FullscreenPassRendere.h" />
-    <ClInclude Include="HUD.h" />
+    <ClInclude Include="application\HUD.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
