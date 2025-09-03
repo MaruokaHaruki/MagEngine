@@ -69,6 +69,7 @@ public:
 
 	/// @brief デバッグカメラのトランスフォームをリセット
 	void ResetDebugCameraTransform();
+
 	/// @brief デバッグカメラのターゲット追従モードを切り替え
 	void ToggleDebugCameraTargetLock();
 
