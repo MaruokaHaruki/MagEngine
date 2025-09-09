@@ -40,7 +40,7 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj");
 	ModelManager::GetInstance()->LoadModel("ball.obj");
 	ModelManager::GetInstance()->LoadModel("terrain.obj");
-	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadModel("jet.obj"); // モデルは事前にロードしておく
 	//========================================
 	// 3Dオブジェクトクラス
 	// 映り込みの設定
@@ -94,6 +94,10 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	skybox_->Initialize(skyboxSetup);
 	// Skyboxのモデルを設定
 	skybox_->SetTexture("moonless_golf_4k.dds");
+
+	///--------------------------------------------------------------
+	///						 ボールテスト
+	ball_.Initialize();
 }
 
 ///=============================================================================
@@ -153,6 +157,12 @@ void DebugScene::Update() {
 	if (skybox_) {
 		skybox_->Update();
 	}
+
+	//========================================
+	// ボールテストの更新
+	ball_.Update();
+	// 描画
+	ball_.Draw();
 }
 
 ///=============================================================================
@@ -164,16 +174,15 @@ void DebugScene::Object2DDraw() {
 ///						3D描画
 void DebugScene::Object3DDraw() {
 	// モンスターボール
-	
-	objMonsterBall_->Draw();
+	// objMonsterBall_->Draw();
 	// 地面
-	objTerrain_->Draw();
+	// objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
 	for (auto &levelObj : levelObjects_) {
 		if (levelObj) {
-			levelObj->Draw();
+			// levelObj->Draw();
 		}
 	}
 }
@@ -201,6 +210,10 @@ void DebugScene::ImGuiDraw() {
 	ImGui::Begin("DebugScene");
 	ImGui::Text("Hello, DebugScene!");
 	ImGui::End();
+
+	//========================================
+	// ボールのImGui描画
+	ball_.DrawImGui();
 
 	//========================================
 	// 3DオブジェクトのImGui描画

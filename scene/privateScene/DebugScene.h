@@ -9,6 +9,7 @@
 #include "BaseScene.h"
 //========================================
 // Game
+#include "Ball.h"
 #include "Camera.h"
 #include "LevelDataLoader.h"
 #include "MAudioG.h"
@@ -97,4 +98,8 @@ private:
 	// Skybox用デバッグフラグ
 	bool showSkyboxDebug_ = true;
 	float skyboxScale_ = 100.0f;
+
+	//========================================
+	// ボールテスト
+	Ball ball_;
 };

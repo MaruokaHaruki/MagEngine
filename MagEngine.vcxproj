@@ -115,6 +115,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Enemy.cpp" />
     <ClCompile Include="application\Cloud.cpp" />
     <ClCompile Include="application\EnemyManager.cpp" />
+    <ClCompile Include="Ball.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
@@ -138,7 +139,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\postEffect\GrayscaleEffect.cpp" />
     <ClCompile Include="engine\postEffect\PostEffectManager.cpp" />
     <ClCompile Include="engine\postEffect\FullscreenPassRendere.cpp" />
-    <ClCompile Include="HUD.cpp" />
+    <ClCompile Include="application\HUD.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -175,6 +176,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Enemy.h" />
     <ClInclude Include="application\Cloud.h" />
     <ClInclude Include="application\EnemyManager.h" />
+    <ClInclude Include="Ball.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
     <ClInclude Include="engine\2d\particle\Particle.h" />
     <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
@@ -200,7 +202,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\postEffect\GrayscaleEffect.h" />
     <ClInclude Include="engine\postEffect\PostEffectManager.h" />
     <ClInclude Include="engine\postEffect\FullscreenPassRendere.h" />
-    <ClInclude Include="HUD.h" />
+    <ClInclude Include="application\HUD.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
