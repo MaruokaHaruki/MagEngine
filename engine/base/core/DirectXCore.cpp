@@ -15,6 +15,10 @@
 // DirectXTex
 #include "d3dx12.h"
 #pragma comment(lib, "winmm.lib")
+// HOTFIX:リンクエラー対策
+#include <iostream>
+#include <fstream>
+#include <string>
 
 ///=============================================================================
 ///						描画前処理
@@ -613,6 +617,28 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCore::CreateDescriptorHeap(D
 	return descriptorHeap;
 }
 
+// HOTFIX : 
+void WriteToFile(const std::string& fileName, const std::string& text)
+{
+	// 出力ファイルストリームを生成
+	std::ofstream outputFile(fileName);
+
+	// ファイルが開けなかった場合のエラーチェック
+	if (!outputFile)
+	{
+		std::cerr << "ファイルを開けませんでした: " << fileName << std::endl;
+		return;
+	}
+
+	// 指定の文字列を書き込む
+	outputFile << text;
+
+	// ファイルを閉じる（ofstreamはスコープを抜けると自動で閉じられるが明示的に閉じてもよい）
+	outputFile.close();
+
+	std::cout << "ファイルに書き込みました: " << fileName << std::endl;
+}
+
 ///=============================================================================
 ///						シェーダーのコンパイル
 IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t *profile) {
@@ -665,6 +691,10 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 		if (shaderResult->HasOutput(DXC_OUT_ERRORS)) {
 			shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
 		}
+
+		// HOTFIX:エラー内容をファイルに書き出す
+		WriteToFile("shaderError.txt", shaderError->GetStringPointer());
+
 		// 警告・エラーダメ絶対
 		assert(false);
 	}
