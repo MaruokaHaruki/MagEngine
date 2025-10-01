@@ -668,6 +668,7 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 		L"-Qembed_debug",
 		L"-Od",
 		L"-Zpr",
+		L"-I", L"resources/shader/"
 	};
 	// 実際にShaderをコンパイルする
 	IDxcResult *shaderResult = nullptr;
