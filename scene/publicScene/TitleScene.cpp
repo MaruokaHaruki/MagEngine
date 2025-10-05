@@ -11,6 +11,7 @@
 #include "Input.h"
 #include "MAudioG.h"
 #include "SceneManager.h"
+#include "TitleCamera.h"
 
 ///=============================================================================
 ///						初期化
@@ -24,7 +25,25 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	//========================================
 	// カメラ設定
 	CameraManager::GetInstance()->AddCamera("TitleCamera");
-	CameraManager::GetInstance()->GetCamera("DefaultCamera")->SetTransform({{1.0f, 1.0f, 1.0f}, {0.2f, 0.0f, 0.0f}, {0.0f, 4.0f, -16.0f}});
+
+	// TitleCameraの初期化
+	titleCamera_ = std::make_unique<TitleCamera>();
+	titleCamera_->Initialize("TitleCamera");
+	// FollowCameraをメインカメラに設定
+	CameraManager::GetInstance()->SetCurrentCamera("TitleCamera");
+
+	//========================================
+	// プレイヤーの初期化（演出用）
+	player_ = std::make_unique<Player>();
+	player_->Initialize(object3dSetup, "jet.obj");
+
+	// プレイヤーの初期位置（カメラから見える位置）
+	Vector3 initialPos = {0.0f, 5.0f, 10.0f}; // カメラの前方
+	player_->GetObject3d()->GetTransform()->translate = initialPos;
+	player_->GetObject3d()->GetTransform()->scale = {0.5f, 0.5f, 0.5f}; // サイズ調整
+
+	// カメラにプレイヤーを設定
+	titleCamera_->SetPlayer(player_.get());
 
 	//========================================
 	// 音の読み込み
@@ -69,6 +88,75 @@ void TitleScene::Update() {
 	}
 
 	//========================================
+	// タイトルカメラ更新
+	if (titleCamera_) {
+		titleCamera_->Update();
+	}
+
+	//========================================
+	// プレイヤー更新（演出用の動き）
+	if (player_) {
+		Transform *playerTransform = player_->GetObject3d()->GetTransform();
+
+		//========================================
+		// 【1】オープニング：ゆっくり上昇
+		if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Opening) {
+			// 緩やかに上昇＋前進
+			playerTransform->translate.y += 0.1f;
+			playerTransform->translate.z += 0.15f;
+
+			// 機体をやや上向きに
+			playerTransform->rotate.x = -0.15f;
+		}
+
+		//========================================
+		// 【2】ヒーローショット：上昇を継続
+		if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::HeroShot) {
+			// 上昇速度を少し上げる
+			playerTransform->translate.y += 0.2f;
+			playerTransform->translate.z += 0.25f;
+
+			// 機体を少し上向きに
+			playerTransform->rotate.x = -0.2f;
+		}
+
+		//========================================
+		// 【3】タイトル表示：安定した上昇
+		if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::TitleDisplay) {
+			// 安定した上昇
+			playerTransform->translate.y += 0.15f;
+			playerTransform->translate.z += 0.2f;
+
+			// 機体を水平に近づける
+			playerTransform->rotate.x += (-0.1f - playerTransform->rotate.x) * 0.1f;
+		}
+
+		//========================================
+		// 【4】ループ：ゆっくり旋回
+		if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Loop) {
+			static float loopTimer = 0.0f;
+			loopTimer += 1.0f / 60.0f;
+
+			// ゆっくり前進
+			playerTransform->translate.z += 0.1f;
+
+			// 時折ゆっくりロール
+			static float rollTimer = 0.0f;
+			rollTimer += 1.0f / 60.0f;
+
+			if (rollTimer > 5.0f) {
+				float rollAmount = std::sin((rollTimer - 5.0f) * 0.5f) * 0.2f;
+				playerTransform->rotate.z += (rollAmount - playerTransform->rotate.z) * 0.05f;
+			}
+
+			// 機体は水平を維持
+			playerTransform->rotate.x += (-0.05f - playerTransform->rotate.x) * 0.1f;
+		}
+
+		player_->GetObject3d()->Update();
+	}
+
+	//========================================
 	// シーン遷移
 	if (Input::GetInstance()->TriggerKey(VK_SPACE)) {
 		sceneNo = SCENE::GAMEPLAY;
@@ -87,6 +175,9 @@ void TitleScene::Object2DDraw() {
 ///=============================================================================
 ///						3D描画
 void TitleScene::Object3DDraw() {
+	if (player_) {
+		player_->Draw();
+	}
 }
 
 ///=============================================================================
@@ -110,5 +201,13 @@ void TitleScene::ImGuiDraw() {
 	ImGui::Begin("TitleScene");
 	ImGui::Text("Hello, TitleScene!");
 	ImGui::End();
+
+	if (titleCamera_) {
+		titleCamera_->DrawImGui();
+	}
+
+	if (player_) {
+		player_->DrawImGui();
+	}
 #endif // DEBUG
 }

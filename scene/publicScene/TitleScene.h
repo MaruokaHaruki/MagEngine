@@ -28,6 +28,7 @@
 #include "Skybox.h"
 #include "Skydome.h"
 #include "Sprite.h"
+#include "TitleCamera.h"
 
 ///=============================================================================
 ///						タイトルシーンクラス
@@ -70,6 +71,11 @@ public:
 private:
 	//========================================
 	// オブジェクト
+	std::unique_ptr<Player> player_;
+
+	//========================================
+	// カメラ
+	std::unique_ptr<TitleCamera> titleCamera_;
 
 	//========================================
 	// スプライト
