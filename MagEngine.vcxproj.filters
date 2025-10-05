@@ -129,6 +129,7 @@
     <ClCompile Include="engine\postEffect\FullscreenPassRendere.cpp" />
     <ClCompile Include="application\HUD.cpp" />
     <ClCompile Include="Ball.cpp" />
+    <ClCompile Include="TitleCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\base\core\WinApp.h">
@@ -308,6 +309,7 @@
     <ClInclude Include="engine\postEffect\FullscreenPassRendere.h" />
     <ClInclude Include="application\HUD.h" />
     <ClInclude Include="Ball.h" />
+    <ClInclude Include="TitleCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
