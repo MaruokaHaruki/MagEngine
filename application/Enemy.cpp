@@ -33,8 +33,8 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	targetRotationEuler_ = {0.0f, 0.0f, 0.0f};
 	acceleration_ = 8.0f;					  // 加速度
 	rotationSmoothing_ = 8.0f;				  // 回転の滑らかさ
-	maxRollAngle_ = 45.0f * (M_PI / 180.0f);  // 最大ロール角（45度）
-	maxPitchAngle_ = 30.0f * (M_PI / 180.0f); // 最大ピッチ角（30度）
+	maxRollAngle_ = 45.0f * (static_cast<float>(M_PI) / 180.0f);  // 最大ロール角（45度）
+	maxPitchAngle_ = 30.0f * (static_cast<float>(M_PI) / 180.0f); // 最大ピッチ角（30度）
 	bankingFactor_ = 1.5f;					  // バンキング係数
 
 	//========================================
