@@ -167,6 +167,8 @@ void Enemy::Update() {
 ///=============================================================================
 ///                        ステート別更新：スポーン
 void Enemy::UpdateSpawnState(float frameTime) {
+	// FIXME: frameTimeが使用されていないので回避すること
+	frameTime;
 	// スポーン直後は+Z方向に直進
 	targetVelocity_ = {0.0f, 0.0f, speed_};
 
@@ -178,6 +180,8 @@ void Enemy::UpdateSpawnState(float frameTime) {
 ///=============================================================================
 ///                        ステート別更新：直進飛行（新規追加）
 void Enemy::UpdateStraightFlightState(float frameTime) {
+	// FIXME: frameTimeが使用されていないので回避すること
+	frameTime;
 	// 常に設定された方向に直進
 	targetVelocity_ = {
 		currentDirection_.x * speed_,
@@ -190,6 +194,8 @@ void Enemy::UpdateStraightFlightState(float frameTime) {
 ///=============================================================================
 ///                        ステート別更新：目標位置への移動
 void Enemy::UpdateMoveToTargetState(float frameTime) {
+	// FIXME: frameTimeが使用されていないので回避すること
+	frameTime;
 	Vector3 direction = {
 		targetPosition_.x - transform_.translate.x,
 		targetPosition_.y - transform_.translate.y,
@@ -212,6 +218,8 @@ void Enemy::UpdateMoveToTargetState(float frameTime) {
 ///=============================================================================
 ///                        ステート別更新：AI挙動
 void Enemy::UpdateAIBehaviorState(float frameTime) {
+	// FIXME: frameTimeが使用されていないので回避すること
+	frameTime;
 	// 現在は簡単な円運動を実装（将来的にはより複雑なAIに置き換え）
 	// float circleRadius = 5.0f;
 	// float angularSpeed = 1.0f;
@@ -231,6 +239,8 @@ void Enemy::UpdateAIBehaviorState(float frameTime) {
 ///=============================================================================
 ///                        ステート別更新：離脱
 void Enemy::UpdateDisengagementState(float frameTime) {
+	// FIXME: frameTimeが使用されていないので回避すること
+	frameTime;
 	Vector3 direction = {
 		disengageTarget_.x - transform_.translate.x,
 		disengageTarget_.y - transform_.translate.y,
@@ -334,6 +344,9 @@ Vector3 Enemy::GetPosition() const {
 ///=============================================================================
 ///                        衝突処理関数
 void Enemy::OnCollisionEnter(BaseObject *other) {
+	// FIXME: otherが使用されていないので修正すること
+	other;
+
 	// 既に破壊中または死亡している場合は処理しない
 	if (destroyState_ != DestroyState::Alive) {
 		return;
@@ -366,10 +379,14 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 ///=============================================================================
 ///                        衝突継続処理
 void Enemy::OnCollisionStay(BaseObject *other) {
+	// FIXME: otherが使用されていないので修正すること
+	other;
 	// 継続中の衝突処理（必要に応じて実装）
 }
 ///=============================================================================
 ///                        衝突終了処理
 void Enemy::OnCollisionExit(BaseObject *other) {
+	// FIXME: otherが使用されていないので修正すること
+	other;
 	// 衝突終了時の処理（必要に応じて実装）
 }

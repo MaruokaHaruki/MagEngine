@@ -20,6 +20,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	spriteSetup;
 	object3dSetup;
 	particleSetup;
+	skyboxSetup;
 	//========================================
 	// カメラ設定
 	CameraManager::GetInstance()->GetCamera("DefaultCamera")->SetTransform({ {1.0f,1.0f,1.0f},{0.2f,0.0f,0.0f},{0.0f,4.0f,-16.0f} });
