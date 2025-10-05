@@ -27,40 +27,21 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 
 	//========================================
 	// 音の読み込み
-	MAudioG::GetInstance()->LoadWav("se_charge.wav");
-	MAudioG::GetInstance()->LoadWav("se_damage.wav");
-	MAudioG::GetInstance()->LoadWav("se_exlpo.wav");
-	MAudioG::GetInstance()->LoadWav("se_samon.wav");
-	MAudioG::GetInstance()->LoadWav("se_select.wav");
-	MAudioG::GetInstance()->LoadWav("se_shot.wav");
-	MAudioG::GetInstance()->LoadWav("Refine.wav");
-	MAudioG::GetInstance()->LoadWav("Beast-Mode.wav");
 
 	//========================================
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadModel("title.obj");
-	TextureManager::GetInstance()->LoadTexture("press.png");
 
 	//========================================
 	// タイトルオブジェクト
-	objTitle_ = std::make_unique<Object3d>();
-	objTitle_->Initialize(object3dSetup);
-	objTitle_->SetModel("title.obj");
-
+	
 	//========================================
-	// スプライトクラス(Game)
-	//ユニークポインタ
-	pressSprite_ = std::make_unique<Sprite>();
-	//スプライトの初期化
-	pressSprite_->Initialize(spriteSetup, "press.png");
-	pressSprite_->SetPosition(Vector2{ 400.0f, 400.0f });
+	// スプライトクラス
 }
 
 ///=============================================================================
 ///						終了処理
 void TitleScene::Finalize() {
-	//曲の終了
-	MAudioG::GetInstance()->StopWav("Refine.wav");
+
 }
 
 ///=============================================================================
@@ -68,21 +49,10 @@ void TitleScene::Finalize() {
 void TitleScene::Update() {
 	//========================================
 	// 曲を再生
-	if(MAudioG::GetInstance()->IsWavPlaying("Refine.wav") == false){
-		MAudioG::GetInstance()->PlayWav("Refine.wav", true);
-	}
-	//タイトルを左右に回転させて揺らす
-	angle += 0.04f;
-	transform.rotate.y = sin(angle) * 0.4f;
-	//=======================================
-	//画面中央下に配置
-	pressSprite_->SetPosition(Vector2{ 400.0f, 400.0f });
-	pressSprite_->Update();
 
 	//========================================
 	// Object3D
-	objTitle_->SetTransform(transform);
-	objTitle_->Update();
+
 	//========================================
 	// シーン遷移
 	if(Input::GetInstance()->TriggerKey(VK_SPACE)) {
@@ -102,12 +72,7 @@ void TitleScene::Object2DDraw() {
 ///=============================================================================
 ///						3D描画
 void TitleScene::Object3DDraw() {
-	//========================================
-	// タイトル
-	objTitle_->Draw();
-	//========================================
-	// スプライト
-	pressSprite_->Draw();
+
 }
 
 ///=============================================================================
