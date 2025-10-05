@@ -8,9 +8,25 @@
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
+#include <memory>
+#include <vector>
 //========================================
-// Game
-#include "Object3d.h"
+// Application
+#include "Camera.h"
+#include "Cloud.h"
+#include "CollisionManager.h"
+#include "DebugTextManager.h"
+#include "Enemy.h"
+#include "EnemyManager.h"
+#include "FollowCamera.h"
+#include "HUD.h"
+#include "LineManager.h"
+#include "MAudioG.h"
+#include "Particle.h"
+#include "ParticleEmitter.h"
+#include "Player.h"
+#include "Skybox.h"
+#include "Skydome.h"
 #include "Sprite.h"
 
 ///=============================================================================
@@ -57,4 +73,8 @@ private:
 
 	//========================================
 	// スプライト
+
+	//========================================
+	// スカイボックス
+	std::unique_ptr<Skybox> skybox_;
 };
