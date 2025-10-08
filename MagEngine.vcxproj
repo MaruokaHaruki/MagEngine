@@ -115,7 +115,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Enemy.cpp" />
     <ClCompile Include="application\Cloud.cpp" />
     <ClCompile Include="application\EnemyManager.cpp" />
-    <ClCompile Include="Ball.cpp" />
+    <ClCompile Include="application\Ball.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
@@ -171,13 +171,13 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\Skydome.cpp" />
     <ClCompile Include="engine\3d\skybox\Skybox.cpp" />
     <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
-    <ClCompile Include="TitleCamera.cpp" />
+    <ClCompile Include="application\TitleCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\Enemy.h" />
     <ClInclude Include="application\Cloud.h" />
     <ClInclude Include="application\EnemyManager.h" />
-    <ClInclude Include="Ball.h" />
+    <ClInclude Include="application\Ball.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
     <ClInclude Include="engine\2d\particle\Particle.h" />
     <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
@@ -253,7 +253,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\Skydome.h" />
     <ClInclude Include="engine\3d\skybox\Skybox.h" />
     <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
-    <ClInclude Include="TitleCamera.h" />
+    <ClInclude Include="application\TitleCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

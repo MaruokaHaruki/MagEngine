@@ -43,9 +43,9 @@ void TitleCamera::Initialize(const std::string &cameraName) {
 	cameraSmoothTime_ = 0.3f; // 追従の滑らかさ
 	lastPlayerPosition_ = {0.0f, 5.0f, 10.0f};
 
-	// 初期カメラパラメータ（プレイヤーが見える位置）
-	cameraPosition_ = {0.0f, 3.0f, -10.0f}; // プレイヤーの後方
-	cameraTarget_ = {0.0f, 5.0f, 10.0f};	// プレイヤーの初期位置
+	// 初期カメラパラメータ（プレイヤーが画面中央に来る位置）
+	cameraPosition_ = {0.0f, 7.0f, -2.0f}; // プレイヤーの後方かつ近く
+	cameraTarget_ = {0.0f, 5.0f, 10.0f};   // プレイヤーの初期位置（中心）
 	cameraFOV_ = 0.45f;
 	cameraExposure_ = 0.3f; // 暗めから開始
 }
@@ -60,36 +60,49 @@ void TitleCamera::Update() {
 	phaseTimer_ += deltaTime;
 	totalElapsedTime_ += deltaTime;
 
-	// フェーズ遷移中の処理
-	if (isTransitioning_) {
-		UpdatePhaseTransition(deltaTime);
+	// プレイヤーの位置を追跡（フェーズ遷移中も含む）
+	if (player_) {
+		Vector3 playerPos = player_->GetPosition();
+
+		// フェーズ遷移中の処理
+		if (isTransitioning_) {
+			UpdatePhaseTransition(deltaTime);
+
+			// 遷移中もプレイヤーをターゲット
+			cameraTarget_ = SmoothDamp(cameraTarget_, playerPos, targetVelocity_, cameraSmoothTime_ * 0.3f, deltaTime);
+		} else {
+			// 通常のフェーズ更新
+			switch (currentPhase_) {
+			case TitleCameraPhase::Opening:
+				UpdateOpening(deltaTime);
+				if (phaseTimer_ >= OPENING_DURATION) {
+					TransitionToNextPhase(TitleCameraPhase::HeroShot);
+				}
+				break;
+
+			case TitleCameraPhase::HeroShot:
+				UpdateHeroShot(deltaTime);
+				if (phaseTimer_ >= HEROSHOT_DURATION) {
+					TransitionToNextPhase(TitleCameraPhase::TitleDisplay);
+				}
+				break;
+
+			case TitleCameraPhase::TitleDisplay:
+				UpdateTitleDisplay(deltaTime);
+				if (phaseTimer_ >= TITLE_DISPLAY_DURATION) {
+					TransitionToNextPhase(TitleCameraPhase::Loop);
+				}
+				break;
+
+			case TitleCameraPhase::Loop:
+				UpdateLoop(deltaTime);
+				break;
+			}
+		}
 	} else {
-		// 通常のフェーズ更新
-		switch (currentPhase_) {
-		case TitleCameraPhase::Opening:
-			UpdateOpening(deltaTime);
-			if (phaseTimer_ >= OPENING_DURATION) {
-				TransitionToNextPhase(TitleCameraPhase::HeroShot);
-			}
-			break;
-
-		case TitleCameraPhase::HeroShot:
-			UpdateHeroShot(deltaTime);
-			if (phaseTimer_ >= HEROSHOT_DURATION) {
-				TransitionToNextPhase(TitleCameraPhase::TitleDisplay);
-			}
-			break;
-
-		case TitleCameraPhase::TitleDisplay:
-			UpdateTitleDisplay(deltaTime);
-			if (phaseTimer_ >= TITLE_DISPLAY_DURATION) {
-				TransitionToNextPhase(TitleCameraPhase::Loop);
-			}
-			break;
-
-		case TitleCameraPhase::Loop:
-			UpdateLoop(deltaTime);
-			break;
+		// プレイヤーがいない場合の遷移処理
+		if (isTransitioning_) {
+			UpdatePhaseTransition(deltaTime);
 		}
 	}
 
@@ -139,35 +152,32 @@ void TitleCamera::TransitionToNextPhase(TitleCameraPhase nextPhase) {
 
 		switch (nextPhase) {
 		case TitleCameraPhase::HeroShot:
-			// ヒーローショットの開始位置（プレイヤー中心）
+			// ヒーローショットの開始位置（プレイヤー中心、より近く）
 			transitionEndPos_ = {
-				playerPos.x + 6.0f,
-				playerPos.y + 8.0f,
-				playerPos.z - 14.0f};
-			transitionEndTarget_ = playerPos; // プレイヤーを直接見る
+				playerPos.x + 4.0f,
+				playerPos.y + 5.0f,
+				playerPos.z - 10.0f};
+			transitionEndTarget_ = playerPos; // プレイヤー中心
 			break;
 
 		case TitleCameraPhase::TitleDisplay:
-			// タイトル表示の開始位置（プレイヤー中心）
+			// タイトル表示の開始位置（プレイヤー中心、真後ろ）
 			transitionEndPos_ = {
 				playerPos.x,
-				playerPos.y + 4.0f,
-				playerPos.z - 10.0f};
-			transitionEndTarget_ = {
-				playerPos.x,
-				playerPos.y - 0.0f, // プレイヤーの中心
-				playerPos.z};
+				playerPos.y + 3.0f,
+				playerPos.z - 8.0f};
+			transitionEndTarget_ = playerPos; // プレイヤー中心
 			break;
 
 		case TitleCameraPhase::Loop:
-			// ループの開始位置（プレイヤー中心の円軌道）
-			float radius = 12.0f;
-			float height = 6.0f;
+			// ループの開始位置（プレイヤー中心の円軌道、より近く）
+			float radius = 10.0f;
+			float height = 5.0f;
 			transitionEndPos_ = {
 				playerPos.x + radius,
 				playerPos.y + height,
 				playerPos.z};
-			transitionEndTarget_ = playerPos; // プレイヤーを直接見る
+			transitionEndTarget_ = playerPos; // プレイヤー中心
 			loopRotationAngle_ = 0.0f;
 			loopTime_ = 0.0f;
 			break;
@@ -190,16 +200,30 @@ void TitleCamera::UpdatePhaseTransition(float deltaTime) {
 	// イージング適用（滑らかな遷移）
 	float easedT = EaseInOut(t);
 
-	// 位置とターゲットを補間
-	cameraPosition_ = {
-		Lerp(transitionStartPos_.x, transitionEndPos_.x, easedT),
-		Lerp(transitionStartPos_.y, transitionEndPos_.y, easedT),
-		Lerp(transitionStartPos_.z, transitionEndPos_.z, easedT)};
+	// プレイヤーの現在位置を取得
+	Vector3 currentPlayerPos = {0.0f, 5.0f, 10.0f}; // デフォルト位置
+	if (player_) {
+		currentPlayerPos = player_->GetPosition();
+	}
 
-	cameraTarget_ = {
-		Lerp(transitionStartTarget_.x, transitionEndTarget_.x, easedT),
-		Lerp(transitionStartTarget_.y, transitionEndTarget_.y, easedT),
-		Lerp(transitionStartTarget_.z, transitionEndTarget_.z, easedT)};
+	// カメラ位置を補間（プレイヤーの移動に追従）
+	Vector3 offsetFromPlayer = {
+		transitionEndPos_.x - transitionEndTarget_.x,
+		transitionEndPos_.y - transitionEndTarget_.y,
+		transitionEndPos_.z - transitionEndTarget_.z};
+
+	Vector3 desiredPos = {
+		currentPlayerPos.x + offsetFromPlayer.x,
+		currentPlayerPos.y + offsetFromPlayer.y,
+		currentPlayerPos.z + offsetFromPlayer.z};
+
+	// 開始位置から目標位置へ補間
+	cameraPosition_ = {
+		Lerp(transitionStartPos_.x, desiredPos.x, easedT),
+		Lerp(transitionStartPos_.y, desiredPos.y, easedT),
+		Lerp(transitionStartPos_.z, desiredPos.z, easedT)};
+
+	// ターゲットは常にプレイヤー（Update関数で設定）
 }
 
 ///=============================================================================
@@ -219,19 +243,14 @@ void TitleCamera::UpdateOpening(float deltaTime) {
 
 	Vector3 playerPos = player_->GetPosition();
 
-	// プレイヤーを画面中央に配置（ターゲットはプレイヤー自身）
-	Vector3 targetLookAt = {
-		playerPos.x,
-		playerPos.y, // プレイヤーの中心
-		playerPos.z};
+	// プレイヤーの中心を正確にターゲット
+	cameraTarget_ = SmoothDamp(cameraTarget_, playerPos, targetVelocity_, cameraSmoothTime_ * 0.5f, deltaTime);
 
-	cameraTarget_ = SmoothDamp(cameraTarget_, targetLookAt, targetVelocity_, cameraSmoothTime_ * 0.5f, deltaTime);
-
-	// カメラ位置：プレイヤーの後方から見る
+	// カメラ位置：プレイヤーの後方からより近く（プレイヤーの移動に追従）
 	Vector3 baseOffset = {
-		Lerp(0.0f, 0.0f, t),	// 左右中央
-		Lerp(3.0f, 5.0f, t),	// やや上方
-		Lerp(-18.0f, -14.0f, t) // 後方
+		0.0f,					// 左右中央固定
+		Lerp(2.0f, 3.5f, t),	// やや上方
+		Lerp(-12.0f, -10.0f, t) // 後方から近づく
 	};
 
 	Vector3 desiredCameraPos = {
@@ -255,32 +274,32 @@ void TitleCamera::UpdateHeroShot(float deltaTime) {
 
 	Vector3 playerPos = player_->GetPosition();
 
-	// プレイヤーを完全に画面中央に配置
+	// プレイヤーの中心を正確にターゲット
 	cameraTarget_ = SmoothDamp(cameraTarget_, playerPos, targetVelocity_, cameraSmoothTime_ * 0.3f, deltaTime);
 
 	if (t < 0.4f) {
-		// 前半：やや上方から見下ろす
+		// 前半：やや上方から見下ろす（より近く、プレイヤー追従）
 		float flareT = EaseInCubic(t / 0.4f);
 		cameraExposure_ = Lerp(1.0f, 2.0f, flareT);
 
 		Vector3 desiredPos = {
-			playerPos.x + Lerp(6.0f, 4.0f, flareT),	 // 側面寄り
-			playerPos.y + Lerp(8.0f, 6.0f, flareT),	 // 上方
-			playerPos.z - Lerp(14.0f, 12.0f, flareT) // 後方
+			playerPos.x + Lerp(4.0f, 3.0f, flareT), // 側面寄り
+			playerPos.y + Lerp(5.0f, 4.0f, flareT), // 上方
+			playerPos.z - Lerp(10.0f, 8.0f, flareT) // 後方（より近く）
 		};
 
 		cameraPosition_ = SmoothDamp(cameraPosition_, desiredPos, cameraVelocity_, cameraSmoothTime_ * 0.5f, deltaTime);
 	} else {
-		// 後半：より近づいてダイナミックに
+		// 後半：さらに近づいてダイナミックに（プレイヤー追従）
 		float passT = (t - 0.4f) / 0.6f;
 		passT = EaseInOut(passT);
 
 		cameraExposure_ = Lerp(2.0f, 1.0f, passT);
 
 		Vector3 desiredPos = {
-			playerPos.x + Lerp(4.0f, 3.0f, passT),	// 徐々に中央へ
-			playerPos.y + Lerp(6.0f, 4.0f, passT),	// やや下へ
-			playerPos.z - Lerp(12.0f, 10.0f, passT) // 近づく
+			playerPos.x + Lerp(3.0f, 1.5f, passT), // 中央へ
+			playerPos.y + Lerp(4.0f, 3.0f, passT), // やや下へ
+			playerPos.z - Lerp(8.0f, 7.0f, passT)  // より近く
 		};
 
 		cameraPosition_ = SmoothDamp(cameraPosition_, desiredPos, cameraVelocity_, cameraSmoothTime_ * 0.6f, deltaTime);
@@ -298,18 +317,14 @@ void TitleCamera::UpdateTitleDisplay(float deltaTime) {
 
 	Vector3 playerPos = player_->GetPosition();
 
-	// プレイヤーを画面中央やや下に配置（タイトルロゴスペース確保）
-	Vector3 targetLookAt = {
-		playerPos.x,
-		playerPos.y - Lerp(0.0f, 0.5f, t), // 少しずつ下を見る
-		playerPos.z};
-	cameraTarget_ = SmoothDamp(cameraTarget_, targetLookAt, targetVelocity_, cameraSmoothTime_ * 0.4f, deltaTime);
+	// プレイヤーの中心を正確にターゲット
+	cameraTarget_ = SmoothDamp(cameraTarget_, playerPos, targetVelocity_, cameraSmoothTime_ * 0.4f, deltaTime);
 
-	// カメラ位置：プレイヤーの真後ろから
+	// カメラ位置：プレイヤーの真後ろから（中央固定、プレイヤー追従）
 	Vector3 offsetPos = {
-		Lerp(0.0f, 0.0f, t),	// 左右中央を維持
-		Lerp(4.0f, 8.0f, t),	// 徐々に上昇
-		Lerp(-10.0f, -16.0f, t) // 徐々に後退
+		0.0f,				   // 左右中央を完全固定
+		Lerp(3.0f, 6.0f, t),   // 徐々に上昇
+		Lerp(-8.0f, -12.0f, t) // 徐々に後退
 	};
 
 	Vector3 desiredPos = {
@@ -332,16 +347,16 @@ void TitleCamera::UpdateLoop(float deltaTime) {
 
 	Vector3 playerPos = player_->GetPosition();
 
-	// プレイヤーを常に画面中央に配置
+	// プレイヤーの中心を正確にターゲット
 	cameraTarget_ = SmoothDamp(cameraTarget_, playerPos, targetVelocity_, cameraSmoothTime_ * 0.3f, deltaTime);
 
-	// カメラはプレイヤーを中心に円を描く（プレイヤー中心）
-	float radius = 12.0f;									  // 距離を近めに
-	float height = 6.0f + 2.0f * std::sin(loopTime_ * 0.25f); // 高度変化
+	// カメラはプレイヤーを中心に円を描く（より近距離、プレイヤー追従）
+	float radius = 10.0f;									  // 距離をさらに近めに
+	float height = 5.0f + 1.5f * std::sin(loopTime_ * 0.25f); // 高度変化
 
 	Vector3 desiredPos = {
 		playerPos.x + radius * std::cos(loopRotationAngle_),
-		playerPos.y + height, // プレイヤーのやや上方
+		playerPos.y + height,
 		playerPos.z + radius * std::sin(loopRotationAngle_)};
 
 	cameraPosition_ = SmoothDamp(cameraPosition_, desiredPos, cameraVelocity_, cameraSmoothTime_ * 0.5f, deltaTime);

@@ -32,6 +32,11 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// FollowCameraをメインカメラに設定
 	CameraManager::GetInstance()->SetCurrentCamera("TitleCamera");
 
+	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
+	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
+	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
+
 	//========================================
 	// プレイヤーの初期化（演出用）
 	player_ = std::make_unique<Player>();
@@ -59,6 +64,11 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 
 	//========================================
 	// スカイボックス
+	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
 	skybox_ = std::make_unique<Skybox>();
 	skybox_->Initialize(skyboxSetup);
 	// Skyboxのモデルを設定
@@ -158,12 +168,17 @@ void TitleScene::Update() {
 
 	//========================================
 	// シーン遷移
-	if (Input::GetInstance()->TriggerKey(VK_SPACE)) {
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		sceneNo = SCENE::GAMEPLAY;
 	}
 	// コントローラ
 	if (Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
 		sceneNo = SCENE::GAMEPLAY;
+	}
+	// シーンリセット
+	if(Input::GetInstance()->TriggerKey(DIK_R)) {
+		sceneNo = SCENE::GAMEPLAY;
+		sceneNo = SCENE::TITLE;
 	}
 }
 
