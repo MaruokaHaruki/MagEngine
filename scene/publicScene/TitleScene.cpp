@@ -29,7 +29,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
-	// TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
+	TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
 
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく

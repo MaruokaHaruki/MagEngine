@@ -18,7 +18,7 @@ void SceneTransition::Initialize(SpriteSetup *spriteSetup) {
 
 	// トランジション用スプライトの作成（白い1x1テクスチャを使用）
 	transitionSprite_ = std::make_unique<Sprite>();
-	transitionSprite_->Initialize(spriteSetup_, "WolfOne_Triangle.png");
+	transitionSprite_->Initialize(spriteSetup_, "white1x1.png");
 	transitionSprite_->SetSize({screenWidth_, screenHeight_});
 	transitionSprite_->SetPosition({0.0f, 0.0f});
 	transitionSprite_->SetColor(transitionColor_);
