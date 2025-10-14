@@ -27,7 +27,6 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// 読み込み関係
 	// スプライト
 	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
-
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
@@ -54,12 +53,10 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// プレイヤーの初期化（演出用）
 	player_ = std::make_unique<Player>();
 	player_->Initialize(object3dSetup, "jet.obj");
-
 	// プレイヤーの初期位置（カメラから見える位置）
 	Vector3 initialPos = {0.0f, 5.0f, 10.0f}; // カメラの前方
 	player_->GetObject3d()->GetTransform()->translate = initialPos;
 	player_->GetObject3d()->GetTransform()->scale = {0.5f, 0.5f, 0.5f}; // サイズ調整
-
 	// カメラにプレイヤーを設定
 	titleCamera_->SetPlayer(player_.get());
 
