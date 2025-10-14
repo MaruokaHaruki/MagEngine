@@ -27,6 +27,9 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// 読み込み関係
 	// スプライト
 	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
+
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
@@ -50,6 +53,13 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	CameraManager::GetInstance()->SetCurrentCamera("TitleCamera");
 
 	//========================================
+	// スプライト
+	titleSprite_ = std::make_unique<Sprite>();
+	titleSprite_->Initialize(spriteSetup, "WolfOne_Triangle.png");
+	titleSprite_->SetPosition({100.0f, 100.0f});
+	titleSprite_->SetSize({200.0f, 200.0f});
+
+	//========================================
 	// プレイヤーの初期化（演出用）
 	player_ = std::make_unique<Player>();
 	player_->Initialize(object3dSetup, "jet.obj");
@@ -59,12 +69,6 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	player_->GetObject3d()->GetTransform()->scale = {0.5f, 0.5f, 0.5f}; // サイズ調整
 	// カメラにプレイヤーを設定
 	titleCamera_->SetPlayer(player_.get());
-
-	//========================================
-	// タイトルオブジェクト
-
-	//========================================
-	// スプライトクラス
 
 	//========================================
 	// スカイボックス
@@ -89,6 +93,12 @@ void TitleScene::Update() {
 
 	//========================================
 	// Object3D
+
+	//========================================
+	// Sprite
+	if (titleSprite_) {
+		titleSprite_->Update();
+	}
 
 	//=========================================
 	// Skybox
@@ -184,6 +194,9 @@ void TitleScene::Update() {
 ///=============================================================================
 ///						2D描画
 void TitleScene::Object2DDraw() {
+	if (titleSprite_) {
+		titleSprite_->Draw();
+	}
 }
 
 ///=============================================================================
