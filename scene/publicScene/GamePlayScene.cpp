@@ -133,6 +133,15 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	if (followCamera_) {
 		hud_->SetFollowCamera(followCamera_.get());
 	}
+
+	//========================================
+	// トランジションの初期化
+	sceneTransition_ = std::make_unique<SceneTransition>();
+	sceneTransition_->Initialize(spriteSetup);
+	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
+
+	// シーン開始時にオープニングトランジション
+	sceneTransition_->StartOpening(TransitionType::Curtain, 1.5f);
 }
 
 ///=============================================================================
@@ -143,6 +152,12 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
+	//========================================
+	// トランジションの更新
+	if (sceneTransition_) {
+		sceneTransition_->Update();
+	}
+
 	//========================================
 	// FollowCameraの更新
 	if (followCamera_) {
@@ -229,6 +244,11 @@ void GamePlayScene::Update() {
 ///=============================================================================
 ///                        スプライト描画
 void GamePlayScene::Object2DDraw() {
+	//========================================
+	// トランジションの描画
+	if (sceneTransition_) {
+		sceneTransition_->Draw();
+	}
 }
 
 ///=============================================================================

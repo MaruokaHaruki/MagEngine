@@ -86,6 +86,7 @@ public:
 			transitionSprite_->SetSize({screenWidth_, screenHeight_});
 			transitionSprite_->SetPosition({0.0f, 0.0f});
 			transitionSprite_->SetAnchorPoint({0.0f, 0.0f});
+			transitionSprite_->SetRotation(0.0f);
 		}
 	}
 

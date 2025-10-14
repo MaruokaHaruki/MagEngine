@@ -25,6 +25,7 @@
 #include "Particle.h"
 #include "ParticleEmitter.h"
 #include "Player.h"
+#include "SceneTransition.h"
 #include "Skybox.h"
 #include "Skydome.h"
 #include "Sprite.h"
@@ -106,4 +107,8 @@ private:
 	//========================================
 	// HUD
 	std::unique_ptr<HUD> hud_;
+
+	//========================================
+	// トランジション
+	std::unique_ptr<SceneTransition> sceneTransition_;
 };

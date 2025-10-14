@@ -51,19 +51,8 @@ void SceneTransition::Update() {
 	}
 
 	if (state_ == TransitionState::Completed) {
-		// Opening完了時は透明に、Closing完了時は不透明のまま
-		if (transitionSprite_) {
-			Vector4 finalColor = transitionColor_;
-			// この時点での最終的な透明度を設定
-			finalColor.w = (progress_ >= 1.0f) ? 1.0f : 0.0f;
-
-			// Openingの場合は完全に透明
-			if (state_ == TransitionState::Opening) {
-				finalColor.w = 0.0f;
-			}
-
-			transitionSprite_->SetColor(finalColor);
-		}
+		// Completed状態では最終的な透明度を保持
+		// この関数内では何もしない（すでに設定済み）
 		return;
 	}
 
@@ -79,12 +68,6 @@ void SceneTransition::Update() {
 
 	// イージング適用
 	progress_ = EaseInOut(rawProgress);
-
-	// Opening時は進行度を反転（1.0→0.0）
-	float effectiveProgress = progress_;
-	if (state_ == TransitionState::Opening) {
-		effectiveProgress = 1.0f - progress_;
-	}
 
 	// トランジションタイプに応じた更新
 	switch (currentType_) {
@@ -137,16 +120,7 @@ void SceneTransition::Update() {
 
 	// トランジション完了チェック
 	if (rawProgress >= 1.0f) {
-		TransitionState previousState = state_;
 		state_ = TransitionState::Completed;
-
-		// 完了時の最終状態を設定
-		if (transitionSprite_) {
-			Vector4 finalColor = transitionColor_;
-			// Openingなら透明、Closingなら不透明
-			finalColor.w = (previousState == TransitionState::Opening) ? 0.0f : 1.0f;
-			transitionSprite_->SetColor(finalColor);
-		}
 
 		if (onCompleteCallback_) {
 			onCompleteCallback_();
@@ -172,11 +146,11 @@ void SceneTransition::Draw() {
 		return;
 	}
 
-	// Opening完了後は描画しない（画面を見せる）
+	// Completed状態での描画判定
 	if (state_ == TransitionState::Completed) {
-		// Closing完了の場合のみ描画（画面を隠す）
-		// Opening完了の場合は描画しない
-		// ここでは何も描画しない
+		// Opening完了なら透明なので描画不要
+		// Closing完了なら不透明のまま描画
+		// ここでは描画しない（どちらも最終状態が設定済み）
 		return;
 	}
 
@@ -204,6 +178,10 @@ void SceneTransition::UpdateFade() {
 	Vector4 color = transitionColor_;
 	color.w = effectiveProgress; // アルファ値を進行度に応じて変更
 	transitionSprite_->SetColor(color);
+
+	// サイズと位置を確実に設定
+	transitionSprite_->SetSize({screenWidth_, screenHeight_});
+	transitionSprite_->SetPosition({0.0f, 0.0f});
 }
 
 void SceneTransition::UpdateSlide() {
@@ -365,12 +343,25 @@ void SceneTransition::UpdateCurtain() {
 	float halfWidth = (screenWidth_ / 2.0f) * effectiveProgress;
 
 	// 左カーテン
-	additionalSprites_[0]->SetPosition({0.0f, 0.0f});
-	additionalSprites_[0]->SetSize({halfWidth, screenHeight_});
+	if (additionalSprites_.size() > 0) {
+		additionalSprites_[0]->SetPosition({0.0f, 0.0f});
+		additionalSprites_[0]->SetSize({halfWidth, screenHeight_});
+		additionalSprites_[0]->SetColor(transitionColor_);
+	}
 
 	// 右カーテン
-	additionalSprites_[1]->SetPosition({screenWidth_ - halfWidth, 0.0f});
-	additionalSprites_[1]->SetSize({halfWidth, screenHeight_});
+	if (additionalSprites_.size() > 1) {
+		additionalSprites_[1]->SetPosition({screenWidth_ - halfWidth, 0.0f});
+		additionalSprites_[1]->SetSize({halfWidth, screenHeight_});
+		additionalSprites_[1]->SetColor(transitionColor_);
+	}
+
+	// メインスプライトは使用しない（透明に）
+	if (transitionSprite_) {
+		Vector4 clearColor = transitionColor_;
+		clearColor.w = 0.0f;
+		transitionSprite_->SetColor(clearColor);
+	}
 }
 
 void SceneTransition::UpdateVenetianBlinds() {
@@ -533,6 +524,7 @@ void SceneTransition::StartClosing(TransitionType type, float duration) {
 		transitionSprite_->SetSize({screenWidth_, screenHeight_});
 		transitionSprite_->SetPosition({0.0f, 0.0f});
 		transitionSprite_->SetAnchorPoint({0.0f, 0.0f});
+		transitionSprite_->SetRotation(0.0f);
 	}
 
 	// テクスチャ使用設定
@@ -561,6 +553,7 @@ void SceneTransition::StartOpening(TransitionType type, float duration) {
 		transitionSprite_->SetSize({screenWidth_, screenHeight_});
 		transitionSprite_->SetPosition({0.0f, 0.0f});
 		transitionSprite_->SetAnchorPoint({0.0f, 0.0f});
+		transitionSprite_->SetRotation(0.0f);
 	}
 
 	// テクスチャ使用設定
@@ -571,17 +564,8 @@ void SceneTransition::StartOpening(TransitionType type, float duration) {
 }
 
 void SceneTransition::CompleteImmediate() {
-	TransitionState previousState = state_;
 	state_ = TransitionState::Completed;
 	progress_ = 1.0f;
-
-	// 即座完了時の最終状態を設定
-	if (transitionSprite_) {
-		Vector4 finalColor = transitionColor_;
-		// Openingなら透明、Closingなら不透明
-		finalColor.w = (previousState == TransitionState::Opening) ? 0.0f : 1.0f;
-		transitionSprite_->SetColor(finalColor);
-	}
 
 	if (onCompleteCallback_) {
 		onCompleteCallback_();
@@ -598,6 +582,10 @@ void SceneTransition::Cancel() {
 		Vector4 clearColor = transitionColor_;
 		clearColor.w = 0.0f;
 		transitionSprite_->SetColor(clearColor);
+		transitionSprite_->SetSize({screenWidth_, screenHeight_});
+		transitionSprite_->SetPosition({0.0f, 0.0f});
+		transitionSprite_->SetAnchorPoint({0.0f, 0.0f});
+		transitionSprite_->SetRotation(0.0f);
 	}
 
 	// 追加スプライトもクリア
