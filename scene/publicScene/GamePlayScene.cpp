@@ -290,7 +290,10 @@ void GamePlayScene::Object3DDraw() {
 	//========================================
 	// HUDの描画
 	if (hud_) {
-		hud_->Draw();
+		// トランジション中はHUDを描画しない
+		if (!sceneTransition_ || !sceneTransition_->IsTransitioning()) {
+			hud_->Draw();
+		}
 	}
 }
 

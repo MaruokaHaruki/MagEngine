@@ -86,7 +86,8 @@ private:
 	//========================================
 	// 演出用変数
 	float blinkTimer_ = 0.0f;
-	bool isPressEnterVisible_ = true;
+	float pressEnterAlpha_ = 1.0f;
+	bool isFadingOut_ = true;
 
 	//========================================
 	// スカイボックス

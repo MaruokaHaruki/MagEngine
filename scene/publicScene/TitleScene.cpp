@@ -121,12 +121,27 @@ void TitleScene::Update() {
 
 	// Press Enterの点滅処理
 	blinkTimer_ += 1.0f / 60.0f; // 1フレーム進める
-	if (blinkTimer_ >= 1.0f) {	 // 1秒ごとに切り替え
-		blinkTimer_ = 0.0f;
-		isPressEnterVisible_ = !isPressEnterVisible_;
+
+	// フェード速度（1秒でフェードイン/アウト）
+	float fadeSpeed = 1.0f;
+
+	if (isFadingOut_) {
+		pressEnterAlpha_ -= fadeSpeed / 60.0f;
+		if (pressEnterAlpha_ <= 0.0f) {
+			pressEnterAlpha_ = 0.0f;
+			isFadingOut_ = false;
+		}
+	} else {
+		pressEnterAlpha_ += fadeSpeed / 60.0f;
+		if (pressEnterAlpha_ >= 1.0f) {
+			pressEnterAlpha_ = 1.0f;
+			isFadingOut_ = true;
+		}
 	}
 
+	// Press Enterスプライトの透過度を設定
 	if (pressEnterSprite_) {
+		pressEnterSprite_->SetColor({1.0f, 1.0f, 1.0f, pressEnterAlpha_});
 		pressEnterSprite_->Update();
 	}
 
@@ -216,7 +231,7 @@ void TitleScene::Update() {
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		// トランジション開始
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Curtain, 1.0f);
+			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 			// トランジション完了時にシーン遷移
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::GAMEPLAY;
@@ -250,8 +265,8 @@ void TitleScene::Object2DDraw() {
 		titleSprite_->Draw();
 	}
 
-	// Press Enterを点滅表示
-	if (pressEnterSprite_ && isPressEnterVisible_) {
+	// Press Enterを常に描画（透過度で制御）
+	if (pressEnterSprite_) {
 		pressEnterSprite_->Draw();
 	}
 
@@ -290,17 +305,6 @@ void TitleScene::ImGuiDraw() {
 	ImGui::Begin("TitleScene");
 	ImGui::Text("Hello, TitleScene!");
 	ImGui::End();
-
-	if (titleCamera_) {
-		titleCamera_->DrawImGui();
-	}
-
-	if (player_) {
-		player_->DrawImGui();
-	}
-
-	if (sceneTransition_) {
-		sceneTransition_->DrawImGui();
-	}
-#endif // DEBUG
+#endif if (titleCamera_) {
+	titleCamera_->DrawImGui();
 }
