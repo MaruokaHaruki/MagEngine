@@ -29,6 +29,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.png");
 	TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
 
 	// モデル
@@ -57,7 +58,13 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// スプライト
 	titleSprite_ = std::make_unique<Sprite>();
 	titleSprite_->Initialize(spriteSetup, "WolfOne_Title.png");
-	titleSprite_->SetPosition({100.0f, 100.0f});
+	titleSprite_->SetPosition({640.0f, 200.0f}); // 画面上部中央
+	titleSprite_->SetAnchorPoint({0.5f, 0.5f});	 // 中心を基準点に
+
+	pressEnterSprite_ = std::make_unique<Sprite>();
+	pressEnterSprite_->Initialize(spriteSetup, "WolfOne_PressEnter.png");
+	pressEnterSprite_->SetPosition({640.0f, 550.0f}); // 画面下部中央
+	pressEnterSprite_->SetAnchorPoint({0.5f, 0.5f});  // 中心を基準点に
 
 	//========================================
 	// プレイヤーの初期化（演出用）
@@ -112,6 +119,17 @@ void TitleScene::Update() {
 		titleSprite_->Update();
 	}
 
+	// Press Enterの点滅処理
+	blinkTimer_ += 1.0f / 60.0f; // 1フレーム進める
+	if (blinkTimer_ >= 1.0f) {	 // 1秒ごとに切り替え
+		blinkTimer_ = 0.0f;
+		isPressEnterVisible_ = !isPressEnterVisible_;
+	}
+
+	if (pressEnterSprite_) {
+		pressEnterSprite_->Update();
+	}
+
 	//=========================================
 	// Skybox
 	if (skybox_) {
@@ -131,7 +149,7 @@ void TitleScene::Update() {
 
 		//========================================
 		// 【1】オープニング：ゆっくり上昇
-		//if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Opening) {
+		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Opening) {
 		//	// 緩やかに上昇＋前進
 		//	playerTransform->translate.y += 0.1f;
 		//	playerTransform->translate.z += 0.15f;
@@ -142,7 +160,7 @@ void TitleScene::Update() {
 
 		//========================================
 		// 【2】ヒーローショット：上昇を継続
-		//if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::HeroShot) {
+		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::HeroShot) {
 		//	// 上昇速度を少し上げる
 		//	playerTransform->translate.y += 0.2f;
 		//	playerTransform->translate.z += 0.25f;
@@ -153,7 +171,7 @@ void TitleScene::Update() {
 
 		//========================================
 		// 【3】タイトル表示：安定した上昇
-		//if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::TitleDisplay) {
+		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::TitleDisplay) {
 		//	// 安定した上昇
 		//	playerTransform->translate.y += 0.15f;
 		//	playerTransform->translate.z += 0.2f;
@@ -164,7 +182,7 @@ void TitleScene::Update() {
 
 		//========================================
 		// 【4】ループ：ゆっくり旋回
-		//if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Loop) {
+		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Loop) {
 		//	static float loopTimer = 0.0f;
 		//	loopTimer += 1.0f / 60.0f;
 
@@ -232,6 +250,11 @@ void TitleScene::Object2DDraw() {
 		titleSprite_->Draw();
 	}
 
+	// Press Enterを点滅表示
+	if (pressEnterSprite_ && isPressEnterVisible_) {
+		pressEnterSprite_->Draw();
+	}
+
 	// トランジション描画（最前面）
 	if (sceneTransition_) {
 		sceneTransition_->Draw();
@@ -247,7 +270,7 @@ void TitleScene::Object3DDraw() {
 }
 
 ///=============================================================================
-///						パーティクル描画
+///						Particle描画
 void TitleScene::ParticleDraw() {
 }
 

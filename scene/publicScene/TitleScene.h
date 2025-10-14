@@ -81,6 +81,12 @@ private:
 	//========================================
 	// スプライト
 	std::unique_ptr<Sprite> titleSprite_;
+	std::unique_ptr<Sprite> pressEnterSprite_;
+
+	//========================================
+	// 演出用変数
+	float blinkTimer_ = 0.0f;
+	bool isPressEnterVisible_ = true;
 
 	//========================================
 	// スカイボックス
