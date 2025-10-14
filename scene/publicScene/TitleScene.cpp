@@ -29,6 +29,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
+	// TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
 
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
@@ -78,6 +79,15 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	skybox_->SetTexture("overcast_soil_puresky_4k.dds");
 	// SkyboxのTransformを設定
 	skybox_->SetTransform({{1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
+
+	//========================================
+	// トランジション
+	sceneTransition_ = std::make_unique<SceneTransition>();
+	sceneTransition_->Initialize(spriteSetup);
+	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
+
+	// シーン開始時にオープニングトランジション
+	sceneTransition_->StartOpening(TransitionType::Fade, 1.5f);
 }
 
 ///=============================================================================
@@ -176,18 +186,40 @@ void TitleScene::Update() {
 	}
 
 	//========================================
+	// トランジション更新
+	if (sceneTransition_) {
+		sceneTransition_->Update();
+	}
+
+	//========================================
 	// シーン遷移
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		sceneNo = SCENE::GAMEPLAY;
+		// トランジション開始
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+			// トランジション完了時にシーン遷移
+			sceneTransition_->SetOnCompleteCallback([this]() {
+				sceneNo = SCENE::GAMEPLAY;
+			});
+		}
 	}
 	// コントローラ
 	if (Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
-		sceneNo = SCENE::GAMEPLAY;
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+			sceneTransition_->StartClosing(TransitionType::SlideLeft, 0.8f);
+			sceneTransition_->SetOnCompleteCallback([this]() {
+				sceneNo = SCENE::GAMEPLAY;
+			});
+		}
 	}
 	// シーンリセット
 	if (Input::GetInstance()->TriggerKey(DIK_R)) {
-		sceneNo = SCENE::GAMEPLAY;
-		sceneNo = SCENE::TITLE;
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+			sceneTransition_->StartClosing(TransitionType::Fade, 0.5f);
+			sceneTransition_->SetOnCompleteCallback([this]() {
+				sceneNo = SCENE::TITLE;
+			});
+		}
 	}
 }
 
@@ -196,6 +228,11 @@ void TitleScene::Update() {
 void TitleScene::Object2DDraw() {
 	if (titleSprite_) {
 		titleSprite_->Draw();
+	}
+
+	// トランジション描画（最前面）
+	if (sceneTransition_) {
+		sceneTransition_->Draw();
 	}
 }
 
@@ -235,6 +272,10 @@ void TitleScene::ImGuiDraw() {
 
 	if (player_) {
 		player_->DrawImGui();
+	}
+
+	if (sceneTransition_) {
+		sceneTransition_->DrawImGui();
 	}
 #endif // DEBUG
 }
