@@ -22,6 +22,24 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	object3dSetup;
 	particleSetup;
 	skyboxSetup;
+
+	//========================================
+	// 読み込み関係
+	// スプライト
+	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
+
+	// モデル
+	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
+	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
+	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
+	// スカイボックス
+	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
+	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
+
 	//========================================
 	// カメラ設定
 	CameraManager::GetInstance()->AddCamera("TitleCamera");
@@ -31,11 +49,6 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	titleCamera_->Initialize("TitleCamera");
 	// FollowCameraをメインカメラに設定
 	CameraManager::GetInstance()->SetCurrentCamera("TitleCamera");
-
-	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
-	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
-	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
-	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
 
 	//========================================
 	// プレイヤーの初期化（演出用）
@@ -51,12 +64,6 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	titleCamera_->SetPlayer(player_.get());
 
 	//========================================
-	// 音の読み込み
-
-	//========================================
-	// モデルの読み込み
-
-	//========================================
 	// タイトルオブジェクト
 
 	//========================================
@@ -64,11 +71,6 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 
 	//========================================
 	// スカイボックス
-	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
 	skybox_ = std::make_unique<Skybox>();
 	skybox_->Initialize(skyboxSetup);
 	// Skyboxのモデルを設定
@@ -176,7 +178,7 @@ void TitleScene::Update() {
 		sceneNo = SCENE::GAMEPLAY;
 	}
 	// シーンリセット
-	if(Input::GetInstance()->TriggerKey(DIK_R)) {
+	if (Input::GetInstance()->TriggerKey(DIK_R)) {
 		sceneNo = SCENE::GAMEPLAY;
 		sceneNo = SCENE::TITLE;
 	}
