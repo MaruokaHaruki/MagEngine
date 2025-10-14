@@ -141,7 +141,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
 
 	// シーン開始時にオープニングトランジション
-	sceneTransition_->StartOpening(TransitionType::Curtain, 1.5f);
+	sceneTransition_->StartOpening(TransitionType::Fade, 1.5f);
 }
 
 ///=============================================================================

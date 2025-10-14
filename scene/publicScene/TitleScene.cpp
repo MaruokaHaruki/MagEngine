@@ -56,9 +56,8 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	//========================================
 	// スプライト
 	titleSprite_ = std::make_unique<Sprite>();
-	titleSprite_->Initialize(spriteSetup, "WolfOne_Triangle.png");
+	titleSprite_->Initialize(spriteSetup, "WolfOne_Title.png");
 	titleSprite_->SetPosition({100.0f, 100.0f});
-	titleSprite_->SetSize({200.0f, 200.0f});
 
 	//========================================
 	// プレイヤーの初期化（演出用）
