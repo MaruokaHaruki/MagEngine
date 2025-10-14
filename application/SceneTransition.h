@@ -7,15 +7,25 @@
 ///=============================================================================
 ///                        トランジションタイプ
 enum class TransitionType {
-	Fade,		  // フェードイン/アウト
-	SlideLeft,	  // 左からスライド
-	SlideRight,	  // 右からスライド
-	SlideUp,	  // 上からスライド
-	SlideDown,	  // 下からスライド
-	WipeLeft,	  // 左にワイプ
-	WipeRight,	  // 右にワイプ
-	CircleExpand, // 円形拡大
-	CircleShrink, // 円形縮小
+	Fade,			// フェードイン/アウト
+	SlideLeft,		// 左からスライド
+	SlideRight,		// 右からスライド
+	SlideUp,		// 上からスライド
+	SlideDown,		// 下からスライド
+	WipeLeft,		// 左にワイプ
+	WipeRight,		// 右にワイプ
+	CircleExpand,	// 円形拡大
+	CircleShrink,	// 円形縮小
+	DiamondWipe,	// ひし形ワイプ
+	CrossFade,		// クロスフェード（複数レイヤー）
+	ZoomIn,			// ズームイン
+	ZoomOut,		// ズームアウト
+	Curtain,		// カーテン（左右から）
+	VenetianBlinds, // ブラインド（水平線）
+	Checkerboard,	// チェッカーボード
+	PixelDissolve,	// ピクセル溶解
+	Spiral,			// スパイラル
+	Clock,			// 時計回り
 };
 
 ///=============================================================================
@@ -119,6 +129,15 @@ private:
 	void UpdateSlide();
 	void UpdateWipe();
 	void UpdateCircle();
+	void UpdateDiamondWipe();
+	void UpdateCrossFade();
+	void UpdateZoom();
+	void UpdateCurtain();
+	void UpdateVenetianBlinds();
+	void UpdateCheckerboard();
+	void UpdatePixelDissolve();
+	void UpdateSpiral();
+	void UpdateClock();
 
 	float EaseInOut(float t);
 	float EaseIn(float t);
@@ -149,4 +168,7 @@ private:
 	// 画面サイズ（初期化時に取得）
 	float screenWidth_ = 1280.0f;
 	float screenHeight_ = 720.0f;
+
+	// おしゃれトランジション用の追加スプライト
+	std::vector<std::unique_ptr<Sprite>> additionalSprites_;
 };
