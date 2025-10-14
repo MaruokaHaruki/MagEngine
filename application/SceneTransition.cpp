@@ -51,8 +51,8 @@ void SceneTransition::Update() {
 	}
 
 	if (state_ == TransitionState::Completed) {
-		// Completed状態では最終的な透明度を保持
-		// この関数内では何もしない（すでに設定済み）
+		// Completed状態では状態を保持
+		// Closing完了時は不透明のまま、Opening完了時は透明のまま
 		return;
 	}
 
@@ -147,14 +147,10 @@ void SceneTransition::Draw() {
 	}
 
 	// Completed状態での描画判定
-	if (state_ == TransitionState::Completed) {
-		// Opening完了なら透明なので描画不要
-		// Closing完了なら不透明のまま描画
-		// ここでは描画しない（どちらも最終状態が設定済み）
-		return;
-	}
+	// Note: Closing完了時は描画を継続（画面を覆ったまま）
+	// Opening完了時は描画しない（すでに透明なので不要）
 
-	// トランジション中のみ描画
+	// トランジション中またはClosing完了時に描画
 	if (transitionSprite_) {
 		transitionSprite_->Draw();
 	}
