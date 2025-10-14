@@ -72,6 +72,23 @@ public:
 	/// \brief トランジションの中断
 	void Cancel();
 
+	/// \brief トランジションのリセット（完全初期化）
+	void Reset() {
+		state_ = TransitionState::Idle;
+		progress_ = 0.0f;
+		elapsedTime_ = 0.0f;
+		additionalSprites_.clear();
+
+		if (transitionSprite_) {
+			Vector4 clearColor = transitionColor_;
+			clearColor.w = 0.0f;
+			transitionSprite_->SetColor(clearColor);
+			transitionSprite_->SetSize({screenWidth_, screenHeight_});
+			transitionSprite_->SetPosition({0.0f, 0.0f});
+			transitionSprite_->SetAnchorPoint({0.0f, 0.0f});
+		}
+	}
+
 	///--------------------------------------------------------------
 	///                        状態取得
 	/// \brief トランジション中かどうかを取得

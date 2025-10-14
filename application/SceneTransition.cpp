@@ -36,7 +36,34 @@ void SceneTransition::Finalize() {
 ///=============================================================================
 ///                        更新
 void SceneTransition::Update() {
-	if (state_ == TransitionState::Idle || state_ == TransitionState::Completed) {
+	if (state_ == TransitionState::Idle) {
+		// Idle状態では完全に透明に
+		if (transitionSprite_) {
+			Vector4 clearColor = transitionColor_;
+			clearColor.w = 0.0f;
+			transitionSprite_->SetColor(clearColor);
+		}
+		// 追加スプライトをクリア
+		if (!additionalSprites_.empty()) {
+			additionalSprites_.clear();
+		}
+		return;
+	}
+
+	if (state_ == TransitionState::Completed) {
+		// Opening完了時は透明に、Closing完了時は不透明のまま
+		if (transitionSprite_) {
+			Vector4 finalColor = transitionColor_;
+			// この時点での最終的な透明度を設定
+			finalColor.w = (progress_ >= 1.0f) ? 1.0f : 0.0f;
+
+			// Openingの場合は完全に透明
+			if (state_ == TransitionState::Opening) {
+				finalColor.w = 0.0f;
+			}
+
+			transitionSprite_->SetColor(finalColor);
+		}
 		return;
 	}
 
@@ -110,7 +137,17 @@ void SceneTransition::Update() {
 
 	// トランジション完了チェック
 	if (rawProgress >= 1.0f) {
+		TransitionState previousState = state_;
 		state_ = TransitionState::Completed;
+
+		// 完了時の最終状態を設定
+		if (transitionSprite_) {
+			Vector4 finalColor = transitionColor_;
+			// Openingなら透明、Closingなら不透明
+			finalColor.w = (previousState == TransitionState::Opening) ? 0.0f : 1.0f;
+			transitionSprite_->SetColor(finalColor);
+		}
+
 		if (onCompleteCallback_) {
 			onCompleteCallback_();
 		}
@@ -130,10 +167,20 @@ void SceneTransition::Update() {
 ///=============================================================================
 ///                        描画
 void SceneTransition::Draw() {
+	// Idle状態では何も描画しない
 	if (state_ == TransitionState::Idle) {
 		return;
 	}
 
+	// Opening完了後は描画しない（画面を見せる）
+	if (state_ == TransitionState::Completed) {
+		// Closing完了の場合のみ描画（画面を隠す）
+		// Opening完了の場合は描画しない
+		// ここでは何も描画しない
+		return;
+	}
+
+	// トランジション中のみ描画
 	if (transitionSprite_) {
 		transitionSprite_->Draw();
 	}
@@ -477,9 +524,21 @@ void SceneTransition::StartClosing(TransitionType type, float duration) {
 	// 追加スプライトをクリア
 	additionalSprites_.clear();
 
+	// 初期状態を設定（透明から開始）
+	if (transitionSprite_) {
+		Vector4 startColor = transitionColor_;
+		startColor.w = 0.0f; // 完全に透明から開始
+		transitionSprite_->SetColor(startColor);
+		// サイズとアンカーをリセット
+		transitionSprite_->SetSize({screenWidth_, screenHeight_});
+		transitionSprite_->SetPosition({0.0f, 0.0f});
+		transitionSprite_->SetAnchorPoint({0.0f, 0.0f});
+	}
+
 	// テクスチャ使用設定
 	if (useTexture_ && !transitionTexture_.empty()) {
-		transitionSprite_->SetTexture(transitionTexture_);
+		std::string texPath = transitionTexture_;
+		transitionSprite_->SetTexture(texPath);
 	}
 }
 
@@ -493,15 +552,37 @@ void SceneTransition::StartOpening(TransitionType type, float duration) {
 	// 追加スプライトをクリア
 	additionalSprites_.clear();
 
+	// 初期状態を設定（不透明から開始）
+	if (transitionSprite_) {
+		Vector4 startColor = transitionColor_;
+		startColor.w = 1.0f; // 完全に不透明から開始
+		transitionSprite_->SetColor(startColor);
+		// サイズとアンカーをリセット
+		transitionSprite_->SetSize({screenWidth_, screenHeight_});
+		transitionSprite_->SetPosition({0.0f, 0.0f});
+		transitionSprite_->SetAnchorPoint({0.0f, 0.0f});
+	}
+
 	// テクスチャ使用設定
 	if (useTexture_ && !transitionTexture_.empty()) {
-		transitionSprite_->SetTexture(transitionTexture_);
+		std::string texPath = transitionTexture_;
+		transitionSprite_->SetTexture(texPath);
 	}
 }
 
 void SceneTransition::CompleteImmediate() {
+	TransitionState previousState = state_;
 	state_ = TransitionState::Completed;
 	progress_ = 1.0f;
+
+	// 即座完了時の最終状態を設定
+	if (transitionSprite_) {
+		Vector4 finalColor = transitionColor_;
+		// Openingなら透明、Closingなら不透明
+		finalColor.w = (previousState == TransitionState::Opening) ? 0.0f : 1.0f;
+		transitionSprite_->SetColor(finalColor);
+	}
+
 	if (onCompleteCallback_) {
 		onCompleteCallback_();
 	}
@@ -511,6 +592,16 @@ void SceneTransition::Cancel() {
 	state_ = TransitionState::Idle;
 	progress_ = 0.0f;
 	elapsedTime_ = 0.0f;
+
+	// キャンセル時は完全に透明に
+	if (transitionSprite_) {
+		Vector4 clearColor = transitionColor_;
+		clearColor.w = 0.0f;
+		transitionSprite_->SetColor(clearColor);
+	}
+
+	// 追加スプライトもクリア
+	additionalSprites_.clear();
 }
 
 ///=============================================================================

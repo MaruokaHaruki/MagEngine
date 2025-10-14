@@ -86,8 +86,11 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	sceneTransition_->Initialize(spriteSetup);
 	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
 
+	// 完全にリセットしてからトランジション開始
+	sceneTransition_->Reset();
+
 	// シーン開始時にオープニングトランジション
-	sceneTransition_->StartOpening(TransitionType::Fade, 1.5f);
+	sceneTransition_->StartOpening(TransitionType::Curtain, 1.5f);
 }
 
 ///=============================================================================
@@ -196,7 +199,7 @@ void TitleScene::Update() {
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		// トランジション開始
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+			sceneTransition_->StartClosing(TransitionType::Curtain, 1.0f);
 			// トランジション完了時にシーン遷移
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::GAMEPLAY;
@@ -206,7 +209,7 @@ void TitleScene::Update() {
 	// コントローラ
 	if (Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::SlideLeft, 0.8f);
+			sceneTransition_->StartClosing(TransitionType::Curtain, 0.8f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::GAMEPLAY;
 			});
@@ -215,7 +218,7 @@ void TitleScene::Update() {
 	// シーンリセット
 	if (Input::GetInstance()->TriggerKey(DIK_R)) {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Fade, 0.5f);
+			sceneTransition_->StartClosing(TransitionType::Curtain, 0.5f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::TITLE;
 			});
