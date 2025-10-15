@@ -1,31 +1,63 @@
 name: ReleaseBuild
 
-# トリガー
-# ワークフローの発動条件となる
+# トリガー設定
 on:
   push:
     branches:
-    - master
+      - master
+  workflow_dispatch:  # 手動実行も可能
 
 # 環境変数
 env:
-  # リポジトリのルートディレクトリを起点としたソリューションファイルのパス
   SOLUTION_FILE_PATH: MagEngine.sln
-  # VISUAL Studio の構成(Debug / Release)
   CONFIGURATION: Release
+  PLATFORM: x64
 
-# ジョブ
 jobs:
   build:
     runs-on: windows-2022
-    # ステップ
+
     steps:
-      - name: Checkout
+      # 1️⃣ ソース取得
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1
+      # 2️⃣ NuGet キャッシュ
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-      - name: Build
-        run: |
-          msbuild ${{ env.SOLUTION_FILE_PATH }} /p:Platform=x64,Configuration=${{ env.CONFIGURATION }}
+      # 3️⃣ MSBuild 準備
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.3
+
+      # 4️⃣ NuGet パッケージ復元
+      - name: Restore dependencies
+        run: nuget restore ${{ env.SOLUTION_FILE_PATH }}
+
+      # 5️⃣ リリースビルド実行
+      - name: Build Solution (Release)
+        run: msbuild ${{ env.SOLUTION_FILE_PATH }} /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.PLATFORM }}
+
+      # 6️⃣ 成果物アップロード
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MagEngine-${{ env.CONFIGURATION }}
+          path: |
+            **/x64/${{ env.CONFIGURATION }}/
+            !**/*.pdb
+
+      # 7️⃣ 自動リリース作成（タグ時のみ）
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            **/x64/${{ env.CONFIGURATION }}/*.exe
+            **/x64/${{ env.CONFIGURATION }}/*.dll
+          generate_release_notes: true
