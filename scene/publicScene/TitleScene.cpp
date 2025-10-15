@@ -58,7 +58,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// スプライト
 	titleSprite_ = std::make_unique<Sprite>();
 	titleSprite_->Initialize(spriteSetup, "WolfOne_Title.png");
-	titleSprite_->SetPosition({640.0f, 200.0f}); // 画面上部中央
+	titleSprite_->SetPosition({640.0f, 130.0f}); // 画面上部中央
 	titleSprite_->SetAnchorPoint({0.5f, 0.5f});	 // 中心を基準点に
 
 	pressEnterSprite_ = std::make_unique<Sprite>();
@@ -96,7 +96,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	sceneTransition_->Reset();
 
 	// シーン開始時にオープニングトランジション
-	sceneTransition_->StartOpening(TransitionType::Curtain, 1.5f);
+	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
 }
 
 ///=============================================================================
@@ -228,10 +228,10 @@ void TitleScene::Update() {
 
 	//========================================
 	// シーン遷移
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
 		// トランジション開始
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+			sceneTransition_->StartClosing(TransitionType::ZoomIn, 1.0f);
 			// トランジション完了時にシーン遷移
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::GAMEPLAY;
@@ -241,7 +241,7 @@ void TitleScene::Update() {
 	// コントローラ
 	if (Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Curtain, 0.8f);
+			sceneTransition_->StartClosing(TransitionType::ZoomIn, 0.8f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::GAMEPLAY;
 			});
@@ -250,7 +250,7 @@ void TitleScene::Update() {
 	// シーンリセット
 	if (Input::GetInstance()->TriggerKey(DIK_R)) {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Curtain, 0.5f);
+			sceneTransition_->StartClosing(TransitionType::ZoomIn, 0.5f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::TITLE;
 			});
@@ -307,4 +307,10 @@ void TitleScene::ImGuiDraw() {
 	ImGui::End();
 #endif if (titleCamera_) {
 	titleCamera_->DrawImGui();
+
+	//========================================
+	// シーン遷移
+	if (sceneTransition_) {
+		sceneTransition_->DrawImGui();
+	}
 }

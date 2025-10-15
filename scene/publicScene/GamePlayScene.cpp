@@ -141,7 +141,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
 
 	// シーン開始時にオープニングトランジション
-	sceneTransition_->StartOpening(TransitionType::Fade, 1.5f);
+	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
 }
 
 ///=============================================================================
@@ -237,8 +237,17 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
-	// LineManagerの更新（ミサイルデバッグ表示用）
-	LineManager::GetInstance()->Update();
+	// タイトルへのシーン遷移（デバッグ用）
+	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+		// トランジション開始
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+			// トランジション完了時にシーン遷移
+			sceneTransition_->SetOnCompleteCallback([this]() {
+				sceneNo = SCENE::TITLE;
+			});
+		}
+	}
 }
 
 ///=============================================================================
@@ -275,10 +284,6 @@ void GamePlayScene::Object3DDraw() {
 	if (enemyManager_) {
 		enemyManager_->Draw();
 	}
-
-	//========================================
-	// LineManagerの描画（デバッグライン）
-	LineManager::GetInstance()->Draw();
 
 	//========================================
 	// 当たり判定
@@ -365,9 +370,5 @@ void GamePlayScene::ImGuiDraw() {
 	if (hud_) {
 		hud_->DrawImGui();
 	}
-
-	//========================================
-	// LineManagerのImGui
-	LineManager::GetInstance()->DrawImGui();
 #endif // _DEBUG
 }
