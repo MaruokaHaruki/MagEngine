@@ -1,31 +1,65 @@
-name: DebugBuild
+name: C++ Build & Test
 
-# トリガー
-# ワークフローの発動条件となる
 on:
   push:
-    branches:
-    - master  # 修正: 'masetr' から 'master' へ
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:  # 手動実行も可
 
-# 環境変数
 env:
-  # リポジトリのルートディレクトリを起点としたソリューションファイルのパス
   SOLUTION_FILE_PATH: MagEngine.sln
-  # VISUAL Studio の構成(Debug / Release)
+  PLATFORM: x64
   CONFIGURATION: Debug
 
-# ジョブ
 jobs:
   build:
     runs-on: windows-2022
-    # ステップ
+
     steps:
-      - name: Checkout
+      # ソースコード取得
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1  # 最新バージョンを確認
+      # NuGet パッケージのキャッシュ
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-      - name: Build
+      # MSBuild セットアップ
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.3
+
+      # NuGet 復元
+      - name: Restore dependencies
+        run: nuget restore ${{ env.SOLUTION_FILE_PATH }}
+
+      # ビルド
+      - name: Build Solution
+        run: msbuild ${{ env.SOLUTION_FILE_PATH }} /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.PLATFORM }}
+
+      # テスト実行（存在する場合）
+      - name: Run Unit Tests
         run: |
-          msbuild ${{ env.SOLUTION_FILE_PATH }} /p:Platform=x64,Configuration=${{ env.CONFIGURATION }}
+          echo "Running tests..."
+          for /R . %%f in (*.exe) do (
+            echo Checking %%f
+            if /I "%%~nxf"=="UnitTests.exe" (
+              echo Running %%f
+              "%%f"
+            )
+          )
+        shell: cmd
+
+      # 成果物のアップロード
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MagEngine-${{ env.CONFIGURATION }}
+          path: |
+            **/x64/${{ env.CONFIGURATION }}/
+            !**/*.pdb
