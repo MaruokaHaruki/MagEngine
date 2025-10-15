@@ -133,6 +133,15 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	if (followCamera_) {
 		hud_->SetFollowCamera(followCamera_.get());
 	}
+
+	//========================================
+	// トランジションの初期化
+	sceneTransition_ = std::make_unique<SceneTransition>();
+	sceneTransition_->Initialize(spriteSetup);
+	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
+
+	// シーン開始時にオープニングトランジション
+	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
 }
 
 ///=============================================================================
@@ -143,6 +152,12 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
+	//========================================
+	// トランジションの更新
+	if (sceneTransition_) {
+		sceneTransition_->Update();
+	}
+
 	//========================================
 	// FollowCameraの更新
 	if (followCamera_) {
@@ -222,13 +237,27 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
-	// LineManagerの更新（ミサイルデバッグ表示用）
-	LineManager::GetInstance()->Update();
+	// タイトルへのシーン遷移（デバッグ用）
+	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+		// トランジション開始
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+			// トランジション完了時にシーン遷移
+			sceneTransition_->SetOnCompleteCallback([this]() {
+				sceneNo = SCENE::TITLE;
+			});
+		}
+	}
 }
 
 ///=============================================================================
 ///                        スプライト描画
 void GamePlayScene::Object2DDraw() {
+	//========================================
+	// トランジションの描画
+	if (sceneTransition_) {
+		sceneTransition_->Draw();
+	}
 }
 
 ///=============================================================================
@@ -257,10 +286,6 @@ void GamePlayScene::Object3DDraw() {
 	}
 
 	//========================================
-	// LineManagerの描画（デバッグライン）
-	LineManager::GetInstance()->Draw();
-
-	//========================================
 	// 当たり判定
 	collisionManager_->Draw();
 
@@ -270,7 +295,10 @@ void GamePlayScene::Object3DDraw() {
 	//========================================
 	// HUDの描画
 	if (hud_) {
-		hud_->Draw();
+		// トランジション中はHUDを描画しない
+		if (!sceneTransition_ || !sceneTransition_->IsTransitioning()) {
+			hud_->Draw();
+		}
 	}
 }
 
@@ -342,9 +370,5 @@ void GamePlayScene::ImGuiDraw() {
 	if (hud_) {
 		hud_->DrawImGui();
 	}
-
-	//========================================
-	// LineManagerのImGui
-	LineManager::GetInstance()->DrawImGui();
 #endif // _DEBUG
 }

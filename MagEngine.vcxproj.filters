@@ -131,19 +131,19 @@
     <ClCompile Include="engine\3d\skybox\Skybox.cpp">
       <Filter>engine\3d\skybox</Filter>
     </ClCompile>
-    <ClCompile Include="application\Skydome.cpp">
+    <ClCompile Include="application\utils\Skydome.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\PlayerBullet.cpp">
+    <ClCompile Include="application\player\PlayerBullet.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\PlayerMissile.cpp">
+    <ClCompile Include="application\player\PlayerMissile.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\TitleCamera.cpp">
+    <ClCompile Include="application\utils\TitleCamera.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\Player.cpp">
+    <ClCompile Include="application\player\Player.cpp">
       <Filter>application</Filter>
     </ClCompile>
     <ClCompile Include="engine\postEffect\PostEffectManager.cpp">
@@ -152,19 +152,19 @@
     <ClCompile Include="engine\postEffect\FullscreenPassRendere.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
-    <ClCompile Include="application\Cloud.cpp">
+    <ClCompile Include="application\utils\Cloud.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\Ball.cpp">
+    <ClCompile Include="application\utils\Ball.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\Enemy.cpp">
+    <ClCompile Include="application\enemy\Enemy.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\EnemyManager.cpp">
+    <ClCompile Include="application\enemy\EnemyManager.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\FollowCamera.cpp">
+    <ClCompile Include="application\utils\FollowCamera.cpp">
       <Filter>application</Filter>
     </ClCompile>
     <ClCompile Include="engine\postEffect\GrayscaleEffect.cpp">
@@ -179,7 +179,7 @@
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp">
       <Filter>engine\2d\particle</Filter>
     </ClCompile>
-    <ClCompile Include="application\HUD.cpp">
+    <ClCompile Include="application\utils\HUD.cpp">
       <Filter>application</Filter>
     </ClCompile>
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp">
@@ -188,6 +188,7 @@
     <ClCompile Include="engine\base\LevelDataLoader.cpp">
       <Filter>engine\base</Filter>
     </ClCompile>
+    <ClCompile Include="application\SceneTransition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -373,19 +374,19 @@
     <ClInclude Include="engine\3d\skybox\Skybox.h">
       <Filter>engine\3d\skybox</Filter>
     </ClInclude>
-    <ClInclude Include="application\Skydome.h">
+    <ClInclude Include="application\utils\Skydome.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\PlayerMissile.h">
+    <ClInclude Include="application\player\PlayerMissile.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\Player.h">
+    <ClInclude Include="application\player\Player.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\PlayerBullet.h">
+    <ClInclude Include="application\player\PlayerBullet.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\TitleCamera.h">
+    <ClInclude Include="application\utils\TitleCamera.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="engine\postEffect\PostEffectManager.h">
@@ -394,19 +395,19 @@
     <ClInclude Include="engine\postEffect\FullscreenPassRendere.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
-    <ClInclude Include="application\Cloud.h">
+    <ClInclude Include="application\utils\Cloud.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\Ball.h">
+    <ClInclude Include="application\utils\Ball.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\Enemy.h">
+    <ClInclude Include="application\enemy\Enemy.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\EnemyManager.h">
+    <ClInclude Include="application\enemy\EnemyManager.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\FollowCamera.h">
+    <ClInclude Include="application\utils\FollowCamera.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="engine\postEffect\GrayscaleEffect.h">
@@ -421,7 +422,7 @@
     <ClInclude Include="engine\2d\particle\Particle.h">
       <Filter>engine\2d\particle</Filter>
     </ClInclude>
-    <ClInclude Include="application\HUD.h">
+    <ClInclude Include="application\utils\HUD.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\imGui\DebugTextManager.h">
@@ -430,6 +431,7 @@
     <ClInclude Include="engine\base\LevelDataLoader.h">
       <Filter>engine\base</Filter>
     </ClInclude>
+    <ClInclude Include="application\SceneTransition.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
