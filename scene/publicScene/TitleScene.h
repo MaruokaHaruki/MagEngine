@@ -25,6 +25,7 @@
 #include "Particle.h"
 #include "ParticleEmitter.h"
 #include "Player.h"
+#include "SceneTransition.h"
 #include "Skybox.h"
 #include "Skydome.h"
 #include "Sprite.h"
@@ -79,8 +80,20 @@ private:
 
 	//========================================
 	// スプライト
+	std::unique_ptr<Sprite> titleSprite_;
+	std::unique_ptr<Sprite> pressEnterSprite_;
+
+	//========================================
+	// 演出用変数
+	float blinkTimer_ = 0.0f;
+	float pressEnterAlpha_ = 1.0f;
+	bool isFadingOut_ = true;
 
 	//========================================
 	// スカイボックス
 	std::unique_ptr<Skybox> skybox_;
+
+	//========================================
+	// トランジション
+	std::unique_ptr<SceneTransition> sceneTransition_;
 };
