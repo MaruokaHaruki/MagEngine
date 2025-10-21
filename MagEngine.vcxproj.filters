@@ -248,22 +248,22 @@
     <ClInclude Include="engine\utils\Logger.h">
       <Filter>engine\utils</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\Transform.h">
+    <ClInclude Include="engine\math\structure\common\Transform.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\TransformationMatrix.h">
+    <ClInclude Include="engine\math\structure\graphics\TransformationMatrix.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\Vector2.h">
+    <ClInclude Include="engine\math\structure\common\Vector2.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\Vector3.h">
+    <ClInclude Include="engine\math\structure\common\Vector3.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\Vector4.h">
+    <ClInclude Include="engine\math\structure\common\Vector4.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\VertexData.h">
+    <ClInclude Include="engine\math\structure\graphics\VertexData.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
     <ClInclude Include="engine\utils\WstringUtility.h">
@@ -272,28 +272,28 @@
     <ClInclude Include="scene\base\AbstractSceneFactory.h">
       <Filter>engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\AffineTransformations.h">
+    <ClInclude Include="engine\math\operations\AffineTransformations.h">
       <Filter>engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\Light.h">
+    <ClInclude Include="engine\math\structure\graphics\Light.h">
       <Filter>engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\input\Input.h">
       <Filter>engine\input</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\Matrix4x4.h">
+    <ClInclude Include="engine\math\structure\common\Matrix4x4.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\Material.h">
+    <ClInclude Include="engine\math\structure\graphics\Material.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\MaterialData.h">
+    <ClInclude Include="engine\math\structure\graphics\MaterialData.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\MathFunc4x4.h">
+    <ClInclude Include="engine\math\operations\MathFunc4x4.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\Matrix3x3.h">
+    <ClInclude Include="engine\math\structure\common\Matrix3x3.h">
       <Filter>engine\math\structure</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\object3d\Object3dSetup.h">
@@ -308,7 +308,7 @@
     <ClInclude Include="engine\3d\model\Model.h">
       <Filter>engine\3d\model</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\structure\drawData\ModelData.h">
+    <ClInclude Include="engine\math\structure\graphics\ModelData.h">
       <Filter>engine\3d\model</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\model\ModelManager.h">
@@ -317,7 +317,7 @@
     <ClInclude Include="scene\publicScene\TitleScene.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="engine\math\RenderingMatrices.h">
+    <ClInclude Include="engine\math\operations\RenderingMatrices.h">
       <Filter>engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\core\DirectXCore.h">
@@ -432,6 +432,9 @@
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="application\SceneTransition.h" />
+    <ClInclude Include="engine\math\structure\GraphicsStructures.h" />
+    <ClInclude Include="engine\math\structure\MathStructures.h" />
+    <ClInclude Include="engine\math\MagMath.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

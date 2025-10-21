@@ -66,7 +66,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)application/enemy;$(ProjectDir)application/player;$(ProjectDir)application/utils;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)application/enemy;$(ProjectDir)application/player;$(ProjectDir)application/utils;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -92,7 +92,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)application/enemy;$(ProjectDir)application/player;$(ProjectDir)application/utils;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)engine/input;$(ProjectDir)engine/utils;$(ProjectDir)engine/math;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)application/enemy;$(ProjectDir)application/player;$(ProjectDir)application/utils;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)engine/input;$(ProjectDir)engine/utils;$(ProjectDir)engine/math;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -186,6 +186,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\line\Line.h" />
     <ClInclude Include="engine\3d\line\LineSetup.h" />
     <ClInclude Include="engine\3d\line\LineManager.h" />
+    <ClInclude Include="engine\math\MagMath.h" />
+    <ClInclude Include="engine\math\structure\GraphicsStructures.h" />
+    <ClInclude Include="engine\math\structure\MathStructures.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
     <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
@@ -221,24 +224,24 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\utils\WstringUtility.h" />
     <ClInclude Include="engine\utils\Logger.h" />
     <ClInclude Include="engine\input\Input.h" />
-    <ClInclude Include="engine\math\MathFunc4x4.h" />
-    <ClInclude Include="engine\math\structure\drawData\Light.h" />
-    <ClInclude Include="engine\math\structure\drawData\Material.h" />
-    <ClInclude Include="engine\math\structure\drawData\MaterialData.h" />
-    <ClInclude Include="engine\math\structure\drawData\ModelData.h" />
-    <ClInclude Include="engine\math\structure\drawData\TransformationMatrix.h" />
-    <ClInclude Include="engine\math\structure\drawData\VertexData.h" />
-    <ClInclude Include="engine\math\structure\Matrix4x4.h" />
-    <ClInclude Include="engine\math\structure\Transform.h" />
-    <ClInclude Include="engine\math\structure\Vector3.h" />
-    <ClInclude Include="engine\math\structure\Vector4.h" />
-    <ClInclude Include="engine\math\AffineTransformations.h" />
-    <ClInclude Include="engine\math\RenderingMatrices.h" />
-    <ClInclude Include="engine\math\structure\Matrix3x3.h" />
+    <ClInclude Include="engine\math\operations\MathFunc4x4.h" />
+    <ClInclude Include="engine\math\structure\graphics\Light.h" />
+    <ClInclude Include="engine\math\structure\graphics\Material.h" />
+    <ClInclude Include="engine\math\structure\graphics\MaterialData.h" />
+    <ClInclude Include="engine\math\structure\graphics\ModelData.h" />
+    <ClInclude Include="engine\math\structure\graphics\TransformationMatrix.h" />
+    <ClInclude Include="engine\math\structure\graphics\VertexData.h" />
+    <ClInclude Include="engine\math\structure\common\Matrix4x4.h" />
+    <ClInclude Include="engine\math\structure\common\Transform.h" />
+    <ClInclude Include="engine\math\structure\common\Vector3.h" />
+    <ClInclude Include="engine\math\structure\common\Vector4.h" />
+    <ClInclude Include="engine\math\operations\AffineTransformations.h" />
+    <ClInclude Include="engine\math\operations\RenderingMatrices.h" />
+    <ClInclude Include="engine\math\structure\common\Matrix3x3.h" />
     <ClInclude Include="engine\base\core\WinApp.h" />
     <ClInclude Include="engine\2d\sprite\SpriteSetup.h" />
     <ClInclude Include="engine\2d\sprite\Sprite.h" />
-    <ClInclude Include="engine\math\structure\Vector2.h" />
+    <ClInclude Include="engine\math\structure\common\Vector2.h" />
     <ClInclude Include="engine\2d\texture\TextureManager.h" />
     <ClInclude Include="engine\3d\object3d\Object3dSetup.h" />
     <ClInclude Include="engine\3d\object3d\Object3d.h" />
