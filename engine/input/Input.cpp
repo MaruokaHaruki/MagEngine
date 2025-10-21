@@ -1,10 +1,10 @@
 #include "Input.h"
 #include "ImguiSetup.h"
-#include <windows.h>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <algorithm>
 #include <dinput.h>
+#include <windows.h>
 
 #pragma comment(lib, "xinput.lib")
 #pragma comment(lib, "dinput8.lib")
@@ -20,12 +20,12 @@ Input *Input::GetInstance() {
 ///=============================================================================
 ///						デストラクタ
 Input::~Input() {
-	if(keyboardDevice_) {
+	if (keyboardDevice_) {
 		keyboardDevice_->Unacquire();
 		keyboardDevice_->Release();
 		keyboardDevice_ = nullptr;
 	}
-	if(directInput_) {
+	if (directInput_) {
 		directInput_->Release();
 		directInput_ = nullptr;
 	}
@@ -55,8 +55,8 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
 	assert(SUCCEEDED(hr) && "Failed to set cooperative level for keyboard");
 	//========================================
 	// デバイスの取得開始
-	hr = keyboardDevice_->Acquire();
-	assert(SUCCEEDED(hr) && "Failed to acquire keyboard device");
+	// 初期化時は失敗しても問題ない（Update時に再取得する）
+	keyboardDevice_->Acquire();
 	//========================================
 	// マウスの初期位置を取得
 	GetCursorPos(&mousePosPrev_);
@@ -68,7 +68,7 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
 	// コントローラーの初期状態を取得
 	ZeroMemory(&controllerStatePrev_, sizeof(XINPUT_STATE));
 	DWORD result = XInputGetState(0, &controllerStatePrev_);
-	controllerConnected_ = ( result == ERROR_SUCCESS );
+	controllerConnected_ = (result == ERROR_SUCCESS);
 }
 
 ///=============================================================================
@@ -84,12 +84,12 @@ void Input::Update() {
 	mouseWheelPrev_ = mouseWheel_;
 	//========================================
 	// マウスボタンの仮想キーコードを配列で定義
-	const int mouseVKCodes[3] = { VK_LBUTTON, VK_RBUTTON, VK_MBUTTON };
+	const int mouseVKCodes[3] = {VK_LBUTTON, VK_RBUTTON, VK_MBUTTON};
 	//========================================
 	// マウスボタンの状態を更新
-	for(int i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		mouseButtonsPrev_[i] = mouseButtons_[i];
-		mouseButtons_[i] = ( GetAsyncKeyState(mouseVKCodes[i]) & 0x8000 ) != 0;
+		mouseButtons_[i] = (GetAsyncKeyState(mouseVKCodes[i]) & 0x8000) != 0;
 	}
 	// マウスホイールの値を更新後、リセット
 	mouseWheel_ = 0.0f;
@@ -97,32 +97,37 @@ void Input::Update() {
 	// キーボードの状態を更新
 	memcpy(keyStatePrev_, keyState_, sizeof(keyState_));
 	HRESULT hr = keyboardDevice_->GetDeviceState(sizeof(keyState_), keyState_);
-	if(FAILED(hr)) {
-		// デバイスがロストしている場合
-		while(keyboardDevice_->Acquire() == DIERR_INPUTLOST) {}
-		keyboardDevice_->GetDeviceState(sizeof(keyState_), keyState_);
+	if (FAILED(hr)) {
+		// デバイスがロストしている場合、再取得を試みる
+		hr = keyboardDevice_->Acquire();
+		if (SUCCEEDED(hr)) {
+			// 再取得成功後、状態を取得
+			keyboardDevice_->GetDeviceState(sizeof(keyState_), keyState_);
+		} else {
+			// 再取得失敗時はキー状態をクリア
+			memset(keyState_, 0, sizeof(keyState_));
+		}
 	}
 	//========================================
 	// コントローラーの状態を更新
 	controllerStatePrev_ = controllerState_;
 	ZeroMemory(&controllerState_, sizeof(XINPUT_STATE));
 	DWORD result = XInputGetState(0, &controllerState_);
-	controllerConnected_ = ( result == ERROR_SUCCESS );
+	controllerConnected_ = (result == ERROR_SUCCESS);
 }
 
 ///=============================================================================
 ///						マウスホイールの値を更新
 void Input::OnMouseWheel(short delta) {
-	mouseWheel_ += static_cast<float>( delta ) / WHEEL_DELTA;
+	mouseWheel_ += static_cast<float>(delta) / WHEEL_DELTA;
 }
 
 ///=============================================================================
 ///						マウスの移動量を取得
 Vector2 Input::GetMouseMove() const {
 	return Vector2(
-		static_cast<float>( mousePos_.x - mousePosPrev_.x ),
-		static_cast<float>( mousePos_.y - mousePosPrev_.y )
-	);
+		static_cast<float>(mousePos_.x - mousePosPrev_.x),
+		static_cast<float>(mousePos_.y - mousePosPrev_.y));
 }
 
 ///=============================================================================
@@ -130,13 +135,12 @@ Vector2 Input::GetMouseMove() const {
 Vector2 Input::GetMousePosFromWindowCenter() const {
 	RECT rect;
 	GetClientRect(hwnd_, &rect);
-	float centerX = ( rect.right - rect.left ) / 2.0f;
-	float centerY = ( rect.bottom - rect.top ) / 2.0f;
+	float centerX = (rect.right - rect.left) / 2.0f;
+	float centerY = (rect.bottom - rect.top) / 2.0f;
 
 	return Vector2(
-		static_cast<float>( mousePos_.x ) - centerX,
-		static_cast<float>( mousePos_.y ) - centerY
-	);
+		static_cast<float>(mousePos_.x) - centerX,
+		static_cast<float>(mousePos_.y) - centerY);
 }
 
 ///=============================================================================
@@ -148,7 +152,7 @@ float Input::GetMouseWheel() const {
 ///=============================================================================
 ///						マウスのボタンの押下をチェック
 bool Input::PushMouseButton(int buttonNumber) const {
-	if(buttonNumber < 0 || buttonNumber >= 3) {
+	if (buttonNumber < 0 || buttonNumber >= 3) {
 		return false;
 	}
 	return mouseButtons_[buttonNumber];
@@ -157,7 +161,7 @@ bool Input::PushMouseButton(int buttonNumber) const {
 ///=============================================================================
 ///						マウスのボタンのトリガーチェック
 bool Input::TriggerMouseButton(int buttonNumber) const {
-	if(buttonNumber < 0 || buttonNumber >= 3) {
+	if (buttonNumber < 0 || buttonNumber >= 3) {
 		return false;
 	}
 	return mouseButtons_[buttonNumber] && !mouseButtonsPrev_[buttonNumber];
@@ -168,44 +172,44 @@ bool Input::TriggerMouseButton(int buttonNumber) const {
 ///--------------------------------------------------------------
 ///						 キーの押下をチェック
 bool Input::PushKey(int keyCode) const {
-	return ( keyState_[keyCode] & 0x80 ) != 0;
+	return (keyState_[keyCode] & 0x80) != 0;
 }
 
 ///--------------------------------------------------------------
 ///						 キーのトリガーチェック
 bool Input::TriggerKey(int keyCode) const {
-	return ( ( keyState_[keyCode] & 0x80 ) != 0 ) && ( ( keyStatePrev_[keyCode] & 0x80 ) == 0 );
+	return ((keyState_[keyCode] & 0x80) != 0) && ((keyStatePrev_[keyCode] & 0x80) == 0);
 }
 
 ///=============================================================================
 ///						コントローラ
 ///--------------------------------------------------------------
-///						
+///
 bool Input::IsControllerConnected() const {
 	return controllerConnected_;
 }
 ///--------------------------------------------------------------
 ///						 ボタンの押下をチェック
 bool Input::PushButton(WORD button) const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return false;
 	}
-	return ( controllerState_.Gamepad.wButtons & button ) != 0;
+	return (controllerState_.Gamepad.wButtons & button) != 0;
 }
 
 ///--------------------------------------------------------------
 ///						 ボタンのトリガーチェック
 bool Input::TriggerButton(WORD button) const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return false;
 	}
-	return ( ( controllerState_.Gamepad.wButtons & button ) != 0 ) && ( ( controllerStatePrev_.Gamepad.wButtons & button ) == 0 );
+	return ((controllerState_.Gamepad.wButtons & button) != 0) && ((controllerStatePrev_.Gamepad.wButtons & button) == 0);
 }
 
 ///--------------------------------------------------------------
 ///						 左トリガーの値を取得
 float Input::GetLeftTrigger() const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return 0.0f;
 	}
 	return controllerState_.Gamepad.bLeftTrigger / 255.0f;
@@ -214,7 +218,7 @@ float Input::GetLeftTrigger() const {
 ///--------------------------------------------------------------
 ///						 右トリガーの値を取得
 float Input::GetRightTrigger() const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return 0.0f;
 	}
 	return controllerState_.Gamepad.bRightTrigger / 255.0f;
@@ -223,41 +227,41 @@ float Input::GetRightTrigger() const {
 ///--------------------------------------------------------------
 ///						 左スティックのX軸の値を取得
 float Input::GetLeftStickX() const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return 0.0f;
 	}
-	float value = static_cast<float>( controllerState_.Gamepad.sThumbLX ) / 32767.0f;
-	return ( fabs(value) < stickDeadZone_ ) ? 0.0f : value;
+	float value = static_cast<float>(controllerState_.Gamepad.sThumbLX) / 32767.0f;
+	return (fabs(value) < stickDeadZone_) ? 0.0f : value;
 }
 
 ///--------------------------------------------------------------
 ///						 左スティックのY軸の値を取得
 float Input::GetLeftStickY() const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return 0.0f;
 	}
-	float value = static_cast<float>( controllerState_.Gamepad.sThumbLY ) / 32767.0f;
-	return ( fabs(value) < stickDeadZone_ ) ? 0.0f : value;
+	float value = static_cast<float>(controllerState_.Gamepad.sThumbLY) / 32767.0f;
+	return (fabs(value) < stickDeadZone_) ? 0.0f : value;
 }
 
 ///--------------------------------------------------------------
 ///						 右スティックのX軸の値を取得
 float Input::GetRightStickX() const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return 0.0f;
 	}
-	float value = static_cast<float>( controllerState_.Gamepad.sThumbRX ) / 32767.0f;
-	return ( fabs(value) < stickDeadZone_ ) ? 0.0f : value;
+	float value = static_cast<float>(controllerState_.Gamepad.sThumbRX) / 32767.0f;
+	return (fabs(value) < stickDeadZone_) ? 0.0f : value;
 }
 
 ///--------------------------------------------------------------
 ///						 右スティックのY軸の値を取得
 float Input::GetRightStickY() const {
-	if(!controllerConnected_) {
+	if (!controllerConnected_) {
 		return 0.0f;
 	}
-	float value = static_cast<float>( controllerState_.Gamepad.sThumbRY ) / 32767.0f;
-	return ( fabs(value) < stickDeadZone_ ) ? 0.0f : value;
+	float value = static_cast<float>(controllerState_.Gamepad.sThumbRY) / 32767.0f;
+	return (fabs(value) < stickDeadZone_) ? 0.0f : value;
 }
 
 ///--------------------------------------------------------------
@@ -325,14 +329,14 @@ void Input::ImGuiDraw() {
 
 	// キーボードの状態
 	ImGui::Text("Keyboard:");
-	for(int i = 0; i < 256; ++i) {
-		if(keyState_[i] & 0x80) {
+	for (int i = 0; i < 256; ++i) {
+		if (keyState_[i] & 0x80) {
 			ImGui::Text("Key: %d", i);
 		}
 	}
 
 	// コントローラーの状態
-	if(controllerConnected_) {
+	if (controllerConnected_) {
 		ImGui::Separator();
 		ImGui::Text("Controller:");
 		ImGui::Text("Buttons: 0x%04X", controllerState_.Gamepad.wButtons);
