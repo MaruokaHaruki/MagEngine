@@ -8,7 +8,6 @@
 #pragma once
 #include "DirectXCore.h"
 #include "SrvSetup.h"
-#include <algorithm>
 #include <string>
 #include <unordered_map>
 
