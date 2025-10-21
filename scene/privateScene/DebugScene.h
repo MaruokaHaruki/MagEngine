@@ -10,15 +10,6 @@
 //========================================
 // Game
 #include "Ball.h"
-#include "Camera.h"
-#include "LevelDataLoader.h"
-#include "MAudioG.h"
-#include "Model.h"
-#include "Object3d.h"
-#include "Particle.h"
-#include "ParticleEmitter.h"
-#include "Skybox.h"
-#include "Sprite.h"
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------

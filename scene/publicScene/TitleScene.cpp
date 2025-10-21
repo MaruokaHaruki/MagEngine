@@ -7,10 +7,6 @@
  * \note
  *********************************************************************/
 #include "TitleScene.h"
-#include "CameraManager.h"
-#include "Input.h"
-#include "MAudioG.h"
-#include "SceneManager.h"
 #include "TitleCamera.h"
 
 ///=============================================================================

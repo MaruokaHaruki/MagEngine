@@ -1,10 +1,6 @@
 #include "Particle.h"
 #include "Camera.h"
 //---------------------------------------
-// ファイル読み込み関数
-#include <fstream>
-#include <sstream>
-//---------------------------------------
 // 数学関数　
 #include "AffineTransformations.h"
 #include "MathFunc4x4.h"

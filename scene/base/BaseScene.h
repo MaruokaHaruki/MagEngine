@@ -7,11 +7,42 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "DebugTextManager.h"
+//========================================
+// 3D系
+// Object3d
 #include "Object3dSetup.h"
+#include "Object3d.h"
+// Particle
 #include "ParticleSetup.h"
+#include "Particle.h"
+#include "ParticleEmitter.h"
+// Skybox
 #include "SkyboxSetup.h"
+#include "Skybox.h"
+// ========================================
+// 2D系
 #include "SpriteSetup.h"
+#include "Sprite.h"
+// ========================================
+// その他
+// オーディオ
+#include "MAudioG.h"
+// カメラ
+#include "Camera.h"
+// カメラマネージャ
+#include "CameraManager.h"
+// ラインマネージャ
+#include "LineManager.h"
+// データローダー
+#include "LevelDataLoader.h"
+// Input
+#include "Input.h"
+
+// ========================================
+// デバック関係
+#include "DebugTextManager.h"
+
+
 // シーンの種類
 enum SCENE {
 	DEBUG,

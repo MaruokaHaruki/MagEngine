@@ -7,32 +7,23 @@
  * \note   スプライト1枚分のクラス
  *********************************************************************/
 #pragma once
- //========================================
- // Windows include
+//========================================
+// Windows include
 #include <cstdint>
 //========================================
 // DX12include
-#include<d3d12.h>
-#include<dxgi1_6.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
 #include <wrl/client.h>
-#pragma comment(lib,"d3d12.lib")
-#pragma comment(lib,"dxgi.lib")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 //========================================
 // DXC
 #include <dxcapi.h>
-#pragma comment(lib,"dxcompiler.lib")
+#pragma comment(lib, "dxcompiler.lib")
 //========================================
 // 自作構造体
-#include "VertexData.h"
-#include "Material.h"
-#include "TransformationMatrix.h"
-#include "Transform.h"
-#include "Matrix4x4.h"
-//========================================
-// 自作クラス
-#include "AffineTransformations.h"
-#include "RenderingMatrices.h"
-#include "TextureManager.h"
+#include "MagMath.h"
 
 ///=============================================================================
 ///								クラス
@@ -41,14 +32,13 @@ class Sprite {
 	///--------------------------------------------------------------
 	///						 メンバ関数
 public:
-
 	/**----------------------------------------------------------------------------
 	 * \brief  初期化
 	 * \param  spriteManager スプライト管理クラス
 	 * \param  textureFilePath ファイルパス
 	 * \note
 	 */
-	void Initialize(SpriteSetup* spriteManager, std::string textureFilePath);
+	void Initialize(SpriteSetup *spriteManager, std::string textureFilePath);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  更新
@@ -115,8 +105,6 @@ private:
 	 */
 	void AdjustTextureSize();
 
-
-
 	///--------------------------------------------------------------
 	///						 入出力関数
 public:
@@ -125,204 +113,231 @@ public:
 	 * \return position 座標
 	 * \note
 	 */
-	const Vector2& GetPosition() const { return position_; }
+	const Vector2 &GetPosition() const {
+		return position_;
+	}
 	/**----------------------------------------------------------------------------
 	 * \brief  position 座標の設定
 	 * \param  position
 	 * \note
 	 */
-	void SetPosition(const Vector2& position) { this->position_ = position; }
-
+	void SetPosition(const Vector2 &position) {
+		this->position_ = position;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetRotation 回転の取得
 	 * \return rotation_
 	 * \note
 	 */
-	const float& GetRotation() const { return rotation_; }
+	const float &GetRotation() const {
+		return rotation_;
+	}
 	/**----------------------------------------------------------------------------
 	 * \brief  SetRotation 回転の設定
 	 * \param  rotation
 	 * \note
 	 */
-	void SetRotation(float rotation) { this->rotation_ = rotation; }
-
+	void SetRotation(float rotation) {
+		this->rotation_ = rotation;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetColor 色の取得
 	 * \return 色
 	 * \note
 	 */
-	const Vector4& GetColor() const { return materialData_->color; }
+	const Vector4 &GetColor() const {
+		return materialData_->color;
+	}
 	/**----------------------------------------------------------------------------
 	 * \brief  SetColor 色の設定
 	 * \param  color
 	 * \note
 	 */
-	void SetColor(const Vector4& color) { materialData_->color = color; }
-
+	void SetColor(const Vector4 &color) {
+		materialData_->color = color;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetSize 大きさの取得
 	 * \return
 	 * \note
 	 */
-	const Vector2 GetSize() const { return size_; }
+	const Vector2 GetSize() const {
+		return size_;
+	}
 	/**----------------------------------------------------------------------------
 	 * \brief  SetSize 大きさの設定
 	 * \param  size
 	 * \note
 	 */
-	void SetSize(const Vector2& size) { this->size_ = size; }
-
+	void SetSize(const Vector2 &size) {
+		this->size_ = size;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTexture テクスチャの差し替え
 	 * \param  textureFilePath
 	 * \note
 	 */
-	void SetTexture(std::string& textureFilePath) { this->textureFilePath_ = textureFilePath; }
-
+	void SetTexture(std::string &textureFilePath) {
+		this->textureFilePath_ = textureFilePath;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetAnchorPoint アンカーポイントの取得
 	 * \return anchorPoint_
 	 * \note
 	 */
-	const Vector2& GetAnchorPoint() const { return anchorPoint_; }
+	const Vector2 &GetAnchorPoint() const {
+		return anchorPoint_;
+	}
 	/**----------------------------------------------------------------------------
 	 * \brief  SetAnchorPoint アンカーポイントの設定
 	 * \param  anchorPoint アンカーポイント
 	 * \note
 	 */
-	void SetAnchorPoint(const Vector2& anchorPoint) { this->anchorPoint_ = anchorPoint; }
-
+	void SetAnchorPoint(const Vector2 &anchorPoint) {
+		this->anchorPoint_ = anchorPoint;
+	}
 
 	/**----------------------------------------------------------------------------
-		 * \brief  GetFlipX 左右フリップの取得
-		 * 	 * \return isFlipX_
-		 * 	 * \note
-		 * 	 */
-	const bool& GetFlipX() const { return isFlipX_; }
+	 * \brief  GetFlipX 左右フリップの取得
+	 * 	 * \return isFlipX_
+	 * 	 * \note
+	 * 	 */
+	const bool &GetFlipX() const {
+		return isFlipX_;
+	}
 	/**----------------------------------------------------------------------------
-	* \brief  SetFlipX 左右フリップの設定
-	* \param  isFlipX
-	* \note
-	*/
-	void SetFlipX(bool isFlipX) { this->isFlipX_ = isFlipX; }
-
+	 * \brief  SetFlipX 左右フリップの設定
+	 * \param  isFlipX
+	 * \note
+	 */
+	void SetFlipX(bool isFlipX) {
+		this->isFlipX_ = isFlipX;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetFlipY 上下フリップの取得
-	* \return isFlipY_
-	* \note
-	*/
-	const bool& GetFlipY() const { return isFlipY_; }
+	 * \return isFlipY_
+	 * \note
+	 */
+	const bool &GetFlipY() const {
+		return isFlipY_;
+	}
 	/**----------------------------------------------------------------------------
-	* \brief  SetFlipY 上下フリップの設定
-	* \param  isFlipY
-	* \note
-	*/
-	void SetFlipY(bool isFlipY) { this->isFlipY_ = isFlipY; }
-
+	 * \brief  SetFlipY 上下フリップの設定
+	 * \param  isFlipY
+	 * \note
+	 */
+	void SetFlipY(bool isFlipY) {
+		this->isFlipY_ = isFlipY;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetTextureLeftTop テクスチャ左上座標の取得
 	 * \return textureLeftTop_ テクスチャ左上座標
 	 * \note
 	 */
-	const Vector2& GetTextureLeftTop() const { return textureLeftTop_; }
+	const Vector2 &GetTextureLeftTop() const {
+		return textureLeftTop_;
+	}
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTextureLeftTop テクスチャ左上座標の設定
 	 * \param  textureLeftTop テクスチャ左上座標
 	 * \note
 	 */
-	void SetTextureLeftTop(const Vector2& textureLeftTop) { this->textureLeftTop_ = textureLeftTop; }
-
+	void SetTextureLeftTop(const Vector2 &textureLeftTop) {
+		this->textureLeftTop_ = textureLeftTop;
+	}
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetTextureSize テクスチャ切り出しサイズの取得
 	 * \return textureSize_ テクスチャ切り出しサイズ
 	 * \note
 	 */
-	const Vector2& GetTextureSize() const { return textureSize_; }
+	const Vector2 &GetTextureSize() const {
+		return textureSize_;
+	}
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTextureSize テクスチャ切り出しサイズの設定
 	 * \param  textureSize テクスチャ切り出しサイズ
 	 * \note
 	 */
-	void SetTextureSize(const Vector2& textureSize) { this->textureSize_ = textureSize; }
-
+	void SetTextureSize(const Vector2 &textureSize) {
+		this->textureSize_ = textureSize;
+	}
 
 	///--------------------------------------------------------------
 	///						 メンバ変数
 private:
 	///---------------------------------------
 	/// スプライトマネージャ
-	SpriteSetup* spriteSetup_ = nullptr;
+	SpriteSetup *spriteSetup_ = nullptr;
 
 	///---------------------------------------
 	/// バッファデータ
-	//頂点
-	Microsoft::WRL::ComPtr <ID3D12Resource> vertexBuffer_ = nullptr;
-	//インデックス
-	Microsoft::WRL::ComPtr <ID3D12Resource> indexBuffer_ = nullptr;
-	//マテリアル
-	Microsoft::WRL::ComPtr <ID3D12Resource> materialBuffer_ = nullptr;
-	//トランスフォーメーションマトリックス
-	Microsoft::WRL::ComPtr <ID3D12Resource> transfomationMatrixBuffer_ = nullptr;
+	// 頂点
+	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_ = nullptr;
+	// インデックス
+	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_ = nullptr;
+	// マテリアル
+	Microsoft::WRL::ComPtr<ID3D12Resource> materialBuffer_ = nullptr;
+	// トランスフォーメーションマトリックス
+	Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_ = nullptr;
 
 	///---------------------------------------
 	/// バッファリソース内のデータを指すポインタ
-	//頂点
-	VertexData* vertexData_ = nullptr;
-	//インデックス
-	uint32_t* indexData_ = nullptr;
-	//マテリアル
-	Material* materialData_ = nullptr;
-	//トランスフォーメーションマトリックス
-	TransformationMatrix* transformationMatrixData_ = nullptr;
+	// 頂点
+	VertexData *vertexData_ = nullptr;
+	// インデックス
+	uint32_t *indexData_ = nullptr;
+	// マテリアル
+	Material *materialData_ = nullptr;
+	// トランスフォーメーションマトリックス
+	TransformationMatrix *transformationMatrixData_ = nullptr;
 
 	///---------------------------------------
 	/// バッファリソースの使い道を指すポインタ
-	//頂点
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};
-	//インデックス
+	// 頂点
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};
+	// インデックス
 	D3D12_INDEX_BUFFER_VIEW indexBufferView_ = {};
 
 	///---------------------------------------
 	/// SRT設定
-	//トランスフォーム
-	Transform transform_ = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+	// トランスフォーム
+	Transform transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 	// 座標
-	Vector2 position_ = { 0.0f,0.0f };
+	Vector2 position_ = {0.0f, 0.0f};
 	// 回転
 	float rotation_ = 0.0f;
 	// サイズ
-	Vector2 size_ = { 1.0f,1.0f };
+	Vector2 size_ = {1.0f, 1.0f};
 
 	///---------------------------------------
 	/// テクスチャ番号
-	//uint32_t textureIndex = 0;
-	//ファイルパス
+	// uint32_t textureIndex = 0;
+	// ファイルパス
 	std::string textureFilePath_ = "";
 
 	///---------------------------------------
 	/// アンカーポイント
-	Vector2 anchorPoint_ = { 0.0f,0.0f };
+	Vector2 anchorPoint_ = {0.0f, 0.0f};
 
 	///---------------------------------------
 	/// フリップ
-	//左右フリップ
+	// 左右フリップ
 	bool isFlipX_ = false;
-	//上下フリップ
+	// 上下フリップ
 	bool isFlipY_ = false;
 
 	///---------------------------------------
 	/// テクスチャ範囲指定
-	//テクスチャ左上座標
-	Vector2 textureLeftTop_ = { 0.0f,0.0f };
-	//テクスチャ切り出しサイズ
-	Vector2 textureSize_ = { 0.0f,0.0f };
+	// テクスチャ左上座標
+	Vector2 textureLeftTop_ = {0.0f, 0.0f};
+	// テクスチャ切り出しサイズ
+	Vector2 textureSize_ = {0.0f, 0.0f};
 };
-

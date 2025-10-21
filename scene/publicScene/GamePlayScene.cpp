@@ -8,13 +8,9 @@
  *********************************************************************/
 #include "GamePlayScene.h"
 #include "CameraManager.h"
-#include "Cloud.h"
-#include "Enemy.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
 #include "HUD.h"
-#include "Input.h"
-#include "LineManager.h"
 #include "ModelManager.h"
 #include "Player.h"
 
