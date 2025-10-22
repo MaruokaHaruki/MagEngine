@@ -26,6 +26,7 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Engage.png");
 	TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
 
 	// モデル
