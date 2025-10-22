@@ -189,6 +189,7 @@
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="application\SceneTransition.cpp" />
+    <ClCompile Include="StartAnimation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -435,6 +436,7 @@
     <ClInclude Include="engine\math\structure\GraphicsStructures.h" />
     <ClInclude Include="engine\math\structure\MathStructures.h" />
     <ClInclude Include="engine\math\MagMath.h" />
+    <ClInclude Include="StartAnimation.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

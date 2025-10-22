@@ -18,6 +18,13 @@ public:
 	// FollowCameraの設定
 	void SetFollowCamera(FollowCamera *followCamera);
 
+	// アニメーション制御
+	void StartDeployAnimation(float duration = 1.5f);
+	void StartRetractAnimation(float duration = 1.0f);
+	bool IsAnimating() const {
+		return isAnimating_;
+	}
+
 private:
 	// HUDの各要素を描画する関数
 	void DrawBoresight();					// 画面中央: 照準
@@ -74,4 +81,25 @@ private:
 	bool showVelocityVector_;
 	bool showFlightPath_;
 	bool showPitchLadder_;
+
+	// アニメーション状態
+	bool isAnimating_;
+	bool isDeploying_; // true=展開中, false=格納中
+	float animationTime_;
+	float animationDuration_;
+	float deployProgress_;	 // 0.0f～1.0f の展開進行度
+	float frameDeployStart_; // フレーム展開開始時刻
+	float boresightDeployStart_;
+	float pitchLadderDeployStart_;
+	float velocityVectorDeployStart_;
+	float rollScaleDeployStart_;
+	float speedTapeDeployStart_;
+	float altitudeTapeDeployStart_;
+	float headingTapeDeployStart_;
+	float gForceDeployStart_;
+
+	// アニメーション関連の内部処理
+	void UpdateAnimation();
+	float GetDeployProgress() const;   // 0.0f～1.0f の展開進行度を返す
+	float EaseOutCubic(float t) const; // イージング関数
 };

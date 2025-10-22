@@ -130,6 +130,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 		hud_->SetFollowCamera(followCamera_.get());
 	}
 
+	// HUDの展開アニメーションを開始（シーン開始時）
+	hud_->StartDeployAnimation(2.0f);
+
 	//========================================
 	// トランジションの初期化
 	sceneTransition_ = std::make_unique<SceneTransition>();
@@ -291,7 +294,7 @@ void GamePlayScene::Object3DDraw() {
 	//========================================
 	// HUDの描画
 	if (hud_) {
-		// トランジション中はHUDを描画しない
+		// トランジション完了後にHUDを表示開始
 		if (!sceneTransition_ || !sceneTransition_->IsTransitioning()) {
 			hud_->Draw();
 		}

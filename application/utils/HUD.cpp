@@ -30,7 +30,7 @@ void HUD::Initialize() {
 	hudSizeY_ = 0.250f;							  // HUD縦幅サイズ倍率
 
 	// プレイヤー正面HUD要素の位置調整初期化
-	boresightOffset_ = {0.0f, -3.0f, 0.0f};	// ガンボアサイトのオフセット
+	boresightOffset_ = {0.0f, -3.0f, 0.0f}; // ガンボアサイトのオフセット
 	rollScaleOffset_ = {0.0f, -3.0f, 0.0f}; // ロールスケールのオフセット（デフォルトで上方に配置）
 
 	// FollowCameraの参照を初期化
@@ -56,6 +56,84 @@ void HUD::Initialize() {
 	currentSpeed_ = 0.0f;
 	currentAltitude_ = 0.0f;
 	currentHeading_ = 0.0f;
+
+	// アニメーション状態の初期化
+	isAnimating_ = false;
+	isDeploying_ = false;
+	animationTime_ = 0.0f;
+	animationDuration_ = 1.5f;
+	deployProgress_ = 0.0f; // 初期状態は格納状態
+
+	// 各要素の展開タイミング（順次展開するように設定）
+	frameDeployStart_ = 0.0f;
+	boresightDeployStart_ = 0.1f;
+	pitchLadderDeployStart_ = 0.15f;
+	velocityVectorDeployStart_ = 0.2f;
+	rollScaleDeployStart_ = 0.25f;
+	speedTapeDeployStart_ = 0.3f;
+	altitudeTapeDeployStart_ = 0.35f;
+	headingTapeDeployStart_ = 0.4f;
+	gForceDeployStart_ = 0.45f;
+}
+
+///=============================================================================
+///                        アニメーション開始
+void HUD::StartDeployAnimation(float duration) {
+	isAnimating_ = true;
+	isDeploying_ = true;
+	animationTime_ = 0.0f;
+	animationDuration_ = duration;
+}
+
+void HUD::StartRetractAnimation(float duration) {
+	isAnimating_ = true;
+	isDeploying_ = false;
+	animationTime_ = 0.0f;
+	animationDuration_ = duration;
+}
+
+///=============================================================================
+///                        アニメーション更新
+void HUD::UpdateAnimation() {
+	if (!isAnimating_) {
+		return;
+	}
+
+	// アニメーション時間を進める（60FPS想定）
+	animationTime_ += 1.0f / 60.0f;
+
+	// 進行度を計算（0.0f～1.0f）
+	float rawProgress = animationTime_ / animationDuration_;
+	rawProgress = std::min(rawProgress, 1.0f);
+
+	// イージングを適用
+	float easedProgress = EaseOutCubic(rawProgress);
+
+	// 展開中か格納中かで進行度を設定
+	if (isDeploying_) {
+		deployProgress_ = easedProgress;
+	} else {
+		deployProgress_ = 1.0f - easedProgress;
+	}
+
+	// アニメーション完了チェック
+	if (rawProgress >= 1.0f) {
+		isAnimating_ = false;
+		deployProgress_ = isDeploying_ ? 1.0f : 0.0f;
+	}
+}
+
+///=============================================================================
+///                        展開進行度取得（要素ごと）
+float HUD::GetDeployProgress() const {
+	return deployProgress_;
+}
+
+///=============================================================================
+///                        イージング関数（EaseOutCubic）
+float HUD::EaseOutCubic(float t) const {
+	float f = t - 1.0f;
+	return f * f * f + 1.0f;
 }
 
 ///=============================================================================
@@ -223,6 +301,9 @@ void HUD::Update(const Player *player) {
 	if (!player)
 		return;
 
+	// アニメーション更新
+	UpdateAnimation();
+
 	// プレイヤーデータの取得
 	playerPosition_ = player->GetPosition();
 
@@ -279,56 +360,64 @@ void HUD::Draw() {
 		return;
 	}
 
+	// 展開進行度が0の場合は描画しない
+	if (deployProgress_ <= 0.0f) {
+		return;
+	}
+
 	// HUDの中心位置を更新
 	screenCenter_ = GetHUDPosition(0.0f, 0.0f);
 
-	// HUDフレームの描画（画面四隅）
-	DrawHUDFrame();
+	// 各要素の展開進行度を計算して描画
+	float frameProgress = std::max(0.0f, (deployProgress_ - frameDeployStart_) / (1.0f - frameDeployStart_));
+	if (frameProgress > 0.0f) {
+		DrawHUDFrame();
+	}
 
-	// 【画面中央】ピッチラダー（水平線と角度表示）
-	if (showPitchLadder_) {
+	float pitchProgress = std::max(0.0f, (deployProgress_ - pitchLadderDeployStart_) / (1.0f - pitchLadderDeployStart_));
+	if (showPitchLadder_ && pitchProgress > 0.0f) {
 		DrawPitchLadder();
 	}
 
-	// 【画面中央】ガンボアサイト（照準）
-	if (showBoresight_) {
+	float boresightProgress = std::max(0.0f, (deployProgress_ - boresightDeployStart_) / (1.0f - boresightDeployStart_));
+	if (showBoresight_ && boresightProgress > 0.0f) {
 		DrawBoresight();
 	}
 
-	// 【画面中央】ベロシティベクトル
-	if (showVelocityVector_) {
+	float velocityProgress = std::max(0.0f, (deployProgress_ - velocityVectorDeployStart_) / (1.0f - velocityVectorDeployStart_));
+	if (showVelocityVector_ && velocityProgress > 0.0f) {
 		DrawVelocityVector();
 	}
 
-	// 【画面中央】フライトパスマーカー
-	if (showFlightPath_) {
+	float flightPathProgress = std::max(0.0f, (deployProgress_ - velocityVectorDeployStart_) / (1.0f - velocityVectorDeployStart_));
+	if (showFlightPath_ && flightPathProgress > 0.0f) {
 		DrawFlightPathMarker();
 	}
 
-	// 【画面上部中央】ロールスケール（-60°～+60°の円弧）
-	if (showRollScale_) {
+	float rollProgress = std::max(0.0f, (deployProgress_ - rollScaleDeployStart_) / (1.0f - rollScaleDeployStart_));
+	if (showRollScale_ && rollProgress > 0.0f) {
 		float rollDeg = RadiansToDegrees(playerRotation_.z);
 		DrawRollScale(rollDeg);
 	}
 
-	// 【画面左側】速度テープ
-	if (showSpeedIndicator_) {
+	float speedProgress = std::max(0.0f, (deployProgress_ - speedTapeDeployStart_) / (1.0f - speedTapeDeployStart_));
+	if (showSpeedIndicator_ && speedProgress > 0.0f) {
 		DrawSpeedTape();
 	}
 
-	// 【画面右側】高度テープ
-	if (showAltitudeIndicator_) {
+	float altProgress = std::max(0.0f, (deployProgress_ - altitudeTapeDeployStart_) / (1.0f - altitudeTapeDeployStart_));
+	if (showAltitudeIndicator_ && altProgress > 0.0f) {
 		DrawAltitudeTape();
 		DrawRadarAltitude(currentAltitude_);
 	}
 
-	// 【画面上部】方位テープ
-	if (showCompass_) {
+	float headingProgress = std::max(0.0f, (deployProgress_ - headingTapeDeployStart_) / (1.0f - headingTapeDeployStart_));
+	if (showCompass_ && headingProgress > 0.0f) {
 		DrawHeadingTape();
 	}
 
-	// 【画面左下】G-Force表示
-	if (showGForce_) {
+	float gForceProgress = std::max(0.0f, (deployProgress_ - gForceDeployStart_) / (1.0f - gForceDeployStart_));
+	if (showGForce_ && gForceProgress > 0.0f) {
 		DrawGForceIndicator();
 	}
 }
@@ -740,6 +829,31 @@ void HUD::DrawImGui() {
 	ImGui::Checkbox("Show Altitude Indicator", &showAltitudeIndicator_);
 	ImGui::Checkbox("Show Compass", &showCompass_);
 	ImGui::Checkbox("Show G-Force", &showGForce_);
+
+	ImGui::Separator();
+	ImGui::Text("Animation Control");
+	ImGui::Text("Deploy Progress: %.2f", deployProgress_);
+	ImGui::Text("Is Animating: %s", isAnimating_ ? "Yes" : "No");
+	if (ImGui::Button("Deploy HUD")) {
+		StartDeployAnimation(1.5f);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Retract HUD")) {
+		StartRetractAnimation(1.0f);
+	}
+	ImGui::SliderFloat("Animation Duration", &animationDuration_, 0.5f, 3.0f);
+
+	ImGui::Separator();
+	ImGui::Text("Element Deploy Timing");
+	ImGui::SliderFloat("Frame Start", &frameDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Boresight Start", &boresightDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Pitch Ladder Start", &pitchLadderDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Velocity Vector Start", &velocityVectorDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Roll Scale Start", &rollScaleDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Speed Tape Start", &speedTapeDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Altitude Tape Start", &altitudeTapeDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Heading Tape Start", &headingTapeDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("G-Force Start", &gForceDeployStart_, 0.0f, 0.5f);
 
 	ImGui::Separator();
 	ImGui::SliderFloat("HUD Scale", &hudScale_, 0.5f, 2.0f);
