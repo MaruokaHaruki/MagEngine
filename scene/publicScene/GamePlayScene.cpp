@@ -36,20 +36,6 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// DebugTextManagerにカメラを設定
 	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCamera("FollowCamera"));
 
-	//=======================================
-	// テクスチャの読み込み
-	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
-
-	//========================================
-	// モデルの読み込み
-	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
-	ModelManager::GetInstance()->LoadModel("axisPlus.obj"); // 弾のモデル
-	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
-	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
 	// モデルの環境マップ設定
 	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
 
@@ -130,17 +116,33 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 		hud_->SetFollowCamera(followCamera_.get());
 	}
 
-	// HUDの展開アニメーションを開始（シーン開始時）
-	hud_->StartDeployAnimation(2.0f);
-
 	//========================================
 	// トランジションの初期化
 	sceneTransition_ = std::make_unique<SceneTransition>();
 	sceneTransition_->Initialize(spriteSetup);
 	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
 
-	// シーン開始時にオープニングトランジション
-	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
+	//========================================
+	// スタートアニメーションの初期化
+	startAnimation_ = std::make_unique<StartAnimation>();
+	startAnimation_->Initialize(spriteSetup);
+	startAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
+	startAnimation_->SetBarHeightRatio(0.15f);				// 画面の15%
+	startAnimation_->SetTextTexture("WolfOne_Title.png");	// 仮のテキスト画像
+	startAnimation_->SetTextSize({400.0f, 100.0f});
+
+	// シーン開始時にスタートアニメーション（シネマスコープ演出）
+	startAnimation_->StartOpening(2.0f, 1.0f, 1.0f);
+
+	// HUDの展開はスタートアニメーション完了後に開始
+	startAnimation_->SetOnCompleteCallback([this]() {
+		if (hud_) {
+			hud_->StartDeployAnimation(2.0f);
+		}
+	});
+
+	// トランジションは使用しない（スタートアニメーションで代用）
+	// sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
 }
 
 ///=============================================================================
@@ -151,6 +153,12 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
+	//========================================
+	// スタートアニメーションの更新
+	if (startAnimation_) {
+		startAnimation_->Update();
+	}
+
 	//========================================
 	// トランジションの更新
 	if (sceneTransition_) {
@@ -238,13 +246,20 @@ void GamePlayScene::Update() {
 	//========================================
 	// タイトルへのシーン遷移（デバッグ用）
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
-		// トランジション開始
+		// トランジション開始（スタートアニメーションの逆再生も実行）
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
-			// トランジション完了時にシーン遷移
-			sceneTransition_->SetOnCompleteCallback([this]() {
-				sceneNo = SCENE::TITLE;
-			});
+			// スタートアニメーションの終了演出（逆再生）
+			if (startAnimation_ && !startAnimation_->IsAnimating()) {
+				startAnimation_->StartClosing(1.5f, 1.0f, 1.0f);
+
+				// スタートアニメーション完了後にシーントランジション
+				startAnimation_->SetOnCompleteCallback([this]() {
+					sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+					sceneTransition_->SetOnCompleteCallback([this]() {
+						sceneNo = SCENE::TITLE;
+					});
+				});
+			}
 		}
 	}
 }
@@ -252,6 +267,12 @@ void GamePlayScene::Update() {
 ///=============================================================================
 ///                        スプライト描画
 void GamePlayScene::Object2DDraw() {
+	//========================================
+	// スタートアニメーションの描画（最前面）
+	if (startAnimation_) {
+		startAnimation_->Draw();
+	}
+
 	//========================================
 	// トランジションの描画
 	if (sceneTransition_) {
@@ -368,6 +389,18 @@ void GamePlayScene::ImGuiDraw() {
 	// HUD
 	if (hud_) {
 		hud_->DrawImGui();
+	}
+
+	//========================================
+	// スタートアニメーション
+	if (startAnimation_) {
+		startAnimation_->DrawImGui();
+	}
+
+	//========================================
+	// トランジション
+	if (sceneTransition_) {
+		sceneTransition_->DrawImGui();
 	}
 #endif // _DEBUG
 }

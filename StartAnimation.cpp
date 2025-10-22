@@ -1,3 +1,6 @@
+
+#define _USE_MATH_DEFINES
+#define NOMINMAX
 #include "StartAnimation.h"
 #include "ImguiSetup.h"
 #include <algorithm>

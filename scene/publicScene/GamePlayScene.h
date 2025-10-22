@@ -22,6 +22,7 @@
 #include "Player.h"
 #include "SceneTransition.h"
 #include "Skydome.h"
+#include "StartAnimation.h"
 
 ///=============================================================================
 ///						ゲームプレイシーンクラス
@@ -104,4 +105,8 @@ private:
 	//========================================
 	// トランジション
 	std::unique_ptr<SceneTransition> sceneTransition_;
+
+	//========================================
+	// スタートアニメーション
+	std::unique_ptr<StartAnimation> startAnimation_;
 };

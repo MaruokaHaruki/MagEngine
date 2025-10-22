@@ -157,62 +157,6 @@ void TitleScene::Update() {
 	// プレイヤー更新（演出用の動き）
 	if (player_) {
 		Transform *playerTransform = player_->GetObject3d()->GetTransform();
-
-		//========================================
-		// 【1】オープニング：ゆっくり上昇
-		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Opening) {
-		//	// 緩やかに上昇＋前進
-		//	playerTransform->translate.y += 0.1f;
-		//	playerTransform->translate.z += 0.15f;
-
-		//	// 機体をやや上向きに
-		//	playerTransform->rotate.x = -0.15f;
-		//}
-
-		//========================================
-		// 【2】ヒーローショット：上昇を継続
-		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::HeroShot) {
-		//	// 上昇速度を少し上げる
-		//	playerTransform->translate.y += 0.2f;
-		//	playerTransform->translate.z += 0.25f;
-
-		//	// 機体を少し上向きに
-		//	playerTransform->rotate.x = -0.2f;
-		//}
-
-		//========================================
-		// 【3】タイトル表示：安定した上昇
-		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::TitleDisplay) {
-		//	// 安定した上昇
-		//	playerTransform->translate.y += 0.15f;
-		//	playerTransform->translate.z += 0.2f;
-
-		//	// 機体を水平に近づける
-		//	playerTransform->rotate.x += (-0.1f - playerTransform->rotate.x) * 0.1f;
-		//}
-
-		//========================================
-		// 【4】ループ：ゆっくり旋回
-		// if (titleCamera_ && titleCamera_->GetCurrentPhase() == TitleCameraPhase::Loop) {
-		//	static float loopTimer = 0.0f;
-		//	loopTimer += 1.0f / 60.0f;
-
-		//	// ゆっくり前進
-		//	playerTransform->translate.z += 0.1f;
-
-		//	// 時折ゆっくりロール
-		//	static float rollTimer = 0.0f;
-		//	rollTimer += 1.0f / 60.0f;
-
-		//	if (rollTimer > 5.0f) {
-		//		float rollAmount = std::sin((rollTimer - 5.0f) * 0.5f) * 0.2f;
-		//		playerTransform->rotate.z += (rollAmount - playerTransform->rotate.z) * 0.05f;
-		//	}
-
-		//	// 機体は水平を維持
-		//	playerTransform->rotate.x += (-0.05f - playerTransform->rotate.x) * 0.1f;
-		//}
-
 		player_->GetObject3d()->Update();
 	}
 
