@@ -269,49 +269,29 @@ void HUD::Draw() {
 	// HUDの中心位置を更新
 	screenCenter_ = GetHUDPosition(0.0f, 0.0f);
 
-	// HUDフレームの描画
+	// HUDフレームの描画（画面四隅）
 	DrawHUDFrame();
 
-	// 各HUD要素の描画
+	// 【画面中央】ガンボアサイト（照準）
 	if (showBoresight_) {
 		DrawBoresight();
 	}
 
-	if (showPitchScale_) {
-		float pitchDeg = RadiansToDegrees(playerRotation_.x);
-		DrawPitchScale(pitchDeg);
-	}
-
+	// 【画面上部中央】ロールスケール（-60°～+60°の円弧）
 	if (showRollScale_) {
 		float rollDeg = RadiansToDegrees(playerRotation_.z);
 		DrawRollScale(rollDeg);
 	}
 
-	if (showGForce_) {
-		DrawGForceIndicator(currentGForce_);
-	}
-
-	if (showSpeedIndicator_) {
-		DrawSpeedIndicator(currentSpeed_);
-		DrawMachIndicator(currentSpeed_ / 343.0f); // 音速343m/s
-	}
-
-	if (showCompass_) {
-		float headingDeg = RadiansToDegrees(playerRotation_.y);
-		DrawCompass(headingDeg);
-	}
-
+	// 【画面右側】高度計とレーダー高度計
 	if (showAltitudeIndicator_) {
-		DrawAltitudeIndicator(currentAltitude_);
+		// DrawAltitudeIndicator(currentAltitude_);
 		DrawRadarAltitude(currentAltitude_); // 簡易版
 	}
-
-	// フライトパスマーカー
-	DrawFlightPathMarker(playerVelocity_);
 }
 
 ///=============================================================================
-///                        ガンボアサイト
+///                        ガンボアサイト（画面中央、プレイヤー機首方向固定）
 void HUD::DrawBoresight() {
 	LineManager *lineManager = LineManager::GetInstance();
 
@@ -337,48 +317,7 @@ void HUD::DrawBoresight() {
 }
 
 ///=============================================================================
-///                        ピッチスケール
-void HUD::DrawPitchScale(float pitchAngle) {
-	// FiXME: pitchAngleが使用されていないので回避すること
-	pitchAngle;
-	LineManager *lineManager = LineManager::GetInstance();
-
-	// ピッチスケールの描画（-30度から+30度まで10度間隔）
-	for (int angle = -30; angle <= 30; angle += 10) {
-		if (angle == 0)
-			continue; // 水平線は別途描画
-
-		float yOffset = (angle / 10.0f) * 2.0f * hudScale_;
-		float lineLength = (angle % 20 == 0) ? 4.0f : 2.0f; // 20度間隔で長い線
-
-		Vector3 leftPoint = GetHUDPosition(-lineLength, yOffset);
-		Vector3 rightPoint = GetHUDPosition(lineLength, yOffset);
-
-		// 正の角度は実線、負の角度は破線風に
-		if (angle > 0) {
-			lineManager->DrawLine(leftPoint, rightPoint, hudColor_);
-		} else {
-			// 破線風の描画
-			for (int i = 0; i < 4; i++) {
-				float segmentStart = -lineLength + (i * lineLength / 2.0f);
-				float segmentEnd = segmentStart + lineLength / 4.0f;
-
-				Vector3 segStartPos = GetHUDPosition(segmentStart, yOffset);
-				Vector3 segEndPos = GetHUDPosition(segmentEnd, yOffset);
-
-				lineManager->DrawLine(segStartPos, segEndPos, hudColor_);
-			}
-		}
-	}
-
-	// 水平線（0度線）を強調表示
-	Vector3 horizonLeft = GetHUDPosition(-6.0f, 0.0f);
-	Vector3 horizonRight = GetHUDPosition(6.0f, 0.0f);
-	lineManager->DrawLine(horizonLeft, horizonRight, hudColor_);
-}
-
-///=============================================================================
-///                        ロールスケール
+///                        ロールスケール（画面上部中央、-60°～+60°の円弧）
 void HUD::DrawRollScale(float rollAngle) {
 	LineManager *lineManager = LineManager::GetInstance();
 
@@ -418,179 +357,7 @@ void HUD::DrawRollScale(float rollAngle) {
 }
 
 ///=============================================================================
-///                        Gフォース計
-void HUD::DrawGForceIndicator(float gForce) {
-	LineManager *lineManager = LineManager::GetInstance();
-
-	// 左上にG力表示
-	Vector3 gPosition = GetHUDPosition(-10.0f, 8.0f);
-
-	// Gメーターの枠（線で表現）
-	float frameWidth = 3.0f;
-	float frameHeight = 1.0f;
-
-	Vector3 frameTopLeft = GetHUDPosition(-10.0f - frameWidth / 2, 8.0f + frameHeight / 2);
-	Vector3 frameTopRight = GetHUDPosition(-10.0f + frameWidth / 2, 8.0f + frameHeight / 2);
-	Vector3 frameBottomLeft = GetHUDPosition(-10.0f - frameWidth / 2, 8.0f - frameHeight / 2);
-	Vector3 frameBottomRight = GetHUDPosition(-10.0f + frameWidth / 2, 8.0f - frameHeight / 2);
-
-	lineManager->DrawLine(frameTopLeft, frameTopRight, hudColor_);
-	lineManager->DrawLine(frameTopRight, frameBottomRight, hudColor_);
-	lineManager->DrawLine(frameBottomRight, frameBottomLeft, hudColor_);
-	lineManager->DrawLine(frameBottomLeft, frameTopLeft, hudColor_);
-
-	// G力の値を表すバー
-	float gRatio = std::min(std::max((gForce - 1.0f) / 8.0f, -1.0f), 1.0f); // -9Gから+9Gの範囲
-	Vector3 barEnd = GetHUDPosition(-10.0f + gRatio * 1.5f, 8.0f);
-
-	Vector4 gColor = hudColor_;
-	if (gForce > 7.0f)
-		gColor = {1.0f, 0.0f, 0.0f, 1.0f}; // 危険域は赤
-	else if (gForce < -3.0f)
-		gColor = {1.0f, 0.0f, 0.0f, 1.0f};
-
-	lineManager->DrawLine(gPosition, barEnd, gColor);
-}
-
-///=============================================================================
-///                        速度計
-void HUD::DrawSpeedIndicator(float speed) {
-	LineManager *lineManager = LineManager::GetInstance();
-
-	// 左側に速度表示（枠を線で描画）
-	float frameWidth = 2.0f;
-	float frameHeight = 8.0f;
-
-	Vector3 frameTopLeft = GetHUDPosition(-12.0f - frameWidth / 2, frameHeight / 2);
-	Vector3 frameTopRight = GetHUDPosition(-12.0f + frameWidth / 2, frameHeight / 2);
-	Vector3 frameBottomLeft = GetHUDPosition(-12.0f - frameWidth / 2, -frameHeight / 2);
-	Vector3 frameBottomRight = GetHUDPosition(-12.0f + frameWidth / 2, -frameHeight / 2);
-
-	lineManager->DrawLine(frameTopLeft, frameTopRight, hudColor_);
-	lineManager->DrawLine(frameTopRight, frameBottomRight, hudColor_);
-	lineManager->DrawLine(frameBottomRight, frameBottomLeft, hudColor_);
-	lineManager->DrawLine(frameBottomLeft, frameTopLeft, hudColor_);
-
-	// 速度目盛り（0-200の範囲で40間隔）
-	for (int spd = 0; spd <= 200; spd += 40) {
-		float yOffset = (spd / 200.0f) * 8.0f - 4.0f;
-		Vector3 tickLeft = GetHUDPosition(-13.0f, yOffset);
-		Vector3 tickRight = GetHUDPosition(-11.0f, yOffset);
-		lineManager->DrawLine(tickLeft, tickRight, hudColor_);
-	}
-
-	// 現在速度の指示器
-	float speedRatio = std::min(speed / 200.0f, 1.0f);
-	float currentSpeedY = (speedRatio * 8.0f - 4.0f);
-
-	// 三角形指示器
-	Vector3 triBase = GetHUDPosition(-11.0f, currentSpeedY);
-	Vector3 triTop = GetHUDPosition(-10.0f, currentSpeedY - 0.3f);
-	Vector3 triBottom = GetHUDPosition(-10.0f, currentSpeedY + 0.3f);
-
-	lineManager->DrawLine(triBase, triTop, hudColor_);
-	lineManager->DrawLine(triBase, triBottom, hudColor_);
-	lineManager->DrawLine(triTop, triBottom, hudColor_);
-}
-
-///=============================================================================
-///                        マッハ計
-void HUD::DrawMachIndicator(float mach) {
-	LineManager *lineManager = LineManager::GetInstance();
-
-	// 速度計の下にマッハ表示
-	Vector3 machStart = GetHUDPosition(-12.0f, -6.0f);
-
-	// マッハ数の簡易表示（横線の長さで表現）
-	float machLength = std::min(mach * 2.0f, 4.0f);
-	Vector3 machEnd = GetHUDPosition(-12.0f + machLength, -6.0f);
-
-	lineManager->DrawLine(machStart, machEnd, hudColor_);
-
-	// マッハ1.0のマーカー
-	Vector3 mach1Top = GetHUDPosition(-10.0f, -5.8f);
-	Vector3 mach1Bottom = GetHUDPosition(-10.0f, -6.2f);
-	lineManager->DrawLine(mach1Top, mach1Bottom, hudColor_);
-}
-
-///=============================================================================
-///                        コンパス
-void HUD::DrawCompass(float heading) {
-	LineManager *lineManager = LineManager::GetInstance();
-
-	// 上部にコンパス表示
-	Vector3 compassCenter = GetHUDPosition(0.0f, 10.0f);
-
-	// コンパスの円（縦横サイズの平均を使用）
-	float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
-	lineManager->DrawCircle(compassCenter, 3.0f * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 24);
-
-	// 方位目盛り（N, E, S, W）
-	for (int dir = 0; dir < 4; dir++) {
-		float angle = dir * PI / 2.0f;
-
-		// コンパス座標系での計算
-		float compassX = sinf(angle) * 3.0f;
-		float compassY = cosf(angle) * 3.0f;
-
-		Vector3 tickEnd = GetHUDPosition(compassX, 10.0f + compassY);
-		Vector3 tickStart = GetHUDPosition(compassX * 0.83f, 10.0f + compassY * 0.83f);
-
-		lineManager->DrawLine(tickStart, tickEnd, hudColor_);
-	}
-
-	// 現在の方位指示器
-	float headingRad = DegreesToRadians(heading);
-	float indicatorX = sinf(headingRad) * 2.0f;
-	float indicatorY = cosf(headingRad) * 2.0f;
-
-	Vector3 headingIndicator = GetHUDPosition(indicatorX, 10.0f + indicatorY);
-
-	lineManager->DrawLine(compassCenter, headingIndicator, hudColor_);
-}
-
-///=============================================================================
-///                        高度計
-void HUD::DrawAltitudeIndicator(float altitude) {
-	LineManager *lineManager = LineManager::GetInstance();
-
-	// 右側に高度表示（枠を線で描画）
-	float frameWidth = 2.0f;
-	float frameHeight = 8.0f;
-
-	Vector3 frameTopLeft = GetHUDPosition(12.0f - frameWidth / 2, frameHeight / 2);
-	Vector3 frameTopRight = GetHUDPosition(12.0f + frameWidth / 2, frameHeight / 2);
-	Vector3 frameBottomLeft = GetHUDPosition(12.0f - frameWidth / 2, -frameHeight / 2);
-	Vector3 frameBottomRight = GetHUDPosition(12.0f + frameWidth / 2, -frameHeight / 2);
-
-	lineManager->DrawLine(frameTopLeft, frameTopRight, hudColor_);
-	lineManager->DrawLine(frameTopRight, frameBottomRight, hudColor_);
-	lineManager->DrawLine(frameBottomRight, frameBottomLeft, hudColor_);
-	lineManager->DrawLine(frameBottomLeft, frameTopLeft, hudColor_);
-
-	// 高度目盛り（0-1000の範囲で200間隔）
-	for (int alt = 0; alt <= 1000; alt += 200) {
-		float yOffset = (alt / 1000.0f) * 8.0f - 4.0f;
-		Vector3 tickLeft = GetHUDPosition(11.0f, yOffset);
-		Vector3 tickRight = GetHUDPosition(13.0f, yOffset);
-		lineManager->DrawLine(tickLeft, tickRight, hudColor_);
-	}
-
-	// 現在高度の指示器
-	float altRatio = std::min(std::max(altitude / 1000.0f, 0.0f), 1.0f);
-	float currentAltY = (altRatio * 8.0f - 4.0f);
-
-	// 三角形指示器
-	Vector3 triBase = GetHUDPosition(11.0f, currentAltY);
-	Vector3 triTop = GetHUDPosition(10.0f, currentAltY - 0.3f);
-	Vector3 triBottom = GetHUDPosition(10.0f, currentAltY + 0.3f);
-
-	lineManager->DrawLine(triBase, triTop, hudColor_);
-	lineManager->DrawLine(triBase, triBottom, hudColor_);
-}
-
-///=============================================================================
-///                        レーダー高度計
+///                        レーダー高度計（高度計の下、地面までの距離）
 void HUD::DrawRadarAltitude(float radarAlt) {
 	LineManager *lineManager = LineManager::GetInstance();
 
@@ -610,34 +377,7 @@ void HUD::DrawRadarAltitude(float radarAlt) {
 }
 
 ///=============================================================================
-///                        フライトパスマーカー
-void HUD::DrawFlightPathMarker(const Vector3 &velocity) {
-	LineManager *lineManager = LineManager::GetInstance();
-
-	// 速度ベクトルに基づいてフライトパスマーカーの位置を計算
-	float speed = sqrtf(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
-	if (speed < 0.1f)
-		return; // 静止時は表示しない
-
-	// 速度方向に基づくオフセット（簡易版）
-	Vector3 markerPos = GetHUDPosition(velocity.x * 0.1f, velocity.y * 0.1f);
-
-	// フライトパスマーカー（円と十字）（縦横サイズの平均を使用）
-	float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
-	lineManager->DrawCircle(markerPos, 1.0f * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
-
-	// 中央の十字
-	Vector3 crossLeft = GetHUDPosition(velocity.x * 0.1f - 0.5f, velocity.y * 0.1f);
-	Vector3 crossRight = GetHUDPosition(velocity.x * 0.1f + 0.5f, velocity.y * 0.1f);
-	Vector3 crossTop = GetHUDPosition(velocity.x * 0.1f, velocity.y * 0.1f + 0.5f);
-	Vector3 crossBottom = GetHUDPosition(velocity.x * 0.1f, velocity.y * 0.1f - 0.5f);
-
-	lineManager->DrawLine(crossLeft, crossRight, hudColor_);
-	lineManager->DrawLine(crossTop, crossBottom, hudColor_);
-}
-
-///=============================================================================
-///                        HUDフレーム
+///                        HUDフレーム（画面四隅のコーナーマーカー）
 void HUD::DrawHUDFrame() {
 	LineManager *lineManager = LineManager::GetInstance();
 

@@ -20,17 +20,11 @@ public:
 
 private:
 	// HUDの各要素を描画する関数
-	void DrawBoresight();
-	void DrawPitchScale(float pitchAngle);
-	void DrawRollScale(float rollAngle);
-	void DrawGForceIndicator(float gForce);
-	void DrawSpeedIndicator(float speed);
-	void DrawMachIndicator(float mach);
-	void DrawCompass(float heading);
-	void DrawAltitudeIndicator(float altitude);
-	void DrawRadarAltitude(float radarAlt);
-	void DrawFlightPathMarker(const Vector3 &velocity);
-	void DrawHUDFrame();
+
+	void DrawBoresight(); // 画面中央: 照準
+	void DrawRollScale(float rollAngle); // 画面上部中央: ロール円弧（-60°～+60°）
+	void DrawRadarAltitude(float radarAlt); // 画面右下: レーダー高度
+	void DrawHUDFrame(); // 画面四隅: コーナーマーカー
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);

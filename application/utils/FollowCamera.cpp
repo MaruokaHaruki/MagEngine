@@ -40,7 +40,8 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	fixedPosition_ = {0.0f, 5.0f, -10.0f}; // デフォルトの固定位置
 
 	// 初期位置・回転の設定
-	currentPosition_ = {0.0f, 2.0f, 8.0f};
+	// NOTE: プレイヤー追従開始前の初期位置
+	currentPosition_ = {0.0f, 2.0f, 16.0f};
 	currentRotation_ = {0.3f, 0.0f, 0.0f};
 	targetPosition_ = currentPosition_;
 	targetRotation_ = currentRotation_;
