@@ -20,11 +20,17 @@ public:
 
 private:
 	// HUDの各要素を描画する関数
-
-	void DrawBoresight(); // 画面中央: 照準
-	void DrawRollScale(float rollAngle); // 画面上部中央: ロール円弧（-60°～+60°）
+	void DrawBoresight();					// 画面中央: 照準
+	void DrawRollScale(float rollAngle);	// 画面上部中央: ロール円弧（-60°～+60°）
 	void DrawRadarAltitude(float radarAlt); // 画面右下: レーダー高度
-	void DrawHUDFrame(); // 画面四隅: コーナーマーカー
+	void DrawHUDFrame();					// 画面四隅: コーナーマーカー
+	void DrawVelocityVector();				// ベロシティベクトル（機体進行方向）
+	void DrawFlightPathMarker();			// フライトパスマーカー（実際の移動方向）
+	void DrawPitchLadder();					// ピッチラダー（水平線と角度表示）
+	void DrawSpeedTape();					// 左側: 速度テープ
+	void DrawAltitudeTape();				// 右側: 高度テープ
+	void DrawHeadingTape();					// 上部: 方位テープ
+	void DrawGForceIndicator();				// G-Force表示
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);
@@ -35,9 +41,11 @@ private:
 	Vector3 screenCenter_;
 	float hudScale_;
 	Vector4 hudColor_;
-	float hudDistance_; // カメラからHUDまでの距離
-	float hudSizeX_;	// HUD横幅サイズ
-	float hudSizeY_;	// HUD縦幅サイズ
+	Vector4 hudColorWarning_;  // 警告色
+	Vector4 hudColorCritical_; // 危険色
+	float hudDistance_;		   // カメラからHUDまでの距離
+	float hudSizeX_;		   // HUD横幅サイズ
+	float hudSizeY_;		   // HUD縦幅サイズ
 
 	// プレイヤー正面HUD要素の位置調整
 	Vector3 boresightOffset_; // ガンボアサイトのオフセット
@@ -53,6 +61,7 @@ private:
 	float currentGForce_;
 	float currentSpeed_;
 	float currentAltitude_;
+	float currentHeading_; // 方位角（度）
 
 	// HUD表示制御
 	bool showBoresight_;
@@ -62,4 +71,7 @@ private:
 	bool showAltitudeIndicator_;
 	bool showCompass_;
 	bool showGForce_;
+	bool showVelocityVector_;
+	bool showFlightPath_;
+	bool showPitchLadder_;
 };

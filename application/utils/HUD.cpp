@@ -20,15 +20,17 @@ namespace {
 ///=============================================================================
 ///                        初期化
 void HUD::Initialize() {
-	screenCenter_ = {0.0f, 0.0f, 0.0f};
+	screenCenter_ = {0.0f, -3.0f, 0.0f};
 	hudScale_ = 1.0f;
-	hudColor_ = {0.0f, 1.0f, 0.0f, 1.0f}; // 緑色のHUD
-	hudDistance_ = 15.0f;				  // カメラから15単位前方にHUDを配置
-	hudSizeX_ = 0.4f;					  // HUD横幅サイズ倍率
-	hudSizeY_ = 0.250f;					  // HUD縦幅サイズ倍率
+	hudColor_ = {0.0f, 1.0f, 0.0f, 1.0f};		  // 緑色のHUD
+	hudColorWarning_ = {1.0f, 1.0f, 0.0f, 1.0f};  // 黄色（警告）
+	hudColorCritical_ = {1.0f, 0.0f, 0.0f, 1.0f}; // 赤色（危険）
+	hudDistance_ = 15.0f;						  // カメラから15単位前方にHUDを配置
+	hudSizeX_ = 0.4f;							  // HUD横幅サイズ倍率
+	hudSizeY_ = 0.250f;							  // HUD縦幅サイズ倍率
 
 	// プレイヤー正面HUD要素の位置調整初期化
-	boresightOffset_ = {0.0f, -3.0f, 0.0f}; // ガンボアサイトのオフセット
+	boresightOffset_ = {0.0f, -3.0f, 0.0f};	// ガンボアサイトのオフセット
 	rollScaleOffset_ = {0.0f, -3.0f, 0.0f}; // ロールスケールのオフセット（デフォルトで上方に配置）
 
 	// FollowCameraの参照を初期化
@@ -42,6 +44,9 @@ void HUD::Initialize() {
 	showAltitudeIndicator_ = true;
 	showCompass_ = true;
 	showGForce_ = true;
+	showVelocityVector_ = true;
+	showFlightPath_ = true;
+	showPitchLadder_ = true;
 
 	// データの初期化
 	playerPosition_ = {0.0f, 0.0f, 0.0f};
@@ -50,6 +55,7 @@ void HUD::Initialize() {
 	currentGForce_ = 1.0f;
 	currentSpeed_ = 0.0f;
 	currentAltitude_ = 0.0f;
+	currentHeading_ = 0.0f;
 }
 
 ///=============================================================================
@@ -246,6 +252,13 @@ void HUD::Update(const Player *player) {
 
 	// 高度
 	currentAltitude_ = playerPosition_.y;
+
+	// 方位角（Y軸回転をヘディングに変換）
+	currentHeading_ = RadiansToDegrees(playerRotation_.y);
+	while (currentHeading_ < 0.0f)
+		currentHeading_ += 360.0f;
+	while (currentHeading_ >= 360.0f)
+		currentHeading_ -= 360.0f;
 }
 
 ///=============================================================================
@@ -272,9 +285,24 @@ void HUD::Draw() {
 	// HUDフレームの描画（画面四隅）
 	DrawHUDFrame();
 
+	// 【画面中央】ピッチラダー（水平線と角度表示）
+	if (showPitchLadder_) {
+		DrawPitchLadder();
+	}
+
 	// 【画面中央】ガンボアサイト（照準）
 	if (showBoresight_) {
 		DrawBoresight();
+	}
+
+	// 【画面中央】ベロシティベクトル
+	if (showVelocityVector_) {
+		DrawVelocityVector();
+	}
+
+	// 【画面中央】フライトパスマーカー
+	if (showFlightPath_) {
+		DrawFlightPathMarker();
 	}
 
 	// 【画面上部中央】ロールスケール（-60°～+60°の円弧）
@@ -283,10 +311,25 @@ void HUD::Draw() {
 		DrawRollScale(rollDeg);
 	}
 
-	// 【画面右側】高度計とレーダー高度計
+	// 【画面左側】速度テープ
+	if (showSpeedIndicator_) {
+		DrawSpeedTape();
+	}
+
+	// 【画面右側】高度テープ
 	if (showAltitudeIndicator_) {
-		// DrawAltitudeIndicator(currentAltitude_);
-		DrawRadarAltitude(currentAltitude_); // 簡易版
+		DrawAltitudeTape();
+		DrawRadarAltitude(currentAltitude_);
+	}
+
+	// 【画面上部】方位テープ
+	if (showCompass_) {
+		DrawHeadingTape();
+	}
+
+	// 【画面左下】G-Force表示
+	if (showGForce_) {
+		DrawGForceIndicator();
 	}
 }
 
@@ -424,6 +467,264 @@ void HUD::DrawHUDFrame() {
 }
 
 ///=============================================================================
+///                        ベロシティベクトル（機体進行方向）
+void HUD::DrawVelocityVector() {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	// ベロシティベクトルは機体の向きを示す（機首方向）
+	float size = 1.2f * hudScale_;
+	Vector3 center = GetPlayerFrontPositionWithOffset(0.0f, 0.0f, boresightOffset_);
+
+	// 円形マーカー
+	lineManager->DrawCircle(center, size, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 16);
+
+	// 左右の小さな翼マーク
+	Vector3 leftWing = GetPlayerFrontPositionWithOffset(-size * 1.5f, 0.0f, boresightOffset_);
+	Vector3 leftWingEnd = GetPlayerFrontPositionWithOffset(-size * 2.5f, 0.0f, boresightOffset_);
+	lineManager->DrawLine(leftWing, leftWingEnd, hudColor_, 2.0f);
+
+	Vector3 rightWing = GetPlayerFrontPositionWithOffset(size * 1.5f, 0.0f, boresightOffset_);
+	Vector3 rightWingEnd = GetPlayerFrontPositionWithOffset(size * 2.5f, 0.0f, boresightOffset_);
+	lineManager->DrawLine(rightWing, rightWingEnd, hudColor_, 2.0f);
+}
+
+///=============================================================================
+///                        フライトパスマーカー（実際の移動方向）
+void HUD::DrawFlightPathMarker() {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	if (currentSpeed_ < 0.1f) {
+		return; // 速度が低い場合は表示しない
+	}
+
+	// 速度ベクトルに基づいてオフセットを計算
+	float velocityOffsetX = playerVelocity_.x * 0.5f;
+	float velocityOffsetY = playerVelocity_.y * 0.5f;
+
+	float size = 0.8f * hudScale_;
+	Vector3 center = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY, boresightOffset_);
+
+	// 円形マーカー
+	lineManager->DrawCircle(center, size, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
+
+	// 上下左右の短い線
+	Vector3 top = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY + size * 1.5f, boresightOffset_);
+	Vector3 topEnd = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY + size * 0.8f, boresightOffset_);
+	lineManager->DrawLine(top, topEnd, hudColor_, 2.0f);
+
+	Vector3 bottom = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY - size * 1.5f, boresightOffset_);
+	Vector3 bottomEnd = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY - size * 0.8f, boresightOffset_);
+	lineManager->DrawLine(bottom, bottomEnd, hudColor_, 2.0f);
+}
+
+///=============================================================================
+///                        ピッチラダー（水平線と角度表示）
+void HUD::DrawPitchLadder() {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	float pitchDeg = RadiansToDegrees(playerRotation_.x);
+
+	// -30度から+30度まで10度間隔で水平線を描画
+	for (int angle = -30; angle <= 30; angle += 10) {
+		if (angle == 0)
+			continue; // 0度は別途描画
+
+		float offsetY = (angle - pitchDeg) * 0.3f;
+		if (std::abs(offsetY) > 15.0f)
+			continue; // 画面外は描画しない
+
+		float lineLength = (angle % 20 == 0) ? 4.0f : 3.0f;
+		Vector3 left = GetPlayerFrontPositionWithOffset(-lineLength, offsetY, boresightOffset_);
+		Vector3 right = GetPlayerFrontPositionWithOffset(lineLength, offsetY, boresightOffset_);
+
+		Vector4 lineColor = (angle > 0) ? hudColor_ : hudColor_;
+		lineManager->DrawLine(left, right, lineColor, 1.5f);
+
+		// 角度表示用の短い縦線
+		if (angle % 20 == 0) {
+			Vector3 leftTick = GetPlayerFrontPositionWithOffset(-lineLength - 0.3f, offsetY, boresightOffset_);
+			Vector3 leftTickEnd = GetPlayerFrontPositionWithOffset(-lineLength - 0.3f, offsetY + 0.5f, boresightOffset_);
+			lineManager->DrawLine(leftTick, leftTickEnd, lineColor, 1.5f);
+
+			Vector3 rightTick = GetPlayerFrontPositionWithOffset(lineLength + 0.3f, offsetY, boresightOffset_);
+			Vector3 rightTickEnd = GetPlayerFrontPositionWithOffset(lineLength + 0.3f, offsetY + 0.5f, boresightOffset_);
+			lineManager->DrawLine(rightTick, rightTickEnd, lineColor, 1.5f);
+		}
+	}
+
+	// 0度（水平線）は太く強調表示
+	float horizonOffsetY = -pitchDeg * 0.3f;
+	if (std::abs(horizonOffsetY) <= 15.0f) {
+		Vector3 left = GetPlayerFrontPositionWithOffset(-8.0f, horizonOffsetY, boresightOffset_);
+		Vector3 center = GetPlayerFrontPositionWithOffset(0.0f, horizonOffsetY, boresightOffset_);
+		Vector3 right = GetPlayerFrontPositionWithOffset(8.0f, horizonOffsetY, boresightOffset_);
+
+		lineManager->DrawLine(left, center, hudColor_, 3.0f);
+		lineManager->DrawLine(center, right, hudColor_, 3.0f);
+	}
+}
+
+///=============================================================================
+///                        速度テープ（左側）
+void HUD::DrawSpeedTape() {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	float tapeX = -13.0f;
+	float tapeY = 0.0f;
+
+	// 速度テープの枠
+	Vector3 topLeft = GetHUDPosition(tapeX - 1.5f, tapeY + 6.0f);
+	Vector3 topRight = GetHUDPosition(tapeX + 1.5f, tapeY + 6.0f);
+	Vector3 bottomLeft = GetHUDPosition(tapeX - 1.5f, tapeY - 6.0f);
+	Vector3 bottomRight = GetHUDPosition(tapeX + 1.5f, tapeY - 6.0f);
+
+	lineManager->DrawLine(topLeft, topRight, hudColor_);
+	lineManager->DrawLine(topLeft, bottomLeft, hudColor_);
+	lineManager->DrawLine(bottomLeft, bottomRight, hudColor_);
+	lineManager->DrawLine(topRight, bottomRight, hudColor_);
+
+	// 現在の速度を中央に表示するためのマーカー
+	Vector3 speedMarkerLeft = GetHUDPosition(tapeX - 2.0f, tapeY);
+	Vector3 speedMarkerRight = GetHUDPosition(tapeX + 2.0f, tapeY);
+	Vector3 speedMarkerTop = GetHUDPosition(tapeX, tapeY + 0.8f);
+	Vector3 speedMarkerBottom = GetHUDPosition(tapeX, tapeY - 0.8f);
+
+	lineManager->DrawLine(speedMarkerLeft, speedMarkerTop, hudColor_, 2.0f);
+	lineManager->DrawLine(speedMarkerTop, speedMarkerRight, hudColor_, 2.0f);
+	lineManager->DrawLine(speedMarkerRight, speedMarkerBottom, hudColor_, 2.0f);
+	lineManager->DrawLine(speedMarkerBottom, speedMarkerLeft, hudColor_, 2.0f);
+
+	// 速度目盛り（10単位ごと）
+	int baseSpeed = static_cast<int>(currentSpeed_ / 10) * 10;
+	for (int i = -3; i <= 3; ++i) {
+		int speed = baseSpeed + i * 10;
+		if (speed < 0)
+			continue;
+
+		float offsetY = (currentSpeed_ - speed) * 0.3f;
+		Vector3 tickStart = GetHUDPosition(tapeX - 1.5f, tapeY + offsetY);
+		Vector3 tickEnd = GetHUDPosition(tapeX - 0.8f, tapeY + offsetY);
+
+		lineManager->DrawLine(tickStart, tickEnd, hudColor_);
+	}
+}
+
+///=============================================================================
+///                        高度テープ（右側）
+void HUD::DrawAltitudeTape() {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	float tapeX = 13.0f;
+	float tapeY = 0.0f;
+
+	// 高度テープの枠
+	Vector3 topLeft = GetHUDPosition(tapeX - 1.5f, tapeY + 6.0f);
+	Vector3 topRight = GetHUDPosition(tapeX + 1.5f, tapeY + 6.0f);
+	Vector3 bottomLeft = GetHUDPosition(tapeX - 1.5f, tapeY - 6.0f);
+	Vector3 bottomRight = GetHUDPosition(tapeX + 1.5f, tapeY - 6.0f);
+
+	lineManager->DrawLine(topLeft, topRight, hudColor_);
+	lineManager->DrawLine(topLeft, bottomLeft, hudColor_);
+	lineManager->DrawLine(bottomLeft, bottomRight, hudColor_);
+	lineManager->DrawLine(topRight, bottomRight, hudColor_);
+
+	// 現在の高度マーカー
+	Vector3 altMarkerLeft = GetHUDPosition(tapeX - 2.0f, tapeY);
+	Vector3 altMarkerRight = GetHUDPosition(tapeX + 2.0f, tapeY);
+	Vector3 altMarkerTop = GetHUDPosition(tapeX, tapeY + 0.8f);
+	Vector3 altMarkerBottom = GetHUDPosition(tapeX, tapeY - 0.8f);
+
+	Vector4 altColor = (currentAltitude_ < 20.0f) ? hudColorCritical_ : hudColor_;
+
+	lineManager->DrawLine(altMarkerLeft, altMarkerTop, altColor, 2.0f);
+	lineManager->DrawLine(altMarkerTop, altMarkerRight, altColor, 2.0f);
+	lineManager->DrawLine(altMarkerRight, altMarkerBottom, altColor, 2.0f);
+	lineManager->DrawLine(altMarkerBottom, altMarkerLeft, altColor, 2.0f);
+
+	// 高度目盛り（10単位ごと）
+	int baseAlt = static_cast<int>(currentAltitude_ / 10) * 10;
+	for (int i = -3; i <= 3; ++i) {
+		int alt = baseAlt + i * 10;
+		if (alt < 0)
+			continue;
+
+		float offsetY = (currentAltitude_ - alt) * 0.3f;
+		Vector3 tickStart = GetHUDPosition(tapeX + 1.5f, tapeY + offsetY);
+		Vector3 tickEnd = GetHUDPosition(tapeX + 0.8f, tapeY + offsetY);
+
+		lineManager->DrawLine(tickStart, tickEnd, hudColor_);
+	}
+}
+
+///=============================================================================
+///                        方位テープ（上部）
+void HUD::DrawHeadingTape() {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	float tapeY = 8.0f;
+
+	// 方位テープの枠
+	Vector3 left = GetHUDPosition(-6.0f, tapeY);
+	Vector3 right = GetHUDPosition(6.0f, tapeY);
+	lineManager->DrawLine(left, right, hudColor_);
+
+	// 中央マーカー
+	Vector3 centerTop = GetHUDPosition(0.0f, tapeY + 1.0f);
+	Vector3 centerBottom = GetHUDPosition(0.0f, tapeY);
+	Vector3 centerLeft = GetHUDPosition(-0.5f, tapeY + 0.5f);
+	Vector3 centerRight = GetHUDPosition(0.5f, tapeY + 0.5f);
+
+	lineManager->DrawLine(centerTop, centerBottom, hudColor_, 2.0f);
+	lineManager->DrawLine(centerTop, centerLeft, hudColor_, 2.0f);
+	lineManager->DrawLine(centerTop, centerRight, hudColor_, 2.0f);
+
+	// 方位目盛り（30度ごと）
+	int baseHeading = static_cast<int>(currentHeading_ / 30) * 30;
+	for (int i = -2; i <= 2; ++i) {
+		int heading = baseHeading + i * 30;
+		while (heading < 0)
+			heading += 360;
+		while (heading >= 360)
+			heading -= 360;
+
+		float offsetX = (currentHeading_ - heading) * 0.15f;
+		if (std::abs(offsetX) > 6.0f)
+			continue;
+
+		Vector3 tickTop = GetHUDPosition(offsetX, tapeY + 0.5f);
+		Vector3 tickBottom = GetHUDPosition(offsetX, tapeY);
+		lineManager->DrawLine(tickTop, tickBottom, hudColor_);
+	}
+}
+
+///=============================================================================
+///                        G-Force表示（左下）
+void HUD::DrawGForceIndicator() {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	float posX = -13.0f;
+	float posY = -8.0f;
+
+	// G-Forceバーの枠
+	Vector3 barLeft = GetHUDPosition(posX, posY);
+	Vector3 barRight = GetHUDPosition(posX + 4.0f, posY);
+	lineManager->DrawLine(barLeft, barRight, hudColor_);
+
+	// G-Force値に応じて色を変える
+	Vector4 gColor = hudColor_;
+	if (currentGForce_ > 7.0f) {
+		gColor = hudColorCritical_;
+	} else if (currentGForce_ > 5.0f) {
+		gColor = hudColorWarning_;
+	}
+
+	// G-Forceバー
+	float gBarLength = std::min(std::abs(currentGForce_ - 1.0f) / 8.0f * 4.0f, 4.0f);
+	Vector3 gBarEnd = GetHUDPosition(posX + gBarLength, posY);
+	lineManager->DrawLine(barLeft, gBarEnd, gColor, 3.0f);
+}
+
+///=============================================================================
 ///                        ImGui描画
 void HUD::DrawImGui() {
 #ifdef _DEBUG
@@ -431,8 +732,10 @@ void HUD::DrawImGui() {
 
 	ImGui::Text("HUD Display Control");
 	ImGui::Checkbox("Show Boresight", &showBoresight_);
-	ImGui::Checkbox("Show Pitch Scale", &showPitchScale_);
+	ImGui::Checkbox("Show Pitch Ladder", &showPitchLadder_);
 	ImGui::Checkbox("Show Roll Scale", &showRollScale_);
+	ImGui::Checkbox("Show Velocity Vector", &showVelocityVector_);
+	ImGui::Checkbox("Show Flight Path", &showFlightPath_);
 	ImGui::Checkbox("Show Speed Indicator", &showSpeedIndicator_);
 	ImGui::Checkbox("Show Altitude Indicator", &showAltitudeIndicator_);
 	ImGui::Checkbox("Show Compass", &showCompass_);
@@ -444,6 +747,8 @@ void HUD::DrawImGui() {
 	ImGui::SliderFloat("HUD Width", &hudSizeX_, 0.1f, 3.0f);
 	ImGui::SliderFloat("HUD Height", &hudSizeY_, 0.1f, 3.0f);
 	ImGui::ColorEdit4("HUD Color", &hudColor_.x);
+	ImGui::ColorEdit4("Warning Color", &hudColorWarning_.x);
+	ImGui::ColorEdit4("Critical Color", &hudColorCritical_.x);
 
 	ImGui::Separator();
 	ImGui::Text("Player Front HUD Positions:");
@@ -454,6 +759,9 @@ void HUD::DrawImGui() {
 	ImGui::Text("Current Values:");
 	ImGui::Text("Speed: %.1f m/s", currentSpeed_);
 	ImGui::Text("Altitude: %.1f m", currentAltitude_);
+	ImGui::Text("Heading: %.1f deg", currentHeading_);
+	ImGui::Text("Pitch: %.1f deg", RadiansToDegrees(playerRotation_.x));
+	ImGui::Text("Roll: %.1f deg", RadiansToDegrees(playerRotation_.z));
 	ImGui::Text("G-Force: %.2f G", currentGForce_);
 
 	// デバッグ情報追加
