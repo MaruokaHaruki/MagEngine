@@ -15,6 +15,14 @@ namespace {
 	inline float DegreesToRadians(float degrees) {
 		return degrees * (PI / 180.0f);
 	}
+
+	// 2点間を補間する関数
+	inline Vector3 Lerp(const Vector3 &a, const Vector3 &b, float t) {
+		return {
+			a.x + (b.x - a.x) * t,
+			a.y + (b.y - a.y) * t,
+			a.z + (b.z - a.z) * t};
+	}
 }
 
 ///=============================================================================
@@ -371,94 +379,111 @@ void HUD::Draw() {
 	// 各要素の展開進行度を計算して描画
 	float frameProgress = std::max(0.0f, (deployProgress_ - frameDeployStart_) / (1.0f - frameDeployStart_));
 	if (frameProgress > 0.0f) {
-		DrawHUDFrame();
+		DrawHUDFrame(frameProgress);
 	}
 
 	float pitchProgress = std::max(0.0f, (deployProgress_ - pitchLadderDeployStart_) / (1.0f - pitchLadderDeployStart_));
 	if (showPitchLadder_ && pitchProgress > 0.0f) {
-		DrawPitchLadder();
+		DrawPitchLadder(pitchProgress);
 	}
 
 	float boresightProgress = std::max(0.0f, (deployProgress_ - boresightDeployStart_) / (1.0f - boresightDeployStart_));
 	if (showBoresight_ && boresightProgress > 0.0f) {
-		DrawBoresight();
+		DrawBoresight(boresightProgress);
 	}
 
 	float velocityProgress = std::max(0.0f, (deployProgress_ - velocityVectorDeployStart_) / (1.0f - velocityVectorDeployStart_));
 	if (showVelocityVector_ && velocityProgress > 0.0f) {
-		DrawVelocityVector();
+		DrawVelocityVector(velocityProgress);
 	}
 
 	float flightPathProgress = std::max(0.0f, (deployProgress_ - velocityVectorDeployStart_) / (1.0f - velocityVectorDeployStart_));
 	if (showFlightPath_ && flightPathProgress > 0.0f) {
-		DrawFlightPathMarker();
+		DrawFlightPathMarker(flightPathProgress);
 	}
 
 	float rollProgress = std::max(0.0f, (deployProgress_ - rollScaleDeployStart_) / (1.0f - rollScaleDeployStart_));
 	if (showRollScale_ && rollProgress > 0.0f) {
 		float rollDeg = RadiansToDegrees(playerRotation_.z);
-		DrawRollScale(rollDeg);
+		DrawRollScale(rollDeg, rollProgress);
 	}
 
 	float speedProgress = std::max(0.0f, (deployProgress_ - speedTapeDeployStart_) / (1.0f - speedTapeDeployStart_));
 	if (showSpeedIndicator_ && speedProgress > 0.0f) {
-		DrawSpeedTape();
+		DrawSpeedTape(speedProgress);
 	}
 
 	float altProgress = std::max(0.0f, (deployProgress_ - altitudeTapeDeployStart_) / (1.0f - altitudeTapeDeployStart_));
 	if (showAltitudeIndicator_ && altProgress > 0.0f) {
-		DrawAltitudeTape();
-		DrawRadarAltitude(currentAltitude_);
+		DrawAltitudeTape(altProgress);
+		DrawRadarAltitude(currentAltitude_, altProgress);
 	}
 
 	float headingProgress = std::max(0.0f, (deployProgress_ - headingTapeDeployStart_) / (1.0f - headingTapeDeployStart_));
 	if (showCompass_ && headingProgress > 0.0f) {
-		DrawHeadingTape();
+		DrawHeadingTape(headingProgress);
 	}
 
 	float gForceProgress = std::max(0.0f, (deployProgress_ - gForceDeployStart_) / (1.0f - gForceDeployStart_));
 	if (showGForce_ && gForceProgress > 0.0f) {
-		DrawGForceIndicator();
+		DrawGForceIndicator(gForceProgress);
 	}
 }
 
 ///=============================================================================
 ///                        ガンボアサイト（画面中央、プレイヤー機首方向固定）
-void HUD::DrawBoresight() {
+void HUD::DrawBoresight(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
-	// 十字線（ボアサイト）
 	float size = 2.0f * hudScale_;
-
-	// プレイヤー正面座標系での位置を計算（オフセット適用）
-	Vector3 leftPos = GetPlayerFrontPositionWithOffset(-size + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
-	Vector3 rightPos = GetPlayerFrontPositionWithOffset(size + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
-	Vector3 topPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, size + boresightOffset_.y, boresightOffset_);
-	Vector3 bottomPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, -size + boresightOffset_.y, boresightOffset_);
 	Vector3 centerPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
 
-	// 水平線
-	lineManager->DrawLine(leftPos, rightPos, hudColor_);
+	// 水平線（中央から左右に展開）
+	if (progress > 0.0f) {
+		Vector3 leftPos = GetPlayerFrontPositionWithOffset(-size + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
+		Vector3 rightPos = GetPlayerFrontPositionWithOffset(size + boresightOffset_.x, 0.0f + boresightOffset_.y, boresightOffset_);
+		Vector3 leftDraw = Lerp(centerPos, leftPos, progress);
+		Vector3 rightDraw = Lerp(centerPos, rightPos, progress);
+		lineManager->DrawLine(leftDraw, rightDraw, hudColor_);
+	}
 
-	// 垂直線
-	lineManager->DrawLine(topPos, bottomPos, hudColor_);
+	// 垂直線（中央から上下に展開）
+	if (progress > 0.25f) {
+		float vProgress = (progress - 0.25f) / 0.75f;
+		Vector3 topPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, size + boresightOffset_.y, boresightOffset_);
+		Vector3 bottomPos = GetPlayerFrontPositionWithOffset(0.0f + boresightOffset_.x, -size + boresightOffset_.y, boresightOffset_);
+		Vector3 topDraw = Lerp(centerPos, topPos, vProgress);
+		Vector3 bottomDraw = Lerp(centerPos, bottomPos, vProgress);
+		lineManager->DrawLine(topDraw, bottomDraw, hudColor_);
+	}
 
-	// 中央の小さな円（縦横サイズの平均を使用）
-	float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
-	lineManager->DrawCircle(centerPos, 0.5f * hudScale_ * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
+	// 中央の小さな円（円弧として展開）
+	if (progress > 0.5f) {
+		float circleProgress = (progress - 0.5f) / 0.5f;
+		float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
+		int segments = static_cast<int>(12 * circleProgress);
+		if (segments > 0) {
+			lineManager->DrawCircle(centerPos, 0.5f * hudScale_ * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, segments);
+		}
+	}
 }
 
 ///=============================================================================
 ///                        ロールスケール（画面上部中央、-60°～+60°の円弧）
-void HUD::DrawRollScale(float rollAngle) {
+void HUD::DrawRollScale(float rollAngle, float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
-	// ロールスケールの円弧
 	float radius = 8.0f * hudScale_;
 	Vector3 arcCenter = GetPlayerFrontPositionWithOffset(0.0f + rollScaleOffset_.x, radius + rollScaleOffset_.y, rollScaleOffset_);
 
-	// スケール目盛り（-60度から+60度まで30度間隔）
+	// スケール目盛り（-60度から+60度まで30度間隔、進行度に応じて順次表示）
+	int maxTicks = static_cast<int>(5 * progress); // 5本の目盛り
+	int tickIndex = 0;
 	for (int angle = -60; angle <= 60; angle += 30) {
+		if (tickIndex >= maxTicks)
+			break;
+		tickIndex++;
+
 		float radians = DegreesToRadians(static_cast<float>(angle));
 		float tickLength = (angle == 0) ? 1.5f : 1.0f;
 
@@ -473,164 +498,240 @@ void HUD::DrawRollScale(float rollAngle) {
 		lineManager->DrawLine(outerPoint, innerPoint, hudColor_);
 	}
 
-	// 現在のロール角指示器
-	float rollRad = DegreesToRadians(rollAngle);
-	float indicatorX = sinf(rollRad) * (radius - 0.5f);
-	float indicatorY = radius - cosf(rollRad) * (radius - 0.5f);
+	// 現在のロール角指示器（進行度80%以降で表示）
+	if (progress > 0.8f) {
+		float indicatorProgress = (progress - 0.8f) / 0.2f;
+		float rollRad = DegreesToRadians(rollAngle);
+		float indicatorX = sinf(rollRad) * (radius - 0.5f);
+		float indicatorY = radius - cosf(rollRad) * (radius - 0.5f);
 
-	Vector3 rollIndicator = GetPlayerFrontPositionWithOffset(indicatorX + rollScaleOffset_.x, indicatorY + rollScaleOffset_.y, rollScaleOffset_);
-	Vector3 tri1 = GetPlayerFrontPositionWithOffset(indicatorX - 0.5f + rollScaleOffset_.x, indicatorY - 1.0f + rollScaleOffset_.y, rollScaleOffset_);
-	Vector3 tri2 = GetPlayerFrontPositionWithOffset(indicatorX + 0.5f + rollScaleOffset_.x, indicatorY - 1.0f + rollScaleOffset_.y, rollScaleOffset_);
+		Vector3 rollIndicator = GetPlayerFrontPositionWithOffset(indicatorX + rollScaleOffset_.x, indicatorY + rollScaleOffset_.y, rollScaleOffset_);
+		Vector3 tri1 = GetPlayerFrontPositionWithOffset(indicatorX - 0.5f + rollScaleOffset_.x, indicatorY - 1.0f + rollScaleOffset_.y, rollScaleOffset_);
+		Vector3 tri2 = GetPlayerFrontPositionWithOffset(indicatorX + 0.5f + rollScaleOffset_.x, indicatorY - 1.0f + rollScaleOffset_.y, rollScaleOffset_);
 
-	// 三角形の指示器
-	lineManager->DrawLine(rollIndicator, tri1, hudColor_);
-	lineManager->DrawLine(rollIndicator, tri2, hudColor_);
-	lineManager->DrawLine(tri1, tri2, hudColor_);
+		// 三角形を順次描画
+		if (indicatorProgress > 0.33f) {
+			lineManager->DrawLine(rollIndicator, tri1, hudColor_);
+		}
+		if (indicatorProgress > 0.66f) {
+			lineManager->DrawLine(rollIndicator, tri2, hudColor_);
+			lineManager->DrawLine(tri1, tri2, hudColor_);
+		}
+	}
 }
 
 ///=============================================================================
 ///                        レーダー高度計（高度計の下、地面までの距離）
-void HUD::DrawRadarAltitude(float radarAlt) {
+void HUD::DrawRadarAltitude(float radarAlt, float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
-	// 高度計の下にレーダー高度表示
 	Vector3 radarStart = GetHUDPosition(12.0f, -6.0f);
 
-	// レーダー高度の簡易表示
+	// レーダー高度バー（左から右に展開）
 	float radarLength = std::min(radarAlt / 100.0f * 2.0f, 4.0f);
 	Vector3 radarEnd = GetHUDPosition(12.0f - radarLength, -6.0f);
+	Vector3 radarDraw = Lerp(radarStart, radarEnd, progress);
 
-	lineManager->DrawLine(radarStart, radarEnd, hudColor_);
+	lineManager->DrawLine(radarStart, radarDraw, hudColor_);
 
-	// 危険高度マーカー（50m）
-	Vector3 dangerTop = GetHUDPosition(11.0f, -5.8f);
-	Vector3 dangerBottom = GetHUDPosition(11.0f, -6.2f);
-	lineManager->DrawLine(dangerTop, dangerBottom, {1.0f, 0.0f, 0.0f, 1.0f}); // 赤色
+	// 危険高度マーカー（進行度50%以降で表示）
+	if (progress > 0.5f) {
+		Vector3 dangerTop = GetHUDPosition(11.0f, -5.8f);
+		Vector3 dangerBottom = GetHUDPosition(11.0f, -6.2f);
+		lineManager->DrawLine(dangerTop, dangerBottom, {1.0f, 0.0f, 0.0f, 1.0f});
+	}
 }
 
 ///=============================================================================
 ///                        HUDフレーム（画面四隅のコーナーマーカー）
-void HUD::DrawHUDFrame() {
+void HUD::DrawHUDFrame(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
-	// HUDの外枠（オプション）
-	// 角の小さなマーカー
 	float cornerSize = 2.0f;
 	float frameSize = 15.0f;
 
+	// 各コーナーを順次展開（左上→右上→左下→右下）
 	// 左上
-	Vector3 leftTopH1 = GetHUDPosition(-frameSize, frameSize);
-	Vector3 leftTopH2 = GetHUDPosition(-frameSize + cornerSize, frameSize);
-	Vector3 leftTopV1 = GetHUDPosition(-frameSize, frameSize);
-	Vector3 leftTopV2 = GetHUDPosition(-frameSize, frameSize - cornerSize);
+	if (progress > 0.0f) {
+		float cornerProgress = std::min(progress / 0.25f, 1.0f);
+		Vector3 leftTopH1 = GetHUDPosition(-frameSize, frameSize);
+		Vector3 leftTopH2 = GetHUDPosition(-frameSize + cornerSize, frameSize);
+		Vector3 leftTopH2Draw = Lerp(leftTopH1, leftTopH2, cornerProgress);
+		lineManager->DrawLine(leftTopH1, leftTopH2Draw, hudColor_);
 
-	lineManager->DrawLine(leftTopH1, leftTopH2, hudColor_);
-	lineManager->DrawLine(leftTopV1, leftTopV2, hudColor_);
+		if (cornerProgress > 0.5f) {
+			float vProgress = (cornerProgress - 0.5f) / 0.5f;
+			Vector3 leftTopV2 = GetHUDPosition(-frameSize, frameSize - cornerSize);
+			Vector3 leftTopV2Draw = Lerp(leftTopH1, leftTopV2, vProgress);
+			lineManager->DrawLine(leftTopH1, leftTopV2Draw, hudColor_);
+		}
+	}
 
 	// 右上
-	Vector3 rightTopH1 = GetHUDPosition(frameSize, frameSize);
-	Vector3 rightTopH2 = GetHUDPosition(frameSize - cornerSize, frameSize);
-	Vector3 rightTopV1 = GetHUDPosition(frameSize, frameSize);
-	Vector3 rightTopV2 = GetHUDPosition(frameSize, frameSize - cornerSize);
+	if (progress > 0.25f) {
+		float cornerProgress = std::min((progress - 0.25f) / 0.25f, 1.0f);
+		Vector3 rightTopH1 = GetHUDPosition(frameSize, frameSize);
+		Vector3 rightTopH2 = GetHUDPosition(frameSize - cornerSize, frameSize);
+		Vector3 rightTopH2Draw = Lerp(rightTopH1, rightTopH2, cornerProgress);
+		lineManager->DrawLine(rightTopH1, rightTopH2Draw, hudColor_);
 
-	lineManager->DrawLine(rightTopH1, rightTopH2, hudColor_);
-	lineManager->DrawLine(rightTopV1, rightTopV2, hudColor_);
+		if (cornerProgress > 0.5f) {
+			float vProgress = (cornerProgress - 0.5f) / 0.5f;
+			Vector3 rightTopV2 = GetHUDPosition(frameSize, frameSize - cornerSize);
+			Vector3 rightTopV2Draw = Lerp(rightTopH1, rightTopV2, vProgress);
+			lineManager->DrawLine(rightTopH1, rightTopV2Draw, hudColor_);
+		}
+	}
 
 	// 左下
-	Vector3 leftBottomH1 = GetHUDPosition(-frameSize, -frameSize);
-	Vector3 leftBottomH2 = GetHUDPosition(-frameSize + cornerSize, -frameSize);
-	Vector3 leftBottomV1 = GetHUDPosition(-frameSize, -frameSize);
-	Vector3 leftBottomV2 = GetHUDPosition(-frameSize, -frameSize + cornerSize);
+	if (progress > 0.5f) {
+		float cornerProgress = std::min((progress - 0.5f) / 0.25f, 1.0f);
+		Vector3 leftBottomH1 = GetHUDPosition(-frameSize, -frameSize);
+		Vector3 leftBottomH2 = GetHUDPosition(-frameSize + cornerSize, -frameSize);
+		Vector3 leftBottomH2Draw = Lerp(leftBottomH1, leftBottomH2, cornerProgress);
+		lineManager->DrawLine(leftBottomH1, leftBottomH2Draw, hudColor_);
 
-	lineManager->DrawLine(leftBottomH1, leftBottomH2, hudColor_);
-	lineManager->DrawLine(leftBottomV1, leftBottomV2, hudColor_);
+		if (cornerProgress > 0.5f) {
+			float vProgress = (cornerProgress - 0.5f) / 0.5f;
+			Vector3 leftBottomV2 = GetHUDPosition(-frameSize, -frameSize + cornerSize);
+			Vector3 leftBottomV2Draw = Lerp(leftBottomH1, leftBottomV2, vProgress);
+			lineManager->DrawLine(leftBottomH1, leftBottomV2Draw, hudColor_);
+		}
+	}
 
 	// 右下
-	Vector3 rightBottomH1 = GetHUDPosition(frameSize, -frameSize);
-	Vector3 rightBottomH2 = GetHUDPosition(frameSize - cornerSize, -frameSize);
-	Vector3 rightBottomV1 = GetHUDPosition(frameSize, -frameSize);
-	Vector3 rightBottomV2 = GetHUDPosition(frameSize, -frameSize + cornerSize);
+	if (progress > 0.75f) {
+		float cornerProgress = (progress - 0.75f) / 0.25f;
+		Vector3 rightBottomH1 = GetHUDPosition(frameSize, -frameSize);
+		Vector3 rightBottomH2 = GetHUDPosition(frameSize - cornerSize, -frameSize);
+		Vector3 rightBottomH2Draw = Lerp(rightBottomH1, rightBottomH2, cornerProgress);
+		lineManager->DrawLine(rightBottomH1, rightBottomH2Draw, hudColor_);
 
-	lineManager->DrawLine(rightBottomH1, rightBottomH2, hudColor_);
-	lineManager->DrawLine(rightBottomV1, rightBottomV2, hudColor_);
+		if (cornerProgress > 0.5f) {
+			float vProgress = (cornerProgress - 0.5f) / 0.5f;
+			Vector3 rightBottomV2 = GetHUDPosition(frameSize, -frameSize + cornerSize);
+			Vector3 rightBottomV2Draw = Lerp(rightBottomH1, rightBottomV2, vProgress);
+			lineManager->DrawLine(rightBottomH1, rightBottomV2Draw, hudColor_);
+		}
+	}
 }
 
 ///=============================================================================
 ///                        ベロシティベクトル（機体進行方向）
-void HUD::DrawVelocityVector() {
+void HUD::DrawVelocityVector(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
-	// ベロシティベクトルは機体の向きを示す（機首方向）
 	float size = 1.2f * hudScale_;
 	Vector3 center = GetPlayerFrontPositionWithOffset(0.0f, 0.0f, boresightOffset_);
 
-	// 円形マーカー
-	lineManager->DrawCircle(center, size, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 16);
+	// 円形マーカー（円弧として展開）
+	if (progress > 0.0f) {
+		float circleProgress = std::min(progress / 0.6f, 1.0f);
+		int segments = static_cast<int>(16 * circleProgress);
+		if (segments > 0) {
+			lineManager->DrawCircle(center, size, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, segments);
+		}
+	}
 
-	// 左右の小さな翼マーク
-	Vector3 leftWing = GetPlayerFrontPositionWithOffset(-size * 1.5f, 0.0f, boresightOffset_);
-	Vector3 leftWingEnd = GetPlayerFrontPositionWithOffset(-size * 2.5f, 0.0f, boresightOffset_);
-	lineManager->DrawLine(leftWing, leftWingEnd, hudColor_, 2.0f);
+	// 左翼（進行度60%以降）
+	if (progress > 0.6f) {
+		float wingProgress = (progress - 0.6f) / 0.2f;
+		Vector3 leftWing = GetPlayerFrontPositionWithOffset(-size * 1.5f, 0.0f, boresightOffset_);
+		Vector3 leftWingEnd = GetPlayerFrontPositionWithOffset(-size * 2.5f, 0.0f, boresightOffset_);
+		Vector3 leftWingDraw = Lerp(leftWing, leftWingEnd, wingProgress);
+		lineManager->DrawLine(leftWing, leftWingDraw, hudColor_, 2.0f);
+	}
 
-	Vector3 rightWing = GetPlayerFrontPositionWithOffset(size * 1.5f, 0.0f, boresightOffset_);
-	Vector3 rightWingEnd = GetPlayerFrontPositionWithOffset(size * 2.5f, 0.0f, boresightOffset_);
-	lineManager->DrawLine(rightWing, rightWingEnd, hudColor_, 2.0f);
+	// 右翼（進行度80%以降）
+	if (progress > 0.8f) {
+		float wingProgress = (progress - 0.8f) / 0.2f;
+		Vector3 rightWing = GetPlayerFrontPositionWithOffset(size * 1.5f, 0.0f, boresightOffset_);
+		Vector3 rightWingEnd = GetPlayerFrontPositionWithOffset(size * 2.5f, 0.0f, boresightOffset_);
+		Vector3 rightWingDraw = Lerp(rightWing, rightWingEnd, wingProgress);
+		lineManager->DrawLine(rightWing, rightWingDraw, hudColor_, 2.0f);
+	}
 }
 
 ///=============================================================================
 ///                        フライトパスマーカー（実際の移動方向）
-void HUD::DrawFlightPathMarker() {
+void HUD::DrawFlightPathMarker(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
 	if (currentSpeed_ < 0.1f) {
-		return; // 速度が低い場合は表示しない
+		return;
 	}
 
-	// 速度ベクトルに基づいてオフセットを計算
 	float velocityOffsetX = playerVelocity_.x * 0.5f;
 	float velocityOffsetY = playerVelocity_.y * 0.5f;
 
 	float size = 0.8f * hudScale_;
 	Vector3 center = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY, boresightOffset_);
 
-	// 円形マーカー
-	lineManager->DrawCircle(center, size, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 12);
+	// 円形マーカー（円弧として展開）
+	if (progress > 0.0f) {
+		float circleProgress = std::min(progress / 0.5f, 1.0f);
+		int segments = static_cast<int>(12 * circleProgress);
+		if (segments > 0) {
+			lineManager->DrawCircle(center, size, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, segments);
+		}
+	}
 
-	// 上下左右の短い線
-	Vector3 top = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY + size * 1.5f, boresightOffset_);
-	Vector3 topEnd = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY + size * 0.8f, boresightOffset_);
-	lineManager->DrawLine(top, topEnd, hudColor_, 2.0f);
+	// 上の線（進行度50%以降）
+	if (progress > 0.5f) {
+		float lineProgress = (progress - 0.5f) / 0.5f;
+		Vector3 top = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY + size * 1.5f, boresightOffset_);
+		Vector3 topEnd = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY + size * 0.8f, boresightOffset_);
+		Vector3 topDraw = Lerp(top, topEnd, lineProgress);
+		lineManager->DrawLine(top, topDraw, hudColor_, 2.0f);
+	}
 
-	Vector3 bottom = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY - size * 1.5f, boresightOffset_);
-	Vector3 bottomEnd = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY - size * 0.8f, boresightOffset_);
-	lineManager->DrawLine(bottom, bottomEnd, hudColor_, 2.0f);
+	// 下の線（進行度75%以降）
+	if (progress > 0.75f) {
+		float lineProgress = (progress - 0.75f) / 0.25f;
+		Vector3 bottom = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY - size * 1.5f, boresightOffset_);
+		Vector3 bottomEnd = GetPlayerFrontPositionWithOffset(velocityOffsetX, velocityOffsetY - size * 0.8f, boresightOffset_);
+		Vector3 bottomDraw = Lerp(bottom, bottomEnd, lineProgress);
+		lineManager->DrawLine(bottom, bottomDraw, hudColor_, 2.0f);
+	}
 }
 
 ///=============================================================================
 ///                        ピッチラダー（水平線と角度表示）
-void HUD::DrawPitchLadder() {
+void HUD::DrawPitchLadder(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
 	float pitchDeg = RadiansToDegrees(playerRotation_.x);
 
-	// -30度から+30度まで10度間隔で水平線を描画
+	// -30度から+30度まで10度間隔で水平線を描画（進行度に応じて本数を増やす）
+	int maxLines = static_cast<int>(7 * progress); // 最大7本
+	int lineIndex = 0;
 	for (int angle = -30; angle <= 30; angle += 10) {
-		if (angle == 0)
-			continue; // 0度は別途描画
+		if (angle == 0 && lineIndex < maxLines) {
+			lineIndex++;
+			continue;
+		}
+		if (lineIndex >= maxLines)
+			break;
+		lineIndex++;
 
 		float offsetY = (angle - pitchDeg) * 0.3f;
 		if (std::abs(offsetY) > 15.0f)
-			continue; // 画面外は描画しない
+			continue;
 
 		float lineLength = (angle % 20 == 0) ? 4.0f : 3.0f;
 		Vector3 left = GetPlayerFrontPositionWithOffset(-lineLength, offsetY, boresightOffset_);
 		Vector3 right = GetPlayerFrontPositionWithOffset(lineLength, offsetY, boresightOffset_);
 
-		Vector4 lineColor = (angle > 0) ? hudColor_ : hudColor_;
-		lineManager->DrawLine(left, right, lineColor, 1.5f);
+		// 中央から左右に展開
+		Vector3 center = GetPlayerFrontPositionWithOffset(0.0f, offsetY, boresightOffset_);
+		Vector3 leftDraw = Lerp(center, left, progress);
+		Vector3 rightDraw = Lerp(center, right, progress);
 
-		// 角度表示用の短い縦線
-		if (angle % 20 == 0) {
+		Vector4 lineColor = (angle > 0) ? hudColor_ : hudColor_;
+		lineManager->DrawLine(leftDraw, rightDraw, lineColor, 1.5f);
+
+		// 角度表示用の短い縦線（進行度80%以降）
+		if (angle % 20 == 0 && progress > 0.8f) {
 			Vector3 leftTick = GetPlayerFrontPositionWithOffset(-lineLength - 0.3f, offsetY, boresightOffset_);
 			Vector3 leftTickEnd = GetPlayerFrontPositionWithOffset(-lineLength - 0.3f, offsetY + 0.5f, boresightOffset_);
 			lineManager->DrawLine(leftTick, leftTickEnd, lineColor, 1.5f);
@@ -641,176 +742,240 @@ void HUD::DrawPitchLadder() {
 		}
 	}
 
-	// 0度（水平線）は太く強調表示
+	// 0度（水平線）は太く強調表示（常に最初に表示）
 	float horizonOffsetY = -pitchDeg * 0.3f;
-	if (std::abs(horizonOffsetY) <= 15.0f) {
+	if (std::abs(horizonOffsetY) <= 15.0f && progress > 0.0f) {
 		Vector3 left = GetPlayerFrontPositionWithOffset(-8.0f, horizonOffsetY, boresightOffset_);
 		Vector3 center = GetPlayerFrontPositionWithOffset(0.0f, horizonOffsetY, boresightOffset_);
 		Vector3 right = GetPlayerFrontPositionWithOffset(8.0f, horizonOffsetY, boresightOffset_);
 
-		lineManager->DrawLine(left, center, hudColor_, 3.0f);
-		lineManager->DrawLine(center, right, hudColor_, 3.0f);
+		Vector3 leftDraw = Lerp(center, left, progress);
+		Vector3 rightDraw = Lerp(center, right, progress);
+
+		lineManager->DrawLine(leftDraw, center, hudColor_, 3.0f);
+		lineManager->DrawLine(center, rightDraw, hudColor_, 3.0f);
 	}
 }
 
 ///=============================================================================
 ///                        速度テープ（左側）
-void HUD::DrawSpeedTape() {
+void HUD::DrawSpeedTape(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
 	float tapeX = -13.0f;
 	float tapeY = 0.0f;
 
-	// 速度テープの枠
 	Vector3 topLeft = GetHUDPosition(tapeX - 1.5f, tapeY + 6.0f);
 	Vector3 topRight = GetHUDPosition(tapeX + 1.5f, tapeY + 6.0f);
 	Vector3 bottomLeft = GetHUDPosition(tapeX - 1.5f, tapeY - 6.0f);
 	Vector3 bottomRight = GetHUDPosition(tapeX + 1.5f, tapeY - 6.0f);
 
-	lineManager->DrawLine(topLeft, topRight, hudColor_);
-	lineManager->DrawLine(topLeft, bottomLeft, hudColor_);
-	lineManager->DrawLine(bottomLeft, bottomRight, hudColor_);
-	lineManager->DrawLine(topRight, bottomRight, hudColor_);
+	// 枠を順次描画（上→左→下→右）
+	if (progress > 0.0f) {
+		float lineProgress = std::min(progress / 0.25f, 1.0f);
+		Vector3 topRightDraw = Lerp(topLeft, topRight, lineProgress);
+		lineManager->DrawLine(topLeft, topRightDraw, hudColor_);
+	}
+	if (progress > 0.25f) {
+		float lineProgress = (progress - 0.25f) / 0.25f;
+		Vector3 bottomLeftDraw = Lerp(topLeft, bottomLeft, lineProgress);
+		lineManager->DrawLine(topLeft, bottomLeftDraw, hudColor_);
+	}
+	if (progress > 0.5f) {
+		float lineProgress = (progress - 0.5f) / 0.25f;
+		Vector3 bottomRightDraw = Lerp(bottomLeft, bottomRight, lineProgress);
+		lineManager->DrawLine(bottomLeft, bottomRightDraw, hudColor_);
+	}
+	if (progress > 0.75f) {
+		float lineProgress = (progress - 0.75f) / 0.25f;
+		Vector3 bottomRightDraw = Lerp(topRight, bottomRight, lineProgress);
+		lineManager->DrawLine(topRight, bottomRightDraw, hudColor_);
+	}
 
-	// 現在の速度を中央に表示するためのマーカー
-	Vector3 speedMarkerLeft = GetHUDPosition(tapeX - 2.0f, tapeY);
-	Vector3 speedMarkerRight = GetHUDPosition(tapeX + 2.0f, tapeY);
-	Vector3 speedMarkerTop = GetHUDPosition(tapeX, tapeY + 0.8f);
-	Vector3 speedMarkerBottom = GetHUDPosition(tapeX, tapeY - 0.8f);
+	// 現在の速度マーカー（進行度60%以降）
+	if (progress > 0.6f) {
+		Vector3 speedMarkerLeft = GetHUDPosition(tapeX - 2.0f, tapeY);
+		Vector3 speedMarkerRight = GetHUDPosition(tapeX + 2.0f, tapeY);
+		Vector3 speedMarkerTop = GetHUDPosition(tapeX, tapeY + 0.8f);
+		Vector3 speedMarkerBottom = GetHUDPosition(tapeX, tapeY - 0.8f);
 
-	lineManager->DrawLine(speedMarkerLeft, speedMarkerTop, hudColor_, 2.0f);
-	lineManager->DrawLine(speedMarkerTop, speedMarkerRight, hudColor_, 2.0f);
-	lineManager->DrawLine(speedMarkerRight, speedMarkerBottom, hudColor_, 2.0f);
-	lineManager->DrawLine(speedMarkerBottom, speedMarkerLeft, hudColor_, 2.0f);
+		lineManager->DrawLine(speedMarkerLeft, speedMarkerTop, hudColor_, 2.0f);
+		lineManager->DrawLine(speedMarkerTop, speedMarkerRight, hudColor_, 2.0f);
+		lineManager->DrawLine(speedMarkerRight, speedMarkerBottom, hudColor_, 2.0f);
+		lineManager->DrawLine(speedMarkerBottom, speedMarkerLeft, hudColor_, 2.0f);
+	}
 
-	// 速度目盛り（10単位ごと）
-	int baseSpeed = static_cast<int>(currentSpeed_ / 10) * 10;
-	for (int i = -3; i <= 3; ++i) {
-		int speed = baseSpeed + i * 10;
-		if (speed < 0)
-			continue;
+	// 速度目盛り（進行度80%以降で表示）
+	if (progress > 0.8f) {
+		int baseSpeed = static_cast<int>(currentSpeed_ / 10) * 10;
+		for (int i = -3; i <= 3; ++i) {
+			int speed = baseSpeed + i * 10;
+			if (speed < 0)
+				continue;
 
-		float offsetY = (currentSpeed_ - speed) * 0.3f;
-		Vector3 tickStart = GetHUDPosition(tapeX - 1.5f, tapeY + offsetY);
-		Vector3 tickEnd = GetHUDPosition(tapeX - 0.8f, tapeY + offsetY);
+			float offsetY = (currentSpeed_ - speed) * 0.3f;
+			Vector3 tickStart = GetHUDPosition(tapeX - 1.5f, tapeY + offsetY);
+			Vector3 tickEnd = GetHUDPosition(tapeX - 0.8f, tapeY + offsetY);
 
-		lineManager->DrawLine(tickStart, tickEnd, hudColor_);
+			lineManager->DrawLine(tickStart, tickEnd, hudColor_);
+		}
 	}
 }
 
 ///=============================================================================
 ///                        高度テープ（右側）
-void HUD::DrawAltitudeTape() {
+void HUD::DrawAltitudeTape(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
 	float tapeX = 13.0f;
 	float tapeY = 0.0f;
 
-	// 高度テープの枠
 	Vector3 topLeft = GetHUDPosition(tapeX - 1.5f, tapeY + 6.0f);
 	Vector3 topRight = GetHUDPosition(tapeX + 1.5f, tapeY + 6.0f);
 	Vector3 bottomLeft = GetHUDPosition(tapeX - 1.5f, tapeY - 6.0f);
 	Vector3 bottomRight = GetHUDPosition(tapeX + 1.5f, tapeY - 6.0f);
 
-	lineManager->DrawLine(topLeft, topRight, hudColor_);
-	lineManager->DrawLine(topLeft, bottomLeft, hudColor_);
-	lineManager->DrawLine(bottomLeft, bottomRight, hudColor_);
-	lineManager->DrawLine(topRight, bottomRight, hudColor_);
+	// 枠を順次描画（上→右→下→左）
+	if (progress > 0.0f) {
+		float lineProgress = std::min(progress / 0.25f, 1.0f);
+		Vector3 topRightDraw = Lerp(topLeft, topRight, lineProgress);
+		lineManager->DrawLine(topLeft, topRightDraw, hudColor_);
+	}
+	if (progress > 0.25f) {
+		float lineProgress = (progress - 0.25f) / 0.25f;
+		Vector3 bottomRightDraw = Lerp(topRight, bottomRight, lineProgress);
+		lineManager->DrawLine(topRight, bottomRightDraw, hudColor_);
+	}
+	if (progress > 0.5f) {
+		float lineProgress = (progress - 0.5f) / 0.25f;
+		Vector3 bottomLeftDraw = Lerp(bottomRight, bottomLeft, lineProgress);
+		lineManager->DrawLine(bottomRight, bottomLeftDraw, hudColor_);
+	}
+	if (progress > 0.75f) {
+		float lineProgress = (progress - 0.75f) / 0.25f;
+		Vector3 topLeftDraw = Lerp(bottomLeft, topLeft, lineProgress);
+		lineManager->DrawLine(bottomLeft, topLeftDraw, hudColor_);
+	}
 
-	// 現在の高度マーカー
-	Vector3 altMarkerLeft = GetHUDPosition(tapeX - 2.0f, tapeY);
-	Vector3 altMarkerRight = GetHUDPosition(tapeX + 2.0f, tapeY);
-	Vector3 altMarkerTop = GetHUDPosition(tapeX, tapeY + 0.8f);
-	Vector3 altMarkerBottom = GetHUDPosition(tapeX, tapeY - 0.8f);
+	// 現在の高度マーカー（進行度60%以降）
+	if (progress > 0.6f) {
+		Vector3 altMarkerLeft = GetHUDPosition(tapeX - 2.0f, tapeY);
+		Vector3 altMarkerRight = GetHUDPosition(tapeX + 2.0f, tapeY);
+		Vector3 altMarkerTop = GetHUDPosition(tapeX, tapeY + 0.8f);
+		Vector3 altMarkerBottom = GetHUDPosition(tapeX, tapeY - 0.8f);
 
-	Vector4 altColor = (currentAltitude_ < 20.0f) ? hudColorCritical_ : hudColor_;
+		Vector4 altColor = (currentAltitude_ < 20.0f) ? hudColorCritical_ : hudColor_;
 
-	lineManager->DrawLine(altMarkerLeft, altMarkerTop, altColor, 2.0f);
-	lineManager->DrawLine(altMarkerTop, altMarkerRight, altColor, 2.0f);
-	lineManager->DrawLine(altMarkerRight, altMarkerBottom, altColor, 2.0f);
-	lineManager->DrawLine(altMarkerBottom, altMarkerLeft, altColor, 2.0f);
+		lineManager->DrawLine(altMarkerLeft, altMarkerTop, altColor, 2.0f);
+		lineManager->DrawLine(altMarkerTop, altMarkerRight, altColor, 2.0f);
+		lineManager->DrawLine(altMarkerRight, altMarkerBottom, altColor, 2.0f);
+		lineManager->DrawLine(altMarkerBottom, altMarkerLeft, altColor, 2.0f);
+	}
 
-	// 高度目盛り（10単位ごと）
-	int baseAlt = static_cast<int>(currentAltitude_ / 10) * 10;
-	for (int i = -3; i <= 3; ++i) {
-		int alt = baseAlt + i * 10;
-		if (alt < 0)
-			continue;
+	// 高度目盛り（進行度80%以降で表示）
+	if (progress > 0.8f) {
+		int baseAlt = static_cast<int>(currentAltitude_ / 10) * 10;
+		for (int i = -3; i <= 3; ++i) {
+			int alt = baseAlt + i * 10;
+			if (alt < 0)
+				continue;
 
-		float offsetY = (currentAltitude_ - alt) * 0.3f;
-		Vector3 tickStart = GetHUDPosition(tapeX + 1.5f, tapeY + offsetY);
-		Vector3 tickEnd = GetHUDPosition(tapeX + 0.8f, tapeY + offsetY);
+			float offsetY = (currentAltitude_ - alt) * 0.3f;
+			Vector3 tickStart = GetHUDPosition(tapeX + 1.5f, tapeY + offsetY);
+			Vector3 tickEnd = GetHUDPosition(tapeX + 0.8f, tapeY + offsetY);
 
-		lineManager->DrawLine(tickStart, tickEnd, hudColor_);
+			lineManager->DrawLine(tickStart, tickEnd, hudColor_);
+		}
 	}
 }
 
 ///=============================================================================
 ///                        方位テープ（上部）
-void HUD::DrawHeadingTape() {
+void HUD::DrawHeadingTape(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
 	float tapeY = 8.0f;
 
-	// 方位テープの枠
-	Vector3 left = GetHUDPosition(-6.0f, tapeY);
-	Vector3 right = GetHUDPosition(6.0f, tapeY);
-	lineManager->DrawLine(left, right, hudColor_);
+	// ベースライン（中央から左右に展開）
+	if (progress > 0.0f) {
+		Vector3 center = GetHUDPosition(0.0f, tapeY);
+		Vector3 left = GetHUDPosition(-6.0f, tapeY);
+		Vector3 right = GetHUDPosition(6.0f, tapeY);
+		Vector3 leftDraw = Lerp(center, left, progress);
+		Vector3 rightDraw = Lerp(center, right, progress);
+		lineManager->DrawLine(leftDraw, rightDraw, hudColor_);
+	}
 
-	// 中央マーカー
-	Vector3 centerTop = GetHUDPosition(0.0f, tapeY + 1.0f);
-	Vector3 centerBottom = GetHUDPosition(0.0f, tapeY);
-	Vector3 centerLeft = GetHUDPosition(-0.5f, tapeY + 0.5f);
-	Vector3 centerRight = GetHUDPosition(0.5f, tapeY + 0.5f);
+	// 中央マーカー（進行度50%以降）
+	if (progress > 0.5f) {
+		float markerProgress = (progress - 0.5f) / 0.5f;
+		Vector3 centerTop = GetHUDPosition(0.0f, tapeY + 1.0f);
+		Vector3 centerBottom = GetHUDPosition(0.0f, tapeY);
+		Vector3 centerLeft = GetHUDPosition(-0.5f, tapeY + 0.5f);
+		Vector3 centerRight = GetHUDPosition(0.5f, tapeY + 0.5f);
 
-	lineManager->DrawLine(centerTop, centerBottom, hudColor_, 2.0f);
-	lineManager->DrawLine(centerTop, centerLeft, hudColor_, 2.0f);
-	lineManager->DrawLine(centerTop, centerRight, hudColor_, 2.0f);
+		Vector3 centerTopDraw = Lerp(centerBottom, centerTop, markerProgress);
+		lineManager->DrawLine(centerTopDraw, centerBottom, hudColor_, 2.0f);
 
-	// 方位目盛り（30度ごと）
-	int baseHeading = static_cast<int>(currentHeading_ / 30) * 30;
-	for (int i = -2; i <= 2; ++i) {
-		int heading = baseHeading + i * 30;
-		while (heading < 0)
-			heading += 360;
-		while (heading >= 360)
-			heading -= 360;
+		if (markerProgress > 0.5f) {
+			lineManager->DrawLine(centerTop, centerLeft, hudColor_, 2.0f);
+			lineManager->DrawLine(centerTop, centerRight, hudColor_, 2.0f);
+		}
+	}
 
-		float offsetX = (currentHeading_ - heading) * 0.15f;
-		if (std::abs(offsetX) > 6.0f)
-			continue;
+	// 方位目盛り（進行度70%以降で表示）
+	if (progress > 0.7f) {
+		int baseHeading = static_cast<int>(currentHeading_ / 30) * 30;
+		for (int i = -2; i <= 2; ++i) {
+			int heading = baseHeading + i * 30;
+			while (heading < 0)
+				heading += 360;
+			while (heading >= 360)
+				heading -= 360;
 
-		Vector3 tickTop = GetHUDPosition(offsetX, tapeY + 0.5f);
-		Vector3 tickBottom = GetHUDPosition(offsetX, tapeY);
-		lineManager->DrawLine(tickTop, tickBottom, hudColor_);
+			float offsetX = (currentHeading_ - heading) * 0.15f;
+			if (std::abs(offsetX) > 6.0f)
+				continue;
+
+			Vector3 tickTop = GetHUDPosition(offsetX, tapeY + 0.5f);
+			Vector3 tickBottom = GetHUDPosition(offsetX, tapeY);
+			lineManager->DrawLine(tickTop, tickBottom, hudColor_);
+		}
 	}
 }
 
 ///=============================================================================
 ///                        G-Force表示（左下）
-void HUD::DrawGForceIndicator() {
+void HUD::DrawGForceIndicator(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
 
 	float posX = -13.0f;
 	float posY = -8.0f;
 
-	// G-Forceバーの枠
-	Vector3 barLeft = GetHUDPosition(posX, posY);
-	Vector3 barRight = GetHUDPosition(posX + 4.0f, posY);
-	lineManager->DrawLine(barLeft, barRight, hudColor_);
-
-	// G-Force値に応じて色を変える
-	Vector4 gColor = hudColor_;
-	if (currentGForce_ > 7.0f) {
-		gColor = hudColorCritical_;
-	} else if (currentGForce_ > 5.0f) {
-		gColor = hudColorWarning_;
+	// G-Forceバーの枠（左から右に展開）
+	if (progress > 0.0f) {
+		Vector3 barLeft = GetHUDPosition(posX, posY);
+		Vector3 barRight = GetHUDPosition(posX + 4.0f, posY);
+		Vector3 barRightDraw = Lerp(barLeft, barRight, progress);
+		lineManager->DrawLine(barLeft, barRightDraw, hudColor_);
 	}
 
-	// G-Forceバー
-	float gBarLength = std::min(std::abs(currentGForce_ - 1.0f) / 8.0f * 4.0f, 4.0f);
-	Vector3 gBarEnd = GetHUDPosition(posX + gBarLength, posY);
-	lineManager->DrawLine(barLeft, gBarEnd, gColor, 3.0f);
+	// G-Force値バー（進行度50%以降）
+	if (progress > 0.5f) {
+		float barProgress = (progress - 0.5f) / 0.5f;
+		Vector4 gColor = hudColor_;
+		if (currentGForce_ > 7.0f) {
+			gColor = hudColorCritical_;
+		} else if (currentGForce_ > 5.0f) {
+			gColor = hudColorWarning_;
+		}
+
+		float gBarLength = std::min(std::abs(currentGForce_ - 1.0f) / 8.0f * 4.0f, 4.0f);
+		Vector3 barLeft = GetHUDPosition(posX, posY);
+		Vector3 gBarEnd = GetHUDPosition(posX + gBarLength, posY);
+		Vector3 gBarDraw = Lerp(barLeft, gBarEnd, barProgress);
+		lineManager->DrawLine(barLeft, gBarDraw, gColor, 3.0f);
+	}
 }
 
 ///=============================================================================

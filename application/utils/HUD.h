@@ -27,17 +27,17 @@ public:
 
 private:
 	// HUDの各要素を描画する関数
-	void DrawBoresight();					// 画面中央: 照準
-	void DrawRollScale(float rollAngle);	// 画面上部中央: ロール円弧（-60°～+60°）
-	void DrawRadarAltitude(float radarAlt); // 画面右下: レーダー高度
-	void DrawHUDFrame();					// 画面四隅: コーナーマーカー
-	void DrawVelocityVector();				// ベロシティベクトル（機体進行方向）
-	void DrawFlightPathMarker();			// フライトパスマーカー（実際の移動方向）
-	void DrawPitchLadder();					// ピッチラダー（水平線と角度表示）
-	void DrawSpeedTape();					// 左側: 速度テープ
-	void DrawAltitudeTape();				// 右側: 高度テープ
-	void DrawHeadingTape();					// 上部: 方位テープ
-	void DrawGForceIndicator();				// G-Force表示
+	void DrawBoresight(float progress = 1.0f);					   // 画面中央: 照準
+	void DrawRollScale(float rollAngle, float progress = 1.0f);	   // 画面上部中央: ロール円弧（-60°～+60°）
+	void DrawRadarAltitude(float radarAlt, float progress = 1.0f); // 画面右下: レーダー高度
+	void DrawHUDFrame(float progress = 1.0f);					   // 画面四隅: コーナーマーカー
+	void DrawVelocityVector(float progress = 1.0f);				   // ベロシティベクトル（機体進行方向）
+	void DrawFlightPathMarker(float progress = 1.0f);			   // フライトパスマーカー（実際の移動方向）
+	void DrawPitchLadder(float progress = 1.0f);				   // ピッチラダー（水平線と角度表示）
+	void DrawSpeedTape(float progress = 1.0f);					   // 左側: 速度テープ
+	void DrawAltitudeTape(float progress = 1.0f);				   // 右側: 高度テープ
+	void DrawHeadingTape(float progress = 1.0f);				   // 上部: 方位テープ
+	void DrawGForceIndicator(float progress = 1.0f);			   // G-Force表示
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);
