@@ -10,22 +10,21 @@
 
 ///=============================================================================
 ///						初期化
-void SrvSetup::Initialize(DirectXCore* dxCore) {
+void SrvSetup::Initialize(DirectXCore *dxCore) {
 	//========================================
 	// DXCoreの設定
 	this->dxCore_ = dxCore;
-
 	//========================================
 	// ディスクリプタヒープの生成
 	descriptorHeap_ = dxCore_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount_, true);
-	//ディスクリプタ1個分のサイズを取得して記録
+	// ディスクリプタ1個分のサイズを取得して記録
 	descriptorSizeSRV_ = dxCore_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 ///=============================================================================
 ///						ループ前処理
 void SrvSetup::PreDraw() {
-	ID3D12DescriptorHeap* descriptorHeaps[] = { descriptorHeap_.Get() };
+	ID3D12DescriptorHeap *descriptorHeaps[] = {descriptorHeap_.Get()};
 	dxCore_->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 }
 
@@ -34,19 +33,19 @@ void SrvSetup::PreDraw() {
 uint32_t SrvSetup::Allocate() {
 	// returnする番号を一旦記録
 	uint32_t index = useIndex_;
-	//次に使用するディスクリプタのインデックスを進める
+	// 次に使用するディスクリプタのインデックスを進める
 	useIndex_++;
-	//上で記録した番号を返す
+	// 上で記録した番号を返す
 	return index;
 }
 
 ///=============================================================================
 ///						SRV生成(テクスチャ用)
-void SrvSetup::CreateSRVforTexture2D(uint32_t srvIndex, ID3D12Resource* pResource, DXGI_FORMAT format, UINT mipLevels) {
+void SrvSetup::CreateSRVforTexture2D(uint32_t srvIndex, ID3D12Resource *pResource, DXGI_FORMAT format, UINT mipLevels) {
 	//========================================
 	// ディスクリプタハンドルの取得
 	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-	handleCPU.ptr += ( descriptorSizeSRV_ * srvIndex );
+	handleCPU.ptr += (descriptorSizeSRV_ * srvIndex);
 	//========================================
 	// テクスチャ用のSRVを生成
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -61,11 +60,7 @@ void SrvSetup::CreateSRVforTexture2D(uint32_t srvIndex, ID3D12Resource* pResourc
 
 ///=============================================================================
 ///						SRV生成(構造化バッファ用)
-void SrvSetup::CreateSRVStructuredBuffer(uint32_t srvIndex, ID3D12Resource* pResource, UINT enelemtQuantity, UINT structureByteStride) {
-	//========================================
-	// ディスクリプタハンドルの取得
-	//D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-	//handleCPU.ptr += ( descriptorSizeSRV_ * srvIndex );
+void SrvSetup::CreateSRVStructuredBuffer(uint32_t srvIndex, ID3D12Resource *pResource, UINT enelemtQuantity, UINT structureByteStride) {
 	//========================================
 	// 構造化バッファ用のSRVを生成
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -83,7 +78,7 @@ void SrvSetup::CreateRenderTextureSRV() {
 	//========================================
 	// ディスクリプタハンドルの取得
 	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-	handleCPU.ptr += ( descriptorSizeSRV_ * 0 );
+	handleCPU.ptr += (descriptorSizeSRV_ * 0);
 	//========================================
 	// テクスチャ用のSRVを生成
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -102,7 +97,7 @@ void SrvSetup::CreateRenderTextureSRV() {
 ///						 CPU
 D3D12_CPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVCPUDescriptorHandle(uint32_t index) {
 	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-	handleCPU.ptr += ( descriptorSizeSRV_ * index );
+	handleCPU.ptr += (descriptorSizeSRV_ * index);
 	return handleCPU;
 }
 
@@ -110,24 +105,21 @@ D3D12_CPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVCPUDescriptorHandle(uint32_t index) 
 ///						 GPU
 D3D12_GPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVGPUDescriptorHandle(uint32_t index) {
 	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
-	handleGPU.ptr += ( descriptorSizeSRV_ * index );
+	handleGPU.ptr += (descriptorSizeSRV_ * index);
 	return handleGPU;
-
 }
 
+///=============================================================================
+///						グラフィックスルートディスクリプタテーブルの設定
 void SrvSetup::SetGraphicsRootDescriptorTable(uint32_t rootParameterIndex, uint32_t srvIndex) {
-    //========================================
-    // ディスクリプタヒープをコマンドリストに設定
-    // ID3D12DescriptorHeap* ppHeaps[] = { descriptorHeap_.Get() };  
-    //dxCore_->GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-    
-    //========================================
-    // ルートディスクリプタテーブルの設定
-    dxCore_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetSRVGPUDescriptorHandle(srvIndex));
+	//========================================
+	// ルートディスクリプタテーブルの設定
+	dxCore_->GetCommandList()->SetGraphicsRootDescriptorTable(rootParameterIndex, GetSRVGPUDescriptorHandle(srvIndex));
 }
 
-void SrvSetup::CreateOffScreenTexture(uint32_t srvIndex, uint32_t rtvIndex)
-{
+///=============================================================================
+///						オフスクリーンレンダーテクスチャの生成
+void SrvSetup::CreateOffScreenTexture(uint32_t srvIndex, uint32_t rtvIndex) {
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
