@@ -84,6 +84,16 @@ public:
 	void TakeDamage(int damage);
 	void Heal(int healAmount);
 
+	//========================================
+	// 墜落関連
+	bool IsCrashing() const {
+		return isCrashing_;
+	}
+	bool IsCrashComplete() const {
+		return crashComplete_;
+	}
+	void StartCrash();
+
 	///--------------------------------------------------------------
 	///                        衝突処理
 	void OnCollisionEnter(BaseObject *other) override;
@@ -102,6 +112,7 @@ private:
 	void ProcessShooting();
 	void UpdateBullets();
 	void UpdateMissiles();
+	void UpdateCrash();
 
 	///--------------------------------------------------------------
 	///                        静的メンバ変数
@@ -156,6 +167,15 @@ private:
 	Enemy *lockOnTarget_; // ロックオンターゲット
 	float lockOnRange_;	  // ロックオン範囲
 	bool lockOnMode_;	  // ロックオンモード
+
+	//========================================
+	// 墜落関連
+	bool isCrashing_;			 // 墜落中フラグ
+	bool crashComplete_;		 // 墜落完了フラグ
+	float crashTime_;			 // 墜落経過時間
+	float crashDuration_;		 // 墜落演出時間
+	Vector3 crashVelocity_;		 // 墜落速度
+	Vector3 crashRotationSpeed_; // 墜落回転速度
 
 	//========================================
 	//

@@ -18,6 +18,7 @@
 #include "Enemy.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
+#include "GameOverUI.h"
 #include "HUD.h"
 #include "Player.h"
 #include "SceneTransition.h"
@@ -101,6 +102,11 @@ private:
 	//========================================
 	// HUD
 	std::unique_ptr<HUD> hud_;
+
+	//========================================
+	// ゲームオーバー
+	std::unique_ptr<GameOverUI> gameOverUI_;
+	bool isGameOver_;
 
 	//========================================
 	// トランジション

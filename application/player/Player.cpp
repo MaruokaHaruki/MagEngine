@@ -59,7 +59,7 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	maxMissileCoolTime_ = 2.0f; // ミサイルは2秒間隔
 
 	// === HP関連の初期化 ===
-	maxHP_ = 100;
+	maxHP_ = 10;
 	currentHP_ = maxHP_;
 	isInvincible_ = false;
 	invincibleTime_ = 0.0f;
@@ -88,6 +88,14 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	lockOnTarget_ = nullptr;
 	lockOnRange_ = 30.0f;
 	lockOnMode_ = false;
+
+	// === 墜落関連の初期化 ===
+	isCrashing_ = false;
+	crashComplete_ = false;
+	crashTime_ = 0.0f;
+	crashDuration_ = 3.0f; // 3秒間の墜落演出
+	crashVelocity_ = {0.0f, 0.0f, 0.0f};
+	crashRotationSpeed_ = {0.0f, 0.0f, 0.0f};
 }
 
 void Player::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
@@ -129,6 +137,46 @@ void Player::Update() {
 	if (!objTransform) {
 		return;
 	}
+
+	// === 墜落中の処理 ===
+	if (isCrashing_) {
+		UpdateCrash();
+		obj_->Update();
+		return;
+	}
+
+	// === デバッグ用自爆処理（Kキー2回押し） ===
+#ifdef _DEBUG
+	Input *input = Input::GetInstance();
+	static bool prevKKey = false;
+	static int kKeyPressCount = 0;
+	static float kKeyResetTimer = 0.0f;
+
+	bool currentKKey = input->PushKey(DIK_K);
+
+	// Kキーが押された瞬間を検出
+	if (currentKKey && !prevKKey) {
+		kKeyPressCount++;
+		kKeyResetTimer = 2.0f; // 2秒以内に2回押す必要がある
+	}
+	prevKKey = currentKKey;
+
+	// タイマー更新
+	if (kKeyResetTimer > 0.0f) {
+		kKeyResetTimer -= 1.0f / 60.0f; // 60FPS想定
+		if (kKeyResetTimer <= 0.0f) {
+			kKeyPressCount = 0; // タイムアウトでリセット
+		}
+	}
+
+	// 2回押されたら自爆
+	if (kKeyPressCount >= 2) {
+		currentHP_ = 0;
+		StartCrash();
+		kKeyPressCount = 0;
+		kKeyResetTimer = 0.0f;
+	}
+#endif
 
 	// === 無敵時間の更新 ===
 	if (isInvincible_) {
@@ -465,6 +513,39 @@ void Player::DrawImGui() {
 
 		ImGui::Separator();
 
+		// === デバッグ用ボタン ===
+		ImGui::Text("=== Debug Controls ===");
+		ImGui::Text("Keyboard: Press K twice (within 2s) to self-destruct");
+
+		// 自爆ボタン（目立つ色で表示）
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.1f, 0.1f, 1.0f));
+
+		if (ImGui::Button("Self Destruct (Force Game Over)", ImVec2(300, 30))) {
+			// 確認ダイアログ的な処理（2回押しで発動）
+			static int confirmCount = 0;
+			confirmCount++;
+
+			if (confirmCount >= 2) {
+				currentHP_ = 0;
+				StartCrash();
+				confirmCount = 0;
+			} else {
+				ImGui::OpenPopup("Confirm Self Destruct");
+			}
+		}
+
+		ImGui::PopStyleColor(3);
+
+		// 確認ポップアップ
+		if (ImGui::BeginPopup("Confirm Self Destruct")) {
+			ImGui::Text("Press the button again to confirm!");
+			ImGui::EndPopup();
+		}
+
+		ImGui::Separator();
+
 		// === 位置・移動情報 ===
 		ImGui::Text("=== Movement Status ===");
 		ImGui::Text("Position: (%.2f, %.2f, %.2f)", objTransform->translate.x, objTransform->translate.y, objTransform->translate.z);
@@ -535,6 +616,22 @@ void Player::DrawImGui() {
 			}
 		}
 
+		ImGui::Separator();
+
+		// === 墜落情報 ===
+		ImGui::Text("=== Crash Status ===");
+		ImGui::Text("Is Crashing: %s", isCrashing_ ? "Yes" : "No");
+		ImGui::Text("Crash Complete: %s", crashComplete_ ? "Yes" : "No");
+		if (isCrashing_) {
+			ImGui::Text("Crash Time: %.2fs / %.2fs", crashTime_, crashDuration_);
+			ImGui::ProgressBar(crashTime_ / crashDuration_, ImVec2(200, 20), "");
+		}
+		ImGui::SliderFloat("Crash Duration", &crashDuration_, 1.0f, 10.0f);
+		if (ImGui::Button("Force Crash")) {
+			currentHP_ = 0;
+			StartCrash();
+		}
+
 		ImGui::End();
 	}
 }
@@ -543,12 +640,18 @@ void Player::DrawImGui() {
 // HP関連処理
 void Player::TakeDamage(int damage) {
 	// 無敵状態または既に死亡している場合はダメージを受けない
-	if (isInvincible_ || !IsAlive()) {
+	if (isInvincible_ || !IsAlive() || isCrashing_) {
 		return;
 	}
 
 	// ダメージを適用
 	currentHP_ = std::max(0, currentHP_ - damage);
+
+	// HP0になったら墜落開始
+	if (currentHP_ <= 0) {
+		StartCrash();
+		return;
+	}
 
 	// ダメージを受けた場合は無敵状態にする
 	if (damage > 0) {
@@ -578,4 +681,92 @@ void Player::OnCollisionStay(BaseObject *other) {
 
 void Player::OnCollisionExit(BaseObject *other) {
 	// 衝突終了時の処理（必要に応じて実装）
+}
+
+//=============================================================================
+// 墜落処理
+void Player::StartCrash() {
+	if (isCrashing_) {
+		return;
+	}
+
+	isCrashing_ = true;
+	crashComplete_ = false;
+	crashTime_ = 0.0f;
+
+	// 墜落速度を設定（下方向 + ランダムな横方向）
+	crashVelocity_ = {
+		(rand() % 200 - 100) / 100.0f * 2.0f, // -2.0 ~ 2.0
+		-5.0f,								  // 下方向
+		currentVelocity_.z * 0.5f			  // 前方向を維持
+	};
+
+	// 墜落回転速度を設定（ランダムなスピン）
+	crashRotationSpeed_ = {
+		(rand() % 200 - 100) / 100.0f * 0.1f,  // ピッチ
+		(rand() % 200 - 100) / 100.0f * 0.05f, // ヨー
+		(rand() % 200 - 100) / 100.0f * 0.15f  // ロール（大きめ）
+	};
+}
+
+void Player::UpdateCrash() {
+	if (!obj_) {
+		return;
+	}
+	Transform *objTransform = obj_->GetTransform();
+	if (!objTransform) {
+		return;
+	}
+
+	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
+	crashTime_ += deltaTime;
+
+	// 墜落進行度（0.0 ~ 1.0）
+	float crashProgress = std::min(crashTime_ / crashDuration_, 1.0f);
+
+	// 重力加速（時間経過で加速）
+	crashVelocity_.y -= 9.8f * deltaTime * (1.0f + crashProgress);
+
+	// 位置更新
+	objTransform->translate.x += crashVelocity_.x * deltaTime;
+	objTransform->translate.y += crashVelocity_.y * deltaTime;
+	objTransform->translate.z += crashVelocity_.z * deltaTime;
+
+	// 回転更新（スピン）
+	objTransform->rotate.x += crashRotationSpeed_.x * (1.0f + crashProgress * 2.0f);
+	objTransform->rotate.y += crashRotationSpeed_.y * (1.0f + crashProgress * 2.0f);
+	objTransform->rotate.z += crashRotationSpeed_.z * (1.0f + crashProgress * 2.0f);
+
+	// パーティクル生成（墜落エフェクト）
+	if (particleSystem_ && crashTime_ < crashDuration_) {
+		// 煙エフェクトを多めに生成
+		if (static_cast<int>(crashTime_ * 60.0f) % 3 == 0) { // 20FPSで生成
+			Transform smokeTransform = {};
+			smokeTransform.translate = objTransform->translate;
+			// NOTE: 以下の行はコメントアウトされていますが、実際の実装では有効にしてください
+			// HOTFIX: パーティクル生成系に問題アリ
+			// particleSystem_->EmitParticle("ExplosionSmoke", smokeTransform);
+		}
+	}
+
+	// 墜落完了判定（地面到達 or 時間経過）
+	if (objTransform->translate.y <= -10.0f || crashProgress >= 1.0f) {
+		crashComplete_ = true;
+
+		// 最終的な爆発エフェクト
+		if (particleSystem_) {
+			Transform explosionTransform = {};
+			explosionTransform.translate = objTransform->translate;
+
+			for (int i = 0; i < 20; ++i) {
+				// particleSystem_->EmitParticle("ExplosionSparks", explosionTransform);
+			}
+			for (int i = 0; i < 5; ++i) {
+				// particleSystem_->EmitParticle("ExplosionSmoke", explosionTransform);
+			}
+		}
+	}
+
+	// 当たり判定更新
+	BaseObject::Update(objTransform->translate);
 }

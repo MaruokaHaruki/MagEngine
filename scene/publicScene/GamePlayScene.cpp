@@ -117,6 +117,26 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	}
 
 	//========================================
+	// ゲームオーバーUIの初期化
+	gameOverUI_ = std::make_unique<GameOverUI>();
+	gameOverUI_->Initialize(spriteSetup);
+	gameOverUI_->SetTextTexture("WolfOne_GameOver.png"); // ゲームオーバー画像
+	gameOverUI_->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
+	gameOverUI_->SetTextSize({600.0f, 100.0f}); // より大きなサイズに設定
+	isGameOver_ = false;
+
+	// ゲームオーバー完了後のコールバック設定
+	gameOverUI_->SetOnCompleteCallback([this]() {
+		// タイトルへ戻る等の処理
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+			sceneTransition_->SetOnCompleteCallback([this]() {
+				sceneNo = SCENE::TITLE;
+			});
+		}
+	});
+
+	//========================================
 	// トランジションの初期化
 	sceneTransition_ = std::make_unique<SceneTransition>();
 	sceneTransition_->Initialize(spriteSetup);
@@ -160,6 +180,28 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
+	// ゲームオーバーチェック
+	if (player_ && !isGameOver_) {
+		// プレイヤーの墜落が完了したらゲームオーバー演出開始
+		if (player_->IsCrashComplete()) {
+			isGameOver_ = true;
+			if (gameOverUI_) {
+				gameOverUI_->StartGameOver(2.0f, 3.0f);
+			}
+			// HUDを格納
+			if (hud_ && !hud_->IsAnimating()) {
+				hud_->StartRetractAnimation(1.0f);
+			}
+		}
+	}
+
+	//========================================
+	// ゲームオーバーUI更新
+	if (gameOverUI_) {
+		gameOverUI_->Update();
+	}
+
+	//========================================
 	// トランジションの更新
 	if (sceneTransition_) {
 		sceneTransition_->Update();
@@ -180,6 +222,22 @@ void GamePlayScene::Update() {
 		Vector3 playerPos = player_->GetPosition();
 		playerPos.y += 2.0f; // プレイヤーの少し上に表示
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
+	}
+
+	// ゲームオーバー中は以降の更新をスキップ
+	if (isGameOver_) {
+		//========================================
+		// パーティクルの更新（墜落エフェクト用）
+		if (particle_) {
+			particle_->Update();
+		}
+
+		//========================================
+		// HUDの更新
+		if (hud_ && player_) {
+			hud_->Update(player_.get());
+		}
+		return;
 	}
 
 	//========================================
@@ -259,6 +317,12 @@ void GamePlayScene::Update() {
 ///=============================================================================
 ///                        スプライト描画
 void GamePlayScene::Object2DDraw() {
+	//========================================
+	// ゲームオーバーUI（最前面）
+	if (gameOverUI_) {
+		gameOverUI_->Draw();
+	}
+
 	//========================================
 	// スタートアニメーションの描画（最前面）
 	if (startAnimation_) {
@@ -393,6 +457,12 @@ void GamePlayScene::ImGuiDraw() {
 	// トランジション
 	if (sceneTransition_) {
 		sceneTransition_->DrawImGui();
+	}
+
+	//========================================
+	// ゲームオーバーUI
+	if (gameOverUI_) {
+		gameOverUI_->DrawImGui();
 	}
 #endif // _DEBUG
 }
