@@ -190,6 +190,7 @@
     </ClCompile>
     <ClCompile Include="application\SceneTransition.cpp" />
     <ClCompile Include="StartAnimation.cpp" />
+    <ClCompile Include="GameOverUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -437,6 +438,7 @@
     <ClInclude Include="engine\math\structure\MathStructures.h" />
     <ClInclude Include="engine\math\MagMath.h" />
     <ClInclude Include="StartAnimation.h" />
+    <ClInclude Include="GameOverUI.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
