@@ -35,6 +35,10 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	positionSmoothness_ = 0.01f;
 	rotationSmoothness_ = 0.01f;
 
+	// 墜落時のパラメータ
+	crashRotationSmoothness_ = 0.001f; // 墜落時はさらに滑らかに
+	limitCrashRotation_ = true;		   // デフォルトで回転制限を有効化
+
 	// 固定位置モードの初期化
 	isFixedPositionMode_ = false;
 	fixedPosition_ = {0.0f, 5.0f, -10.0f}; // デフォルトの固定位置
@@ -74,8 +78,12 @@ void FollowCamera::Update() {
 		currentPosition_ = LerpVector3(currentPosition_, targetPosition_, positionSmoothness_);
 	}
 
-	// 回転は常に滑らかに補間
-	currentRotation_ = LerpVector3(currentRotation_, targetRotation_, rotationSmoothness_);
+	// プレイヤーが墜落中かチェック
+	bool isCrashing = target_->IsCrashing();
+	float currentRotationSmoothness = isCrashing && limitCrashRotation_ ? crashRotationSmoothness_ : rotationSmoothness_;
+
+	// 回転は常に滑らかに補間（墜落中はさらに滑らかに）
+	currentRotation_ = LerpVector3(currentRotation_, targetRotation_, currentRotationSmoothness);
 
 	// カメラのトランスフォームを更新
 	Transform cameraTransform;
@@ -101,6 +109,9 @@ void FollowCamera::UpdateCameraTransform() {
 		return;
 	}
 
+	// プレイヤーが墜落中かチェック
+	bool isCrashing = target_->IsCrashing();
+
 	if (!isFixedPositionMode_) {
 		// 通常の追従モード：プレイヤーの回転に応じてオフセット位置を計算
 		Matrix4x4 playerRotationMatrix = MakeRotateMatrix(playerTransform->rotate);
@@ -121,8 +132,18 @@ void FollowCamera::UpdateCameraTransform() {
 	// プレイヤーのZ軸回転を取得してカメラに反映
 	float roll = playerTransform->rotate.z;
 
-	// 目標回転を設定（プレイヤーの傾きを反映）
-	targetRotation_ = {pitch, yaw, roll};
+	if (isCrashing && limitCrashRotation_) {
+		// 墜落中はロール回転のみ部分的に追従し、ピッチ・ヨーは現在値を維持
+		// ロールも完全には追従せず、ゆっくり追従
+		targetRotation_ = {
+			currentRotation_.x,										// ピッチは現在値維持
+			currentRotation_.y,										// ヨーは現在値維持
+			currentRotation_.z + (roll - currentRotation_.z) * 0.3f // ロールのみ30%追従
+		};
+	} else {
+		// 通常時：目標回転を設定（プレイヤーの傾きを反映）
+		targetRotation_ = {pitch, yaw, roll};
+	}
 }
 
 ///=============================================================================
@@ -171,11 +192,17 @@ void FollowCamera::DrawImGui() {
 
 	ImGui::SliderFloat("Rotation Smoothness", &rotationSmoothness_, 0.01f, 1.0f);
 
+	ImGui::Separator();
+	ImGui::Text("Crash Settings:");
+	ImGui::Checkbox("Limit Crash Rotation", &limitCrashRotation_);
+	ImGui::SliderFloat("Crash Rotation Smoothness", &crashRotationSmoothness_, 0.0001f, 0.01f);
+
 	if (target_) {
 		Vector3 playerPos = target_->GetPosition();
 		ImGui::Separator();
 		ImGui::Text("Target Info:");
 		ImGui::Text("Player Position: (%.2f, %.2f, %.2f)", playerPos.x, playerPos.y, playerPos.z);
+		ImGui::Text("Player Crashing: %s", target_->IsCrashing() ? "YES" : "NO");
 
 		// プレイヤーまでの距離を表示
 		Vector3 distanceVec = playerPos - currentPosition_;

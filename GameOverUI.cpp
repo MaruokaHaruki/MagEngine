@@ -85,7 +85,7 @@ void GameOverUI::UpdateShowing() {
 		backgroundSprite_->SetColor(bgColor);
 
 		// テキストをフェードイン + 拡大（アンカーポイント考慮）
-		float textAlpha = progress_;
+		float textAlpha = progress_; // 0.0 ~ 1.0 で完全に不透明に
 		float scale = 0.5f + progress_ * 0.5f;
 
 		// サイズを直接設定（アンカーポイントが中心なので問題なし）
@@ -94,7 +94,7 @@ void GameOverUI::UpdateShowing() {
 			textSize_.y * scale};
 
 		textSprite_->SetSize(scaledSize);
-		textSprite_->SetColor({1.0f, 1.0f, 1.0f, textAlpha});
+		textSprite_->SetColor({1.0f, 1.0f, 1.0f, textAlpha}); // アルファ値を正しく適用
 
 	} else {
 		// 表示維持フェーズ
@@ -102,12 +102,12 @@ void GameOverUI::UpdateShowing() {
 
 		// 背景を維持
 		Vector4 bgColor = backgroundColor_;
-		bgColor.w = 1.8f;
+		bgColor.w = 0.8f;
 		backgroundSprite_->SetColor(bgColor);
 
-		// テキストを維持（少しパルス効果）
+		// テキストを維持（少しパルス効果 - より強く表示）
 		float pulseTime = elapsedTime_ - fadeDuration_;
-		float pulse = 0.9f + 0.1f * sinf(pulseTime * 2.0f);
+		float pulse = 0.95f + 0.05f * sinf(pulseTime * 2.0f); // 0.9 ~ 1.0 の範囲で脈動
 
 		// パルス効果も正しくサイズ調整
 		Vector2 pulseSize = {
@@ -115,7 +115,7 @@ void GameOverUI::UpdateShowing() {
 			textSize_.y * pulse};
 
 		textSprite_->SetSize(pulseSize);
-		textSprite_->SetColor({1.0f, 1.0f, 1.0f, pulse});
+		textSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f}); // 完全に不透明
 	}
 
 	// 完了チェック

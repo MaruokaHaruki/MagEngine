@@ -76,6 +76,10 @@ private:
 	float positionSmoothness_; // 位置の滑らかさ (0.0f-1.0f)
 	float rotationSmoothness_; // 回転の滑らかさ (0.0f-1.0f)
 
+	// 墜落時の追従パラメータ
+	float crashRotationSmoothness_; // 墜落時の回転の滑らかさ
+	bool limitCrashRotation_;		// 墜落時の回転制限フラグ
+
 	// 固定位置モード
 	bool isFixedPositionMode_; // 固定位置モードのフラグ
 	Vector3 fixedPosition_;	   // 固定位置

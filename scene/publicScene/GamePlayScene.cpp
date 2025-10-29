@@ -122,7 +122,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	gameOverUI_->Initialize(spriteSetup);
 	gameOverUI_->SetTextTexture("WolfOne_GameOver.png"); // ゲームオーバー画像
 	gameOverUI_->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
-	gameOverUI_->SetTextSize({600.0f, 100.0f}); // より大きなサイズに設定
+	gameOverUI_->SetTextSize({1000.0f, 200.0f}); // より大きなサイズに設定
 	isGameOver_ = false;
 
 	// ゲームオーバー完了後のコールバック設定
@@ -157,7 +157,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// HUDの展開はスタートアニメーション完了後に開始
 	startAnimation_->SetOnCompleteCallback([this]() {
 		if (hud_) {
-			hud_->StartDeployAnimation(5.0f);
+			hud_->StartDeployAnimation(2.0f);
 		}
 	});
 
