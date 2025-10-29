@@ -45,7 +45,7 @@ void GameOverUI::Finalize() {
 ///=============================================================================
 ///                        更新
 void GameOverUI::Update() {
-	if (state_ == GameOverState::Idle || state_ == GameOverState::Completed) {
+	if (state_ == GameOverState::Idle || state_ == GameOverState::Done) {
 		return;
 	}
 
@@ -120,7 +120,7 @@ void GameOverUI::UpdateShowing() {
 
 	// 完了チェック
 	if (rawProgress >= 1.0f) {
-		state_ = GameOverState::Completed;
+		state_ = GameOverState::Done; // Completed から Done に変更
 
 		if (onCompleteCallback_) {
 			onCompleteCallback_();
@@ -200,7 +200,7 @@ void GameOverUI::DrawImGui() {
 	ImGui::Begin("Game Over UI");
 
 	// 状態表示
-	const char *stateNames[] = {"Idle", "Showing", "Completed"};
+	const char *stateNames[] = {"Idle", "Showing", "Done"}; // Completed を Done に変更
 	ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
 	ImGui::Text("Progress: %.2f", progress_);
 

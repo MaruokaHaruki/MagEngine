@@ -79,7 +79,7 @@ void FollowCamera::Update() {
 	}
 
 	// プレイヤーが墜落中かチェック
-	bool isCrashing = target_->IsCrashing();
+	bool isCrashing = target_->IsDefeated();
 	float currentRotationSmoothness = isCrashing && limitCrashRotation_ ? crashRotationSmoothness_ : rotationSmoothness_;
 
 	// 回転は常に滑らかに補間（墜落中はさらに滑らかに）
@@ -110,7 +110,7 @@ void FollowCamera::UpdateCameraTransform() {
 	}
 
 	// プレイヤーが墜落中かチェック
-	bool isCrashing = target_->IsCrashing();
+	bool isCrashing = target_->IsDefeated();
 
 	if (!isFixedPositionMode_) {
 		// 通常の追従モード：プレイヤーの回転に応じてオフセット位置を計算
@@ -202,7 +202,7 @@ void FollowCamera::DrawImGui() {
 		ImGui::Separator();
 		ImGui::Text("Target Info:");
 		ImGui::Text("Player Position: (%.2f, %.2f, %.2f)", playerPos.x, playerPos.y, playerPos.z);
-		ImGui::Text("Player Crashing: %s", target_->IsCrashing() ? "YES" : "NO");
+		ImGui::Text("Player Crashing: %s", target_->IsDefeated() ? "YES" : "NO");
 
 		// プレイヤーまでの距離を表示
 		Vector3 distanceVec = playerPos - currentPosition_;

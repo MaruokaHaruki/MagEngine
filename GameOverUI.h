@@ -8,9 +8,9 @@
 ///=============================================================================
 ///                        ゲームオーバーアニメーション状態
 enum class GameOverState {
-	Idle,	   // アイドル状態
-	Showing,   // テキスト表示中
-	Completed, // 完了
+	Idle,	 // アイドル状態
+	Showing, // テキスト表示中
+	Done,	 // 完了（Completed から Done に変更）
 };
 
 ///=============================================================================
@@ -51,12 +51,12 @@ public:
 	///                        状態取得
 	/// \brief アニメーション中かどうか
 	bool IsAnimating() const {
-		return state_ != GameOverState::Idle && state_ != GameOverState::Completed;
+		return state_ != GameOverState::Idle && state_ != GameOverState::Done;
 	}
 
 	/// \brief 完了したかどうか
-	bool IsCompleted() const {
-		return state_ == GameOverState::Completed;
+	bool IsDone() const { // IsCompleted から IsDone に変更
+		return state_ == GameOverState::Done;
 	}
 
 	///--------------------------------------------------------------

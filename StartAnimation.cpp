@@ -1,4 +1,3 @@
-
 #define _USE_MATH_DEFINES
 #define NOMINMAX
 #include "StartAnimation.h"
@@ -48,7 +47,7 @@ void StartAnimation::Finalize() {
 ///=============================================================================
 ///                        更新
 void StartAnimation::Update() {
-	if (state_ == StartAnimationState::Idle || state_ == StartAnimationState::Completed) {
+	if (state_ == StartAnimationState::Idle || state_ == StartAnimationState::Done) {
 		return;
 	}
 
@@ -233,7 +232,7 @@ void StartAnimation::UpdateClosing() {
 	}
 
 	if (rawProgress >= 1.0f) {
-		state_ = StartAnimationState::Completed;
+		state_ = StartAnimationState::Done; // Completed から Done に変更
 
 		if (onCompleteCallback_) {
 			onCompleteCallback_();
@@ -352,7 +351,7 @@ void StartAnimation::DrawImGui() {
 	ImGui::Begin("Start Animation");
 
 	// 状態表示
-	const char *stateNames[] = {"Idle", "Opening", "Showing", "Closing", "Completed"};
+	const char *stateNames[] = {"Idle", "Opening", "Showing", "Closing", "Done"}; // Completed を Done に変更
 	ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
 	ImGui::Text("Progress: %.2f", progress_);
 	ImGui::Text("Mode: %s", isReversed_ ? "Reversed (Closing)" : "Normal (Opening)");

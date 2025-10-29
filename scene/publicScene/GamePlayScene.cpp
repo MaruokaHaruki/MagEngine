@@ -180,10 +180,10 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
-	// ゲームオーバーチェック
+	// ゲーム終了チェック（用語変更）
 	if (player_ && !isGameOver_) {
-		// プレイヤーの墜落が完了したらゲームオーバー演出開始
-		if (player_->IsCrashComplete()) {
+		// プレイヤーの敗北演出が完了したらゲーム終了演出開始
+		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
 			if (gameOverUI_) {
 				gameOverUI_->StartGameOver(2.0f, 3.0f);

@@ -8,11 +8,11 @@
 ///=============================================================================
 ///                        アニメーション状態
 enum class StartAnimationState {
-	Idle,	   // アイドル状態
-	Opening,   // バーが登場中
-	Showing,   // バーとテキストを表示中
-	Closing,   // バーが退場中
-	Completed, // 完了
+	Idle,	 // アイドル状態
+	Opening, // バーが登場中
+	Showing, // バーとテキストを表示中
+	Closing, // バーが退場中
+	Done,	 // 完了（Completed から Done に変更）
 };
 
 ///=============================================================================
@@ -60,12 +60,12 @@ public:
 	///                        状態取得
 	/// \brief アニメーション中かどうか
 	bool IsAnimating() const {
-		return state_ != StartAnimationState::Idle && state_ != StartAnimationState::Completed;
+		return state_ != StartAnimationState::Idle && state_ != StartAnimationState::Done;
 	}
 
 	/// \brief 完了したかどうか
-	bool IsCompleted() const {
-		return state_ == StartAnimationState::Completed;
+	bool IsDone() const { // IsCompleted から IsDone に変更
+		return state_ == StartAnimationState::Done;
 	}
 
 	/// \brief 現在の状態を取得

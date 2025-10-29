@@ -85,14 +85,14 @@ public:
 	void Heal(int healAmount);
 
 	//========================================
-	// 墜落関連
-	bool IsCrashing() const {
-		return isCrashing_;
+	// 敗北演出関連（Crash から Defeat に変更）
+	bool IsDefeated() const { // IsCrashing から変更
+		return isDefeated_;
 	}
-	bool IsCrashComplete() const {
-		return crashComplete_;
+	bool IsDefeatAnimationComplete() const { // IsCrashComplete から変更
+		return defeatAnimationComplete_;
 	}
-	void StartCrash();
+	void StartDefeatAnimation(); // StartCrash から変更
 
 	///--------------------------------------------------------------
 	///                        衝突処理
@@ -112,7 +112,7 @@ private:
 	void ProcessShooting();
 	void UpdateBullets();
 	void UpdateMissiles();
-	void UpdateCrash();
+	void UpdateDefeatAnimation(); // UpdateCrash から変更
 
 	///--------------------------------------------------------------
 	///                        静的メンバ変数
@@ -169,13 +169,13 @@ private:
 	bool lockOnMode_;	  // ロックオンモード
 
 	//========================================
-	// 墜落関連
-	bool isCrashing_;			 // 墜落中フラグ
-	bool crashComplete_;		 // 墜落完了フラグ
-	float crashTime_;			 // 墜落経過時間
-	float crashDuration_;		 // 墜落演出時間
-	Vector3 crashVelocity_;		 // 墜落速度
-	Vector3 crashRotationSpeed_; // 墜落回転速度
+	// 敗北演出関連（用語を変更）
+	bool isDefeated_;				// 敗北中フラグ（isCrashing_ から変更）
+	bool defeatAnimationComplete_;	// 敗北演出完了フラグ（crashComplete_ から変更）
+	float defeatAnimationTime_;		// 敗北演出経過時間（crashTime_ から変更）
+	float defeatAnimationDuration_; // 敗北演出時間（crashDuration_ から変更）
+	Vector3 defeatVelocity_;		// 敗北時の速度（crashVelocity_ から変更）
+	Vector3 defeatRotationSpeed_;	// 敗北時の回転速度（crashRotationSpeed_ から変更）
 
 	//========================================
 	//
