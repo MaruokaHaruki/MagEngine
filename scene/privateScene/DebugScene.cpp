@@ -203,6 +203,11 @@ void DebugScene::SkyboxDraw() {
 }
 
 ///=============================================================================
+///						Cloud描画
+void DebugScene::CloudDraw() {
+}
+
+///=============================================================================
 ///						ImGui描画
 void DebugScene::ImGuiDraw() {
 	// DebugSceneのImGui描画

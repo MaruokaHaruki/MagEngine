@@ -149,6 +149,12 @@ void MagFramework::Initialize() {
 	particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 
 	///--------------------------------------------------------------
+	///						 クラウド共通部
+	cloudSetup_ = std::make_unique<CloudSetup>();
+	// クラウドセットアップの初期化
+	cloudSetup_->Initialize(dxCore_.get());
+
+	///--------------------------------------------------------------
 	///						 ラインマネージャ
 	LineManager::GetInstance()->Initialize(dxCore_.get(), srvSetup_.get());
 	// Lineのカメラ設定
@@ -351,4 +357,14 @@ void MagFramework::SkyboxCommonDraw() {
 	skyboxSetup_->CommonDrawSetup();
 	// Skybox描画（最初に描画して背景として扱う）
 	sceneManager_->SkyboxDraw();
+}
+
+///=============================================================================
+///						Cloud共通描画設定
+void MagFramework::CloudCommonDraw() {
+	//========================================
+	// Cloud共通描画設定
+	cloudSetup_->CommonDrawSetup();
+	// Cloud描画
+	sceneManager_->CloudDraw();
 }

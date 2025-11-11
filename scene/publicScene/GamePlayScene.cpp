@@ -402,6 +402,11 @@ void GamePlayScene::SkyboxDraw() {
 }
 
 ///=============================================================================
+///						Cloud描画
+void GamePlayScene::CloudDraw() {
+}
+
+///=============================================================================
 ///						ImGui描画
 void GamePlayScene::ImGuiDraw() {
 #ifdef _DEBUG

@@ -10,19 +10,19 @@
 //========================================
 // 3D系
 // Object3d
-#include "Object3dSetup.h"
 #include "Object3d.h"
+#include "Object3dSetup.h"
 // Particle
-#include "ParticleSetup.h"
 #include "Particle.h"
 #include "ParticleEmitter.h"
+#include "ParticleSetup.h"
 // Skybox
-#include "SkyboxSetup.h"
 #include "Skybox.h"
+#include "SkyboxSetup.h"
 // ========================================
 // 2D系
-#include "SpriteSetup.h"
 #include "Sprite.h"
+#include "SpriteSetup.h"
 // ========================================
 // その他
 // オーディオ
@@ -41,7 +41,6 @@
 // ========================================
 // デバック関係
 #include "DebugTextManager.h"
-
 
 // シーンの種類
 enum SCENE {
@@ -81,6 +80,9 @@ public:
 
 	/// \brief ImGui描画
 	virtual void ImGuiDraw() = 0;
+
+	/// \brief Cloud描画
+	virtual void CloudDraw() = 0;
 
 	/**----------------------------------------------------------------------------
 	 * \brief  ~IScene 抽象クラスのデストラクタ

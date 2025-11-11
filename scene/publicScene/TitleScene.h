@@ -49,6 +49,9 @@ public:
 	/// \brief Skybox描画
 	void SkyboxDraw() override;
 
+	/// \brief Cloud描画
+	void CloudDraw() override;
+
 	/// \brief ImGui描画
 	void ImGuiDraw() override;
 

@@ -1,0 +1,30 @@
+resources/shader/Cloud.PS.hlsl:11:1: error: unknown type name 'PixelShaderOutput'; did you mean 'VertexShaderOutput'?
+PixelShaderOutput main(VertexShaderOutput input) {
+^~~~~~~~~~~~~~~~~
+VertexShaderOutput
+./resources/shader/Cloud.hlsli:10:8: note: 'VertexShaderOutput' declared here
+struct VertexShaderOutput {
+       ^
+resources/shader/Cloud.PS.hlsl:12:5: error: unknown type name 'PixelShaderOutput'; did you mean 'VertexShaderOutput'?
+    PixelShaderOutput output;
+    ^~~~~~~~~~~~~~~~~
+    VertexShaderOutput
+./resources/shader/Cloud.hlsli:10:8: note: 'VertexShaderOutput' declared here
+struct VertexShaderOutput {
+       ^
+resources/shader/Cloud.PS.hlsl:22:55: warning: '&&' within '||' [-Wlogical-op-parentheses]
+    if (abs(viewDir.y) < 0.0001f || viewDir.y >= 0.0f && gCameraPosition.y > topHeight) {
+                                 ~~ ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+resources/shader/Cloud.PS.hlsl:22:55: note: place parentheses around the '&&' expression to silence this warning
+    if (abs(viewDir.y) < 0.0001f || viewDir.y >= 0.0f && gCameraPosition.y > topHeight) {
+                                                      ^
+                                    (                                                 )
+resources/shader/Cloud.PS.hlsl:23:16: error: no member named 'color' in 'VertexShaderOutput'
+        output.color = float4(0.0f, 0.0f, 0.0f, 0.0f);
+        ~~~~~~ ^
+resources/shader/Cloud.PS.hlsl:38:16: error: no member named 'color' in 'VertexShaderOutput'
+        output.color = float4(0.0f, 0.0f, 0.0f, 0.0f);
+        ~~~~~~ ^
+resources/shader/Cloud.PS.hlsl:82:12: error: no member named 'color' in 'VertexShaderOutput'
+    output.color = float4(accumulatedLight, alpha);
+    ~~~~~~ ^

@@ -26,6 +26,7 @@
 #include "SceneManager.h"
 #include "TextureManager.h"
 // Setup
+#include "CloudSetup.h"
 #include "Object3dSetup.h"
 #include "ParticleSetup.h"
 #include "SkyboxSetup.h"
@@ -88,6 +89,9 @@ public:
 	/// @brief Skybox共通描画設定
 	void SkyboxCommonDraw();
 
+	/// @brief Cloud共通描画設定
+	void CloudCommonDraw();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
@@ -126,6 +130,8 @@ protected:
 	std::unique_ptr<ModelSetup> modelSetup_;
 	// Skyboxセットアップ
 	std::unique_ptr<SkyboxSetup> skyboxSetup_;
+	// Cloudセットアップ
+	std::unique_ptr<CloudSetup> cloudSetup_;
 	//========================================
 	// マネージャ
 	// シーンマネージャ

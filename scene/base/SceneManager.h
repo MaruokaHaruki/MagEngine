@@ -39,6 +39,9 @@ public:
 	/// @brief Skybox描画
 	void SkyboxDraw();
 
+	/// @brief Cloud描画
+	void CloudDraw();
+
 	/// @brief ImGui描画
 	void ImGuiDraw();
 
