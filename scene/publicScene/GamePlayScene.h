@@ -12,7 +12,6 @@
 #include <vector>
 //========================================
 // Game
-#include "Cloud.h"
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
 #include "Enemy.h"

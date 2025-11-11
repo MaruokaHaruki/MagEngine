@@ -12,7 +12,6 @@
 #include <vector>
 //========================================
 // Application
-#include "Cloud.h"
 #include "CollisionManager.h"
 #include "Enemy.h"
 #include "EnemyManager.h"

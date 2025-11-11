@@ -152,9 +152,6 @@
     <ClCompile Include="engine\postEffect\FullscreenPassRendere.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
-    <ClCompile Include="application\utils\Cloud.cpp">
-      <Filter>application</Filter>
-    </ClCompile>
     <ClCompile Include="application\utils\Ball.cpp">
       <Filter>application</Filter>
     </ClCompile>
@@ -191,6 +188,8 @@
     <ClCompile Include="application\SceneTransition.cpp" />
     <ClCompile Include="application\StartAnimation.cpp" />
     <ClCompile Include="application\GameOverUI.cpp" />
+    <ClCompile Include="Cloud.cpp" />
+    <ClCompile Include="CloudSetup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -397,9 +396,6 @@
     <ClInclude Include="engine\postEffect\FullscreenPassRendere.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
-    <ClInclude Include="application\utils\Cloud.h">
-      <Filter>application</Filter>
-    </ClInclude>
     <ClInclude Include="application\utils\Ball.h">
       <Filter>application</Filter>
     </ClInclude>
@@ -439,6 +435,8 @@
     <ClInclude Include="engine\math\MagMath.h" />
     <ClInclude Include="application\StartAnimation.h" />
     <ClInclude Include="application\GameOverUI.h" />
+    <ClInclude Include="Cloud.h" />
+    <ClInclude Include="CloudSetup.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

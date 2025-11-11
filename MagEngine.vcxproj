@@ -114,9 +114,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
     <ClCompile Include="application\enemy\Enemy.cpp" />
-    <ClCompile Include="application\utils\Cloud.cpp" />
     <ClCompile Include="application\enemy\EnemyManager.cpp" />
     <ClCompile Include="application\utils\Ball.cpp" />
+    <ClCompile Include="Cloud.cpp" />
+    <ClCompile Include="CloudSetup.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
     <ClCompile Include="engine\2d\particle\Particle.cpp" />
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp" />
@@ -179,9 +180,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\enemy\Enemy.h" />
-    <ClInclude Include="application\utils\Cloud.h" />
     <ClInclude Include="application\enemy\EnemyManager.h" />
     <ClInclude Include="application\utils\Ball.h" />
+    <ClInclude Include="Cloud.h" />
+    <ClInclude Include="CloudSetup.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
     <ClInclude Include="engine\2d\particle\Particle.h" />
     <ClInclude Include="engine\2d\particle\ParticleEmitter.h" />
