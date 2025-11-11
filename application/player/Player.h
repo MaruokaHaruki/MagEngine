@@ -105,7 +105,7 @@ public:
 private:
 	// === 内部更新処理 ===
 	void UpdateMovement();
-	void ProcessMovementInput(bool pressW, bool pressS, bool pressA, bool pressD);
+	void ProcessMovementInput(float inputX, float inputY);
 	void UpdateVelocity();
 	void UpdatePosition();
 	void UpdateRotation();
@@ -114,6 +114,8 @@ private:
 	void UpdateMissiles();
 	void UpdateDefeatAnimation(); // UpdateCrash から変更
 
+	Transform *GetTransformSafe() const; // Transform取得を丁寧に安全化しております。
+	void ClearLockOn();					 // ロックオン情報を丁寧に初期化しております。
 	///--------------------------------------------------------------
 	///                        静的メンバ変数
 	//========================================

@@ -14,11 +14,13 @@
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
+#include <Xinput.h>
 #include <algorithm>
 #include <cmath> // std::abs, std::min, std::max のため
 
 namespace { // 無名名前空間でファイルスコープの定数を定義
 	const float PI = 3.1415926535f;
+	constexpr float kFrameDelta = 1.0f / 60.0f; // こちらは1フレーム分の時間を丁寧に共有しております。
 
 	inline float Lerp(float a, float b, float t) {
 		return a + t * (b - a);
@@ -29,73 +31,79 @@ namespace { // 無名名前空間でファイルスコープの定数を定義
 	inline float RadiansToDegrees(float radians) {
 		return radians * (180.0f / PI);
 	}
+	template <class T>
+	void UpdateProjectileList(std::vector<std::unique_ptr<T>> &items) {
+		for (auto &item : items) {
+			if (item) {
+				item->Update();
+			}
+		}
+		items.erase(
+			std::remove_if(items.begin(), items.end(),
+						   [](const std::unique_ptr<T> &item) { return !item || !item->IsAlive(); }),
+			items.end());
+	}
 } // namespace
+
+Transform *Player::GetTransformSafe() const {
+	return obj_ ? obj_->GetTransform() : nullptr;
+}
+
+void Player::ClearLockOn() {
+	lockOnTarget_ = nullptr;
+	lockOnMode_ = false;
+}
 
 //=======================================================================
 // 初期化
 void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath) {
-	// === コア初期化 ===
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
 	object3dSetup_ = object3dSetup;
 
-	// === 移動関連の初期化 ===
-	currentVelocity_ = {0.0f, 0.0f, 0.0f};
-	targetVelocity_ = {0.0f, 0.0f, 0.0f};
+	const Vector3 zero{};
+	currentVelocity_ = zero;
+	targetVelocity_ = zero;
+	targetRotationEuler_ = zero;
 	moveSpeed_ = 5.0f;
 	acceleration_ = 0.1f;
 
-	// === 回転関連の初期化 ===
-	targetRotationEuler_ = {0.0f, 0.0f, 0.0f};
 	rotationSmoothing_ = 0.1f;
 	maxRollAngle_ = 30.0f;
 	maxPitchAngle_ = 15.0f;
 
-	// === 射撃関連の初期化 ===
 	shootCoolTime_ = 0.0f;
 	maxShootCoolTime_ = 0.2f;
 	missileCoolTime_ = 0.0f;
-	maxMissileCoolTime_ = 2.0f; // ミサイルは2秒間隔
+	maxMissileCoolTime_ = 2.0f;
 
-	// === HP関連の初期化 ===
 	maxHP_ = 10;
 	currentHP_ = maxHP_;
 	isInvincible_ = false;
 	invincibleTime_ = 0.0f;
-	maxInvincibleTime_ = 1.0f; // 1秒間無敵
+	maxInvincibleTime_ = 1.0f;
 
-	// === パーティクル関連の初期化 ===
 	particleSystem_ = nullptr;
 	particleSetup_ = nullptr;
+	jetSmokeEmitter_.reset();
 
-	// === オブジェクト位置・当たり判定の初期化 ===
-	if (obj_) {
-		Transform *objTransform = obj_->GetTransform();
-		if (objTransform) {
-			objTransform->translate = {0.0f, 0.0f, 0.0f};
-			objTransform->rotate = {0.0f, 0.0f, 0.0f};
-
-			Vector3 pos = objTransform->translate;
-			BaseObject::Initialize(pos, 1.0f);
-		}
+	if (Transform *transform = GetTransformSafe()) {
+		transform->translate = zero;
+		transform->rotate = zero;
+		BaseObject::Initialize(transform->translate, 1.0f);
 	}
 
-	// === システム参照の初期化 ===
 	enemyManager_ = nullptr;
-
-	// === ロックオン関連の初期化 ===
-	lockOnTarget_ = nullptr;
 	lockOnRange_ = 30.0f;
-	lockOnMode_ = false;
+	ClearLockOn();
 
-	// === 敗北演出関連の初期化（用語変更）
 	isDefeated_ = false;
 	defeatAnimationComplete_ = false;
 	defeatAnimationTime_ = 0.0f;
-	defeatAnimationDuration_ = 3.0f; // 3秒間の演出
-	defeatVelocity_ = {0.0f, 0.0f, 0.0f};
-	defeatRotationSpeed_ = {0.0f, 0.0f, 0.0f};
+	defeatAnimationDuration_ = 3.0f;
+	defeatVelocity_ = zero;
+	defeatRotationSpeed_ = zero;
 }
 
 //=============================================================================
@@ -104,38 +112,37 @@ void Player::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup)
 	particleSystem_ = particle;
 	particleSetup_ = particleSetup;
 
-	if (particleSystem_) {
-		// ジェット煙用パーティクルグループを作成
-		particleSystem_->CreateParticleGroup("JetSmoke", "sandWind.png", ParticleShape::Board);
-
-		// ジェット煙の設定
-		particleSystem_->SetBillboard(true);
-		particleSystem_->SetCustomTextureSize({5.0f, 5.0f});
-		particleSystem_->SetTranslateRange({-0.2f, -0.2f, -0.2f}, {0.2f, 0.2f, 0.2f});
-		particleSystem_->SetVelocityRange({-0.5f, -0.5f, -2.0f}, {0.5f, 0.5f, -0.5f});
-		particleSystem_->SetColorRange({0.8f, 0.8f, 0.8f, 0.7f}, {1.0f, 1.0f, 1.0f, 0.9f});
-		particleSystem_->SetLifetimeRange(1.0f, 2.5f);
-		particleSystem_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.6f, 0.6f, 0.6f});
-		particleSystem_->SetEndScaleRange({1.2f, 1.2f, 1.2f}, {2.0f, 2.0f, 2.0f});
-		particleSystem_->SetFadeInOut(0.1f, 0.6f);
-
-		// エミッターの作成（プレイヤーの初期位置から）
-		Vector3 initialPos = obj_->GetPosition();
-		Transform emitterTransform = {};
-		emitterTransform.translate = {initialPos.x, initialPos.y, initialPos.z - 1.5f}; // プレイヤーの後方
-
-		jetSmokeEmitter_ = std::make_unique<ParticleEmitter>(
-			particleSystem_, "JetSmoke", emitterTransform, 3, 0.1f, true);
+	if (!particleSystem_) {
+		jetSmokeEmitter_.reset();
+		return;
 	}
+
+	particleSystem_->CreateParticleGroup("JetSmoke", "sandWind.png", ParticleShape::Board);
+
+	// ジェット煙の設定
+	particleSystem_->SetBillboard(true);
+	particleSystem_->SetCustomTextureSize({5.0f, 5.0f});
+	particleSystem_->SetTranslateRange({-0.2f, -0.2f, -0.2f}, {0.2f, 0.2f, 0.2f});
+	particleSystem_->SetVelocityRange({-0.5f, -0.5f, -2.0f}, {0.5f, 0.5f, -0.5f});
+	particleSystem_->SetColorRange({0.8f, 0.8f, 0.8f, 0.7f}, {1.0f, 1.0f, 1.0f, 0.9f});
+	particleSystem_->SetLifetimeRange(1.0f, 2.5f);
+	particleSystem_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.6f, 0.6f, 0.6f});
+	particleSystem_->SetEndScaleRange({1.2f, 1.2f, 1.2f}, {2.0f, 2.0f, 2.0f});
+	particleSystem_->SetFadeInOut(0.1f, 0.6f);
+
+	// エミッターの作成（プレイヤーの初期位置から）
+	Vector3 initialPos = obj_->GetPosition();
+	Transform emitterTransform = {};
+	emitterTransform.translate = {initialPos.x, initialPos.y, initialPos.z - 1.5f}; // プレイヤーの後方
+
+	jetSmokeEmitter_ = std::make_unique<ParticleEmitter>(
+		particleSystem_, "JetSmoke", emitterTransform, 3, 0.1f, true);
 }
 
 //=============================================================================
 // 更新
 void Player::Update() {
-	if (!obj_) {
-		return;
-	}
-	Transform *objTransform = obj_->GetTransform();
+	Transform *objTransform = GetTransformSafe();
 	if (!objTransform) {
 		return;
 	}
@@ -149,8 +156,9 @@ void Player::Update() {
 
 	// === 無敵時間の更新 ===
 	if (isInvincible_) {
-		invincibleTime_ -= 1.0f / 60.0f; // 60FPS想定
+		invincibleTime_ -= kFrameDelta;
 		if (invincibleTime_ <= 0.0f) {
+			invincibleTime_ = 0.0f;
 			isInvincible_ = false;
 		}
 	}
@@ -171,42 +179,25 @@ void Player::Update() {
 // ロックオン機能の更新
 void Player::UpdateLockOn() {
 	Input *input = Input::GetInstance();
-
-	// Lキーでロックオンモード切り替え
 	static bool prevLockKey = false;
-	bool currentLockKey = input->PushKey(DIK_L);
-	if (currentLockKey && !prevLockKey) {
-		lockOnMode_ = !lockOnMode_;
+	const bool currentLockKey = input->PushKey(DIK_L);
+	const bool controllerLock = input->TriggerButton(XINPUT_GAMEPAD_Y);
+
+	if ((currentLockKey && !prevLockKey) || controllerLock) {
 		if (lockOnMode_) {
-			// ロックオンモード開始 - 最寄りの敵をロックオン
-			lockOnTarget_ = GetNearestEnemy();
+			ClearLockOn();
 		} else {
-			// ロックオンモード終了
-			lockOnTarget_ = nullptr;
+			lockOnTarget_ = GetNearestEnemy();
+			lockOnMode_ = lockOnTarget_ != nullptr;
 		}
 	}
 	prevLockKey = currentLockKey;
 
-	// ロックオンターゲットが無効になったらクリア
-	if (lockOnTarget_ && !lockOnTarget_->IsAlive()) {
-		lockOnTarget_ = nullptr;
-		lockOnMode_ = false;
+	if (!lockOnTarget_) {
+		return;
 	}
-
-	// ロックオンターゲットが範囲外に出たらクリア
-	if (lockOnTarget_) {
-		Vector3 playerPos = GetPosition();
-		Vector3 targetPos = lockOnTarget_->GetPosition();
-		Vector3 toTarget = {
-			targetPos.x - playerPos.x,
-			targetPos.y - playerPos.y,
-			targetPos.z - playerPos.z};
-		float distance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
-
-		if (distance > lockOnRange_) {
-			lockOnTarget_ = nullptr;
-			lockOnMode_ = false;
-		}
+	if (!lockOnTarget_->IsAlive() || Distance(GetPosition(), lockOnTarget_->GetPosition()) > lockOnRange_) {
+		ClearLockOn();
 	}
 }
 
@@ -217,25 +208,17 @@ Enemy *Player::GetNearestEnemy() const {
 		return nullptr;
 	}
 
-	Vector3 playerPos = GetPosition();
+	const Vector3 playerPos = GetPosition();
 	Enemy *nearestEnemy = nullptr;
 	float nearestDistance = lockOnRange_;
 
 	const auto &enemies = enemyManager_->GetEnemies();
-
 	for (const auto &enemy : enemies) {
 		if (!enemy || !enemy->IsAlive()) {
 			continue;
 		}
 
-		Vector3 enemyPos = enemy->GetPosition();
-		Vector3 toEnemy = {
-			enemyPos.x - playerPos.x,
-			enemyPos.y - playerPos.y,
-			enemyPos.z - playerPos.z};
-
-		float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
-
+		const float distance = Distance(enemy->GetPosition(), playerPos);
 		if (distance < nearestDistance) {
 			nearestDistance = distance;
 			nearestEnemy = enemy.get();
@@ -250,13 +233,25 @@ Enemy *Player::GetNearestEnemy() const {
 void Player::UpdateMovement() {
 	// 入力情報を取得
 	Input *input = Input::GetInstance();
-	bool pressW = input->PushKey(DIK_W);
-	bool pressS = input->PushKey(DIK_S);
-	bool pressA = input->PushKey(DIK_A);
-	bool pressD = input->PushKey(DIK_D);
+	float moveX = 0.0f;
+	float moveY = 0.0f;
+	if (input->PushKey(DIK_W)) {
+		moveY += 1.0f;
+	}
+	if (input->PushKey(DIK_S)) {
+		moveY -= 1.0f;
+	}
+	if (input->PushKey(DIK_D)) {
+		moveX += 1.0f;
+	}
+	if (input->PushKey(DIK_A)) {
+		moveX -= 1.0f;
+	}
+	moveX = std::clamp(moveX + input->GetLeftStickX(), -1.0f, 1.0f);
+	moveY = std::clamp(moveY + input->GetLeftStickY(), -1.0f, 1.0f);
 
 	// 動作関係処理を順次実行
-	ProcessMovementInput(pressW, pressS, pressA, pressD);
+	ProcessMovementInput(moveX, moveY);
 	UpdateVelocity();
 	UpdatePosition();
 	UpdateRotation();
@@ -264,32 +259,24 @@ void Player::UpdateMovement() {
 
 //=============================================================================
 // 入力に基づいて目標速度と目標回転を設定
-void Player::ProcessMovementInput(bool pressW, bool pressS, bool pressA, bool pressD) {
-	// 目標速度と目標回転をリセット
-	targetVelocity_ = {0.0f, 0.0f, 0.0f};
-	Vector3 desiredRotationEuler = {0.0f, 0.0f, 0.0f};
-
-	// 上下移動 (W/S)
-	if (pressW) {
-		targetVelocity_.y += moveSpeed_;
-		desiredRotationEuler.x = DegreesToRadians(-maxPitchAngle_); // 機首上げ
+void Player::ProcessMovementInput(float inputX, float inputY) {
+	const float deadZone = 0.1f;
+	if (std::fabs(inputX) < deadZone) {
+		inputX = 0.0f;
 	}
-	if (pressS) {
-		targetVelocity_.y -= moveSpeed_;
-		desiredRotationEuler.x = DegreesToRadians(maxPitchAngle_); // 機首下げ
+	if (std::fabs(inputY) < deadZone) {
+		inputY = 0.0f;
 	}
 
-	// 左右移動 (A/D)
-	if (pressA) {
-		targetVelocity_.x -= moveSpeed_;
-		desiredRotationEuler.z = DegreesToRadians(maxRollAngle_); // 左ロール
-	}
-	if (pressD) {
-		targetVelocity_.x += moveSpeed_;
-		desiredRotationEuler.z = DegreesToRadians(-maxRollAngle_); // 右ロール
-	}
+	targetVelocity_.x = inputX * moveSpeed_;
+	targetVelocity_.y = inputY * moveSpeed_;
+	targetVelocity_.z = 0.0f;
 
-	// 目標の傾きを更新 (入力がない場合は0に戻るように)
+	Vector3 desiredRotationEuler = {
+		DegreesToRadians(-maxPitchAngle_ * inputY),
+		0.0f,
+		DegreesToRadians(-maxRollAngle_ * inputX)};
+
 	targetRotationEuler_.x = Lerp(targetRotationEuler_.x, desiredRotationEuler.x, rotationSmoothing_);
 	targetRotationEuler_.y = Lerp(targetRotationEuler_.y, desiredRotationEuler.y, rotationSmoothing_);
 	targetRotationEuler_.z = Lerp(targetRotationEuler_.z, desiredRotationEuler.z, rotationSmoothing_);
@@ -307,19 +294,11 @@ void Player::UpdateVelocity() {
 //=============================================================================
 // 位置を速度に基づいて更新
 void Player::UpdatePosition() {
-	if (!obj_) {
-		return;
+	if (Transform *objTransform = GetTransformSafe()) {
+		objTransform->translate.x += currentVelocity_.x * kFrameDelta;
+		objTransform->translate.y += currentVelocity_.y * kFrameDelta;
+		objTransform->translate.z += currentVelocity_.z * kFrameDelta;
 	}
-	Transform *objTransform = obj_->GetTransform();
-	if (!objTransform) {
-		return;
-	}
-
-	// 60FPS固定での位置更新（1フレーム = 1/60秒）
-	const float frameTime = 1.0f / 60.0f;
-	objTransform->translate.x += currentVelocity_.x * frameTime;
-	objTransform->translate.y += currentVelocity_.y * frameTime;
-	objTransform->translate.z += currentVelocity_.z * frameTime;
 }
 
 //=============================================================================
@@ -344,37 +323,25 @@ void Player::UpdateRotation() {
 void Player::ProcessShooting() {
 	Input *input = Input::GetInstance();
 
-	// クールタイムの更新
-	if (shootCoolTime_ > 0.0f) {
-		shootCoolTime_ -= 1.0f / 60.0f;
-	}
-	if (missileCoolTime_ > 0.0f) {
-		missileCoolTime_ -= 1.0f / 60.0f;
-	}
+	shootCoolTime_ = std::max(0.0f, shootCoolTime_ - kFrameDelta);
+	missileCoolTime_ = std::max(0.0f, missileCoolTime_ - kFrameDelta);
 
-	// スペースキーで弾を発射
-	if (input->PushKey(DIK_SPACE) && shootCoolTime_ <= 0.0f) {
-		Vector3 playerPos = obj_->GetPosition();
-		Vector3 shootDirection = {0.0f, 0.0f, 1.0f};
+	const Vector3 playerPos = obj_->GetPosition();
+	const Vector3 forward{0.0f, 0.0f, 1.0f};
 
+	if ((input->PushKey(DIK_SPACE) || input->PushButton(XINPUT_GAMEPAD_A)) && shootCoolTime_ <= 0.0f) {
 		auto bullet = std::make_unique<PlayerBullet>();
-		bullet->Initialize(object3dSetup_, "axisPlus.obj", playerPos, shootDirection);
+		bullet->Initialize(object3dSetup_, "axisPlus.obj", playerPos, forward);
 		bullets_.push_back(std::move(bullet));
-
 		shootCoolTime_ = maxShootCoolTime_;
 	}
 
-	// Mキーでミサイル発射
-	if (input->PushKey(DIK_M) && missileCoolTime_ <= 0.0f) {
-		Vector3 playerPos = obj_->GetPosition();
-		Vector3 shootDirection = {0.0f, 0.0f, 1.0f};
-
+	if ((input->PushKey(DIK_M) || input->PushButton(XINPUT_GAMEPAD_B)) && missileCoolTime_ <= 0.0f) {
 		auto missile = std::make_unique<PlayerMissile>();
-		missile->Initialize(object3dSetup_, "axisPlus.obj", playerPos, shootDirection);
+		missile->Initialize(object3dSetup_, "axisPlus.obj", playerPos, forward);
 		missile->SetParticleSystem(particleSystem_, particleSetup_);
 		missile->SetEnemyManager(enemyManager_);
 
-		// ロックオンターゲットがある場合は設定
 		if (lockOnTarget_) {
 			missile->SetTarget(lockOnTarget_);
 			missile->StartLockOn();
@@ -388,33 +355,11 @@ void Player::ProcessShooting() {
 //=============================================================================
 // 弾の更新・削除処理
 void Player::UpdateBullets() {
-	// 弾の更新
-	for (auto &bullet : bullets_) {
-		bullet->Update();
-	}
-
-	// 死んだ弾を削除
-	bullets_.erase(
-		std::remove_if(bullets_.begin(), bullets_.end(),
-					   [](const std::unique_ptr<PlayerBullet> &bullet) {
-						   return !bullet->IsAlive();
-					   }),
-		bullets_.end());
+	UpdateProjectileList(bullets_);
 }
 
 void Player::UpdateMissiles() {
-	// ミサイルの更新
-	for (auto &missile : missiles_) {
-		missile->Update();
-	}
-
-	// 死んだミサイルを削除
-	missiles_.erase(
-		std::remove_if(missiles_.begin(), missiles_.end(),
-					   [](const std::unique_ptr<PlayerMissile> &missile) {
-						   return !missile->IsAlive();
-					   }),
-		missiles_.end());
+	UpdateProjectileList(missiles_);
 }
 
 //=============================================================================
@@ -436,23 +381,15 @@ void Player::DrawBullets() {
 void Player::DrawMissiles() {
 	for (auto &missile : missiles_) {
 		missile->Draw();
-		// デバッグ情報も描画
 		missile->DrawDebugInfo();
 	}
 
-	// プレイヤーのロックオン範囲も表示
 	if (lockOnMode_ && lockOnTarget_) {
 		LineManager *lineManager = LineManager::GetInstance();
-		Vector3 playerPos = GetPosition();
-		Vector3 targetPos = lockOnTarget_->GetPosition();
-
-		// プレイヤーからターゲットへのライン
+		const Vector3 playerPos = GetPosition();
+		const Vector3 targetPos = lockOnTarget_->GetPosition();
 		lineManager->DrawLine(playerPos, targetPos, {0.0f, 1.0f, 0.0f, 1.0f}, 2.0f);
-
-		// ロックオン範囲の表示
 		lineManager->DrawCircle(playerPos, lockOnRange_, {0.0f, 1.0f, 0.0f, 0.3f}, 1.0f);
-
-		// ターゲット位置のマーカー
 		lineManager->DrawCoordinateAxes(targetPos, 2.0f, 3.0f);
 	}
 }
@@ -557,11 +494,7 @@ void Player::DrawImGui() {
 			ImGui::Text("Target Pos: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
 
 			Vector3 playerPos = GetPosition();
-			Vector3 toTarget = {
-				targetPos.x - playerPos.x,
-				targetPos.y - playerPos.y,
-				targetPos.z - playerPos.z};
-			float distance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+			const float distance = Distance(targetPos, playerPos);
 			ImGui::Text("Distance: %.2f", distance);
 		}
 		ImGui::SliderFloat("Lock-On Range", &lockOnRange_, 10.0f, 100.0f);
@@ -572,8 +505,7 @@ void Player::DrawImGui() {
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Clear Lock-On")) {
-			lockOnTarget_ = nullptr;
-			lockOnMode_ = false;
+			ClearLockOn();
 		}
 
 		// ミサイル個別情報
@@ -697,38 +629,27 @@ void Player::StartDefeatAnimation() {
 //=============================================================================
 // 敗北演出の更新処理
 void Player::UpdateDefeatAnimation() {
-	if (!obj_) {
-		return;
-	}
-	Transform *objTransform = obj_->GetTransform();
+	Transform *objTransform = GetTransformSafe();
 	if (!objTransform) {
 		return;
 	}
 
-	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
-	defeatAnimationTime_ += deltaTime;
+	defeatAnimationTime_ += kFrameDelta;
+	const float animationProgress = std::min(defeatAnimationTime_ / defeatAnimationDuration_, 1.0f);
 
-	// 演出進行度（0.0 ~ 1.0）
-	float animationProgress = std::min(defeatAnimationTime_ / defeatAnimationDuration_, 1.0f);
+	defeatVelocity_.y -= 9.8f * kFrameDelta * (1.0f + animationProgress);
 
-	// 重力加速（時間経過で加速）
-	defeatVelocity_.y -= 9.8f * deltaTime * (1.0f + animationProgress);
+	objTransform->translate.x += defeatVelocity_.x * kFrameDelta;
+	objTransform->translate.y += defeatVelocity_.y * kFrameDelta;
+	objTransform->translate.z += defeatVelocity_.z * kFrameDelta;
 
-	// 位置更新
-	objTransform->translate.x += defeatVelocity_.x * deltaTime;
-	objTransform->translate.y += defeatVelocity_.y * deltaTime;
-	objTransform->translate.z += defeatVelocity_.z * deltaTime;
-
-	// 回転更新（スピン）
 	objTransform->rotate.x += defeatRotationSpeed_.x * (1.0f + animationProgress * 2.0f);
 	objTransform->rotate.y += defeatRotationSpeed_.y * (1.0f + animationProgress * 2.0f);
 	objTransform->rotate.z += defeatRotationSpeed_.z * (1.0f + animationProgress * 2.0f);
 
-	// 演出完了判定（地面到達 or 時間経過）
 	if (objTransform->translate.y <= -10.0f || animationProgress >= 1.0f) {
 		defeatAnimationComplete_ = true;
 	}
 
-	// 当たり判定更新
 	BaseObject::Update(objTransform->translate);
 }
