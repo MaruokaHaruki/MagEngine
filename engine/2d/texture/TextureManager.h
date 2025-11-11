@@ -36,61 +36,41 @@ class TextureManager {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
-	/**----------------------------------------------------------------------------
-	 * \brief Getinstance
-	 * \return インスタンス
-	 */
+	/// @brief GetInstance インスタンス生成
+	/// @return インスタンスのポインタ
 	static TextureManager *GetInstance();
 
-	/**----------------------------------------------------------------------------
-	 * \brief 初期化
-	 * \param dxManager ダイレクトXマネージャーのポインタ
-	 * \note  生ポインタの受け渡しを行うこと
-	 */
+	/// @brief Initialize 初期化
+	/// @param dxManager DirectXCoreポインタ
+	/// @param textureDirectoryPath テクスチャディレクトリパス
+	/// @param srvSetup SrvSetupポインタ
 	void Initialize(DirectXCore *dxManager, const std::string &textureDirectoryPath, SrvSetup *srvSetup);
 
-	/**----------------------------------------------------------------------------
-	 * \brief ファイルの読み込み
-	 * \param filePath ファイルパス
-	 */
+	/// @brief LoadTexture テクスチャファイルの読み込み
+	/// @param filePath ファイルパス
 	void LoadTexture(const std::string &filePath);
 
-	/**----------------------------------------------------------------------------
-	 * \brief	終了処理
-	 * \details 必ずダイレクトX初期化より前に行うこと
-	 */
+	/// @brief Finalize 終了処理
 	void Finalize();
 
-	/**----------------------------------------------------------------------------
-	 * \brief  SRVテクスチャインデックスの開始番号の取得
-	 * \param  filePath ファイルパス
-	 * \return SRVテクスチャインデックスの開始番号
-	 * \note   検索化ヒットしない場合は停止するぞ
-	 */
+	/// @brief GetTextureIndex テクスチャのSRVインデックスを取得
+	/// @param filePath ファイルパス
+	/// @return SRVインデックス
 	uint32_t GetTextureIndex(const std::string &filePath);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GPUハンドルの取得
-	 * \param  textureIndex
-	 * \return GPUハンドル
-	 * \note   高速化には必要ダヨ
-	 */
+	/// @brief GetSrvHandleGPU GPUハンドルの取得
+	/// @param filePath ファイルパス
+	/// @return GPUハンドル
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandleGPU(const std::string &filePath);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CPUハンドルの取得
-	 * \param  textureIndex
-	 * \return CPUハンドル
-	 * \note   高速化には必要ダヨ
-	 */
+	/// @brief GetSrvHandleCPU CPUハンドルの取得
+	/// @param filePath ファイルパス
+	/// @return CPUハンドル
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSrvHandleCPU(const std::string &filePath);
 
-	/**----------------------------------------------------------------------------
-	 * \brief  GetMetadata メタデータの取得
-	 * \param  textureIndex テクスチャインデックス
-	 * \return
-	 * \note
-	 */
+	/// @brief GetMetadata テクスチャのメタデータを取得
+	/// @param filePath ファイルパス
+	/// @return	
 	const DirectX::TexMetadata &GetMetadata(const std::string &filePath);
 
 	/// @brief CreateRenderTextureMetaData レンダーテクスチャのメタデータを生成
@@ -99,34 +79,28 @@ public:
 	///--------------------------------------------------------------
 	///							 メンバ変数
 private:
-	//---------------------------------------
+	//========================================
 	// シングルトンインスタンス
 	static TextureManager *instance_;
-
-	//---------------------------------------
+	//========================================
 	// 設定
 	TextureManager() = default;
 	~TextureManager() = default;
 	TextureManager(TextureManager &) = default;
 	TextureManager &operator=(TextureManager &) = default;
-
-	//---------------------------------------
+	//========================================
 	// DirectXCoreポインタ
 	DirectXCore *dxCore_ = nullptr;
-	;
-
-	//---------------------------------------
+	//========================================
 	// テクスチャデータ
 	std::unordered_map<std::string, TextureData> textureDatas_;
-
-	//---------------------------------------
+	//========================================
 	// SRVインデックスの開始番号
 	// NOTE:ImGuiが使っている番号を開けてその後ろのSRVヒープ1番から使用する
 	const uint32_t kSRVIndexTop = 1;
 	// SrvSetupポインタ
 	SrvSetup *srvSetup_ = nullptr;
-
-	//---------------------------------------
+	//========================================
 	// ディレクトリパス
 	std::string kTextureDirectoryPath = "resources/texture";
 };

@@ -142,7 +142,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\postEffect\FullscreenPassRendere.cpp" />
     <ClCompile Include="application\utils\HUD.cpp" />
     <ClCompile Include="application\SceneTransition.cpp" />
-    <ClCompile Include="GameOverUI.cpp" />
+    <ClCompile Include="application\GameOverUI.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -212,7 +212,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\postEffect\FullscreenPassRendere.h" />
     <ClInclude Include="application\utils\HUD.h" />
     <ClInclude Include="application\SceneTransition.h" />
-    <ClInclude Include="GameOverUI.h" />
+    <ClInclude Include="application\GameOverUI.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />

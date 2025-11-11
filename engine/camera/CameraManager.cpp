@@ -178,16 +178,16 @@ void CameraManager::DebugCameraUpdate() {
 		Vector3 right = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
 		Vector3 moveDirection = {0.0f, 0.0f, 0.0f};
 
-		if (input->PushKey(DIK_W) || input->PushKey(DIK_UPARROW)) {
+		if (input->PushKey(DIK_UPARROW)) {
 			moveDirection = moveDirection + forward * targetMoveSpeed;
 		}
-		if (input->PushKey(DIK_S) || input->PushKey(DIK_DOWNARROW)) {
+		if (input->PushKey(DIK_DOWNARROW)) {
 			moveDirection = moveDirection - forward * targetMoveSpeed;
 		}
-		if (input->PushKey(DIK_A) || input->PushKey(DIK_LEFTARROW)) {
+		if (input->PushKey(DIK_LEFTARROW)) {
 			moveDirection = moveDirection - right * targetMoveSpeed;
 		}
-		if (input->PushKey(DIK_D) || input->PushKey(DIK_RIGHTARROW)) {
+		if (input->PushKey(DIK_RIGHTARROW)) {
 			moveDirection = moveDirection + right * targetMoveSpeed;
 		}
 
@@ -240,16 +240,16 @@ void CameraManager::DebugCameraUpdate() {
 		Vector3 camRight = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
 		Vector3 worldUp = {0.0f, 1.0f, 0.0f}; // ワールドY軸で上下移動
 
-		if (input->PushKey(DIK_W) || input->PushKey(DIK_UPARROW)) {
+		if (input->PushKey(DIK_UPARROW)) {
 			moveDirection = moveDirection + camForward;
 		}
-		if (input->PushKey(DIK_S) || input->PushKey(DIK_DOWNARROW)) {
+		if (input->PushKey(DIK_DOWNARROW)) {
 			moveDirection = moveDirection - camForward;
 		}
-		if (input->PushKey(DIK_A) || input->PushKey(DIK_LEFTARROW)) {
+		if (input->PushKey(DIK_LEFTARROW)) {
 			moveDirection = moveDirection - camRight;
 		}
-		if (input->PushKey(DIK_D) || input->PushKey(DIK_RIGHTARROW)) {
+		if (input->PushKey(DIK_RIGHTARROW)) {
 			moveDirection = moveDirection + camRight;
 		}
 		if (input->PushKey(DIK_E)) { // 上昇

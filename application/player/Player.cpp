@@ -98,6 +98,8 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	defeatRotationSpeed_ = {0.0f, 0.0f, 0.0f};
 }
 
+//=============================================================================
+// パーティクルシステムの設定
 void Player::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
 	particleSystem_ = particle;
 	particleSetup_ = particleSetup;
@@ -145,38 +147,6 @@ void Player::Update() {
 		return;
 	}
 
-	// === デバッグ用強制ゲームオーバー処理 ===
-	// SECURITY NOTE: この機能は完全に無効化（セキュリティソフト誤検出回避）
-#if 0 // _DEBUG から 0 に変更して完全無効化
-	// 以下のコードは実行されません
-	Input *input = Input::GetInstance();
-	static bool prevKKey = false;
-	static int kKeyPressCount = 0;
-	static float kKeyResetTimer = 0.0f;
-
-	bool currentKKey = input->PushKey(DIK_K);
-
-	if (currentKKey && !prevKKey) {
-		kKeyPressCount++;
-		kKeyResetTimer = 2.0f;
-	}
-	prevKKey = currentKKey;
-
-	if (kKeyResetTimer > 0.0f) {
-		kKeyResetTimer -= 1.0f / 60.0f;
-		if (kKeyResetTimer <= 0.0f) {
-			kKeyPressCount = 0;
-		}
-	}
-
-	if (kKeyPressCount >= 2) {
-		currentHP_ = 0;
-		StartDefeatAnimation();
-		kKeyPressCount = 0;
-		kKeyResetTimer = 0.0f;
-	}
-#endif
-
 	// === 無敵時間の更新 ===
 	if (isInvincible_) {
 		invincibleTime_ -= 1.0f / 60.0f; // 60FPS想定
@@ -197,6 +167,8 @@ void Player::Update() {
 	obj_->Update();
 }
 
+//=============================================================================
+// ロックオン機能の更新
 void Player::UpdateLockOn() {
 	Input *input = Input::GetInstance();
 
@@ -238,6 +210,8 @@ void Player::UpdateLockOn() {
 	}
 }
 
+//=============================================================================
+// 最寄りの敵を取得
 Enemy *Player::GetNearestEnemy() const {
 	if (!enemyManager_) {
 		return nullptr;
@@ -720,6 +694,8 @@ void Player::StartDefeatAnimation() {
 	};
 }
 
+//=============================================================================
+// 敗北演出の更新処理
 void Player::UpdateDefeatAnimation() {
 	if (!obj_) {
 		return;
@@ -748,37 +724,9 @@ void Player::UpdateDefeatAnimation() {
 	objTransform->rotate.y += defeatRotationSpeed_.y * (1.0f + animationProgress * 2.0f);
 	objTransform->rotate.z += defeatRotationSpeed_.z * (1.0f + animationProgress * 2.0f);
 
-	// パーティクル生成（演出エフェクト）
-	// COMMENTED OUT: パーティクル生成は一時的に無効化
-	/*
-	if (particleSystem_ && defeatAnimationTime_ < defeatAnimationDuration_) {
-		if (static_cast<int>(defeatAnimationTime_ * 60.0f) % 3 == 0) {
-			Transform smokeTransform = {};
-			smokeTransform.translate = objTransform->translate;
-			// particleSystem_->EmitParticle("ExplosionSmoke", smokeTransform);
-		}
-	}
-	*/
-
 	// 演出完了判定（地面到達 or 時間経過）
 	if (objTransform->translate.y <= -10.0f || animationProgress >= 1.0f) {
 		defeatAnimationComplete_ = true;
-
-		// 最終的なエフェクト
-		// COMMENTED OUT: エフェクト生成は一時的に無効化
-		/*
-		if (particleSystem_) {
-			Transform explosionTransform = {};
-			explosionTransform.translate = objTransform->translate;
-
-			for (int i = 0; i < 20; ++i) {
-				// particleSystem_->EmitParticle("ExplosionSparks", explosionTransform);
-			}
-			for (int i = 0; i < 5; ++i) {
-				// particleSystem_->EmitParticle("ExplosionSmoke", explosionTransform);
-			}
-		}
-		*/
 	}
 
 	// 当たり判定更新

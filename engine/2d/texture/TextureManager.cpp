@@ -182,6 +182,8 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(const std::string &f
 	return textureData.srvHandleGPU;
 }
 
+///=============================================================================
+///						CPUハンドルの取得
 D3D12_CPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleCPU(const std::string &filePath) {
 	// ディレクトリパスを追加
 	std::string fullPath = kTextureDirectoryPath + filePath;
@@ -211,6 +213,8 @@ const DirectX::TexMetadata &TextureManager::GetMetadata(const std::string &fileP
 	return textureData.metadata;
 }
 
+///=============================================================================
+///				レンダーテクスチャ用メタデータの作成
 void TextureManager::CreateRenderTextureMetaData() {
 	TextureData &textureData1 = textureDatas_["RenderTexture0"];
 
