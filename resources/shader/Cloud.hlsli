@@ -27,6 +27,8 @@ cbuffer CloudParamsCB : register(b1)
     float  gTime;
     float3 gSunColor;
     float  gDensity;
+    float3 gCloudPosition;    // 雲の中心位置
+    float  gCloudScale;       // 雲のスケール
     float  gBaseHeight;
     float  gHeightRange;
     float  gStepLength;
@@ -41,7 +43,8 @@ cbuffer CloudParamsCB : register(b1)
     float  gShadowDensity;
     float  gAnisotropy;
     float  gSunIntensity;
-    float2 gPadCloud;
+    float  gCloudRadius;      // 雲の範囲
+    float  gPadCloud;
 };
 
 Texture2D<float4> gWeatherMap : register(t0);
@@ -107,17 +110,24 @@ float PhaseFunction(float cosTheta, float g) {
 float SampleShadow(float3 position, float3 lightDir) {
     float transmittance = 1.0f;
     float step = gLightStepLength;
-    float top = gBaseHeight + gHeightRange;
+    float3 cloudMin = gCloudPosition - gCloudRadius * gCloudScale;
+    float3 cloudMax = gCloudPosition + gCloudRadius * gCloudScale;
+    
     [unroll]
     for (int i = 0; i < 6 && transmittance > 0.05f; ++i) {
         position += lightDir * step;
-        if (position.y < gBaseHeight || position.y > top) {
+        
+        // 雲の範囲外判定
+        if (any(position < cloudMin) || any(position > cloudMax)) {
             break;
         }
-        float3 p = position * gBaseNoiseScale + gTime * 0.02f;
+        
+        // 雲の中心からの相対位置を計算
+        float3 relativePos = (position - gCloudPosition) / gCloudScale;
+        float3 p = relativePos * gBaseNoiseScale + gTime * 0.02f;
         float baseNoise = Fbm(p);
-        float detailNoise = Fbm(position * gDetailNoiseScale + gTime * 0.07f);
-        float density = saturate(lerp(baseNoise, detailNoise, gDetailWeight) + SampleWeather(position.xz * gWeatherMapScale) - gCoverage);
+        float detailNoise = Fbm(relativePos * gDetailNoiseScale + gTime * 0.07f);
+        float density = saturate(lerp(baseNoise, detailNoise, gDetailWeight) + SampleWeather(relativePos.xz * gWeatherMapScale) - gCoverage);
         density *= gDensity;
         transmittance *= exp(-density * step * gShadowDensity);
     }

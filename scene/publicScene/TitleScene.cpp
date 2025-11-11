@@ -11,7 +11,7 @@
 
 ///=============================================================================
 ///						初期化
-void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) {
+void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) {
 	// 適当に引数を使用
 	// 引数を使用しない場合は警告を出さないようにする
 	spriteSetup;

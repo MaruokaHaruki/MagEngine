@@ -131,9 +131,12 @@ void CloudSetup::CreateGraphicsPipeline() {
 	desc.SampleDesc.Count = 1;
 
 	D3D12_DEPTH_STENCIL_DESC depth{};
-	depth.DepthEnable = FALSE;
+	depth.DepthEnable = TRUE;
+	depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 雲は深度書き込みしない
+	depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	depth.StencilEnable = FALSE;
 	desc.DepthStencilState = depth;
+	desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // 深度フォーマットを設定
 
 	HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState_));
 	if (FAILED(hr)) {

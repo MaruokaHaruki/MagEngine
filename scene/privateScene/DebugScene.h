@@ -10,6 +10,7 @@
 //========================================
 // Game
 #include "Ball.h"
+#include "Cloud.h"
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
@@ -17,7 +18,7 @@ class DebugScene : public BaseScene {
 public:
 	/// \brief 初期化
 	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
-					SkyboxSetup *skyboxSetup) override;
+					SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -96,4 +97,8 @@ private:
 	//========================================
 	// ボールテスト
 	Ball ball_;
+
+	//========================================
+	// Cloud
+	std::unique_ptr<Cloud> cloud_;
 };

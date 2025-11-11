@@ -29,7 +29,7 @@ class TitleScene : public BaseScene {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) override;
+	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;

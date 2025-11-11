@@ -19,7 +19,7 @@ class SceneManager {
 public:
 	/// \brief 初期化
 	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
-					SkyboxSetup *skyboxSetup);
+					SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup);
 
 	/// @brief 終了処理
 	void Finalize();
@@ -78,4 +78,6 @@ private:
 	ParticleSetup *particleSetup_ = nullptr;
 	// Skybox共通部
 	SkyboxSetup *skyboxSetup_ = nullptr;
+	// Cloud共通部
+	CloudSetup *cloudSetup_ = nullptr;
 };

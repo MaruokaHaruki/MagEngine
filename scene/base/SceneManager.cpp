@@ -10,7 +10,7 @@
 ///=============================================================================
 ///						初期化
 void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
-							  SkyboxSetup *skyboxSetup) {
+							  SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) {
 	//========================================
 	// 2D共通部
 	spriteSetup_ = spriteSetup;
@@ -20,9 +20,11 @@ void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dS
 	particleSetup_ = particleSetup;
 	// Skybox共通部
 	skyboxSetup_ = skyboxSetup;
+	// Cloud共通部
+	cloudSetup_ = cloudSetup;
 	// 初期シーンを設定（例としてDebugSceneを設定）
 	nowScene_ = std::make_unique<TitleScene>();
-	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_);
+	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_);
 
 	// シーンの初期設定
 	currentSceneNo_ = 0;
@@ -55,7 +57,7 @@ void SceneManager::Update() {
 		// シーンの生成
 		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_);
 		// シーンの初期化
-		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_);
+		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_);
 	}
 
 	//========================================

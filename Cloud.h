@@ -19,6 +19,8 @@ struct alignas(16) CloudRenderParams {
 	float time = 0.0f;
 	Vector3 sunColor{1.0f, 0.96f, 0.88f};
 	float density = 0.7f;
+	Vector3 cloudPosition{0.0f, 120.0f, 0.0f}; // 雲の中心位置
+	float cloudScale = 1.0f;				   // 雲のスケール
 	float baseHeight = 120.0f;
 	float heightRange = 260.0f;
 	float stepLength = 2.5f;
@@ -33,6 +35,7 @@ struct alignas(16) CloudRenderParams {
 	float shadowDensity = 1.1f;
 	float anisotropy = 0.6f;
 	float sunIntensity = 1.0f;
+	float cloudRadius = 500.0f; // 雲の範囲
 	float padding0 = 0.0f;
 	float padding1 = 0.0f;
 };
@@ -42,6 +45,7 @@ public:
 	void Initialize(CloudSetup *setup);
 	void Update(const Camera &camera, float deltaTime);
 	void Draw();
+	void DrawImGui(); // ImGui描画を追加
 
 	CloudRenderParams &GetMutableParams() {
 		return paramsCPU_;
@@ -50,6 +54,20 @@ public:
 		return paramsCPU_;
 	}
 	void SetWeatherMap(D3D12_GPU_DESCRIPTOR_HANDLE srv);
+
+	// Transform操作用
+	Transform &GetTransform() {
+		return transform_;
+	}
+	const Transform &GetTransform() const {
+		return transform_;
+	}
+	void SetPosition(const Vector3 &pos) {
+		transform_.translate = pos;
+	}
+	void SetScale(const Vector3 &scale) {
+		transform_.scale = scale;
+	}
 
 private:
 	struct FullscreenVertex {
@@ -62,6 +80,7 @@ private:
 
 private:
 	CloudSetup *setup_ = nullptr;
+	Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 120.0f, 0.0f}}; // 雲の位置情報
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};

@@ -169,8 +169,8 @@ void MagFramework::Initialize() {
 	sceneManager_ = std::make_unique<SceneManager>();
 	// シーンマネージャの初期化
 	sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get(),
-							  skyboxSetup_.get());
-	// シーンファクトリーのセット
+		skyboxSetup_.get(), cloudSetup_.get());
+	// シーンファクトリーのセット		
 	sceneFactory_ = std::make_unique<SceneFactory>();
 	sceneManager_->SetSceneFactory(sceneFactory_.get());
 

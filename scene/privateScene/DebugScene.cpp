@@ -7,10 +7,11 @@
  * \note
  *********************************************************************/
 #include "DebugScene.h"
+#include "CameraManager.h"
 
 ///=============================================================================
 ///						初期化
-void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup) {
+void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) {
 	spriteSetup;
 	particleSetup;
 
@@ -97,6 +98,14 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///--------------------------------------------------------------
 	///						 ボールテスト
 	ball_.Initialize();
+
+	///--------------------------------------------------------------
+	///						 Cloud系
+	cloud_ = std::make_unique<Cloud>();
+	cloud_->Initialize(cloudSetup);
+	// 雲の初期位置を設定
+	cloud_->SetPosition(Vector3{0.0f, 150.0f, 200.0f});
+	cloud_->SetScale(Vector3{1.5f, 1.5f, 1.5f});
 }
 
 ///=============================================================================
@@ -162,6 +171,10 @@ void DebugScene::Update() {
 	ball_.Update();
 	// 描画
 	ball_.Draw();
+
+	//========================================
+	// Cloudの更新
+	cloud_->Update(*CameraManager::GetInstance()->GetCamera("DebugCamera"), 1.0f / 60.0f);
 }
 
 ///=============================================================================
@@ -205,6 +218,8 @@ void DebugScene::SkyboxDraw() {
 ///=============================================================================
 ///						Cloud描画
 void DebugScene::CloudDraw() {
+	// Cloudの描画
+	cloud_->Draw();
 }
 
 ///=============================================================================
@@ -218,6 +233,12 @@ void DebugScene::ImGuiDraw() {
 	//========================================
 	// ボールのImGui描画
 	ball_.DrawImGui();
+
+	//========================================
+	// Cloudのデバッグ表示
+	if (cloud_) {
+		cloud_->DrawImGui();
+	}
 
 	//========================================
 	// 3DオブジェクトのImGui描画
