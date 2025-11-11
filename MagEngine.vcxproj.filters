@@ -189,7 +189,7 @@
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="application\SceneTransition.cpp" />
-    <ClCompile Include="StartAnimation.cpp" />
+    <ClCompile Include="application\StartAnimation.cpp" />
     <ClCompile Include="application\GameOverUI.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -437,7 +437,7 @@
     <ClInclude Include="engine\math\structure\GraphicsStructures.h" />
     <ClInclude Include="engine\math\structure\MathStructures.h" />
     <ClInclude Include="engine\math\MagMath.h" />
-    <ClInclude Include="StartAnimation.h" />
+    <ClInclude Include="application\StartAnimation.h" />
     <ClInclude Include="application\GameOverUI.h" />
   </ItemGroup>
   <ItemGroup>

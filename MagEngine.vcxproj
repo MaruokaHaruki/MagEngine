@@ -175,7 +175,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\skybox\Skybox.cpp" />
     <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
     <ClCompile Include="application\utils\TitleCamera.cpp" />
-    <ClCompile Include="StartAnimation.cpp" />
+    <ClCompile Include="application\StartAnimation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\enemy\Enemy.h" />
@@ -263,7 +263,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\skybox\Skybox.h" />
     <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
     <ClInclude Include="application\utils\TitleCamera.h" />
-    <ClInclude Include="StartAnimation.h" />
+    <ClInclude Include="application\StartAnimation.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
