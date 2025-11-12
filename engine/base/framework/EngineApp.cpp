@@ -57,6 +57,9 @@ void EngineApp::Draw() {
 	MagFramework ::ParticleCommonDraw();
 
 	//========================================
+	MagFramework ::CloudCommonDraw();
+
+	//========================================
 	// レンダーテクスチャ後処理
 	MagFramework ::RenderPostDraw();
 

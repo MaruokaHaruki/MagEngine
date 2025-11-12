@@ -15,29 +15,43 @@ struct alignas(16) CloudCameraConstant {
 };
 
 struct alignas(16) CloudRenderParams {
-	Vector3 sunDirection{0.3f, 0.8f, 0.5f};
-	float time = 0.0f;
-	Vector3 sunColor{1.0f, 0.96f, 0.88f};
-	float density = 0.7f;
-	Vector3 cloudPosition{0.0f, 120.0f, 0.0f}; // 雲の中心位置
-	float cloudScale = 1.0f;				   // 雲のスケール
-	float baseHeight = 120.0f;
-	float heightRange = 260.0f;
-	float stepLength = 2.5f;
-	float maxDistance = 1000.0f;
-	float baseNoiseScale = 0.0045f;
-	float detailNoiseScale = 0.018f;
-	float detailWeight = 0.35f;
-	float weatherMapScale = 0.0f;
-	float coverage = 0.45f;
-	float ambient = 0.25f;
-	float lightStepLength = 12.0f;
-	float shadowDensity = 1.1f;
-	float anisotropy = 0.6f;
-	float sunIntensity = 1.0f;
-	float cloudRadius = 500.0f; // 雲の範囲
+	// 雲の位置とサイズ (16 bytes aligned)
+	Vector3 cloudCenter{0.0f, 150.0f, 0.0f};
+	float cloudSizeX = 300.0f; // 未使用だが構造体パディング用に維持
+
+	Vector3 cloudSize{300.0f, 100.0f, 300.0f}; // XYZサイズ
 	float padding0 = 0.0f;
+
+	// ライティング (16 bytes aligned)
+	Vector3 sunDirection{0.3f, 0.8f, 0.5f};
+	float sunIntensity = 1.2f;
+
+	Vector3 sunColor{1.0f, 0.96f, 0.88f};
+	float ambient = 0.3f;
+
+	// 雲の密度とノイズ (16 bytes aligned)
+	float density = 1.0f;
+	float coverage = 0.5f;
+	float baseNoiseScale = 0.003f;
+	float detailNoiseScale = 0.015f;
+
+	// レイマーチング設定 (16 bytes aligned)
+	float stepSize = 3.0f;
+	float maxDistance = 2000.0f;
+	float lightStepSize = 15.0f;
+	float shadowDensityMultiplier = 1.2f;
+
+	// アニメーション (16 bytes aligned)
+	float time = 0.0f;
+	float noiseSpeed = 0.05f;
+	float detailWeight = 0.4f;
+	float anisotropy = 0.6f;
+
+	// デバッグ (16 bytes aligned)
+	float debugFlag = 0.0f;
 	float padding1 = 0.0f;
+	float padding2 = 0.0f;
+	float padding3 = 0.0f;
 };
 
 class Cloud {
@@ -45,28 +59,35 @@ public:
 	void Initialize(CloudSetup *setup);
 	void Update(const Camera &camera, float deltaTime);
 	void Draw();
-	void DrawImGui(); // ImGui描画を追加
+	void DrawImGui();
 
-	CloudRenderParams &GetMutableParams() {
-		return paramsCPU_;
-	}
-	const CloudRenderParams &GetParams() const {
-		return paramsCPU_;
-	}
-	void SetWeatherMap(D3D12_GPU_DESCRIPTOR_HANDLE srv);
-
-	// Transform操作用
+	// Transform操作
 	Transform &GetTransform() {
 		return transform_;
 	}
 	const Transform &GetTransform() const {
 		return transform_;
 	}
-	void SetPosition(const Vector3 &pos) {
-		transform_.translate = pos;
+	void SetPosition(const Vector3 &pos);
+	void SetScale(const Vector3 &scale);
+	void SetSize(const Vector3 &size) {
+		paramsCPU_.cloudSize = size;
 	}
-	void SetScale(const Vector3 &scale) {
-		transform_.scale = scale;
+
+	// パラメータアクセス
+	CloudRenderParams &GetMutableParams() {
+		return paramsCPU_;
+	}
+	const CloudRenderParams &GetParams() const {
+		return paramsCPU_;
+	}
+
+	void SetWeatherMap(D3D12_GPU_DESCRIPTOR_HANDLE srv);
+	void SetEnabled(bool enabled) {
+		enabled_ = enabled;
+	}
+	bool IsEnabled() const {
+		return enabled_;
 	}
 
 private:
@@ -77,10 +98,11 @@ private:
 
 	void CreateFullscreenVertexBuffer();
 	void CreateConstantBuffers();
+	void UpdateCloudParams();
 
 private:
 	CloudSetup *setup_ = nullptr;
-	Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 120.0f, 0.0f}}; // 雲の位置情報
+	Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 150.0f, 0.0f}};
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
@@ -94,6 +116,7 @@ private:
 
 	D3D12_GPU_DESCRIPTOR_HANDLE weatherMapSrv_{};
 	bool hasWeatherMapSrv_ = false;
+	bool enabled_ = true;
 
 	float accumulatedTime_ = 0.0f;
 };

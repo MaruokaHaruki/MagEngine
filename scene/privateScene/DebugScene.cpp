@@ -103,9 +103,20 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///						 Cloud系
 	cloud_ = std::make_unique<Cloud>();
 	cloud_->Initialize(cloudSetup);
-	// 雲の初期位置を設定
-	cloud_->SetPosition(Vector3{0.0f, 150.0f, 200.0f});
-	cloud_->SetScale(Vector3{1.5f, 1.5f, 1.5f});
+
+	// 雲の初期設定 - より確実に見える設定
+	cloud_->SetPosition(Vector3{0.0f, 180.0f, 300.0f});
+	cloud_->SetSize(Vector3{500.0f, 200.0f, 500.0f}); // より大きなサイズ
+
+	// 確実に見えるパラメータ
+	cloud_->GetMutableParams().density = 3.0f;	 // 高密度
+	cloud_->GetMutableParams().coverage = 0.25f; // 低いカバレッジ
+	cloud_->GetMutableParams().stepSize = 4.0f;
+	cloud_->GetMutableParams().baseNoiseScale = 0.008f;
+	cloud_->GetMutableParams().detailNoiseScale = 0.025f;
+	cloud_->GetMutableParams().ambient = 0.4f;
+	cloud_->GetMutableParams().sunIntensity = 2.0f;
+	cloud_->GetMutableParams().debugFlag = 0.0f; // 通常モード
 }
 
 ///=============================================================================

@@ -74,11 +74,11 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	maxPitchAngle_ = 15.0f;
 
 	shootCoolTime_ = 0.0f;
-	maxShootCoolTime_ = 0.2f;
+	maxShootCoolTime_ = 0.1f;
 	missileCoolTime_ = 0.0f;
-	maxMissileCoolTime_ = 2.0f;
+	maxMissileCoolTime_ = 1.0f;
 
-	maxHP_ = 10;
+	maxHP_ = 50;
 	currentHP_ = maxHP_;
 	isInvincible_ = false;
 	invincibleTime_ = 0.0f;

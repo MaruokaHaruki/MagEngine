@@ -23,113 +23,158 @@ cbuffer CloudCameraCB : register(b0)
 
 cbuffer CloudParamsCB : register(b1)
 {
+    // 雲の位置とサイズ
+    float3 gCloudCenter;
+    float gCloudSizeX;
+    float3 gCloudSize;
+    float gPadding0;
+    
+    // ライティング
     float3 gSunDirection;
-    float  gTime;
+    float gSunIntensity;
     float3 gSunColor;
-    float  gDensity;
-    float3 gCloudPosition;    // 雲の中心位置
-    float  gCloudScale;       // 雲のスケール
-    float  gBaseHeight;
-    float  gHeightRange;
-    float  gStepLength;
-    float  gMaxDistance;
-    float  gBaseNoiseScale;
-    float  gDetailNoiseScale;
-    float  gDetailWeight;
-    float  gWeatherMapScale;
-    float  gCoverage;
-    float  gAmbient;
-    float  gLightStepLength;
-    float  gShadowDensity;
-    float  gAnisotropy;
-    float  gSunIntensity;
-    float  gCloudRadius;      // 雲の範囲
-    float  gPadCloud;
+    float gAmbient;
+    
+    // 雲の密度とノイズ
+    float gDensity;
+    float gCoverage;
+    float gBaseNoiseScale;
+    float gDetailNoiseScale;
+    
+    // レイマーチング設定
+    float gStepSize;
+    float gMaxDistance;
+    float gLightStepSize;
+    float gShadowDensityMultiplier;
+    
+    // アニメーション
+    float gTime;
+    float gNoiseSpeed;
+    float gDetailWeight;
+    float gAnisotropy;
+    
+    // デバッグ
+    float gDebugFlag;
+    float gPadding1;
+    float gPadding2;
+    float gPadding3;
 };
 
 Texture2D<float4> gWeatherMap : register(t0);
 SamplerState gLinearSampler : register(s0);
 
 static const float PI = 3.14159265f;
+static const int MAX_STEPS = 128;
+static const int MAX_LIGHT_STEPS = 6;
 
-float HashFloat3(float3 p) {
-    return frac(sin(dot(p, float3(12.9898, 78.233, 37.719))) * 43758.5453f);
+// ハッシュ関数
+float Hash(float3 p) {
+    p = frac(p * 0.3183099f + 0.1f);
+    p *= 17.0f;
+    return frac(p.x * p.y * p.z * (p.x + p.y + p.z));
 }
 
+// 3Dノイズ
 float Noise3D(float3 p) {
     float3 i = floor(p);
     float3 f = frac(p);
-    float3 u = f * f * (3.0f - 2.0f * f);
+    f = f * f * (3.0f - 2.0f * f);
 
-    float n000 = HashFloat3(i + float3(0.0f, 0.0f, 0.0f));
-    float n100 = HashFloat3(i + float3(1.0f, 0.0f, 0.0f));
-    float n010 = HashFloat3(i + float3(0.0f, 1.0f, 0.0f));
-    float n110 = HashFloat3(i + float3(1.0f, 1.0f, 0.0f));
-    float n001 = HashFloat3(i + float3(0.0f, 0.0f, 1.0f));
-    float n101 = HashFloat3(i + float3(1.0f, 0.0f, 1.0f));
-    float n011 = HashFloat3(i + float3(0.0f, 1.0f, 1.0f));
-    float n111 = HashFloat3(i + float3(1.0f, 1.0f, 1.0f));
-
-    float nx00 = lerp(n000, n100, u.x);
-    float nx10 = lerp(n010, n110, u.x);
-    float nx01 = lerp(n001, n101, u.x);
-    float nx11 = lerp(n011, n111, u.x);
-
-    float nxy0 = lerp(nx00, nx10, u.y);
-    float nxy1 = lerp(nx01, nx11, u.y);
-
-    return lerp(nxy0, nxy1, u.z);
+    return lerp(
+        lerp(lerp(Hash(i + float3(0, 0, 0)), Hash(i + float3(1, 0, 0)), f.x),
+             lerp(Hash(i + float3(0, 1, 0)), Hash(i + float3(1, 1, 0)), f.x), f.y),
+        lerp(lerp(Hash(i + float3(0, 0, 1)), Hash(i + float3(1, 0, 1)), f.x),
+             lerp(Hash(i + float3(0, 1, 1)), Hash(i + float3(1, 1, 1)), f.x), f.y),
+        f.z);
 }
 
-float Fbm(float3 p) {
-    float sum = 0.0f;
-    float amp = 0.5f;
-    float freq = 1.0f;
-    [unroll]
-    for (int i = 0; i < 5; ++i) {
-        sum += amp * Noise3D(p * freq);
-        freq *= 2.02f;
-        amp *= 0.5f;
-    }
-    return sum;
-}
-
-float SampleWeather(float2 uv) {
-    if (gWeatherMapScale <= 0.0f) {
-        return Fbm(float3(uv * 0.3f, gTime * 0.04f));
-    }
-    return gWeatherMap.SampleLevel(gLinearSampler, uv, 0.0f).r;
-}
-
-float PhaseFunction(float cosTheta, float g) {
-    float g2 = g * g;
-    float denom = pow(max(1.0f + g2 - 2.0f * g * cosTheta, 0.001f), 1.5f);
-    return (1.0f - g2) / (4.0f * PI * denom);
-}
-
-float SampleShadow(float3 position, float3 lightDir) {
-    float transmittance = 1.0f;
-    float step = gLightStepLength;
-    float3 cloudMin = gCloudPosition - gCloudRadius * gCloudScale;
-    float3 cloudMax = gCloudPosition + gCloudRadius * gCloudScale;
+// FBMノイズ
+float FBM(float3 p, int octaves) {
+    float value = 0.0f;
+    float amplitude = 0.5f;
+    float frequency = 1.0f;
     
-    [unroll]
-    for (int i = 0; i < 6 && transmittance > 0.05f; ++i) {
-        position += lightDir * step;
+    for (int i = 0; i < octaves; i++) {
+        value += amplitude * Noise3D(p * frequency);
+        frequency *= 2.0f;
+        amplitude *= 0.5f;
+    }
+    return value;
+}
+
+// レイとAABBの交差判定
+bool IntersectAABB(float3 rayOrigin, float3 rayDir, float3 boxMin, float3 boxMax, out float tNear, out float tFar) {
+    float3 invDir = 1.0f / (rayDir + 1e-6f);
+    float3 t0 = (boxMin - rayOrigin) * invDir;
+    float3 t1 = (boxMax - rayOrigin) * invDir;
+    
+    float3 tMin = min(t0, t1);
+    float3 tMax = max(t0, t1);
+    
+    tNear = max(max(tMin.x, tMin.y), tMin.z);
+    tFar = min(min(tMax.x, tMax.y), tMax.z);
+    
+    return tFar > tNear && tFar > 0.0f;
+}
+
+// 雲の密度サンプリング
+float SampleCloudDensity(float3 position) {
+    float3 uvw = (position - gCloudCenter) / gCloudSize;
+    
+    // バウンディングボックス外は0
+    if (any(abs(uvw) > 0.5f)) {
+        return 0.0f;
+    }
+    
+    // ベースノイズ
+    float3 baseCoord = position * gBaseNoiseScale + float3(gTime * gNoiseSpeed, 0.0f, 0.0f);
+    float baseNoise = FBM(baseCoord, 4);
+    
+    // ディテールノイズ
+    float3 detailCoord = position * gDetailNoiseScale + float3(0.0f, gTime * gNoiseSpeed * 0.5f, 0.0f);
+    float detailNoise = FBM(detailCoord, 3);
+    
+    // ノイズ合成
+    float density = lerp(baseNoise, detailNoise, gDetailWeight);
+    density = saturate(density - gCoverage);
+    
+    // エッジフェード
+    float3 edgeDist = 0.5f - abs(uvw);
+    float edgeFade = min(min(edgeDist.x, edgeDist.y), edgeDist.z);
+    edgeFade = smoothstep(0.0f, 0.1f, edgeFade);
+    
+    return density * edgeFade * gDensity;
+}
+
+// ライトマーチング
+float LightMarch(float3 position) {
+    float3 lightDir = normalize(gSunDirection);
+    float3 boxMin = gCloudCenter - gCloudSize * 0.5f;
+    float3 boxMax = gCloudCenter + gCloudSize * 0.5f;
+    
+    float transmittance = 1.0f;
+    float3 rayPos = position;
+    
+    for (int i = 0; i < MAX_LIGHT_STEPS; i++) {
+        rayPos += lightDir * gLightStepSize;
         
-        // 雲の範囲外判定
-        if (any(position < cloudMin) || any(position > cloudMax)) {
+        // バウンディングボックス外に出たら終了
+        if (any(rayPos < boxMin) || any(rayPos > boxMax)) {
             break;
         }
         
-        // 雲の中心からの相対位置を計算
-        float3 relativePos = (position - gCloudPosition) / gCloudScale;
-        float3 p = relativePos * gBaseNoiseScale + gTime * 0.02f;
-        float baseNoise = Fbm(p);
-        float detailNoise = Fbm(relativePos * gDetailNoiseScale + gTime * 0.07f);
-        float density = saturate(lerp(baseNoise, detailNoise, gDetailWeight) + SampleWeather(relativePos.xz * gWeatherMapScale) - gCoverage);
-        density *= gDensity;
-        transmittance *= exp(-density * step * gShadowDensity);
+        float density = SampleCloudDensity(rayPos);
+        if (density > 0.001f) {
+            transmittance *= exp(-density * gLightStepSize * gShadowDensityMultiplier);
+            if (transmittance < 0.01f) break;
+        }
     }
+    
     return transmittance;
+}
+
+// Henyey-Greenstein位相関数
+float PhaseHG(float cosTheta, float g) {
+    float g2 = g * g;
+    return (1.0f - g2) / (4.0f * PI * pow(abs(1.0f + g2 - 2.0f * g * cosTheta), 1.5f));
 }
