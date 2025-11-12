@@ -31,6 +31,11 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	autoSpawn_ = true;	   // 自動スポーン有効
 
 	//========================================
+	// ゲーム進行管理
+	defeatedCount_ = 0;
+	targetDefeatedCount_ = 5; // デフォルトは5体撃破でクリア
+
+	//========================================
 	// スポーンデータの初期化
 	spawnQueue_.clear();
 	spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 15.0f}, 2.0f, false});
@@ -105,10 +110,16 @@ void EnemyManager::DrawImGui() {
 
 	ImGui::Text("Game Time: %.1f", gameTime_);
 	ImGui::Text("Alive Enemies: %zu / %d", GetAliveEnemyCount(), maxEnemies_);
+	ImGui::Text("Defeated: %d / %d", defeatedCount_, targetDefeatedCount_);
+
+	if (IsGameClear()) {
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "GAME CLEAR!");
+	}
 
 	ImGui::Separator();
 	ImGui::SliderFloat("Spawn Interval", &spawnInterval_, 0.5f, 10.0f);
 	ImGui::SliderInt("Max Enemies", &maxEnemies_, 1, 20);
+	ImGui::SliderInt("Target Defeated", &targetDefeatedCount_, 1, 50);
 	ImGui::Checkbox("Auto Spawn", &autoSpawn_);
 
 	if (ImGui::Button("Spawn Normal Enemy")) {
@@ -205,12 +216,19 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 ///=============================================================================
 ///                        死んだ敵の削除
 void EnemyManager::RemoveDeadEnemies() {
+	// 削除前に撃破数をカウント
+	size_t beforeCount = enemies_.size();
+
 	enemies_.erase(
 		std::remove_if(enemies_.begin(), enemies_.end(),
 					   [](const std::unique_ptr<Enemy> &enemy) {
 						   return !enemy || !enemy->IsAlive();
 					   }),
 		enemies_.end());
+
+	// 削除された敵の数だけ撃破数を増加
+	size_t afterCount = enemies_.size();
+	defeatedCount_ += static_cast<int>(beforeCount - afterCount);
 }
 
 ///=============================================================================

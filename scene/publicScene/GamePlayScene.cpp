@@ -196,6 +196,20 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
+	// ゲームクリアチェック
+	if (enemyManager_ && !isGameOver_) {
+		if (enemyManager_->IsGameClear()) {
+			// ゲームクリア時の処理
+			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+				sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
+				sceneTransition_->SetOnCompleteCallback([this]() {
+					sceneNo = SCENE::TITLE; // TODO: ゲームクリアシーンに変更する場合はここを修正
+				});
+			}
+		}
+	}
+
+	//========================================
 	// ゲームオーバーUI更新
 	if (gameOverUI_) {
 		gameOverUI_->Update();

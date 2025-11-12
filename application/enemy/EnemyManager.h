@@ -79,6 +79,26 @@ public:
 	/// \brief 生存敵数の取得
 	size_t GetAliveEnemyCount() const;
 
+	/// \brief 撃破数の取得
+	int GetDefeatedCount() const {
+		return defeatedCount_;
+	}
+
+	/// \brief 目標撃破数の設定
+	void SetTargetDefeatedCount(int count) {
+		targetDefeatedCount_ = count;
+	}
+
+	/// \brief 目標撃破数の取得
+	int GetTargetDefeatedCount() const {
+		return targetDefeatedCount_;
+	}
+
+	/// \brief クリア条件達成チェック
+	bool IsGameClear() const {
+		return defeatedCount_ >= targetDefeatedCount_;
+	}
+
 	/// \brief 敵リストの取得（当たり判定用）
 	const std::vector<std::unique_ptr<Enemy>> &GetEnemies() const {
 		return enemies_;
@@ -109,4 +129,9 @@ private:
 	// 設定パラメータ
 	int maxEnemies_; // 最大敵数
 	bool autoSpawn_; // 自動スポーンフラグ
+
+	//========================================
+	// ゲーム進行管理
+	int defeatedCount_;		  // 撃破数
+	int targetDefeatedCount_; // 目標撃破数
 };
