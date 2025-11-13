@@ -85,7 +85,9 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	CameraManager::GetInstance()->SetCurrentCamera("FollowCamera");
 
 	//========================================
-	// 雲システムの初期化
+	// 雲
+	cloud_ = std::make_unique<Cloud>();
+	cloud_->Initialize(cloudSetup);
 
 	//========================================
 	// 敵マネージャー
@@ -173,6 +175,11 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
+	//========================================
+	// 雲の更新
+	if (cloud_) {
+		cloud_->Update(*CameraManager::GetInstance()->GetCamera("FollowCamera"), 1.0f / 60.0f);
+	}
 	//========================================
 	// スタートアニメーションの更新
 	if (startAnimation_) {
@@ -380,9 +387,6 @@ void GamePlayScene::Object3DDraw() {
 	collisionManager_->Draw();
 
 	//========================================
-	// 雲システムの描画
-
-	//========================================
 	// HUDの描画
 	if (hud_) {
 		// トランジション完了後にHUDを表示開始
@@ -418,6 +422,11 @@ void GamePlayScene::SkyboxDraw() {
 ///=============================================================================
 ///						Cloud描画
 void GamePlayScene::CloudDraw() {
+	//========================================
+	// 雲の描画
+	if (cloud_) {
+		// cloud_->Draw();
+	}
 }
 
 ///=============================================================================
@@ -454,6 +463,12 @@ void GamePlayScene::ImGuiDraw() {
 	// 敵マネージャー
 	if (enemyManager_) {
 		enemyManager_->DrawImGui();
+	}
+
+	//========================================
+	// 雲
+	if (cloud_) {
+		cloud_->DrawImGui();
 	}
 
 	//========================================

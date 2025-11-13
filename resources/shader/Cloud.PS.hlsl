@@ -9,23 +9,30 @@
 #include "Cloud.hlsli"
 
 float4 main(VertexShaderOutput input) : SV_TARGET {
-    // NDC座標からワールド座標を復元
+    // スクリーン座標からレイの方向を計算（改善版）
     float2 ndc = float2(input.uv.x * 2.0f - 1.0f, 1.0f - input.uv.y * 2.0f);
-    float4 clipPos = float4(ndc, 0.0f, 1.0f);
-    float4 worldPos = mul(clipPos, gInvViewProjection);
-    worldPos.xyz /= worldPos.w;
-
-    float3 rayOrigin = gCameraPosition;
-    float3 rayDir = normalize(worldPos.xyz - rayOrigin);
     
-    // 雲のAABB
+    // 近平面と遠平面の2点でワールド座標を復元
+    float4 nearPoint = float4(ndc, 0.0f, 1.0f);  // 近平面
+    float4 farPoint = float4(ndc, 1.0f, 1.0f);   // 遠平面
+    
+    float4 nearWorld = mul(nearPoint, gInvViewProjection);
+    nearWorld.xyz /= nearWorld.w;
+    
+    float4 farWorld = mul(farPoint, gInvViewProjection);
+    farWorld.xyz /= farWorld.w;
+    
+    // レイの原点と方向を計算
+    float3 rayOrigin = gCameraPosition;
+    float3 rayDir = normalize(farWorld.xyz - nearWorld.xyz);  // 2点間の方向ベクトル
+    
+    // 雲のAABB（ワールド空間固定）
     float3 boxMin = gCloudCenter - gCloudSize * 0.5f;
     float3 boxMax = gCloudCenter + gCloudSize * 0.5f;
     
     // レイとAABBの交差判定
     float tNear, tFar;
     if (!IntersectAABB(rayOrigin, rayDir, boxMin, boxMax, tNear, tFar)) {
-        // AABBと交差しない
         return float4(0.0f, 0.0f, 0.0f, 0.0f);
     }
     
@@ -46,7 +53,6 @@ float4 main(VertexShaderOutput input) : SV_TARGET {
     int numSteps = min(int(marchDistance / gStepSize), MAX_STEPS);
     float actualStepSize = marchDistance / float(max(numSteps, 1));
     
-    // デバッグ用: サンプル数カウント
     int denseSampleCount = 0;
     
     for (int i = 0; i < numSteps && transmittance > 0.01f; i++) {
@@ -57,16 +63,10 @@ float4 main(VertexShaderOutput input) : SV_TARGET {
         if (density > 0.001f) {
             denseSampleCount++;
             
-            // ライトマーチング
             float lightEnergy = LightMarch(position);
-            
-            // 位相関数
             float phase = PhaseHG(dot(rayDir, sunDir), gAnisotropy);
-            
-            // ライティング計算
             float3 lighting = gAmbient + gSunColor * gSunIntensity * lightEnergy * phase;
             
-            // 散乱と吸収
             float scatterAmount = density * actualStepSize;
             accumulatedLight += lighting * scatterAmount * transmittance;
             transmittance *= exp(-density * actualStepSize);
@@ -80,14 +80,11 @@ float4 main(VertexShaderOutput input) : SV_TARGET {
     // デバッグモード
     if (gDebugFlag > 0.5f) {
         if (denseSampleCount == 0) {
-            // AABBに交差したが密度サンプルが0 → 青
-            return float4(0.0f, 0.0f, 1.0f, 0.5f);
+            return float4(0.0f, 0.0f, 1.0f, 0.5f); // 青
         } else if (alpha < 0.01f) {
-            // 密度はあったがアルファが低い → 黄色
-            return float4(1.0f, 1.0f, 0.0f, 0.5f);
+            return float4(1.0f, 1.0f, 0.0f, 0.5f); // 黄色
         } else {
-            // 正常に描画できている → 緑のアウトライン
-            return float4(accumulatedLight + float3(0.2f, 0.5f, 0.2f), alpha);
+            return float4(accumulatedLight + float3(0.2f, 0.5f, 0.2f), alpha); // 緑
         }
     }
     

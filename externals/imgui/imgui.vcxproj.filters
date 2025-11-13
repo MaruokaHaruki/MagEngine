@@ -32,6 +32,9 @@
     <ClCompile Include="imgui.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="imguiDummy.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imstb_truetype.h">

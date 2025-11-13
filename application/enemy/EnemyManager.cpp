@@ -33,7 +33,7 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	//========================================
 	// ゲーム進行管理
 	defeatedCount_ = 0;
-	targetDefeatedCount_ = 5; // デフォルトは5体撃破でクリア
+	targetDefeatedCount_ = 50; // デフォルトは50体撃破でクリア
 
 	//========================================
 	// スポーンデータの初期化

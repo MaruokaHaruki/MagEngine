@@ -95,7 +95,8 @@ private:
 	std::unique_ptr<Particle> particle_;
 
 	//========================================
-	// 雲システム
+	// 雲
+	std::unique_ptr<Cloud> cloud_;
 
 	//=========================================
 	// Skybox

@@ -994,6 +994,11 @@ void DirectXCore::CreateRenderTextureRTV() {
 	// レンダーテクスチャ
 	renderResourceIndex_ = 0;
 	renderTargetIndex_ = 1;
+
+	//NOTE:
+	//FIXME:
+	//CHANGED:
+	//HOTFIX:
 }
 
 ///--------------------------------------------------------------
