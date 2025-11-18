@@ -31,21 +31,15 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	currentVelocity_ = {0.0f, 0.0f, 0.0f};
 	targetVelocity_ = {0.0f, 0.0f, 0.0f};
 	targetRotationEuler_ = {0.0f, 0.0f, 0.0f};
-	acceleration_ = 8.0f;					  // 加速度
-	rotationSmoothing_ = 8.0f;				  // 回転の滑らかさ
+	acceleration_ = 8.0f;										  // 加速度
+	rotationSmoothing_ = 8.0f;									  // 回転の滑らかさ
 	maxRollAngle_ = 45.0f * (static_cast<float>(M_PI) / 180.0f);  // 最大ロール角（45度）
 	maxPitchAngle_ = 30.0f * (static_cast<float>(M_PI) / 180.0f); // 最大ピッチ角（30度）
-	bankingFactor_ = 1.5f;					  // バンキング係数
+	bankingFactor_ = 1.5f;										  // バンキング係数
 
 	//========================================
-	// ステートマシンの初期化
-	currentState_ = FlightState::Spawn;
-	spawnPosition_ = position;
-	stateTimer_ = 0.0f;
-
 	// 初期方向を前方（+Z）に設定
 	currentDirection_ = {0.0f, 0.0f, 1.0f};
-	targetDirection_ = {0.0f, 0.0f, 1.0f};
 
 	//========================================
 	// 状態の初期化
@@ -71,35 +65,7 @@ void Enemy::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) 
 	particleSetup_ = particleSetup;
 }
 ///=============================================================================
-///                        移動パラメータの設定
-void Enemy::SetMovementParams(float speed, const Vector3 &targetPosition) {
-	speed_ = speed;
-	targetPosition_ = targetPosition;
-
-	// MoveToTargetステートに移行
-	if (currentState_ == FlightState::Spawn) {
-		currentState_ = FlightState::MoveToTarget;
-		stateTimer_ = 0.0f;
-	}
-}
-///=============================================================================
-///                        AI行動の開始
-void Enemy::StartAIBehavior() {
-	currentState_ = FlightState::AIBehavior;
-	stateTimer_ = 0.0f;
-}
-///=============================================================================
-///                        離脱の開始
-void Enemy::StartDisengagement() {
-	currentState_ = FlightState::Disengagement;
-	stateTimer_ = 0.0f;
-
-	// 離脱目標位置を設定（+Z方向の画面奥に向かう）
-	disengageTarget_ = transform_.translate;
-	disengageTarget_.z += 50.0f; // +Z方向に50ユニット先
-}
-///=============================================================================
-///                        移動方向の設定（新規追加）
+///                        移動方向の設定
 void Enemy::SetMovementDirection(float speed, const Vector3 &direction) {
 	speed_ = speed;
 
@@ -111,12 +77,7 @@ void Enemy::SetMovementDirection(float speed, const Vector3 &direction) {
 			direction.x * invLength,
 			direction.y * invLength,
 			direction.z * invLength};
-		targetDirection_ = currentDirection_;
 	}
-
-	// 直進飛行ステートに設定
-	currentState_ = FlightState::StraightFlight;
-	stateTimer_ = 0.0f;
 }
 ///=============================================================================
 ///                        更新
@@ -137,129 +98,31 @@ void Enemy::Update() {
 	}
 
 	const float frameTime = 1.0f / 60.0f;
-	stateTimer_ += frameTime;
 
-	// ステート別の更新
-	switch (currentState_) {
-	case FlightState::Spawn:
-		UpdateSpawnState(frameTime);
-		break;
-	case FlightState::StraightFlight:
-		UpdateStraightFlightState(frameTime);
-		break;
-	case FlightState::MoveToTarget:
-		UpdateMoveToTargetState(frameTime);
-		break;
-	case FlightState::AIBehavior:
-		UpdateAIBehaviorState(frameTime);
-		break;
-	case FlightState::Disengagement:
-		UpdateDisengagementState(frameTime);
-		break;
-	}
-
+	// 直進飛行のみ実行
+	UpdateStraightFlightState(frameTime);
 	UpdateFlightControl(frameTime);
 	CalculatePitchAndRoll();
 	CheckOutOfBounds();
+
 	BaseObject::Update(transform_.translate);
 	obj_->Update();
 }
 ///=============================================================================
-///                        ステート別更新：スポーン
-void Enemy::UpdateSpawnState(float frameTime) {
-	// FIXME: frameTimeが使用されていないので回避すること
-	frameTime;
-	// スポーン直後は+Z方向に直進
-	targetVelocity_ = {0.0f, 0.0f, speed_};
-
-	// 一定時間後に自動的にMoveToTargetに移行（設定されていない場合）
-	if (stateTimer_ > 1.0f && currentState_ == FlightState::Spawn) {
-		StartDisengagement(); // 目標が設定されていない場合は離脱
-	}
-}
-///=============================================================================
-///                        ステート別更新：直進飛行（新規追加）
+///                        直進飛行の更新
 void Enemy::UpdateStraightFlightState(float frameTime) {
-	// FIXME: frameTimeが使用されていないので回避すること
-	frameTime;
+	(void)frameTime; // 未使用警告回避
+
 	// 常に設定された方向に直進
 	targetVelocity_ = {
 		currentDirection_.x * speed_,
 		currentDirection_.y * speed_,
 		currentDirection_.z * speed_};
-
-	// 機体の向きを飛行方向に合わせる
-	targetDirection_ = currentDirection_;
-}
-///=============================================================================
-///                        ステート別更新：目標位置への移動
-void Enemy::UpdateMoveToTargetState(float frameTime) {
-	// FIXME: frameTimeが使用されていないので回避すること
-	frameTime;
-	Vector3 direction = {
-		targetPosition_.x - transform_.translate.x,
-		targetPosition_.y - transform_.translate.y,
-		targetPosition_.z - transform_.translate.z};
-
-	float distance = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
-
-	if (distance > 1.0f) {
-		// 正規化した方向に速度を設定
-		float invLength = 1.0f / distance;
-		targetVelocity_ = {
-			direction.x * invLength * speed_,
-			direction.y * invLength * speed_,
-			direction.z * invLength * speed_};
-	} else {
-		// 目標に到達したらAI行動に移行
-		StartAIBehavior();
-	}
-}
-///=============================================================================
-///                        ステート別更新：AI挙動
-void Enemy::UpdateAIBehaviorState(float frameTime) {
-	// FIXME: frameTimeが使用されていないので回避すること
-	frameTime;
-	// 現在は簡単な円運動を実装（将来的にはより複雑なAIに置き換え）
-	// float circleRadius = 5.0f;
-	// float angularSpeed = 1.0f;
-	// float angle = stateTimer_ * angularSpeed;
-
-	// Vector3 circleCenter = targetPosition_;
-	// targetVelocity_ = {
-	//	cosf(angle + M_PI * 0.5f) * angularSpeed * circleRadius,
-	//	0.0f,
-	//	sinf(angle + M_PI * 0.5f) * angularSpeed * circleRadius};
-
-	// 一定時間後に離脱
-	if (stateTimer_ > 5.0f) {
-		StartDisengagement();
-	}
-}
-///=============================================================================
-///                        ステート別更新：離脱
-void Enemy::UpdateDisengagementState(float frameTime) {
-	// FIXME: frameTimeが使用されていないので回避すること
-	frameTime;
-	Vector3 direction = {
-		disengageTarget_.x - transform_.translate.x,
-		disengageTarget_.y - transform_.translate.y,
-		disengageTarget_.z - transform_.translate.z};
-
-	float distance = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
-
-	if (distance > 1.0f) {
-		float invLength = 1.0f / distance;
-		targetVelocity_ = {
-			direction.x * invLength * speed_ * 1.5f, // 離脱時は高速
-			direction.y * invLength * speed_ * 1.5f,
-			direction.z * invLength * speed_ * 1.5f};
-	}
 }
 ///=============================================================================
 ///                        飛行制御の更新
 void Enemy::UpdateFlightControl(float frameTime) {
-	// 速度の補間（Playerと同様）
+	// 速度の補間
 	currentVelocity_.x += (targetVelocity_.x - currentVelocity_.x) * acceleration_ * frameTime;
 	currentVelocity_.y += (targetVelocity_.y - currentVelocity_.y) * acceleration_ * frameTime;
 	currentVelocity_.z += (targetVelocity_.z - currentVelocity_.z) * acceleration_ * frameTime;
@@ -272,8 +135,8 @@ void Enemy::UpdateFlightControl(float frameTime) {
 ///=============================================================================
 ///                        ピッチとロールの計算
 void Enemy::CalculatePitchAndRoll() {
-	// 飛行方向から機体の向きを計算（+Z方向を基本とする）
-	Vector3 forwardDir = targetDirection_;
+	// 飛行方向から機体の向きを計算
+	Vector3 forwardDir = currentDirection_;
 
 	// ヨー角（Y軸回転）を計算 - +Z方向を0度とする
 	targetRotationEuler_.y = atan2f(forwardDir.x, forwardDir.z);
@@ -309,8 +172,9 @@ void Enemy::CalculatePitchAndRoll() {
 ///=============================================================================
 ///                        画面外判定
 void Enemy::CheckOutOfBounds() {
-	// 画面外に出たら削除（前方に向かった場合も含む）
-	if (transform_.translate.z < -100.0f || transform_.translate.z > 100.0f) {
+	// 画面外に出たら削除
+	if (transform_.translate.z < -100.0f || transform_.translate.z > 100.0f ||
+		fabsf(transform_.translate.x) > 100.0f || fabsf(transform_.translate.y) > 100.0f) {
 		destroyState_ = DestroyState::Dead;
 		isAlive_ = false;
 	}
@@ -331,9 +195,11 @@ void Enemy::DrawImGui() {
 
 	ImGui::Begin("Enemy Debug");
 	ImGui::Text("Position: (%.2f, %.2f, %.2f)", transform_.translate.x, transform_.translate.y, transform_.translate.z);
+	ImGui::Text("Velocity: (%.2f, %.2f, %.2f)", currentVelocity_.x, currentVelocity_.y, currentVelocity_.z);
+	ImGui::Text("Direction: (%.2f, %.2f, %.2f)", currentDirection_.x, currentDirection_.y, currentDirection_.z);
 	ImGui::Text("Is Alive: %s", isAlive_ ? "Yes" : "No");
-	ImGui::SliderFloat("Speed", &speed_, 0.5f, 20.0f);
-	ImGui::SliderFloat("Turn Rate", &maxTurnRate_, 0.5f, 5.0f);
+	ImGui::SliderFloat("Speed", &speed_, 5.0f, 30.0f);
+	ImGui::SliderFloat("Acceleration", &acceleration_, 1.0f, 20.0f);
 	ImGui::End();
 }
 ///=============================================================================

@@ -22,9 +22,10 @@ class Player;
 enum class EnemyType {
 	Normal,
 	Fast
+	// Boss // 将来的に追加予定
 };
 
-/// \brief スポーン情報
+/// \brief スポーン情報（手動スポーン用 - オプション）
 struct SpawnInfo {
 	EnemyType type;
 	Vector3 position;
@@ -113,7 +114,7 @@ private:
 
 	//========================================
 	// スポーン管理
-	std::vector<SpawnInfo> spawnQueue_; // スポーン待ち敵の情報
+	std::vector<SpawnInfo> spawnQueue_; // 手動スポーン用（オプション）
 	float gameTime_;					// ゲーム経過時間
 	float lastSpawnTime_;				// 最後のスポーン時間
 	float spawnInterval_;				// スポーン間隔

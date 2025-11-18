@@ -36,11 +36,11 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	targetDefeatedCount_ = 50; // デフォルトは50体撃破でクリア
 
 	//========================================
-	// スポーンデータの初期化
+	// スポーンデータの初期化（簡略化 - 自動スポーンに任せる）
 	spawnQueue_.clear();
-	spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 15.0f}, 2.0f, false});
-	spawnQueue_.push_back({EnemyType::Fast, {0.0f, 0.0f, 20.0f}, 5.0f, false});
-	spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 18.0f}, 8.0f, false});
+	// 手動スポーン例（必要に応じてコメント解除）
+	// spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 15.0f}, 2.0f, false});
+	// spawnQueue_.push_back({EnemyType::Fast, {0.0f, 0.0f, 20.0f}, 5.0f, false});
 }
 
 ///=============================================================================
@@ -72,32 +72,6 @@ void EnemyManager::Draw() {
 	for (auto &enemy : enemies_) {
 		if (enemy && enemy->IsAlive()) {
 			enemy->Draw();
-
-			// 敵の視覚化（デバッグ用）
-			LineManager *lineManager = LineManager::GetInstance();
-			Vector3 enemyPos = enemy->GetPosition();
-
-			// 敵の周辺に赤い円を描画
-			lineManager->DrawCircle(enemyPos, 1.0f, {1.0f, 0.0f, 0.0f, 0.7f}, 2.0f);
-
-			// 敵の座標軸表示
-			lineManager->DrawCoordinateAxes(enemyPos, 0.5f, 1.0f);
-
-			// 敵の識別マーカー（頭上に表示）
-			Vector3 markerPos = {enemyPos.x, enemyPos.y + 3.0f, enemyPos.z};
-			lineManager->DrawSphere(markerPos, 0.3f, {1.0f, 0.0f, 0.0f, 1.0f}, 8, 2.0f);
-
-			// 敵の移動方向表示
-			// TODO: 敵の速度ベクトルが取得できる場合
-			// Vector3 velocity = enemy->GetVelocity(); // この関数が実装されている場合
-			// if (velocity.x != 0.0f || velocity.y != 0.0f || velocity.z != 0.0f) {
-			//     Vector3 velocityEnd = {
-			//         enemyPos.x + velocity.x * 0.5f,
-			//         enemyPos.y + velocity.y * 0.5f,
-			//         enemyPos.z + velocity.z * 0.5f
-			//     };
-			//     lineManager->DrawArrow(enemyPos, velocityEnd, {1.0f, 0.5f, 0.0f, 1.0f}, 0.1f, 2.0f);
-			// }
 		}
 	}
 }
@@ -156,7 +130,7 @@ void EnemyManager::Clear() {
 ///                        スポーン処理
 void EnemyManager::UpdateSpawning() {
 	//========================================
-	// 予定されたスポーンの処理
+	// 予定されたスポーンの処理（キューベースのスポーン）
 	for (auto &spawnInfo : spawnQueue_) {
 		if (!spawnInfo.spawned && gameTime_ >= spawnInfo.spawnTime) {
 			SpawnEnemy(spawnInfo.type, spawnInfo.position);
@@ -165,24 +139,23 @@ void EnemyManager::UpdateSpawning() {
 	}
 
 	//========================================
-	// 自動スポーン
+	// 自動スポーン（最適化版）
 	if (autoSpawn_ &&
 		GetAliveEnemyCount() < static_cast<size_t>(maxEnemies_) &&
 		gameTime_ - lastSpawnTime_ >= spawnInterval_) {
 
-		// プレイヤーの後方にスポーン位置を設定（+Z方向に進行するため後方は-Z）
-		Vector3 spawnPos = {0.0f, 0.0f, -15.0f}; // デフォルト位置（プレイヤーの後方）
+		// プレイヤーの後方にスポーン位置を設定
+		Vector3 spawnPos = {0.0f, 0.0f, -15.0f};
 		if (player_) {
 			Vector3 playerPos = player_->GetPosition();
-			// プレイヤーの後方10～15ユニット、左右にランダムオフセット
 			spawnPos = {
 				playerPos.x + static_cast<float>((rand() % 11) - 5), // -5 ～ 5
 				playerPos.y + static_cast<float>((rand() % 3) - 1),	 // -1 ～ 1
-				playerPos.z - static_cast<float>((rand() % 6) + 10)	 // -10 ～ -15（プレイヤーの後方）
+				playerPos.z - static_cast<float>((rand() % 6) + 10)	 // -10 ～ -15
 			};
 		}
 
-		EnemyType type = static_cast<EnemyType>(rand() % 2); // Normal または Fast
+		EnemyType type = (rand() % 3 == 0) ? EnemyType::Fast : EnemyType::Normal; // 1/3の確率でFast
 		SpawnEnemy(type, spawnPos);
 		lastSpawnTime_ = gameTime_;
 	}
@@ -192,20 +165,11 @@ void EnemyManager::UpdateSpawning() {
 ///                        敵の生成
 void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	auto enemy = std::make_unique<Enemy>();
-
-	// 敵の初期化
 	enemy->Initialize(object3dSetup_, "jet.obj", position);
 
-	// +Z方向への直進飛行を設定
-	switch (type) {
-	case EnemyType::Normal:
-		enemy->SetMovementDirection(15.0f, {0.0f, 0.0f, 1.0f}); // +Z方向に15.0fの速度
-		break;
-
-	case EnemyType::Fast:
-		enemy->SetMovementDirection(22.0f, {0.0f, 0.0f, 1.0f}); // +Z方向に22.0fの速度
-		break;
-	}
+	// 移動速度と方向を設定（+Z方向へ直進）
+	float speed = (type == EnemyType::Fast) ? 22.0f : 15.0f;
+	enemy->SetMovementDirection(speed, {0.0f, 0.0f, 1.0f});
 
 	// パーティクルシステムの設定
 	enemy->SetParticleSystem(particle_, particleSetup_);

@@ -30,7 +30,7 @@ public:
 	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
 	/// \brief 移動パラメータの設定
-	void SetMovementParams(float speed, const Vector3 &targetPosition);
+	// void SetMovementParams(float speed, const Vector3 &targetPosition);
 
 	/// \brief 移動方向の設定（新規追加）
 	void SetMovementDirection(float speed, const Vector3 &direction);
@@ -43,12 +43,6 @@ public:
 
 	/// \brief ImGui描画
 	void DrawImGui();
-
-	/// \brief AI行動の開始（将来の拡張用）
-	void StartAIBehavior();
-
-	/// \brief 離脱の開始
-	void StartDisengagement();
 
 	///--------------------------------------------------------------
 	///							入出力関数
@@ -82,12 +76,6 @@ private:
 	/// \brief ピッチとロールの計算
 	void CalculatePitchAndRoll();
 
-	/// \brief ステート別の更新
-	void UpdateSpawnState(float frameTime);
-	void UpdateMoveToTargetState(float frameTime);
-	void UpdateAIBehaviorState(float frameTime);
-	void UpdateDisengagementState(float frameTime);
-
 	/// \brief 画面外判定
 	void CheckOutOfBounds();
 
@@ -102,11 +90,7 @@ private:
 	//========================================
 	// 戦闘機らしい飛行制御
 	Vector3 currentDirection_; // 現在の飛行方向
-	Vector3 targetDirection_;  // 目標飛行方向
 	float speed_;			   // 移動速度
-	float currentSpeed_;	   // 現在の速度
-	float maxTurnRate_;		   // 最大旋回速度（ラジアン/秒）
-	bool hasTarget_;		   // 目標位置があるかどうか
 
 	//========================================
 	// 状態管理
@@ -140,19 +124,4 @@ private:
 	float maxRollAngle_;		  // 最大ロール角
 	float maxPitchAngle_;		  // 最大ピッチ角
 	float bankingFactor_;		  // バンキング（旋回時のロール）係数
-
-	//========================================
-	// ステートマシン
-	enum class FlightState {
-		Spawn, // リスポーン後の初期状態
-		StraightFlight,
-		MoveToTarget, // 指定位置への移動
-		AIBehavior,	  // AI挙動（将来実装）
-		Disengagement // 離脱
-	};
-	FlightState currentState_;
-	Vector3 spawnPosition_;	  // スポーン位置
-	Vector3 targetPosition_;  // 目標位置
-	Vector3 disengageTarget_; // 離脱目標位置
-	float stateTimer_;		  // ステート継続時間
 };
