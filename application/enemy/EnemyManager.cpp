@@ -166,7 +166,6 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 
 	// 移動速度と方向を設定（+Z方向へ直進）
 	float speed = (type == EnemyType::Fast) ? 22.0f : 15.0f;
-	enemy->SetMovementDirection(speed, {0.0f, 0.0f, 1.0f});
 
 	// パーティクルシステムの設定
 	enemy->SetParticleSystem(particle_, particleSetup_);

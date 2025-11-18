@@ -29,9 +29,6 @@ public:
 	/// \brief パーティクルシステムの設定
 	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
-	/// \brief 移動方向の設定（新規追加）
-	void SetMovementDirection(float speed, const Vector3 &direction);
-
 	/// \brief 更新
 	void Update();
 
@@ -64,18 +61,6 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	/// \brief 通常状態の更新（移動・回転）
-	void UpdateStraightFlightState(float frameTime);
-
-	/// \brief 飛行制御の更新
-	void UpdateFlightControl(float frameTime);
-
-	/// \brief ピッチとロールの計算
-	void CalculatePitchAndRoll();
-
-	/// \brief 画面外判定
-	void CheckOutOfBounds();
-
 	//========================================
 	// 3Dオブジェクト
 	std::unique_ptr<Object3d> obj_;
@@ -85,9 +70,8 @@ private:
 	Transform transform_; // メインのトランスフォーム（位置情報の一括管理）
 
 	//========================================
-	// 戦闘機らしい飛行制御
-	Vector3 currentDirection_; // 現在の飛行方向
-	float speed_;			   // 移動速度
+	// スピード関連
+	float speed_; // 移動速度
 
 	//========================================
 	// 状態管理
@@ -110,15 +94,4 @@ private:
 	DestroyState destroyState_; // 破壊状態
 	float destroyTimer_;		// 破壊演出タイマー
 	float destroyDuration_;		// 破壊演出の持続時間
-
-	//========================================
-	// 戦闘機らしい飛行制御（Playerを参考）
-	Vector3 currentVelocity_;	  // 現在の速度ベクトル
-	Vector3 targetVelocity_;	  // 目標速度ベクトル
-	Vector3 targetRotationEuler_; // 目標回転角（オイラー角）
-	float acceleration_;		  // 加速度
-	float rotationSmoothing_;	  // 回転の滑らかさ
-	float maxRollAngle_;		  // 最大ロール角
-	float maxPitchAngle_;		  // 最大ピッチ角
-	float bankingFactor_;		  // バンキング（旋回時のロール）係数
 };
