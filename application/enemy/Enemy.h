@@ -29,9 +29,6 @@ public:
 	/// \brief パーティクルシステムの設定
 	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
-	/// \brief 移動パラメータの設定
-	// void SetMovementParams(float speed, const Vector3 &targetPosition);
-
 	/// \brief 移動方向の設定（新規追加）
 	void SetMovementDirection(float speed, const Vector3 &direction);
 

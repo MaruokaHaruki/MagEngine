@@ -38,9 +38,6 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	//========================================
 	// スポーンデータの初期化（簡略化 - 自動スポーンに任せる）
 	spawnQueue_.clear();
-	// 手動スポーン例（必要に応じてコメント解除）
-	// spawnQueue_.push_back({EnemyType::Normal, {0.0f, 0.0f, 15.0f}, 2.0f, false});
-	// spawnQueue_.push_back({EnemyType::Fast, {0.0f, 0.0f, 20.0f}, 5.0f, false});
 }
 
 ///=============================================================================
