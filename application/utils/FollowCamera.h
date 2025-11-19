@@ -59,6 +59,11 @@ public:
 		isFixedPositionMode_ = true;
 	}
 
+	/// \brief カメラの傾き追従を有効化/無効化
+	void SetEnableRollFollow(bool enable) {
+		enableRollFollow_ = enable;
+	}
+
 	/// \brief 使用中のカメラを取得
 	Camera *GetCamera() const {
 		return camera_;
@@ -83,6 +88,9 @@ private:
 	// 固定位置モード
 	bool isFixedPositionMode_; // 固定位置モードのフラグ
 	Vector3 fixedPosition_;	   // 固定位置
+
+	// カメラの傾き追従
+	bool enableRollFollow_; // カメラの傾き（ロール）追従を有効化するか
 
 	// 内部状態
 	Vector3 currentPosition_; // 現在のカメラ位置

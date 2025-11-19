@@ -281,6 +281,11 @@ void GameClearAnimation::UpdateClosing() {
 	if (rawProgress >= 1.0f) {
 		state_ = GameClearAnimationState::Done;
 
+		// カメラの傾き追従を再度有効化
+		if (followCamera_) {
+			followCamera_->SetEnableRollFollow(true);
+		}
+
 		if (onCompleteCallback_) {
 			onCompleteCallback_();
 		}
@@ -307,6 +312,11 @@ void GameClearAnimation::StartClearAnimation(
 			playerStartPosition_ = playerTransform->translate;
 			playerStartRotation_ = playerTransform->rotate;
 		}
+	}
+
+	// カメラの傾き追従を無効化（クリア演出中は水平を維持）
+	if (followCamera_) {
+		followCamera_->SetEnableRollFollow(false);
 	}
 
 	// 初期状態設定

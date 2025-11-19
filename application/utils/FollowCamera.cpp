@@ -43,6 +43,9 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	isFixedPositionMode_ = false;
 	fixedPosition_ = {0.0f, 5.0f, -10.0f}; // デフォルトの固定位置
 
+	// カメラの傾き追従（デフォルトは有効）
+	enableRollFollow_ = true;
+
 	// 初期位置・回転の設定
 	// NOTE: プレイヤー追従開始前の初期位置
 	currentPosition_ = {0.0f, 2.0f, 16.0f};
@@ -129,19 +132,24 @@ void FollowCamera::UpdateCameraTransform() {
 	// X軸回転（上下）を計算
 	float pitch = std::asin(-lookDirection.y);
 
-	// プレイヤーのZ軸回転を取得してカメラに反映
+	// プレイヤーのZ軸回転（ロール）を取得
 	float roll = playerTransform->rotate.z;
+
+	// カメラの傾き追従が無効の場合はロールを0にする
+	if (!enableRollFollow_) {
+		roll = 0.0f;
+	}
 
 	if (isCrashing && limitCrashRotation_) {
 		// 墜落中はロール回転のみ部分的に追従し、ピッチ・ヨーは現在値を維持
-		// ロールも完全には追従せず、ゆっくり追従
+		float targetRoll = enableRollFollow_ ? (currentRotation_.z + (roll - currentRotation_.z) * 0.3f) : 0.0f;
 		targetRotation_ = {
-			currentRotation_.x,										// ピッチは現在値維持
-			currentRotation_.y,										// ヨーは現在値維持
-			currentRotation_.z + (roll - currentRotation_.z) * 0.3f // ロールのみ30%追従
+			currentRotation_.x, // ピッチは現在値維持
+			currentRotation_.y, // ヨーは現在値維持
+			targetRoll			// ロールのみ追従（傾き追従が有効な場合）
 		};
 	} else {
-		// 通常時：目標回転を設定（プレイヤーの傾きを反映）
+		// 通常時：目標回転を設定
 		targetRotation_ = {pitch, yaw, roll};
 	}
 }
@@ -191,6 +199,13 @@ void FollowCamera::DrawImGui() {
 	}
 
 	ImGui::SliderFloat("Rotation Smoothness", &rotationSmoothness_, 0.01f, 1.0f);
+
+	ImGui::Separator();
+	ImGui::Text("Camera Roll Follow:");
+	ImGui::Checkbox("Enable Roll Follow", &enableRollFollow_);
+	ImGui::TextColored(
+		enableRollFollow_ ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f) : ImVec4(1.0f, 0.5f, 0.0f, 1.0f),
+		enableRollFollow_ ? "Camera tilts with player" : "Camera stays upright");
 
 	ImGui::Separator();
 	ImGui::Text("Crash Settings:");
