@@ -130,10 +130,11 @@ void CloudSetup::CreateGraphicsPipeline() {
 	desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	desc.SampleDesc.Count = 1;
 
+	// 深度ステンシルステートの設定
 	D3D12_DEPTH_STENCIL_DESC depth{};
-	depth.DepthEnable = FALSE; // 完全に無効化
-	depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	depth.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depth.DepthEnable = TRUE;
+	depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 	depth.StencilEnable = FALSE;
 	desc.DepthStencilState = depth;
 	desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT; // 深度フォーマットを設定

@@ -34,7 +34,7 @@ void GameClearAnimation::Initialize(SpriteSetup *spriteSetup) {
 
 	// テキストスプライトの作成
 	textSprite_ = std::make_unique<Sprite>();
-	textSprite_->Initialize(spriteSetup_, textTexture_);
+	textSprite_->Initialize(spriteSetup_, "WolfOne_Comprete.png");
 	textSprite_->SetSize(textSize_);
 	textSprite_->SetAnchorPoint({0.5f, 0.5f});
 }

@@ -88,6 +88,11 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 雲
 	cloud_ = std::make_unique<Cloud>();
 	cloud_->Initialize(cloudSetup);
+	// 雲のパラメータ設定
+	cloud_->SetSize({ 500.0f, 100.0f, 500.0f });
+	cloud_->SetEnabled(true);
+	// 雲のTransform設定
+	cloud_->GetTransform().translate = { 0.0f, -80.0f, 0.0f };
 
 	//========================================
 	// 敵マネージャー
@@ -142,7 +147,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	gameClearAnimation_->Initialize(spriteSetup);
 	gameClearAnimation_->SetFollowCamera(followCamera_.get());
 	gameClearAnimation_->SetPlayer(player_.get());						// プレイヤー参照を追加
-	gameClearAnimation_->SetTextTexture("WolfOne_MissionComplete.png"); // クリア画像
+	gameClearAnimation_->SetTextTexture("WolfOne_Comprete.png"); // クリア画像
 	gameClearAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
 	gameClearAnimation_->SetBarHeightRatio(0.15f);
 	gameClearAnimation_->SetTextSize({800.0f, 150.0f});
@@ -206,7 +211,7 @@ void GamePlayScene::Update() {
 	//========================================
 	// 雲の更新
 	if (cloud_) {
-		cloud_->Update(*CameraManager::GetInstance()->GetCamera("FollowCamera"), 1.0f / 60.0f);
+		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
 	}
 	//========================================
 	// スタートアニメーションの更新
@@ -250,6 +255,17 @@ void GamePlayScene::Update() {
 				hud_->StartRetractAnimation(1.0f);
 			}
 		}
+	}
+	// デバック用にキーボードでゲームクリアを強制発動
+	if (Input::GetInstance()->TriggerKey(DIK_C)) {
+		isGameClear_ = true;
+		// HUDを格納
+		hud_->StartRetractAnimation(1.0f);
+		// クリア演出を開始
+		if (gameClearAnimation_) {
+			gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
+		}
+
 	}
 
 	//========================================
@@ -420,7 +436,7 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// 敵マネージャー
-	if (enemyManager_) {
+	if (enemyManager_ && !isGameClear_) {
 		enemyManager_->Draw();
 	}
 
@@ -467,7 +483,7 @@ void GamePlayScene::CloudDraw() {
 	//========================================
 	// 雲の描画
 	if (cloud_) {
-		// cloud_->Draw();
+		cloud_->Draw();
 	}
 }
 
