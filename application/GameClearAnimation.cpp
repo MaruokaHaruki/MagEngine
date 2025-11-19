@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "FollowCamera.h"
 #include "ImguiSetup.h"
+#include "Player.h"
 #include <algorithm>
 #include <cmath>
 
@@ -189,7 +190,49 @@ void GameClearAnimation::UpdateCameraUp() {
 	textSprite_->SetSize({textSize_.x * scale, textSize_.y * scale});
 	textSprite_->SetColor(textColor);
 
-	// カメラを上昇させる
+	// プレイヤーを正面に飛ばしながら旋回させる
+	if (player_) {
+		Transform *playerTransform = player_->GetTransform();
+		if (playerTransform) {
+			// 経過時間に応じた移動量を計算
+			float time = progress_ * cameraUpDuration_;
+
+			// 前進（Z+方向）- 加速カーブ
+			float forwardProgress = EaseOut(progress_);
+			float forwardDistance = flightSpeed_ * time * (1.0f + forwardProgress * 2.0f);
+
+			// 旋回（Y軸回転）- 螺旋を描くように
+			float spinAngle = spinRate_ * time;
+			float spiralRadius = 3.0f * progress_; // 徐々に外側へ
+
+			// 上昇（Y+方向）- なめらかに上昇
+			float climbProgress = EaseInOut(progress_);
+			float climbHeight = climbRate_ * climbProgress * cameraUpDuration_;
+
+			// 位置を計算
+			playerTransform->translate = {
+				playerStartPosition_.x + std::sin(spinAngle) * spiralRadius,
+				playerStartPosition_.y + climbHeight,
+				playerStartPosition_.z + forwardDistance};
+
+			// 回転を計算（機体を進行方向に向ける + ロール）
+			// ピッチ：上昇角度
+			float pitchAngle = std::atan2(climbRate_ * climbProgress, flightSpeed_ * (1.0f + forwardProgress));
+
+			// ヨー：旋回方向
+			float yawAngle = playerStartRotation_.y + spinAngle;
+
+			// ロール：旋回に応じた傾き（戦闘機らしく）
+			float rollAngle = spinRate_ * 0.8f * std::sin(spinAngle * 2.0f); // より激しいロール
+
+			playerTransform->rotate = {
+				pitchAngle,
+				yawAngle,
+				rollAngle};
+		}
+	}
+
+	// カメラを上昇させる（プレイヤーを追いかけるように）
 	if (followCamera_) {
 		Vector3 newPos = {
 			cameraStartPosition_.x + (cameraTargetPosition_.x - cameraStartPosition_.x) * progress_,
@@ -256,6 +299,15 @@ void GameClearAnimation::StartClearAnimation(
 	closeDuration_ = closeDuration;
 	elapsedTime_ = 0.0f;
 	progress_ = 0.0f;
+
+	// プレイヤーの初期位置と回転を保存
+	if (player_) {
+		Transform *playerTransform = player_->GetTransform();
+		if (playerTransform) {
+			playerStartPosition_ = playerTransform->translate;
+			playerStartRotation_ = playerTransform->rotate;
+		}
+	}
 
 	// 初期状態設定
 	if (topBar_) {
@@ -347,8 +399,16 @@ void GameClearAnimation::DrawImGui() {
 
 	// カメラ設定
 	ImGui::Separator();
+	ImGui::Text("=== Camera Settings ===");
 	ImGui::SliderFloat("Camera Target Height", &cameraTargetHeight_, 5.0f, 50.0f);
 	ImGui::SliderFloat("Camera Target Distance", &cameraTargetDistance_, -50.0f, -10.0f);
+
+	// 飛行演出設定
+	ImGui::Separator();
+	ImGui::Text("=== Flight Settings ===");
+	ImGui::SliderFloat("Flight Speed", &flightSpeed_, 5.0f, 30.0f);
+	ImGui::SliderFloat("Spin Rate (rad/s)", &spinRate_, 0.5f, 5.0f);
+	ImGui::SliderFloat("Climb Rate", &climbRate_, 2.0f, 20.0f);
 
 	// 表示設定
 	ImGui::Separator();

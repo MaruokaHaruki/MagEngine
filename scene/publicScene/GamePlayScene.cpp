@@ -141,11 +141,18 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	gameClearAnimation_ = std::make_unique<GameClearAnimation>();
 	gameClearAnimation_->Initialize(spriteSetup);
 	gameClearAnimation_->SetFollowCamera(followCamera_.get());
+	gameClearAnimation_->SetPlayer(player_.get());						// プレイヤー参照を追加
 	gameClearAnimation_->SetTextTexture("WolfOne_MissionComplete.png"); // クリア画像
 	gameClearAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
 	gameClearAnimation_->SetBarHeightRatio(0.15f);
 	gameClearAnimation_->SetTextSize({800.0f, 150.0f});
 	gameClearAnimation_->SetCameraUpParameters(20.0f, -30.0f);
+	// かっこいい飛行演出パラメータを設定
+	gameClearAnimation_->SetFlightParameters(
+		18.0f, // 前進速度（速め）
+		2.5f,  // 旋回速度（ダイナミック）
+		10.0f  // 上昇速度（力強く）
+	);
 	isGameClear_ = false;
 
 	// クリア演出完了後のコールバック

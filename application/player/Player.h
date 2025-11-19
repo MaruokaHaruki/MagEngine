@@ -21,6 +21,7 @@
 class Object3dSetup;
 class EnemyManager;
 class Enemy;
+
 ///=============================================================================
 ///						クラス定義
 class Player : public BaseObject {
@@ -65,6 +66,12 @@ public:
 	}
 	const std::vector<std::unique_ptr<PlayerMissile>> &GetMissiles() const {
 		return missiles_;
+	}
+
+	//========================================
+	// Transform関連のゲッター（GameClearAnimation用）
+	Transform *GetTransform() const {
+		return obj_ ? obj_->GetTransform() : nullptr;
 	}
 
 	//========================================

@@ -8,6 +8,7 @@
 
 // 前方宣言
 class FollowCamera;
+class Player;
 
 ///=============================================================================
 ///                        クリアアニメーション状態
@@ -84,6 +85,11 @@ public:
 		followCamera_ = followCamera;
 	}
 
+	/// \brief Playerの設定
+	void SetPlayer(Player *player) {
+		player_ = player;
+	}
+
 	/// \brief バーの色を設定
 	void SetBarColor(const Vector4 &color) {
 		barColor_ = color;
@@ -108,6 +114,13 @@ public:
 	void SetCameraUpParameters(float height, float distance) {
 		cameraTargetHeight_ = height;
 		cameraTargetDistance_ = distance;
+	}
+
+	/// \brief 飛行演出パラメータを設定
+	void SetFlightParameters(float speed, float spinRate, float climbRate) {
+		flightSpeed_ = speed;
+		spinRate_ = spinRate;
+		climbRate_ = climbRate;
 	}
 
 	/// \brief 完了時のコールバックを設定
@@ -138,10 +151,18 @@ private:
 
 	// カメラ制御
 	FollowCamera *followCamera_ = nullptr;
+	Player *player_ = nullptr;
 	Vector3 cameraStartPosition_;
 	Vector3 cameraTargetPosition_;
+	Vector3 playerStartPosition_;
+	Vector3 playerStartRotation_;
 	float cameraTargetHeight_ = 20.0f;
 	float cameraTargetDistance_ = -30.0f;
+
+	// 飛行演出パラメータ
+	float flightSpeed_ = 15.0f; // 前進速度
+	float spinRate_ = 2.0f;		// 旋回速度（rad/s）
+	float climbRate_ = 8.0f;	// 上昇速度
 
 	// アニメーション状態
 	GameClearAnimationState state_ = GameClearAnimationState::Idle;
