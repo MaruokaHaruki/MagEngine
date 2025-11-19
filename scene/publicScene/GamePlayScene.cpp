@@ -122,18 +122,39 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// ゲームオーバーUIの初期化
 	gameOverUI_ = std::make_unique<GameOverUI>();
 	gameOverUI_->Initialize(spriteSetup);
-	gameOverUI_->SetTextTexture("WolfOne_GameOver.png"); // ゲームオーバー画像
+	gameOverUI_->SetTextTexture("WolfOne_GameOver.png");
 	gameOverUI_->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
-	gameOverUI_->SetTextSize({1000.0f, 200.0f}); // より大きなサイズに設定
+	gameOverUI_->SetTextSize({1000.0f, 200.0f});
 	isGameOver_ = false;
 
-	// ゲームオーバー完了後のコールバック設定
 	gameOverUI_->SetOnCompleteCallback([this]() {
-		// タイトルへ戻る等の処理
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::TITLE;
+			});
+		}
+	});
+
+	//========================================
+	// ゲームクリアアニメーションの初期化
+	gameClearAnimation_ = std::make_unique<GameClearAnimation>();
+	gameClearAnimation_->Initialize(spriteSetup);
+	gameClearAnimation_->SetFollowCamera(followCamera_.get());
+	gameClearAnimation_->SetTextTexture("WolfOne_MissionComplete.png"); // クリア画像
+	gameClearAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
+	gameClearAnimation_->SetBarHeightRatio(0.15f);
+	gameClearAnimation_->SetTextSize({800.0f, 150.0f});
+	gameClearAnimation_->SetCameraUpParameters(20.0f, -30.0f);
+	isGameClear_ = false;
+
+	// クリア演出完了後のコールバック
+	gameClearAnimation_->SetOnCompleteCallback([this]() {
+		// タイトルへ戻る（またはクリアシーンへ遷移）
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+			sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
+			sceneTransition_->SetOnCompleteCallback([this]() {
+				sceneNo = SCENE::TITLE; // TODO: クリアシーンに変更する場合はここを修正
 			});
 		}
 	});
@@ -187,8 +208,14 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
+	// ゲームクリアアニメーションの更新
+	if (gameClearAnimation_) {
+		gameClearAnimation_->Update();
+	}
+
+	//========================================
 	// ゲーム終了チェック（用語変更）
-	if (player_ && !isGameOver_) {
+	if (player_ && !isGameOver_ && !isGameClear_) {
 		// プレイヤーの敗北演出が完了したらゲーム終了演出開始
 		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
@@ -204,14 +231,16 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// ゲームクリアチェック
-	if (enemyManager_ && !isGameOver_) {
+	if (enemyManager_ && !isGameOver_ && !isGameClear_) {
 		if (enemyManager_->IsGameClear()) {
-			// ゲームクリア時の処理
-			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-				sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
-				sceneTransition_->SetOnCompleteCallback([this]() {
-					sceneNo = SCENE::TITLE; // TODO: ゲームクリアシーンに変更する場合はここを修正
-				});
+			isGameClear_ = true;
+			// クリア演出を開始
+			if (gameClearAnimation_) {
+				gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
+			}
+			// HUDを格納
+			if (hud_ && !hud_->IsAnimating()) {
+				hud_->StartRetractAnimation(1.0f);
 			}
 		}
 	}
@@ -245,8 +274,8 @@ void GamePlayScene::Update() {
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 	}
 
-	// ゲームオーバー中は以降の更新をスキップ
-	if (isGameOver_) {
+	// ゲームオーバーまたはクリア中は以降の更新をスキップ
+	if (isGameOver_ || isGameClear_) {
 		//========================================
 		// パーティクルの更新（墜落エフェクト用）
 		if (particle_) {
@@ -348,6 +377,12 @@ void GamePlayScene::Object2DDraw() {
 	// スタートアニメーションの描画（最前面）
 	if (startAnimation_) {
 		startAnimation_->Draw();
+	}
+
+	//========================================
+	// ゲームクリアアニメーション（最前面）
+	if (gameClearAnimation_) {
+		gameClearAnimation_->Draw();
 	}
 
 	//========================================
@@ -497,6 +532,12 @@ void GamePlayScene::ImGuiDraw() {
 	// ゲームオーバーUI
 	if (gameOverUI_) {
 		gameOverUI_->DrawImGui();
+	}
+
+	//========================================
+	// ゲームクリアアニメーション
+	if (gameClearAnimation_) {
+		gameClearAnimation_->DrawImGui();
 	}
 #endif // _DEBUG
 }

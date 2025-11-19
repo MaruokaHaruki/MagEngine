@@ -190,6 +190,7 @@
     <ClCompile Include="application\GameOverUI.cpp" />
     <ClCompile Include="Cloud.cpp" />
     <ClCompile Include="CloudSetup.cpp" />
+    <ClCompile Include="application\GameClearAnimation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -437,6 +438,7 @@
     <ClInclude Include="application\GameOverUI.h" />
     <ClInclude Include="Cloud.h" />
     <ClInclude Include="CloudSetup.h" />
+    <ClInclude Include="application\GameClearAnimation.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

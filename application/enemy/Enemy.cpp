@@ -57,6 +57,9 @@ void Enemy::Update() {
 		return;
 	}
 
+	// x方向へ移動
+	transform_.translate.x += speed_;
+
 	// 破壊演出の更新
 	if (destroyState_ == DestroyState::Destroying) {
 		destroyTimer_ += 1.0f / 60.0f;

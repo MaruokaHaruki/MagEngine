@@ -17,6 +17,7 @@
 #include "Enemy.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
+#include "GameClearAnimation.h"
 #include "GameOverUI.h"
 #include "HUD.h"
 #include "Player.h"
@@ -118,4 +119,9 @@ private:
 	//========================================
 	// スタートアニメーション
 	std::unique_ptr<StartAnimation> startAnimation_;
+
+	//========================================
+	// クリアアニメーション
+	std::unique_ptr<GameClearAnimation> gameClearAnimation_;
+	bool isGameClear_;
 };
