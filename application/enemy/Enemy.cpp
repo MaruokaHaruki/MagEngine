@@ -30,6 +30,7 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	// 状態の初期化
 	isAlive_ = true; // 生存状態
 	radius_ = 1.0f;	 // 当たり判定の半径
+	speed_ = 10.0f; // 移動速度
 	destroyState_ = DestroyState::Alive;
 	destroyTimer_ = 0.0f;
 	destroyDuration_ = 2.0f; // 2秒間破壊演出を表示
