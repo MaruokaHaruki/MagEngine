@@ -49,6 +49,10 @@ void EngineApp::Draw() {
 	MagFramework ::Object3DCommonDraw();
 
 	//========================================
+	// クラウド共通描画設定
+	MagFramework ::CloudCommonDraw();
+
+	//========================================
 	// 2Dオブジェクト共通描画設定
 	MagFramework ::Object2DCommonDraw();
 
@@ -56,8 +60,7 @@ void EngineApp::Draw() {
 	// パーティクル共通描画設定
 	MagFramework ::ParticleCommonDraw();
 
-	//========================================
-	MagFramework ::CloudCommonDraw();
+
 
 	//========================================
 	// レンダーテクスチャ後処理
