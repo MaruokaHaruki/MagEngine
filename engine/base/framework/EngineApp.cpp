@@ -41,7 +41,7 @@ void EngineApp::Draw() {
 	MagFramework ::RenderPreDraw();
 
 	//========================================
-	// Skybox共通描画設定
+	// Skybox共通描画設定（最背面）
 	MagFramework ::SkyboxCommonDraw();
 
 	//========================================
@@ -49,7 +49,7 @@ void EngineApp::Draw() {
 	MagFramework ::Object3DCommonDraw();
 
 	//========================================
-	// クラウド共通描画設定
+	// クラウド共通描画設定（3Dオブジェクトの後）
 	MagFramework ::CloudCommonDraw();
 
 	//========================================

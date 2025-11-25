@@ -16,6 +16,7 @@ struct alignas(16) CloudCameraConstant {
 	float farPlane = 10000.0f;
 	float padding2 = 0.0f;
 	float padding3 = 0.0f;
+	Matrix4x4 viewProj; // ビュープロジェクション行列を追加
 };
 
 struct alignas(16) CloudRenderParams {

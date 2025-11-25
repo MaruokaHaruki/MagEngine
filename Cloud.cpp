@@ -91,6 +91,7 @@ void Cloud::Update(const Camera &camera, float deltaTime) {
 
 	const Matrix4x4 viewProj = camera.GetViewProjectionMatrix();
 	cameraData_->invViewProj = Inverse4x4(viewProj);
+	cameraData_->viewProj = viewProj; // ビュープロジェクション行列を設定
 	cameraData_->cameraPosition = camera.GetTransform().translate;
 	cameraData_->nearPlane = 0.1f;
 	cameraData_->farPlane = 10000.0f;
@@ -218,6 +219,12 @@ void Cloud::DrawImGui() {
 		paramsCPU_.cloudCenter.z + paramsCPU_.cloudSize.z * 0.5f};
 	ImGui::Text("AABB Min: (%.1f, %.1f, %.1f)", boxMin.x, boxMin.y, boxMin.z);
 	ImGui::Text("AABB Max: (%.1f, %.1f, %.1f)", boxMax.x, boxMax.y, boxMax.z);
+
+	//
+	if (ImGui::CollapsingHeader("Depth Debug")) {
+		ImGui::Text("Near Plane: %.2f", cameraData_->nearPlane);
+		ImGui::Text("Far Plane: %.2f", cameraData_->farPlane);
+	}
 
 	ImGui::End();
 }
