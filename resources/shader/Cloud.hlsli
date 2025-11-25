@@ -191,16 +191,6 @@ float PhaseHG(float cosTheta, float g) {
     return (1.0f - g2) / (4.0f * PI * pow(abs(1.0f + g2 - 2.0f * g * cosTheta), 1.5f));
 }
 
-// ワールド座標からNDC深度を計算するヘルパー関数
-float CalculateDepth(float3 worldPos, float3 cameraPos, float4x4 invViewProj) {
-    // カメラからの距離を計算
-    float distance = length(worldPos - cameraPos);
-    
-    // 線形深度をNDC深度に変換
-    float depth = (distance - gNearPlane) / (gFarPlane - gNearPlane);
-    return saturate(depth);
-}
-
 // 4x4行列の逆行列を計算
 float4x4 InvertMatrix(float4x4 m) {
     float4x4 inv;

@@ -70,8 +70,13 @@ PixelShaderOutput main(VertexShaderOutput input) {
                 // ワールド座標をクリップ空間に変換
                 float4 clipPos = mul(float4(position, 1.0f), viewProj);
                 
-                // NDC深度を計算（パースペクティブディバイド後）
-                output.depth = clipPos.z / clipPos.w;
+                // NDC深度を計算（パースペクティブディバイド）
+                // 0.0(near) ~ 1.0(far)の範囲になるように正規化
+                float ndcDepth = clipPos.z / clipPos.w;
+                
+                // DirectX12のNDC深度は0.0(near)～1.0(far)
+                // clipPos.z/wが既に正しい範囲にあるはず
+                output.depth = saturate(ndcDepth);
                 
                 foundFirstHit = true;
             }
