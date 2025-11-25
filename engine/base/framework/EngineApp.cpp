@@ -60,8 +60,6 @@ void EngineApp::Draw() {
 	// パーティクル共通描画設定
 	MagFramework ::ParticleCommonDraw();
 
-
-
 	//========================================
 	// レンダーテクスチャ後処理
 	MagFramework ::RenderPostDraw();

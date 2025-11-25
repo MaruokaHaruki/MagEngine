@@ -87,13 +87,13 @@ void Cloud::Update(const Camera &camera, float deltaTime) {
 	accumulatedTime_ += deltaTime;
 	paramsCPU_.time = accumulatedTime_;
 
-	// Transformを雲のパラメータに反映
 	paramsCPU_.cloudCenter = transform_.translate;
 
-	// 通常のビュープロジェクション行列を使用（逆行列ではなく）
 	const Matrix4x4 viewProj = camera.GetViewProjectionMatrix();
 	cameraData_->invViewProj = Inverse4x4(viewProj);
 	cameraData_->cameraPosition = camera.GetTransform().translate;
+	cameraData_->nearPlane = 0.1f;
+	cameraData_->farPlane = 10000.0f;
 
 	*paramsData_ = paramsCPU_;
 }

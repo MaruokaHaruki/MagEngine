@@ -8,13 +8,14 @@
  *********************************************************************/
 #include "Cloud.hlsli"
 
-float4 main(VertexShaderOutput input) : SV_TARGET {
-    // スクリーン座標からレイの方向を計算（改善版）
+PixelShaderOutput main(VertexShaderOutput input) {
+    PixelShaderOutput output;
+    output.depth = 1.0f;
+    
     float2 ndc = float2(input.uv.x * 2.0f - 1.0f, 1.0f - input.uv.y * 2.0f);
     
-    // 近平面と遠平面の2点でワールド座標を復元
-    float4 nearPoint = float4(ndc, 0.0f, 1.0f);  // 近平面
-    float4 farPoint = float4(ndc, 1.0f, 1.0f);   // 遠平面
+    float4 nearPoint = float4(ndc, 0.0f, 1.0f);
+    float4 farPoint = float4(ndc, 1.0f, 1.0f);
     
     float4 nearWorld = mul(nearPoint, gInvViewProjection);
     nearWorld.xyz /= nearWorld.w;
@@ -22,28 +23,26 @@ float4 main(VertexShaderOutput input) : SV_TARGET {
     float4 farWorld = mul(farPoint, gInvViewProjection);
     farWorld.xyz /= farWorld.w;
     
-    // レイの原点と方向を計算
     float3 rayOrigin = gCameraPosition;
-    float3 rayDir = normalize(farWorld.xyz - nearWorld.xyz);  // 2点間の方向ベクトル
+    float3 rayDir = normalize(farWorld.xyz - nearWorld.xyz);
     
-    // 雲のAABB（ワールド空間固定）
     float3 boxMin = gCloudCenter - gCloudSize * 0.5f;
     float3 boxMax = gCloudCenter + gCloudSize * 0.5f;
     
-    // レイとAABBの交差判定
     float tNear, tFar;
     if (!IntersectAABB(rayOrigin, rayDir, boxMin, boxMax, tNear, tFar)) {
-        return float4(0.0f, 0.0f, 0.0f, 0.0f);
+        output.color = float4(0.0f, 0.0f, 0.0f, 0.0f);
+        return output;
     }
     
     tNear = max(tNear, 0.0f);
     tFar = min(tFar, gMaxDistance);
     
     if (tFar <= tNear) {
-        return float4(0.0f, 0.0f, 0.0f, 0.0f);
+        output.color = float4(0.0f, 0.0f, 0.0f, 0.0f);
+        return output;
     }
     
-    // レイマーチング
     float3 sunDir = normalize(gSunDirection);
     float3 accumulatedLight = 0.0f;
     float transmittance = 1.0f;
@@ -54,6 +53,7 @@ float4 main(VertexShaderOutput input) : SV_TARGET {
     float actualStepSize = marchDistance / float(max(numSteps, 1));
     
     int denseSampleCount = 0;
+    bool foundFirstHit = false;
     
     for (int i = 0; i < numSteps && transmittance > 0.01f; i++) {
         float3 position = rayOrigin + rayDir * (t + actualStepSize * 0.5f);
@@ -62,6 +62,19 @@ float4 main(VertexShaderOutput input) : SV_TARGET {
         
         if (density > 0.001f) {
             denseSampleCount++;
+            
+            if (!foundFirstHit) {
+                // ビュープロジェクション行列を逆行列から復元
+                float4x4 viewProj = InvertMatrix(gInvViewProjection);
+                
+                // ワールド座標をクリップ空間に変換
+                float4 clipPos = mul(float4(position, 1.0f), viewProj);
+                
+                // NDC深度を計算（パースペクティブディバイド後）
+                output.depth = clipPos.z / clipPos.w;
+                
+                foundFirstHit = true;
+            }
             
             float lightEnergy = LightMarch(position);
             float phase = PhaseHG(dot(rayDir, sunDir), gAnisotropy);
@@ -80,13 +93,15 @@ float4 main(VertexShaderOutput input) : SV_TARGET {
     // デバッグモード
     if (gDebugFlag > 0.5f) {
         if (denseSampleCount == 0) {
-            return float4(0.0f, 0.0f, 1.0f, 0.5f); // 青
+            output.color = float4(0.0f, 0.0f, 1.0f, 0.5f);
         } else if (alpha < 0.01f) {
-            return float4(1.0f, 1.0f, 0.0f, 0.5f); // 黄色
+            output.color = float4(1.0f, 1.0f, 0.0f, 0.5f);
         } else {
-            return float4(accumulatedLight + float3(0.2f, 0.5f, 0.2f), alpha); // 緑
+            output.color = float4(accumulatedLight + float3(0.2f, 0.5f, 0.2f), alpha);
         }
+        return output;
     }
     
-    return float4(accumulatedLight, alpha);
+    output.color = float4(accumulatedLight, alpha);
+    return output;
 }

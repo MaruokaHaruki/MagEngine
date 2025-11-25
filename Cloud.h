@@ -12,6 +12,10 @@ struct alignas(16) CloudCameraConstant {
 	Matrix4x4 invViewProj;
 	Vector3 cameraPosition;
 	float padding = 0.0f;
+	float nearPlane = 0.1f;
+	float farPlane = 10000.0f;
+	float padding2 = 0.0f;
+	float padding3 = 0.0f;
 };
 
 struct alignas(16) CloudRenderParams {
