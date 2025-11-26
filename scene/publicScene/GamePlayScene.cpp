@@ -64,14 +64,14 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	particle_->SetCustomTextureSize({10.0f, 10.0f});
 	particle_->SetBillboard(true); // ビルボードを有効化
 	// 雲パーティクルグループの作成（Board形状、白っぽいテクスチャ）
-	particle_->CreateParticleGroup("CloudParticles", "sandWind.png", ParticleShape::Board);
+	particle_->CreateParticleGroup("CloudParticles", "circle2.png", ParticleShape::Board);
 	// 爆発エフェクト用の複数の形状を作成
 	// 1. メインの爆発エフェクト（Board形状 - 火花）
-	particle_->CreateParticleGroup("ExplosionSparks", "sandWind.png", ParticleShape::Board);
+	particle_->CreateParticleGroup("ExplosionSparks", "circle2.png", ParticleShape::Board);
 	// 2. リング形状の衝撃波
-	particle_->CreateParticleGroup("ExplosionRing", "sandWind.png", ParticleShape::Ring);
+	particle_->CreateParticleGroup("ExplosionRing", "circle2.png", ParticleShape::Ring);
 	// 3. シリンダー形状の煙柱
-	particle_->CreateParticleGroup("ExplosionSmoke", "sandWind.png", ParticleShape::Cylinder);
+	particle_->CreateParticleGroup("ExplosionSmoke", "circle2.png", ParticleShape::Cylinder);
 
 	// 雨パーティクル
 	rainParticle_ = std::make_unique<Particle>();
