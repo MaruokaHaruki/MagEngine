@@ -140,12 +140,12 @@ float SampleCloudDensity(float3 position) {
         return 0.0f;
     }
     
-    // ベースノイズ
-    float3 baseCoord = position * gBaseNoiseScale + float3(gTime * gNoiseSpeed, 0.0f, 0.0f);
+    // ベースノイズ - Z軸方向に流れるように時間オフセットを追加（符号を反転してZ-からZ+へ）
+    float3 baseCoord = position * gBaseNoiseScale + float3(0.0f, 0.0f, gTime * gNoiseSpeed);
     float baseNoise = FBM(baseCoord, 4);
     
-    // ディテールノイズ
-    float3 detailCoord = position * gDetailNoiseScale + float3(0.0f, gTime * gNoiseSpeed * 0.5f, 0.0f);
+    // ディテールノイズ - Z軸方向に異なる速度で流れる（符号を反転してZ-からZ+へ）
+    float3 detailCoord = position * gDetailNoiseScale + float3(0.0f, 0.0f, gTime * gNoiseSpeed * 0.7f);
     float detailNoise = FBM(detailCoord, 3);
     
     // ノイズ合成

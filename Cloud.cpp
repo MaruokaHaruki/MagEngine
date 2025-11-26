@@ -45,7 +45,8 @@ void Cloud::Initialize(CloudSetup *setup) {
 	paramsCPU_.baseNoiseScale = 0.01f;	 // より大きなスケール
 	paramsCPU_.detailNoiseScale = 0.03f; // より大きなスケール
 	paramsCPU_.detailWeight = 0.3f;
-	paramsCPU_.debugFlag = 0.0f; // デバッグモード無効化
+	paramsCPU_.noiseSpeed = 0.5f; // 雲が流れる速度を設定
+	paramsCPU_.debugFlag = 0.0f;  // デバッグモード無効化
 
 	Logger::Log("Cloud initialized", Logger::LogLevel::Info);
 }
