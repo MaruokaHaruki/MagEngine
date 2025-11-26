@@ -164,9 +164,6 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	auto enemy = std::make_unique<Enemy>();
 	enemy->Initialize(object3dSetup_, "jet.obj", position);
 
-	// 移動速度と方向を設定（+Z方向へ直進）
-	float speed = (type == EnemyType::Fast) ? 22.0f : 15.0f;
-
 	// パーティクルシステムの設定
 	enemy->SetParticleSystem(particle_, particleSetup_);
 

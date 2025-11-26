@@ -28,9 +28,11 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 
 	//========================================
 	// 状態の初期化
-	isAlive_ = true; // 生存状態
-	radius_ = 1.0f;	 // 当たり判定の半径
-	speed_ = 10.0f; // 移動速度
+	isAlive_ = true;	 // 生存状態
+	radius_ = 1.0f;		 // 当たり判定の半径
+	speed_ = 10.0f;		 // 移動速度
+	lifeTimer_ = 0.0f;	 // 生存時間タイマー初期化
+	maxLifeTime_ = 5.0f; // 5秒後に自動消滅
 	destroyState_ = DestroyState::Alive;
 	destroyTimer_ = 0.0f;
 	destroyDuration_ = 2.0f; // 2秒間破壊演出を表示
@@ -58,9 +60,6 @@ void Enemy::Update() {
 		return;
 	}
 
-	// x方向へ移動
-	transform_.translate.x += speed_;
-
 	// 破壊演出の更新
 	if (destroyState_ == DestroyState::Destroying) {
 		destroyTimer_ += 1.0f / 60.0f;
@@ -69,6 +68,24 @@ void Enemy::Update() {
 			isAlive_ = false;
 		}
 		return;
+	}
+
+	// Z方向（正面）へ移動
+	transform_.translate.z += speed_ * (1.0f / 60.0f);
+
+	// 生存時間の更新
+	lifeTimer_ += 1.0f / 60.0f;
+
+	// 最大生存時間を超えたら消滅
+	if (lifeTimer_ >= maxLifeTime_) {
+		destroyState_ = DestroyState::Dead;
+		isAlive_ = false;
+		return;
+	}
+
+	// Object3dのトランスフォームを更新
+	if (Transform *objTransform = obj_->GetTransform()) {
+		*objTransform = transform_;
 	}
 
 	BaseObject::Update(transform_.translate);
