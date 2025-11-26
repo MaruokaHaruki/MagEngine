@@ -73,9 +73,6 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 3. シリンダー形状の煙柱
 	particle_->CreateParticleGroup("ExplosionSmoke", "sandWind.png", ParticleShape::Cylinder);
 
-	// 雨パーティクルグループの作成
-	// particle_->CreateParticleGroup("Rain", "sandWind.png", ParticleShape::Board);
-
 	// 雨パーティクル
 	rainParticle_ = std::make_unique<Particle>();
 	rainParticle_->Initialize(particleSetup);
@@ -95,7 +92,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 		rainParticle_.get(),
 		"Rain",
 		rainTransform, // Transformオブジェクトを渡す
-		128,		   // 一度に128個の雨粒
+		512,		   // 一度に512個の雨粒
 		0.1f,		   // 0.1秒ごとに発生
 		true		   // 繰り返し
 	);
