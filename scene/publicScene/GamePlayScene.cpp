@@ -73,6 +73,63 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 3. シリンダー形状の煙柱
 	particle_->CreateParticleGroup("ExplosionSmoke", "sandWind.png", ParticleShape::Cylinder);
 
+	// 雨パーティクルグループの作成
+	// particle_->CreateParticleGroup("Rain", "sandWind.png", ParticleShape::Board);
+
+	// 雨パーティクル
+	rainParticle_ = std::make_unique<Particle>();
+	rainParticle_->Initialize(particleSetup);
+	rainParticle_->SetBillboard(true);
+	// 雨パーティクルグループの作成
+	rainParticle_->CreateParticleGroup("Rain", "circle2.png", ParticleShape::Board);
+
+	//========================================
+	// 雨パーティクルエミッターの作成
+	// Transformを先に作成してから渡す
+	Transform rainTransform;
+	rainTransform.scale = {1.0f, 1.0f, 1.0f};
+	rainTransform.rotate = {0.0f, 0.0f, 0.0f};
+	rainTransform.translate = {0.0f, 50.0f, 0.0f};
+
+	rainEmitter_ = std::make_unique<ParticleEmitter>(
+		rainParticle_.get(),
+		"Rain",
+		rainTransform, // Transformオブジェクトを渡す
+		128,		   // 一度に128個の雨粒
+		0.1f,		   // 0.1秒ごとに発生
+		true		   // 繰り返し
+	);
+
+	// 雨のパラメータ設定
+	rainEmitter_->SetCustomTextureSize({0.3f, 2.0f}); // 細長い形状
+	rainEmitter_->SetBillboard(false);				  // ビルボードを無効化（雨粒は常に縦向き）
+
+	// 発生範囲を広く（プレイヤーの周囲に降るように）
+	rainEmitter_->SetTranslateRange({-50.0f, 0.0f, -50.0f}, {50.0f, 0.0f, 50.0f});
+
+	// 速い下向きの速度
+	rainEmitter_->SetVelocityRange({0.0f, -30.0f, 0.0f}, {0.0f, -40.0f, 0.0f});
+
+	// 青白い色
+	rainEmitter_->SetColorRange({0.7f, 0.8f, 1.0f, 0.6f}, {0.8f, 0.9f, 1.0f, 0.8f});
+
+	// 短い生存時間（画面外に消える前に消滅）
+	rainEmitter_->SetLifetimeRange(1.5f, 2.5f);
+
+	// 細長いスケール（初期・終了とも同じ）
+	rainEmitter_->SetInitialScaleRange({0.3f, 2.0f, 1.0f}, {0.3f, 2.5f, 1.0f});
+	rainEmitter_->SetEndScaleRange({0.3f, 2.0f, 1.0f}, {0.3f, 2.5f, 1.0f});
+
+	// 回転なし
+	rainEmitter_->SetInitialRotationRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
+	rainEmitter_->SetEndRotationRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
+
+	// 重力は適用しない（既に下向き速度が設定されているため）
+	rainEmitter_->SetGravity({0.0f, 0.0f, 0.0f});
+
+	// フェードイン・アウト
+	rainEmitter_->SetFadeInOut(0.1f, 0.8f);
+
 	//========================================
 	// プレイヤー
 	player_ = std::make_unique<Player>();
@@ -89,10 +146,10 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	cloud_ = std::make_unique<Cloud>();
 	cloud_->Initialize(cloudSetup);
 	// 雲のパラメータ設定
-	cloud_->SetSize({ 500.0f, 100.0f, 500.0f });
+	cloud_->SetSize({500.0f, 100.0f, 500.0f});
 	cloud_->SetEnabled(true);
 	// 雲のTransform設定
-	cloud_->GetTransform().translate = { 0.0f, -80.0f, 0.0f };
+	cloud_->GetTransform().translate = {0.0f, -80.0f, 0.0f};
 
 	//========================================
 	// 敵マネージャー
@@ -146,7 +203,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	gameClearAnimation_ = std::make_unique<GameClearAnimation>();
 	gameClearAnimation_->Initialize(spriteSetup);
 	gameClearAnimation_->SetFollowCamera(followCamera_.get());
-	gameClearAnimation_->SetPlayer(player_.get());						// プレイヤー参照を追加
+	gameClearAnimation_->SetPlayer(player_.get());				 // プレイヤー参照を追加
 	gameClearAnimation_->SetTextTexture("WolfOne_Comprete.png"); // クリア画像
 	gameClearAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
 	gameClearAnimation_->SetBarHeightRatio(0.15f);
@@ -265,7 +322,6 @@ void GamePlayScene::Update() {
 		if (gameClearAnimation_) {
 			gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
 		}
-
 	}
 
 	//========================================
@@ -323,6 +379,15 @@ void GamePlayScene::Update() {
 	// パーティクルの更新
 	if (particle_) {
 		particle_->Update();
+	}
+
+	//========================================
+	// 雨エミッターの更新（プレイヤーの位置を追従）
+	if (rainEmitter_ && player_) {
+		Vector3 playerPos = player_->GetPosition();
+		// プレイヤーの上空から雨を降らせる
+		rainEmitter_->SetTranslate({playerPos.x, playerPos.y, playerPos.z});
+		rainEmitter_->Update();
 	}
 
 	//========================================
@@ -464,7 +529,10 @@ void GamePlayScene::ParticleDraw() {
 	}
 
 	//========================================
-	// 雲システムの描画
+	// 雨の描画
+	if (rainEmitter_) {
+		rainEmitter_->Draw();
+	}
 }
 
 ///=============================================================================

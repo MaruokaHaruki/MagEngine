@@ -94,6 +94,11 @@ private:
 	//========================================
 	// パーティクル
 	std::unique_ptr<Particle> particle_;
+	std::unique_ptr<Particle> rainParticle_;
+
+	//========================================
+	// 雨エミッター
+	std::unique_ptr<ParticleEmitter> rainEmitter_;
 
 	//========================================
 	// 雲
