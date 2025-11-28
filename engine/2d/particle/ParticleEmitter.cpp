@@ -15,6 +15,9 @@ ParticleEmitter::ParticleEmitter(Particle *particle, const std::string &name, co
 }
 
 void ParticleEmitter::Update() {
+	// パーティクルの更新
+	particle_->Update();
+
 	if (!repeat_)
 		return; // 繰り返しフラグがfalseの場合は処理をスキップ
 
@@ -28,16 +31,45 @@ void ParticleEmitter::Update() {
 }
 
 void ParticleEmitter::Draw() {
+	// 取得したパーティクルの描画はParticleクラスに任せない
+	particle_->Draw();
 }
 
 void ParticleEmitter::Emit() {
 	// エミッター位置からパーティクルを生成
 	particle_->Emit(name_, transform_.translate, count_);
-
-	// エミット時のイベントログ
-	// Log("Emitted " + std::to_string(count_) + " particles for group: " + name_);
 }
 
 void ParticleEmitter::SetRepeat(bool repeat) {
 	repeat_ = repeat;
+}
+
+ParticleEmitter &ParticleEmitter::ApplyConfig(const ParticleConfig &config) {
+	// 形状設定
+	SetParticleShape(config.shape);
+	SetRingRadius(config.ringRadius);
+	SetCylinderParams(config.cylinderHeight, config.cylinderRadius);
+
+	// 基本設定
+	SetTranslateRange(config.translateMin, config.translateMax);
+	SetVelocityRange(config.velocityMin, config.velocityMax);
+
+	// スケール設定
+	SetInitialScaleRange(config.initialScaleMin, config.initialScaleMax);
+	SetEndScaleRange(config.endScaleMin, config.endScaleMax);
+
+	// 回転設定
+	SetInitialRotationRange(config.initialRotationMin, config.initialRotationMax);
+	SetEndRotationRange(config.endRotationMin, config.endRotationMax);
+
+	// 色設定
+	SetColorRange(config.colorMin, config.colorMax);
+
+	// その他
+	SetLifetimeRange(config.lifetimeMin, config.lifetimeMax);
+	SetGravity(config.gravity);
+	SetFadeInOut(config.fadeInRatio, config.fadeOutRatio);
+	SetBillboard(config.billboard);
+
+	return *this;
 }

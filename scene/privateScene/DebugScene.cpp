@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "DebugScene.h"
 #include "CameraManager.h"
+#include "ParticlePreset.h"
 
 ///=============================================================================
 ///						初期化
@@ -71,22 +72,30 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	///						 パーティクル系
 	//========================================
 	// パーティクルの作成
-
-	//========================================
-	// パーティクルクラス
 	particle_ = std::make_unique<Particle>();
 	particle_->Initialize(particleSetup);
+
 	// パーティクルのグループを作成
-	particle_->CreateParticleGroup("Test", "gradationLine_top.png", ParticleShape::Cylinder);
+	particle_->CreateParticleGroup("Test", "gradationLine_top.png", ParticleShape::Board);
+
 	//========================================
-	// エミッターの作成
-	particleEmitter_ =
-		std::make_unique<ParticleEmitter>(particle_.get(),
-										  "Test",
-										  Transform{{0.2f, 0.2f, 0.2f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-										  4,
-										  2.0f,
-										  true);
+	// エミッターの作成（プリセットを使用）
+	particleEmitter_ = std::make_unique<ParticleEmitter>(
+		particle_.get(),
+		"Test",
+		Transform{{0.2f, 0.2f, 0.2f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
+		1024,
+		0.01f,
+		true);
+
+	// プリセットを適用（炎エフェクト）
+	particleEmitter_->ApplyConfig(ParticlePresets::Fire());
+
+	// または、メソッドチェーンで細かく調整
+	// particleEmitter_->ApplyConfig(ParticlePresets::Smoke())
+	//     .SetVelocity({-0.5f, 1.0f, -0.5f}, {0.5f, 2.0f, 0.5f})
+	//     .SetColor({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f})
+	//     .Billboard(true);
 
 	///--------------------------------------------------------------
 	///						 Skybox系
@@ -159,9 +168,6 @@ void DebugScene::Update() {
 
 	//========================================
 	// パーティクル系
-	// パーティクルの更新
-	particle_->Update();
-	// エミッターの更新
 	particleEmitter_->Update();
 
 	//========================================
@@ -214,7 +220,7 @@ void DebugScene::Object3DDraw() {
 ///						パーティクル描画
 void DebugScene::ParticleDraw() {
 	// パーティクルの描画
-	// particle_->Draw();
+	particleEmitter_->Draw();
 }
 
 ///=============================================================================

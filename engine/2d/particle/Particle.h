@@ -311,7 +311,7 @@ private:
 	// カメラ目線を使用するかどうか
 	bool isUsedBillboard = false; // デフォルトを false に変更
 	// 最大インスタンス数
-	static const uint32_t kNumMaxInstance = 128;
+	static const uint32_t kNumMaxInstance = 2048;
 	//
 	const float kDeltaTime = 1.0f / 60.0f;
 	// 乱数範囲の調整用

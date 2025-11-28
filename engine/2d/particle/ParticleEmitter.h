@@ -1,6 +1,7 @@
 // Emit.h
 #pragma once
 #include "Particle.h"
+#include "ParticlePreset.h"
 #include "ParticleSetup.h"
 #include <vector>
 
@@ -134,13 +135,65 @@ public:
 		particle_->SetFadeInOut(fadeInRatio, fadeOutRatio);
 	}
 
+	/// \brief プリセットから設定を適用
+	/// \param config プリセット設定
+	ParticleEmitter &ApplyConfig(const ParticleConfig &config);
+
+	/// \brief ビルダーパターン - 移動範囲
+	ParticleEmitter &SetTranslate(const Vector3 &min, const Vector3 &max) {
+		SetTranslateRange(min, max);
+		return *this;
+	}
+
+	/// \brief ビルダーパターン - 速度範囲
+	ParticleEmitter &SetVelocity(const Vector3 &min, const Vector3 &max) {
+		SetVelocityRange(min, max);
+		return *this;
+	}
+
+	/// \brief ビルダーパターン - 色範囲
+	ParticleEmitter &SetColor(const Vector4 &min, const Vector4 &max) {
+		SetColorRange(min, max);
+		return *this;
+	}
+
+	/// \brief ビルダーパターン - 生存時間
+	ParticleEmitter &SetLifetime(float min, float max) {
+		SetLifetimeRange(min, max);
+		return *this;
+	}
+
+	/// \brief ビルダーパターン - 初期スケール
+	ParticleEmitter &SetInitialScale(const Vector3 &min, const Vector3 &max) {
+		SetInitialScaleRange(min, max);
+		return *this;
+	}
+
+	/// \brief ビルダーパターン - 終了スケール
+	ParticleEmitter &SetEndScale(const Vector3 &min, const Vector3 &max) {
+		SetEndScaleRange(min, max);
+		return *this;
+	}
+
+	/// \brief ビルダーパターン - ビルボード設定
+	ParticleEmitter &Billboard(bool enable) {
+		SetBillboard(enable);
+		return *this;
+	}
+
+	/// \brief ビルダーパターン - 重力設定
+	ParticleEmitter &Gravity(const Vector3 &gravity) {
+		SetGravity(gravity);
+		return *this;
+	}
+
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	Particle *particle_;  // ParticleManagerのインスタンスを保持
+	Particle *particle_;  // Particleのインスタンスを保持
 	std::string name_;	  // パーティクルグループ名
 	Transform transform_; // エミッターの位置・回転・スケール
 	uint32_t count_;	  // 発生させるパーティクルの数
