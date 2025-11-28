@@ -32,7 +32,6 @@ public:
 	void Update();
 	void Draw();
 	void DrawImGui();
-	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
 	//========================================
 	// ターゲット設定
@@ -85,7 +84,6 @@ private:
 	void UpdatePhysics();
 	void UpdateRotation();
 	void UpdateLifetime();
-	void UpdateTrailEffect();
 	void Explode();
 	Enemy *FindNearestTarget();
 
@@ -138,13 +136,6 @@ private:
 	float lifetime_;	// 現在の寿命
 	float maxLifetime_; // 最大寿命
 	bool isAlive_;		// 生存フラグ
-
-	//========================================
-	// エフェクト関連
-	Particle *particleSystem_;						 // パーティクルシステム
-	ParticleSetup *particleSetup_;					 // パーティクル設定
-	std::unique_ptr<ParticleEmitter> trailEmitter_;	 // 軌跡エミッター
-	std::unique_ptr<ParticleEmitter> thrustEmitter_; // 推進エミッター
 
 	//========================================
 	// デバッグ・視覚化関連

@@ -84,10 +84,6 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	invincibleTime_ = 0.0f;
 	maxInvincibleTime_ = 1.0f;
 
-	particleSystem_ = nullptr;
-	particleSetup_ = nullptr;
-	jetSmokeEmitter_.reset();
-
 	if (Transform *transform = GetTransformSafe()) {
 		transform->translate = zero;
 		transform->rotate = zero;
@@ -104,39 +100,6 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	defeatAnimationDuration_ = 3.0f;
 	defeatVelocity_ = zero;
 	defeatRotationSpeed_ = zero;
-}
-
-//=============================================================================
-// パーティクルシステムの設定
-void Player::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
-	particleSystem_ = particle;
-	particleSetup_ = particleSetup;
-
-	if (!particleSystem_) {
-		jetSmokeEmitter_.reset();
-		return;
-	}
-
-	particleSystem_->CreateParticleGroup("JetSmoke", "sandWind.png", ParticleShape::Board);
-
-	// ジェット煙の設定
-	particleSystem_->SetBillboard(true);
-	particleSystem_->SetCustomTextureSize({5.0f, 5.0f});
-	particleSystem_->SetTranslateRange({-0.2f, -0.2f, -0.2f}, {0.2f, 0.2f, 0.2f});
-	particleSystem_->SetVelocityRange({-0.5f, -0.5f, -2.0f}, {0.5f, 0.5f, -0.5f});
-	particleSystem_->SetColorRange({0.8f, 0.8f, 0.8f, 0.7f}, {1.0f, 1.0f, 1.0f, 0.9f});
-	particleSystem_->SetLifetimeRange(1.0f, 2.5f);
-	particleSystem_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.6f, 0.6f, 0.6f});
-	particleSystem_->SetEndScaleRange({1.2f, 1.2f, 1.2f}, {2.0f, 2.0f, 2.0f});
-	particleSystem_->SetFadeInOut(0.1f, 0.6f);
-
-	// エミッターの作成（プレイヤーの初期位置から）
-	Vector3 initialPos = obj_->GetPosition();
-	Transform emitterTransform = {};
-	emitterTransform.translate = {initialPos.x, initialPos.y, initialPos.z - 1.5f}; // プレイヤーの後方
-
-	jetSmokeEmitter_ = std::make_unique<ParticleEmitter>(
-		particleSystem_, "JetSmoke", emitterTransform, 3, 0.1f, true);
 }
 
 //=============================================================================
@@ -339,7 +302,6 @@ void Player::ProcessShooting() {
 	if ((input->PushKey(DIK_M) || input->PushButton(XINPUT_GAMEPAD_B)) && missileCoolTime_ <= 0.0f) {
 		auto missile = std::make_unique<PlayerMissile>();
 		missile->Initialize(object3dSetup_, "axisPlus.obj", playerPos, forward);
-		missile->SetParticleSystem(particleSystem_, particleSetup_);
 		missile->SetEnemyManager(enemyManager_);
 
 		if (lockOnTarget_) {

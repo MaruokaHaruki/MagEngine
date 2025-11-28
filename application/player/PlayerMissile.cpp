@@ -106,11 +106,6 @@ void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &
 	isAlive_ = true;
 
 	//========================================
-	// エフェクト関連初期化
-	particleSystem_ = nullptr;
-	particleSetup_ = nullptr;
-
-	//========================================
 	// オブジェクト設定
 	if (obj_) {
 		Transform *objTransform = obj_->GetTransform();
@@ -135,31 +130,6 @@ void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &
 	showForwardVector_ = true;
 	trajectoryPoints_.clear();
 	trajectoryPoints_.reserve(maxTrajectoryPoints_);
-}
-
-void PlayerMissile::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
-	particleSystem_ = particle;
-	particleSetup_ = particleSetup;
-
-	if (particleSystem_) {
-		// 軌跡用パーティクルグループ
-		particleSystem_->CreateParticleGroup("MissileTrail", "sandWind.png", ParticleShape::Board);
-
-		// 推進炎用パーティクルグループ
-		particleSystem_->CreateParticleGroup("MissileThrust", "sandWind.png", ParticleShape::Board);
-
-		Vector3 initialPos = obj_->GetPosition();
-		Transform emitterTransform = {};
-		emitterTransform.translate = initialPos;
-
-		// 軌跡エミッター（白い煙）
-		trailEmitter_ = std::make_unique<ParticleEmitter>(
-			particleSystem_, "MissileTrail", emitterTransform, 2, 0.05f, true);
-
-		// 推進炎エミッター（オレンジ色の炎）
-		thrustEmitter_ = std::make_unique<ParticleEmitter>(
-			particleSystem_, "MissileThrust", emitterTransform, 3, 0.03f, true);
-	}
 }
 
 //=============================================================================
@@ -194,7 +164,6 @@ void PlayerMissile::Update() {
 	UpdatePhysics();
 	UpdateRotation();
 	UpdateLifetime();
-	UpdateTrailEffect();
 
 	//========================================
 	// オブジェクト更新
@@ -417,40 +386,6 @@ void PlayerMissile::UpdateLifetime() {
 	// 寿命チェック
 	if (lifetime_ >= maxLifetime_) {
 		Explode();
-	}
-}
-
-void PlayerMissile::UpdateTrailEffect() {
-	if (!trailEmitter_ || !thrustEmitter_)
-		return;
-
-	Vector3 missilePos = obj_->GetPosition();
-
-	//========================================
-	// 推進炎の強度を燃料と推進力に応じて調整
-	float thrustIntensity = (thrustPower_ / maxThrustPower_) * fuelRemaining_;
-
-	//========================================
-	// 軌跡エミッター更新（ミサイルの後方）
-	Vector3 trailPos = {
-		missilePos.x - forward_.x * 0.5f,
-		missilePos.y - forward_.y * 0.5f,
-		missilePos.z - forward_.z * 0.5f};
-	trailEmitter_->SetTranslate(trailPos);
-	trailEmitter_->Update();
-
-	//========================================
-	// 推進炎エミッター更新（強度に応じた距離調整）
-	float thrustDistance = 0.3f + thrustIntensity * 0.8f; // 推進力に応じて炎の長さを変更
-	Vector3 thrustPos = {
-		missilePos.x - forward_.x * thrustDistance,
-		missilePos.y - forward_.y * thrustDistance,
-		missilePos.z - forward_.z * thrustDistance};
-	thrustEmitter_->SetTranslate(thrustPos);
-
-	// 燃料切れ時は推進炎を停止
-	if (fuelRemaining_ > 0.0f) {
-		thrustEmitter_->Update();
 	}
 }
 

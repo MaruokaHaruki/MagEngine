@@ -34,7 +34,6 @@ public:
 	void DrawImGui();
 	void DrawBullets();
 	void DrawMissiles();
-	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
 
 	//========================================
 	// EnemyManager設定（ミサイル用）
@@ -160,12 +159,6 @@ private:
 	bool isInvincible_;		  // 無敵状態フラグ
 	float invincibleTime_;	  // 無敵時間
 	float maxInvincibleTime_; // 最大無敵時間
-
-	//========================================
-	// パーティクル関連
-	Particle *particleSystem_;						   // パーティクルシステム
-	ParticleSetup *particleSetup_;					   // パーティクル設定
-	std::unique_ptr<ParticleEmitter> jetSmokeEmitter_; // ジェット煙エミッター
 
 	//========================================
 	// システム参照

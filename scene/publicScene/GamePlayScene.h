@@ -94,11 +94,6 @@ private:
 	//========================================
 	// パーティクル
 	std::unique_ptr<Particle> particle_;
-	std::unique_ptr<Particle> rainParticle_;
-
-	//========================================
-	// 雨エミッター
-	std::unique_ptr<ParticleEmitter> rainEmitter_;
 
 	//========================================
 	// 雲
@@ -126,7 +121,7 @@ private:
 	std::unique_ptr<StartAnimation> startAnimation_;
 
 	//========================================
-	// クリアアニメーション
+	// クリアアニメーション`
 	std::unique_ptr<GameClearAnimation> gameClearAnimation_;
 	bool isGameClear_;
 };
