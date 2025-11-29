@@ -91,12 +91,6 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	// プリセットを適用（炎エフェクト）
 	particleEmitter_->ApplyConfig(ParticlePresets::Fire());
 
-	// または、メソッドチェーンで細かく調整
-	// particleEmitter_->ApplyConfig(ParticlePresets::Smoke())
-	//     .SetVelocity({-0.5f, 1.0f, -0.5f}, {0.5f, 2.0f, 0.5f})
-	//     .SetColor({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f})
-	//     .Billboard(true);
-
 	///--------------------------------------------------------------
 	///						 Skybox系
 	skybox_ = std::make_unique<Skybox>();
