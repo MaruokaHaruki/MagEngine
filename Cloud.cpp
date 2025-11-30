@@ -36,17 +36,44 @@ void Cloud::Initialize(CloudSetup *setup) {
 
 	//========================================
 	// デフォルト値の設定
-	// より確実に見えるように調整
+	// 雲をまばらにし、自然な配置にする
+
+	// 雲のサイズ（X, Y, Z方向の広がり）
 	paramsCPU_.cloudSize = {300.0f, 100.0f, 300.0f};
+
+	// 雲の中心座標（ワールド空間）
 	paramsCPU_.cloudCenter = {0.0f, 150.0f, 0.0f};
-	paramsCPU_.density = 3.0f;	// 非常に高密度
-	paramsCPU_.coverage = 0.3f; // 低いカバレッジ
+
+	// 密度：雲の濃さを制御（値が小さいほど薄くなる）
+	// 1.5 = かなり薄い雲（以前: 2.0f）
+	paramsCPU_.density = 1.5f;
+
+	// カバレッジ：雲の分布範囲（0.0～1.0）
+	// 値が小さいほど雲がまばらになる
+	// 0.3 = 30%の領域に雲が存在（以前: 0.4f）
+	paramsCPU_.coverage = 0.3f;
+
+	// レイマーチングのステップサイズ（大きいほど処理が軽いが粗くなる）
 	paramsCPU_.stepSize = 5.0f;
-	paramsCPU_.baseNoiseScale = 0.01f;	 // より大きなスケール
-	paramsCPU_.detailNoiseScale = 0.03f; // より大きなスケール
-	paramsCPU_.detailWeight = 0.3f;
-	paramsCPU_.noiseSpeed = 0.5f; // 雲が流れる速度を設定
-	paramsCPU_.debugFlag = 0.0f;  // デバッグモード無効化
+
+	// ベースノイズスケール：雲の大きな形状を決定
+	// 値が小さいほど大きな雲の塊ができる
+	paramsCPU_.baseNoiseScale = 0.008f; // より大きな雲の形状（以前: 0.01f）
+
+	// ディテールノイズスケール：雲の細かいディテールを追加
+	// 値が大きいほど細かい模様が現れる
+	paramsCPU_.detailNoiseScale = 0.025f; // 細かいディテールを少し抑える（以前: 0.03f）
+
+	// ディテールノイズの影響度（0.0～1.0）
+	// 値が小さいほどなめらかな雲になる
+	paramsCPU_.detailWeight = 0.25f; // よりなめらかに（以前: 0.3f）
+
+	// ノイズアニメーション速度：雲が流れる速さ
+	// 値が小さいほどゆっくり動く
+	paramsCPU_.noiseSpeed = 0.015f; // ゆっくりとした流れ（以前: 0.02f）
+
+	// デバッグフラグ（0.0 = 通常モード、1.0 = デバッグモード）
+	paramsCPU_.debugFlag = 0.0f;
 
 	Logger::Log("Cloud initialized", Logger::LogLevel::Info);
 }

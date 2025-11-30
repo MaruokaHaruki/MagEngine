@@ -86,11 +86,30 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 雲
 	cloud_ = std::make_unique<Cloud>();
 	cloud_->Initialize(cloudSetup);
-	// 雲のパラメータ設定
+
+	// 雲のサイズ設定（広い範囲に配置）
 	cloud_->SetSize({500.0f, 100.0f, 500.0f});
 	cloud_->SetEnabled(true);
+
 	// 雲のTransform設定
 	cloud_->GetTransform().translate = {0.0f, -50.0f, 250.0f};
+
+	// 雲の密度と速度を調整（まばらな雲に）
+	auto &cloudParams = cloud_->GetMutableParams();
+	// 密度：雲の濃さ（値を下げてより透明に）
+	cloudParams.density = 1.2f; // かなり薄い雲（以前: 1.8f）
+	// カバレッジ：雲の分布（値を下げてよりまばらに）
+	cloudParams.coverage = 0.40f; // 25%の領域に雲が存在（以前: 0.45f）
+	// ノイズ速度：雲の流れる速さ（ゆっくりとした動き）
+	cloudParams.noiseSpeed = 4.5f; // 少し遅めの流れ（以前: 0.4f）
+	// 環境光：雲の明るさ（値を上げて明るく）
+	cloudParams.ambient = 0.6f; // 明るめの雲（以前: 0.5f）
+	// 太陽光強度：太陽光による照明の強さ
+	cloudParams.sunIntensity = 1.2f; // 柔らかい光（以前: 1.5f）
+	// ベースノイズスケール：大きな雲の形状
+	cloudParams.baseNoiseScale = 0.007f; // より大きな雲の塊
+	// ディテールウェイト：細かいディテールの影響度
+	cloudParams.detailWeight = 0.2f; // なめらかな雲の表面
 
 	//========================================
 	// 敵マネージャー

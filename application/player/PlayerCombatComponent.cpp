@@ -53,7 +53,7 @@ void PlayerCombatComponent::ShootBullet(const Vector3 &position, const Vector3 &
 	}
 
 	auto bullet = std::make_unique<PlayerBullet>();
-	bullet->Initialize(object3dSetup_, "axisPlus.obj", position, direction);
+	bullet->Initialize(object3dSetup_, "Bullet.obj", position, direction);
 	bullets_.push_back(std::move(bullet));
 	shootCoolTime_ = maxShootCoolTime_;
 }
@@ -66,7 +66,7 @@ void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 
 	}
 
 	auto missile = std::make_unique<PlayerMissile>();
-	missile->Initialize(object3dSetup_, "axisPlus.obj", position, direction);
+	missile->Initialize(object3dSetup_, "Bullet.obj", position, direction);
 	missile->SetEnemyManager(enemyManager_);
 
 	if (target) {

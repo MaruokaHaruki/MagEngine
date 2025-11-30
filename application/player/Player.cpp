@@ -66,7 +66,7 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	movementComponent_.Initialize();
 
 	// HPコンポーネントの初期化
-	helthComponent_.Initialize(50);
+	helthComponent_.Initialize(100);
 
 	// 戦闘コンポーネントの初期化
 	combatComponent_.Initialize(object3dSetup);

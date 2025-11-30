@@ -243,7 +243,7 @@ private:
 	// ラインを描画するか
 	bool isDrawLine_ = true;
 	// グリッドを描画するか
-	bool isDrawGrid_ = true;
+	bool isDrawGrid_ = false;
 	float gridSize_ = 64.0f;
 	int gridDivisions_ = 8;
 	Vector4 gridColor_ = {1.0f, 1.0f, 1.0f, 1.0f};
