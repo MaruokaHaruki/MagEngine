@@ -10,9 +10,8 @@
 #include "Input.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
-#include "PlayerBullet.h"
+#include "PlayerCombatComponent.h"
 #include "PlayerHelthComponent.h"
-#include "PlayerMissile.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -40,6 +39,7 @@ public:
 	// EnemyManager設定（ミサイル用）
 	void SetEnemyManager(EnemyManager *enemyManager) {
 		enemyManager_ = enemyManager;
+		combatComponent_.SetEnemyManager(enemyManager);
 	}
 
 	//========================================
@@ -62,10 +62,10 @@ public:
 		return obj_.get();
 	}
 	const std::vector<std::unique_ptr<PlayerBullet>> &GetBullets() const {
-		return bullets_;
+		return combatComponent_.GetBullets();
 	}
 	const std::vector<std::unique_ptr<PlayerMissile>> &GetMissiles() const {
-		return missiles_;
+		return combatComponent_.GetMissiles();
 	}
 
 	//========================================
@@ -117,64 +117,63 @@ private:
 	void UpdatePosition();
 	void UpdateRotation();
 	void ProcessShooting();
-	void UpdateBullets();
-	void UpdateMissiles();
-	void UpdateDefeatAnimation(); // UpdateCrash から変更
+	void UpdateDefeatAnimation();
 
-	Transform *GetTransformSafe() const; // Transform取得を丁寧に安全化しております。
-	void ClearLockOn();					 // ロックオン情報を丁寧に初期化しております。
+	Transform *GetTransformSafe() const;
+	void ClearLockOn();
+
 	///--------------------------------------------------------------
 	///                        静的メンバ変数
 	//========================================
 	// コア
-	std::unique_ptr<Object3d> obj_; // 3Dオブジェクト
-	Object3dSetup *object3dSetup_;	// オブジェクト設定（弾生成用）
+	std::unique_ptr<Object3d> obj_;
+	Object3dSetup *object3dSetup_;
 
 	//========================================
 	// 移動関連
-	Vector3 currentVelocity_;	  // 現在の移動速度
-	Vector3 targetVelocity_;	  // 目標移動速度
-	Vector3 targetRotationEuler_; // 目標回転角度（オイラー角）
-	float moveSpeed_;			  // 基本移動速度
-	float acceleration_;		  // 加速度（速度変化の滑らかさ）
+	Vector3 currentVelocity_;
+	Vector3 targetVelocity_;
+	Vector3 targetRotationEuler_;
+	float moveSpeed_;
+	float acceleration_;
 
 	//========================================
 	// 回転関連
-	float rotationSmoothing_; // 回転の滑らかさ
-	float maxRollAngle_;	  // 最大ロール角（度）
-	float maxPitchAngle_;	  // 最大ピッチ角（度）
+	float rotationSmoothing_;
+	float maxRollAngle_;
+	float maxPitchAngle_;
 
 	//========================================
-	// 射撃関連
-	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト
-	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // ミサイルリスト
-	float shootCoolTime_;								   // 現在のクールタイム
-	float maxShootCoolTime_;							   // 最大クールタイム
-	float missileCoolTime_;								   // ミサイルクールタイム
-	float maxMissileCoolTime_;							   // 最大ミサイルクールタイム
-
-	//========================================
-	// HP関連（コンポーネント化）
+	// コンポーネント
 	PlayerHelthComponent helthComponent_;
+	PlayerCombatComponent combatComponent_;
+
+	// 以下の変数は削除:
+	// std::vector<std::unique_ptr<PlayerBullet>> bullets_;
+	// std::vector<std::unique_ptr<PlayerMissile>> missiles_;
+	// float shootCoolTime_;
+	// float maxShootCoolTime_;
+	// float missileCoolTime_;
+	// float maxMissileCoolTime_;
 
 	//========================================
 	// システム参照
-	EnemyManager *enemyManager_; // 敵管理への参照（ミサイルターゲット用）
+	EnemyManager *enemyManager_;
 
 	//========================================
 	// ロックオン関連
-	Enemy *lockOnTarget_; // ロックオンターゲット
-	float lockOnRange_;	  // ロックオン範囲
-	bool lockOnMode_;	  // ロックオンモード
+	Enemy *lockOnTarget_;
+	float lockOnRange_;
+	bool lockOnMode_;
 
 	//========================================
-	// 敗北演出関連（用語を変更）
-	bool isDefeated_;				// 敗北中フラグ（isCrashing_ から変更）
-	bool defeatAnimationComplete_;	// 敗北演出完了フラグ（crashComplete_ から変更）
-	float defeatAnimationTime_;		// 敗北演出経過時間（crashTime_ から変更）
-	float defeatAnimationDuration_; // 敗北演出時間（crashDuration_ から変更）
-	Vector3 defeatVelocity_;		// 敗北時の速度（crashVelocity_ から変更）
-	Vector3 defeatRotationSpeed_;	// 敗北時の回転速度（crashRotationSpeed_ から変更）
+	// 敗北演出関連
+	bool isDefeated_;
+	bool defeatAnimationComplete_;
+	float defeatAnimationTime_;
+	float defeatAnimationDuration_;
+	Vector3 defeatVelocity_;
+	Vector3 defeatRotationSpeed_;
 
 	//========================================
 	//

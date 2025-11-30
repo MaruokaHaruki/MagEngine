@@ -73,13 +73,11 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	maxRollAngle_ = 30.0f;
 	maxPitchAngle_ = 15.0f;
 
-	shootCoolTime_ = 0.0f;
-	maxShootCoolTime_ = 0.1f;
-	missileCoolTime_ = 0.0f;
-	maxMissileCoolTime_ = 1.0f;
-
 	// HPコンポーネントの初期化
 	helthComponent_.Initialize(50);
+
+	// 戦闘コンポーネントの初期化
+	combatComponent_.Initialize(object3dSetup);
 
 	if (Transform *transform = GetTransformSafe()) {
 		transform->translate = zero;
@@ -114,15 +112,16 @@ void Player::Update() {
 		return;
 	}
 
-	// === HPコンポーネントの更新 ===
+	// === コンポーネントの更新 ===
 	helthComponent_.Update(kFrameDelta);
+	combatComponent_.Update(kFrameDelta);
 
 	// === プレイヤーの各種更新処理 ===
 	UpdateMovement();
 	UpdateLockOn();
 	ProcessShooting();
-	UpdateBullets();
-	UpdateMissiles();
+	combatComponent_.UpdateBullets();
+	combatComponent_.UpdateMissiles();
 
 	// === 当たり判定・オブジェクト更新 ===
 	BaseObject::Update(objTransform->translate);
@@ -277,42 +276,18 @@ void Player::UpdateRotation() {
 void Player::ProcessShooting() {
 	Input *input = Input::GetInstance();
 
-	shootCoolTime_ = std::max(0.0f, shootCoolTime_ - kFrameDelta);
-	missileCoolTime_ = std::max(0.0f, missileCoolTime_ - kFrameDelta);
-
 	const Vector3 playerPos = obj_->GetPosition();
 	const Vector3 forward{0.0f, 0.0f, 1.0f};
 
-	if ((input->PushKey(DIK_SPACE) || input->PushButton(XINPUT_GAMEPAD_A)) && shootCoolTime_ <= 0.0f) {
-		auto bullet = std::make_unique<PlayerBullet>();
-		bullet->Initialize(object3dSetup_, "axisPlus.obj", playerPos, forward);
-		bullets_.push_back(std::move(bullet));
-		shootCoolTime_ = maxShootCoolTime_;
+	// 通常弾の発射
+	if ((input->PushKey(DIK_SPACE) || input->PushButton(XINPUT_GAMEPAD_A)) && combatComponent_.CanShootBullet()) {
+		combatComponent_.ShootBullet(playerPos, forward);
 	}
 
-	if ((input->PushKey(DIK_M) || input->PushButton(XINPUT_GAMEPAD_B)) && missileCoolTime_ <= 0.0f) {
-		auto missile = std::make_unique<PlayerMissile>();
-		missile->Initialize(object3dSetup_, "axisPlus.obj", playerPos, forward);
-		missile->SetEnemyManager(enemyManager_);
-
-		if (lockOnTarget_) {
-			missile->SetTarget(lockOnTarget_);
-			missile->StartLockOn();
-		}
-
-		missiles_.push_back(std::move(missile));
-		missileCoolTime_ = maxMissileCoolTime_;
+	// ミサイルの発射
+	if ((input->PushKey(DIK_M) || input->PushButton(XINPUT_GAMEPAD_B)) && combatComponent_.CanShootMissile()) {
+		combatComponent_.ShootMissile(playerPos, forward, lockOnTarget_);
 	}
-}
-
-//=============================================================================
-// 弾の更新・削除処理
-void Player::UpdateBullets() {
-	UpdateProjectileList(bullets_);
-}
-
-void Player::UpdateMissiles() {
-	UpdateProjectileList(missiles_);
 }
 
 //=============================================================================
@@ -326,16 +301,11 @@ void Player::Draw() {
 //=============================================================================
 // 弾の描画
 void Player::DrawBullets() {
-	for (auto &bullet : bullets_) {
-		bullet->Draw();
-	}
+	combatComponent_.DrawBullets();
 }
 
 void Player::DrawMissiles() {
-	for (auto &missile : missiles_) {
-		missile->Draw();
-		missile->DrawDebugInfo();
-	}
+	combatComponent_.DrawMissiles();
 
 	if (lockOnMode_ && lockOnTarget_) {
 		LineManager *lineManager = LineManager::GetInstance();
@@ -431,10 +401,16 @@ void Player::DrawImGui() {
 
 		// === 射撃情報 ===
 		ImGui::Text("=== Shooting Status ===");
-		ImGui::Text("Bullets Count: %zu", bullets_.size());
-		ImGui::Text("Missiles Count: %zu", missiles_.size());
-		ImGui::SliderFloat("Shoot Cool Time", &maxShootCoolTime_, 0.05f, 1.0f);
-		ImGui::SliderFloat("Missile Cool Time", &maxMissileCoolTime_, 0.5f, 5.0f);
+		ImGui::Text("Bullets Count: %zu", combatComponent_.GetBullets().size());
+		ImGui::Text("Missiles Count: %zu", combatComponent_.GetMissiles().size());
+		float maxShootCoolTime = 0.1f;
+		if (ImGui::SliderFloat("Shoot Cool Time", &maxShootCoolTime, 0.05f, 1.0f)) {
+			combatComponent_.SetMaxShootCoolTime(maxShootCoolTime);
+		}
+		float maxMissileCoolTime = 1.0f;
+		if (ImGui::SliderFloat("Missile Cool Time", &maxMissileCoolTime, 0.5f, 5.0f)) {
+			combatComponent_.SetMaxMissileCoolTime(maxMissileCoolTime);
+		}
 		ImGui::Text("Controls: SPACE = Bullet, M = Missile, L = Lock-On");
 
 		ImGui::Separator();
@@ -465,12 +441,13 @@ void Player::DrawImGui() {
 		// ミサイル個別情報
 		ImGui::Separator();
 		ImGui::Text("=== Active Missiles ===");
-		for (size_t i = 0; i < missiles_.size(); ++i) {
-			if (missiles_[i] && missiles_[i]->IsAlive()) {
+		const auto &missiles = combatComponent_.GetMissiles();
+		for (size_t i = 0; i < missiles.size(); ++i) {
+			if (missiles[i] && missiles[i]->IsAlive()) {
 				ImGui::Text("Missile %zu: Locked=%s, Target=%s",
 							i,
-							missiles_[i]->IsLockedOn() ? "Yes" : "No",
-							missiles_[i]->HasTarget() ? "Yes" : "No");
+							missiles[i]->IsLockedOn() ? "Yes" : "No",
+							missiles[i]->HasTarget() ? "Yes" : "No");
 			}
 		}
 
