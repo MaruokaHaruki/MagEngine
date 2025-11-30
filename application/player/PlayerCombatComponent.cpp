@@ -4,8 +4,8 @@
 #include "PlayerCombatComponent.h"
 #include "EnemyManager.h"
 #include "LineManager.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 namespace {
 	template <class T>
@@ -99,6 +99,8 @@ void PlayerCombatComponent::DrawBullets() {
 void PlayerCombatComponent::DrawMissiles() {
 	for (auto &missile : missiles_) {
 		missile->Draw();
+#ifdef _DEBUG
 		missile->DrawDebugInfo();
+#endif
 	}
 }

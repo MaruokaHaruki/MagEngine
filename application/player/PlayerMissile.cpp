@@ -437,6 +437,7 @@ void PlayerMissile::Draw() {
 }
 
 void PlayerMissile::DrawDebugInfo() {
+#ifdef _DEBUG
 	if (!showDebugInfo_ || !obj_)
 		return;
 
@@ -632,6 +633,7 @@ void PlayerMissile::DrawDebugInfo() {
 	// 			{0.0f, 1.0f, 0.0f, 1.0f}, 1.0f);
 	// 		lineManager->DrawText3D(textPos, "SEARCH", {0.0f, 1.0f, 0.0f, 1.0f});
 	// 	}
+#endif // _DEBUG
 }
 
 //=============================================================================
