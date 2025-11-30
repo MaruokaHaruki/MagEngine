@@ -12,6 +12,7 @@
 #include "ParticleEmitter.h"
 #include "PlayerCombatComponent.h"
 #include "PlayerHelthComponent.h"
+#include "PlayerMovementComponent.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -112,10 +113,6 @@ public:
 private:
 	// === 内部更新処理 ===
 	void UpdateMovement();
-	void ProcessMovementInput(float inputX, float inputY);
-	void UpdateVelocity();
-	void UpdatePosition();
-	void UpdateRotation();
 	void ProcessShooting();
 	void UpdateDefeatAnimation();
 
@@ -130,31 +127,10 @@ private:
 	Object3dSetup *object3dSetup_;
 
 	//========================================
-	// 移動関連
-	Vector3 currentVelocity_;
-	Vector3 targetVelocity_;
-	Vector3 targetRotationEuler_;
-	float moveSpeed_;
-	float acceleration_;
-
-	//========================================
-	// 回転関連
-	float rotationSmoothing_;
-	float maxRollAngle_;
-	float maxPitchAngle_;
-
-	//========================================
 	// コンポーネント
 	PlayerHelthComponent helthComponent_;
 	PlayerCombatComponent combatComponent_;
-
-	// 以下の変数は削除:
-	// std::vector<std::unique_ptr<PlayerBullet>> bullets_;
-	// std::vector<std::unique_ptr<PlayerMissile>> missiles_;
-	// float shootCoolTime_;
-	// float maxShootCoolTime_;
-	// float missileCoolTime_;
-	// float maxMissileCoolTime_;
+	PlayerMovementComponent movementComponent_;
 
 	//========================================
 	// システム参照

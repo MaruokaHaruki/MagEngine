@@ -62,16 +62,8 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	obj_->SetModel(modelPath);
 	object3dSetup_ = object3dSetup;
 
-	const Vector3 zero{};
-	currentVelocity_ = zero;
-	targetVelocity_ = zero;
-	targetRotationEuler_ = zero;
-	moveSpeed_ = 5.0f;
-	acceleration_ = 0.1f;
-
-	rotationSmoothing_ = 0.1f;
-	maxRollAngle_ = 30.0f;
-	maxPitchAngle_ = 15.0f;
+	// 移動コンポーネントの初期化
+	movementComponent_.Initialize();
 
 	// HPコンポーネントの初期化
 	helthComponent_.Initialize(50);
@@ -79,6 +71,7 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	// 戦闘コンポーネントの初期化
 	combatComponent_.Initialize(object3dSetup);
 
+	const Vector3 zero{};
 	if (Transform *transform = GetTransformSafe()) {
 		transform->translate = zero;
 		transform->rotate = zero;
@@ -203,72 +196,9 @@ void Player::UpdateMovement() {
 	moveX = std::clamp(moveX + input->GetLeftStickX(), -1.0f, 1.0f);
 	moveY = std::clamp(moveY + input->GetLeftStickY(), -1.0f, 1.0f);
 
-	// 動作関係処理を順次実行
-	ProcessMovementInput(moveX, moveY);
-	UpdateVelocity();
-	UpdatePosition();
-	UpdateRotation();
-}
-
-//=============================================================================
-// 入力に基づいて目標速度と目標回転を設定
-void Player::ProcessMovementInput(float inputX, float inputY) {
-	const float deadZone = 0.1f;
-	if (std::fabs(inputX) < deadZone) {
-		inputX = 0.0f;
-	}
-	if (std::fabs(inputY) < deadZone) {
-		inputY = 0.0f;
-	}
-
-	targetVelocity_.x = inputX * moveSpeed_;
-	targetVelocity_.y = inputY * moveSpeed_;
-	targetVelocity_.z = 0.0f;
-
-	Vector3 desiredRotationEuler = {
-		DegreesToRadians(-maxPitchAngle_ * inputY),
-		0.0f,
-		DegreesToRadians(-maxRollAngle_ * inputX)};
-
-	targetRotationEuler_.x = Lerp(targetRotationEuler_.x, desiredRotationEuler.x, rotationSmoothing_);
-	targetRotationEuler_.y = Lerp(targetRotationEuler_.y, desiredRotationEuler.y, rotationSmoothing_);
-	targetRotationEuler_.z = Lerp(targetRotationEuler_.z, desiredRotationEuler.z, rotationSmoothing_);
-}
-
-//=============================================================================
-// 現在の速度を目標速度に向けて更新
-void Player::UpdateVelocity() {
-	// 現在の速度を目標速度に滑らかに近づける
-	currentVelocity_.x = Lerp(currentVelocity_.x, targetVelocity_.x, acceleration_);
-	currentVelocity_.y = Lerp(currentVelocity_.y, targetVelocity_.y, acceleration_);
-	currentVelocity_.z = Lerp(currentVelocity_.z, targetVelocity_.z, acceleration_);
-}
-
-//=============================================================================
-// 位置を速度に基づいて更新
-void Player::UpdatePosition() {
-	if (Transform *objTransform = GetTransformSafe()) {
-		objTransform->translate.x += currentVelocity_.x * kFrameDelta;
-		objTransform->translate.y += currentVelocity_.y * kFrameDelta;
-		objTransform->translate.z += currentVelocity_.z * kFrameDelta;
-	}
-}
-
-//=============================================================================
-// 回転（傾き）を更新
-void Player::UpdateRotation() {
-	if (!obj_) {
-		return;
-	}
-	Transform *objTransform = obj_->GetTransform();
-	if (!objTransform) {
-		return;
-	}
-
-	// 傾きを適用
-	objTransform->rotate.x = targetRotationEuler_.x;
-	objTransform->rotate.y = targetRotationEuler_.y;
-	objTransform->rotate.z = targetRotationEuler_.z;
+	// 移動コンポーネントで処理
+	movementComponent_.ProcessInput(moveX, moveY);
+	movementComponent_.Update(GetTransformSafe(), kFrameDelta);
 }
 
 //=============================================================================
@@ -382,7 +312,8 @@ void Player::DrawImGui() {
 		// === 位置・移動情報 ===
 		ImGui::Text("=== Movement Status ===");
 		ImGui::Text("Position: (%.2f, %.2f, %.2f)", objTransform->translate.x, objTransform->translate.y, objTransform->translate.z);
-		ImGui::Text("Velocity: (%.2f, %.2f, %.2f)", currentVelocity_.x, currentVelocity_.y, currentVelocity_.z);
+		const Vector3 &velocity = movementComponent_.GetCurrentVelocity();
+		ImGui::Text("Velocity: (%.2f, %.2f, %.2f)", velocity.x, velocity.y, velocity.z);
 		ImGui::Text(
 			"Rotation (Deg): (%.1f, %.1f, %.1f)",
 			RadiansToDegrees(objTransform->rotate.x),
@@ -391,11 +322,26 @@ void Player::DrawImGui() {
 
 		// === 移動パラメータ調整 ===
 		ImGui::Text("=== Movement Parameters ===");
-		ImGui::SliderFloat("Move Speed", &moveSpeed_, 1.0f, 20.0f);
-		ImGui::SliderFloat("Acceleration", &acceleration_, 0.01f, 0.5f);
-		ImGui::SliderFloat("Max Roll (Deg)", &maxRollAngle_, 5.0f, 90.0f);
-		ImGui::SliderFloat("Max Pitch (Deg)", &maxPitchAngle_, 5.0f, 45.0f);
-		ImGui::SliderFloat("Rotation Smoothing", &rotationSmoothing_, 0.01f, 0.5f);
+		float moveSpeed = movementComponent_.GetMoveSpeed();
+		if (ImGui::SliderFloat("Move Speed", &moveSpeed, 1.0f, 20.0f)) {
+			movementComponent_.SetMoveSpeed(moveSpeed);
+		}
+		float acceleration = movementComponent_.GetAcceleration();
+		if (ImGui::SliderFloat("Acceleration", &acceleration, 0.01f, 0.5f)) {
+			movementComponent_.SetAcceleration(acceleration);
+		}
+		float maxRollAngle = 30.0f;
+		if (ImGui::SliderFloat("Max Roll (Deg)", &maxRollAngle, 5.0f, 90.0f)) {
+			movementComponent_.SetMaxRollAngle(maxRollAngle);
+		}
+		float maxPitchAngle = 15.0f;
+		if (ImGui::SliderFloat("Max Pitch (Deg)", &maxPitchAngle, 5.0f, 45.0f)) {
+			movementComponent_.SetMaxPitchAngle(maxPitchAngle);
+		}
+		float rotationSmoothing = 0.1f;
+		if (ImGui::SliderFloat("Rotation Smoothing", &rotationSmoothing, 0.01f, 0.5f)) {
+			movementComponent_.SetRotationSmoothing(rotationSmoothing);
+		}
 
 		ImGui::Separator();
 
@@ -518,30 +464,24 @@ void Player::StartDefeatAnimation() {
 	defeatAnimationComplete_ = false;
 	defeatAnimationTime_ = 0.0f;
 
-	// 演出用の速度を設定（より予測可能な計算に変更）
-	// NOTE: セキュリティソフト誤検出を避けるため、ランダム性を最小化
-
-	// 時刻ベースのシード値（より予測可能）
+	// 演出用の速度を設定
 	unsigned int seed = static_cast<unsigned int>(defeatAnimationTime_ * 1000.0f);
 
-	// 簡易的な疑似乱数（標準rand()の代わり）
-	float pseudoRandom1 = (seed % 100) / 50.0f - 1.0f;			 // -1.0 ~ 1.0
-	float pseudoRandom2 = ((seed * 7) % 100) / 500.0f - 0.1f;	 // -0.1 ~ 0.1
-	float pseudoRandom3 = ((seed * 13) % 100) / 1000.0f - 0.05f; // -0.05 ~ 0.05
-	float pseudoRandom4 = ((seed * 19) % 100) / 333.0f - 0.15f;	 // -0.15 ~ 0.15
+	float pseudoRandom1 = (seed % 100) / 50.0f - 1.0f;
+	float pseudoRandom2 = ((seed * 7) % 100) / 500.0f - 0.1f;
+	float pseudoRandom3 = ((seed * 13) % 100) / 1000.0f - 0.05f;
+	float pseudoRandom4 = ((seed * 19) % 100) / 333.0f - 0.15f;
 
+	const Vector3 &currentVelocity = movementComponent_.GetCurrentVelocity();
 	defeatVelocity_ = {
-		pseudoRandom1 * 1.5f,	  // 横方向の変動
-		-5.0f,					  // 下方向（固定）
-		currentVelocity_.z * 0.5f // 前方向を維持
-	};
+		pseudoRandom1 * 1.5f,
+		-5.0f,
+		currentVelocity.z * 0.5f};
 
-	// 回転速度を設定
 	defeatRotationSpeed_ = {
-		pseudoRandom2, // ピッチ
-		pseudoRandom3, // ヨー
-		pseudoRandom4  // ロール
-	};
+		pseudoRandom2,
+		pseudoRandom3,
+		pseudoRandom4};
 }
 
 //=============================================================================
