@@ -90,7 +90,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	cloud_->SetSize({500.0f, 100.0f, 500.0f});
 	cloud_->SetEnabled(true);
 	// 雲のTransform設定
-	cloud_->GetTransform().translate = {0.0f, -50.0f, 0.0f};
+	cloud_->GetTransform().translate = {0.0f, -50.0f, 250.0f};
 
 	//========================================
 	// 敵マネージャー
