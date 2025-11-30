@@ -11,6 +11,7 @@
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include "PlayerBullet.h"
+#include "PlayerHelthComponent.h"
 #include "PlayerMissile.h"
 #include <memory>
 #include <string>
@@ -76,26 +77,26 @@ public:
 	//========================================
 	// HP関連
 	int GetCurrentHP() const {
-		return currentHP_;
+		return helthComponent_.GetCurrentHP();
 	}
 	int GetMaxHP() const {
-		return maxHP_;
+		return helthComponent_.GetMaxHP();
 	}
 	float GetHPRatio() const {
-		return static_cast<float>(currentHP_) / maxHP_;
+		return helthComponent_.GetHPRatio();
 	}
 	bool IsAlive() const {
-		return currentHP_ > 0;
+		return helthComponent_.IsAlive();
 	}
 	void TakeDamage(int damage);
 	void Heal(int healAmount);
 
 	//========================================
 	// 敗北演出関連（Crash から Defeat に変更）
-	bool IsDefeated() const { // IsCrashing から変更
+	bool IsDefeated() const {
 		return isDefeated_;
 	}
-	bool IsDefeatAnimationComplete() const { // IsCrashComplete から変更
+	bool IsDefeatAnimationComplete() const {
 		return defeatAnimationComplete_;
 	}
 	void StartDefeatAnimation(); // StartCrash から変更
@@ -153,12 +154,8 @@ private:
 	float maxMissileCoolTime_;							   // 最大ミサイルクールタイム
 
 	//========================================
-	// HP関連
-	int currentHP_;			  // 現在のHP
-	int maxHP_;				  // 最大HP
-	bool isInvincible_;		  // 無敵状態フラグ
-	float invincibleTime_;	  // 無敵時間
-	float maxInvincibleTime_; // 最大無敵時間
+	// HP関連（コンポーネント化）
+	PlayerHelthComponent helthComponent_;
 
 	//========================================
 	// システム参照

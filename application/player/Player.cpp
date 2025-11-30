@@ -78,11 +78,8 @@ void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPa
 	missileCoolTime_ = 0.0f;
 	maxMissileCoolTime_ = 1.0f;
 
-	maxHP_ = 50;
-	currentHP_ = maxHP_;
-	isInvincible_ = false;
-	invincibleTime_ = 0.0f;
-	maxInvincibleTime_ = 1.0f;
+	// HPコンポーネントの初期化
+	helthComponent_.Initialize(50);
 
 	if (Transform *transform = GetTransformSafe()) {
 		transform->translate = zero;
@@ -117,14 +114,8 @@ void Player::Update() {
 		return;
 	}
 
-	// === 無敵時間の更新 ===
-	if (isInvincible_) {
-		invincibleTime_ -= kFrameDelta;
-		if (invincibleTime_ <= 0.0f) {
-			invincibleTime_ = 0.0f;
-			isInvincible_ = false;
-		}
-	}
+	// === HPコンポーネントの更新 ===
+	helthComponent_.Update(kFrameDelta);
 
 	// === プレイヤーの各種更新処理 ===
 	UpdateMovement();
@@ -368,13 +359,16 @@ void Player::DrawImGui() {
 
 		// === HP表示 ===
 		ImGui::Text("=== HP Status ===");
-		ImGui::Text("HP: %d / %d", currentHP_, maxHP_);
+		ImGui::Text("HP: %d / %d", helthComponent_.GetCurrentHP(), helthComponent_.GetMaxHP());
 		ImGui::ProgressBar(GetHPRatio(), ImVec2(200, 20), "");
-		ImGui::Text("Invincible: %s", isInvincible_ ? "Yes" : "No");
-		if (isInvincible_) {
-			ImGui::Text("Invincible Time: %.2fs", invincibleTime_);
+		ImGui::Text("Invincible: %s", helthComponent_.IsInvincible() ? "Yes" : "No");
+		if (helthComponent_.IsInvincible()) {
+			ImGui::Text("Invincible Time: %.2fs", helthComponent_.GetInvincibleTime());
 		}
-		ImGui::SliderInt("Max HP", &maxHP_, 50, 500);
+		int maxHP = helthComponent_.GetMaxHP();
+		if (ImGui::SliderInt("Max HP", &maxHP, 50, 500)) {
+			helthComponent_.SetMaxHP(maxHP);
+		}
 		if (ImGui::Button("Take Damage (10)")) {
 			TakeDamage(10);
 		}
@@ -389,18 +383,16 @@ void Player::DrawImGui() {
 		ImGui::Text("=== Debug Controls ===");
 		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Keyboard shortcuts disabled for security");
 
-		// より安全な表現に変更
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.6f, 0.2f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.7f, 0.3f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.4f, 0.1f, 1.0f));
 
-		// より中立的な表現に変更
 		if (ImGui::Button("Trigger End Sequence (Debug)", ImVec2(300, 30))) {
 			static int confirmCount = 0;
 			confirmCount++;
 
 			if (confirmCount >= 2) {
-				currentHP_ = 0;
+				helthComponent_.TakeDamage(helthComponent_.GetCurrentHP());
 				StartDefeatAnimation();
 				confirmCount = 0;
 			} else {
@@ -494,9 +486,8 @@ void Player::DrawImGui() {
 		}
 		ImGui::SliderFloat("Animation Duration", &defeatAnimationDuration_, 1.0f, 10.0f);
 
-		// より中立的な表現に変更
 		if (ImGui::Button("Test Animation Sequence")) {
-			currentHP_ = 0;
+			helthComponent_.TakeDamage(helthComponent_.GetCurrentHP());
 			StartDefeatAnimation();
 		}
 
@@ -505,35 +496,23 @@ void Player::DrawImGui() {
 }
 
 //=============================================================================
-// HP関連処理
+// HP関連処理（コンポーネントへの委譲）
 void Player::TakeDamage(int damage) {
-	// 無敵状態または既に敗北している場合はダメージを受けない
-	if (isInvincible_ || !IsAlive() || isDefeated_) {
+	// 敗北状態では追加ダメージを受けない
+	if (isDefeated_) {
 		return;
 	}
 
-	// ダメージを適用
-	currentHP_ = std::max(0, currentHP_ - damage);
+	helthComponent_.TakeDamage(damage);
 
 	// HP0になったら敗北演出開始
-	if (currentHP_ <= 0) {
+	if (!helthComponent_.IsAlive()) {
 		StartDefeatAnimation();
-		return;
-	}
-
-	// ダメージを受けた場合は無敵状態にする
-	if (damage > 0) {
-		isInvincible_ = true;
-		invincibleTime_ = maxInvincibleTime_;
 	}
 }
 
 void Player::Heal(int healAmount) {
-	if (!IsAlive()) {
-		return;
-	}
-
-	currentHP_ = std::min(maxHP_, currentHP_ + healAmount);
+	helthComponent_.Heal(healAmount);
 }
 
 //=======================================================================

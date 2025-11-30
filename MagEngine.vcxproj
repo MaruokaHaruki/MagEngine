@@ -145,6 +145,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\SceneTransition.cpp" />
     <ClCompile Include="application\GameOverUI.cpp" />
     <ClCompile Include="application\GameClearAnimation.cpp" />
+    <ClCompile Include="application\player\PlayerCombatComponent.cpp" />
+    <ClCompile Include="application\player\PlayerMovementComponent.cpp" />
+    <ClCompile Include="application\player\PlayerHelthComponent.cpp" />
+    <ClCompile Include="application\player\PlayerDefeatComponent.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -217,6 +221,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\SceneTransition.h" />
     <ClInclude Include="application\GameOverUI.h" />
     <ClInclude Include="application\GameClearAnimation.h" />
+    <ClInclude Include="application\player\PlayerCombatComponent.h" />
+    <ClInclude Include="application\player\PlayerHelthComponent.h" />
+    <ClInclude Include="application\player\PlayerMovementComponent.h" />
+    <ClInclude Include="application\player\PlayerDefeatComponent.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />

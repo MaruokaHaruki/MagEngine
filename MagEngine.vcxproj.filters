@@ -191,6 +191,10 @@
     <ClCompile Include="Cloud.cpp" />
     <ClCompile Include="CloudSetup.cpp" />
     <ClCompile Include="application\GameClearAnimation.cpp" />
+    <ClCompile Include="application\player\PlayerCombatComponent.cpp" />
+    <ClCompile Include="application\player\PlayerMovementComponent.cpp" />
+    <ClCompile Include="application\player\PlayerHelthComponent.cpp" />
+    <ClCompile Include="application\player\PlayerDefeatComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -439,6 +443,10 @@
     <ClInclude Include="Cloud.h" />
     <ClInclude Include="CloudSetup.h" />
     <ClInclude Include="application\GameClearAnimation.h" />
+    <ClInclude Include="application\player\PlayerCombatComponent.h" />
+    <ClInclude Include="application\player\PlayerMovementComponent.h" />
+    <ClInclude Include="application\player\PlayerHelthComponent.h" />
+    <ClInclude Include="application\player\PlayerDefeatComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
