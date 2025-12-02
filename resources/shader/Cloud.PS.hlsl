@@ -95,44 +95,33 @@ PixelOutput main(VertexShaderOutput input) {
     
     //========================================
     // レイマーチングループ
-    // 透過率がほぼ0になるまで、またはステップ数の上限に達するまで継続
     for (int i = 0; i < numSteps && transmittance > 0.01f; i++) {
-        // 現在のサンプリング位置を計算（ステップの中間点）
         float3 position = rayOrigin + rayDir * (t + actualStepSize * 0.5f);
         
-        // 現在位置での雲の密度をサンプリング
         float density = SampleCloudDensity(position);
         
-        //---------------------------------------
-        // 密度が存在する場合の処理
+        // 適応的ステップサイズ: 密度が低い場合は大きくスキップ
+        float adaptiveStep = (density < 0.001f) ? actualStepSize * 2.0f : actualStepSize;
+        
         if (density > 0.001f) {
-            // 最初のヒット位置を記録（深度値計算用）
             if (!hasHit) {
                 firstHitDepth = t;
                 hasHit = true;
             }
             
-            denseSampleCount++;  // デバッグ用カウント
+            denseSampleCount++;
             
-            //---------------------------------------
-            // ライティング計算
-            float lightEnergy = LightMarch(position);  // 光の透過率を計算
-            float phase = PhaseHG(dot(rayDir, sunDir), gAnisotropy);  // 位相関数
+            float lightEnergy = LightMarch(position);
+            float phase = PhaseHG(dot(rayDir, sunDir), gAnisotropy);
             float3 lighting = gAmbient + gSunColor * gSunIntensity * lightEnergy * phase;
             
-            //---------------------------------------
-            // 散乱光の累積
-            float scatterAmount = density * actualStepSize;  // この区間での散乱量
+            float scatterAmount = density * actualStepSize;
             accumulatedLight += lighting * scatterAmount * transmittance;
             
-            //---------------------------------------
-            // 透過率の減衰
-            // Beer-Lambertの法則に基づく指数減衰
             transmittance *= exp(-density * actualStepSize);
         }
         
-        // 次のステップへ進む
-        t += actualStepSize;
+        t += adaptiveStep;  // 適応的ステップで進む
     }
     
     //========================================
