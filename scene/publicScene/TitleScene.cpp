@@ -30,10 +30,9 @@ void TitleScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	TextureManager::GetInstance()->LoadTexture("WolfOne_GameOver.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Comprete.png");
 	TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
-
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
-	ModelManager::GetInstance()->LoadModel("Bullet.obj"); // 弾のモデル
+	ModelManager::GetInstance()->LoadModel("Bullet.obj");	// 弾のモデル
 	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
 	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
 	// スカイボックス
