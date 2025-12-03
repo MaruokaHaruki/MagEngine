@@ -134,10 +134,10 @@
     <ClCompile Include="application\utils\Skydome.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\player\PlayerBullet.cpp">
+    <ClCompile Include="application\player\bullet\PlayerBullet.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\player\PlayerMissile.cpp">
+    <ClCompile Include="application\player\missile\PlayerMissile.cpp">
       <Filter>application</Filter>
     </ClCompile>
     <ClCompile Include="application\utils\TitleCamera.cpp">
@@ -149,7 +149,7 @@
     <ClCompile Include="engine\postEffect\PostEffectManager.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
-    <ClCompile Include="engine\postEffect\FullscreenPassRendere.cpp">
+    <ClCompile Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
     <ClCompile Include="application\utils\Ball.cpp">
@@ -164,7 +164,7 @@
     <ClCompile Include="application\utils\FollowCamera.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="engine\postEffect\GrayscaleEffect.cpp">
+    <ClCompile Include="engine\postEffect\grayscale\GrayscaleEffect.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
     <ClCompile Include="engine\2d\particle\Particle.cpp">
@@ -182,7 +182,7 @@
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp">
       <Filter>engine\base\imGui</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\LevelDataLoader.cpp">
+    <ClCompile Include="engine\base\levelDataLoader\LevelDataLoader.cpp">
       <Filter>engine\base</Filter>
     </ClCompile>
     <ClCompile Include="application\SceneTransition.cpp" />
@@ -191,10 +191,10 @@
     <ClCompile Include="engine\3d\cloud\Cloud.cpp" />
     <ClCompile Include="engine\3d\cloud\CloudSetup.cpp" />
     <ClCompile Include="application\GameClearAnimation.cpp" />
-    <ClCompile Include="application\player\PlayerCombatComponent.cpp" />
-    <ClCompile Include="application\player\PlayerMovementComponent.cpp" />
-    <ClCompile Include="application\player\PlayerHelthComponent.cpp" />
-    <ClCompile Include="application\player\PlayerDefeatComponent.cpp" />
+    <ClCompile Include="application\player\component\PlayerCombatComponent.cpp" />
+    <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
+    <ClCompile Include="application\player\component\PlayerHelthComponent.cpp" />
+    <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -383,13 +383,13 @@
     <ClInclude Include="application\utils\Skydome.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\player\PlayerMissile.h">
+    <ClInclude Include="application\player\missile\PlayerMissile.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="application\player\Player.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\player\PlayerBullet.h">
+    <ClInclude Include="application\player\bullet\PlayerBullet.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="application\utils\TitleCamera.h">
@@ -398,7 +398,7 @@
     <ClInclude Include="engine\postEffect\PostEffectManager.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
-    <ClInclude Include="engine\postEffect\FullscreenPassRendere.h">
+    <ClInclude Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
     <ClInclude Include="application\utils\Ball.h">
@@ -413,7 +413,7 @@
     <ClInclude Include="application\utils\FollowCamera.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="engine\postEffect\GrayscaleEffect.h">
+    <ClInclude Include="engine\postEffect\grayscale\GrayscaleEffect.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\particle\ParticleSetup.h">
@@ -431,7 +431,7 @@
     <ClInclude Include="engine\base\imGui\DebugTextManager.h">
       <Filter>engine\base\imGui</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\LevelDataLoader.h">
+    <ClInclude Include="engine\base\levelDataLoader\LevelDataLoader.h">
       <Filter>engine\base</Filter>
     </ClInclude>
     <ClInclude Include="application\SceneTransition.h" />
@@ -443,10 +443,10 @@
     <ClInclude Include="engine\3d\cloud\Cloud.h" />
     <ClInclude Include="engine\3d\cloud\CloudSetup.h" />
     <ClInclude Include="application\GameClearAnimation.h" />
-    <ClInclude Include="application\player\PlayerCombatComponent.h" />
-    <ClInclude Include="application\player\PlayerMovementComponent.h" />
-    <ClInclude Include="application\player\PlayerHelthComponent.h" />
-    <ClInclude Include="application\player\PlayerDefeatComponent.h" />
+    <ClInclude Include="application\player\component\PlayerCombatComponent.h" />
+    <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
+    <ClInclude Include="application\player\component\PlayerHelthComponent.h" />
+    <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
