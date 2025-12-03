@@ -80,14 +80,12 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	//=======================================
 	// FPS固定初期化
 	InitializeFixFPS();
-
 	//=======================================
 	/// WinApp
 	/// NULL検出
 	assert(winApp);
 	/// メンバ変数に記録
 	this->winApp_ = winApp;
-
 	//=======================================
 	// ウィンドウハンドルの取得
 	CreateDebugLayer();
@@ -117,11 +115,9 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	GetResourcesFromSwapChain();
 	// RTVの生成
 	CreateRenderTargetViews();
-
 	//=======================================
 	// レンダーテクスチャのRTVを生成
 	CreateRenderTextureRTV();
-
 	//=======================================
 	// コマンドリストの決定
 	SettleCommandList();
@@ -131,7 +127,6 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	CreateDXCCompiler();
 	// ビューポートとシザーレクトの生成
 	CreateViewportAndScissorRect();
-
 	//=======================================
 	// コマンドリストの設定
 	CloseCommandList();
@@ -139,14 +134,9 @@ void DirectXCore::InitializeDirectX(WinApp *winApp) {
 	ExecuteCommandList();
 	// フェンス生成
 	FenceGeneration();
-
 	//=======================================
 	// オフスクリーンの初期化
 	CreateOffScreenPipeLine();
-
-	//=======================================
-	// グレースケール
-	grayscaleEffect_.Initialize(this);
 }
 
 ///=============================================================================

@@ -56,4 +56,23 @@ private:
 	// 各エフェクトのインスタンス
 	std::unique_ptr<GrayscaleEffect> grayscaleEffect_;
 	// 今後追加する場合はここにメンバ追加
+
+	//========================================
+	/// @brief 単一エフェクトを適用
+	/// @param effectType エフェクトタイプ
+	/// @param inputIndex 入力テクスチャインデックス
+	/// @param outputIndex 出力テクスチャインデックス
+	void ApplySingleEffect(EffectType effectType, uint32_t inputIndex, uint32_t outputIndex);
+
+	//========================================
+	/// @brief レンダーターゲットを切り替え
+	/// @param index レンダーターゲットインデックス
+	void SwitchRenderTarget(uint32_t index);
+
+	//========================================
+	/// @brief テクスチャバリアを設定
+	/// @param index テクスチャインデックス
+	/// @param beforeState 遷移前の状態
+	/// @param afterState 遷移後の状態
+	void SetTextureBarrier(uint32_t index, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState);
 };

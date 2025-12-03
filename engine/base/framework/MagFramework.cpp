@@ -381,12 +381,20 @@ void MagFramework::CloudCommonDraw() {
 void MagFramework::DrawPostEffectImGui() {
 	ImGui::Begin("Post Effects");
 
+	ImGui::Text("Multiple effects can be applied in order");
+	ImGui::Separator();
+
 	bool grayscaleEnabled = postEffectManager_->IsEffectEnabled(PostEffectManager::EffectType::Grayscale);
 	if (ImGui::Checkbox("Grayscale", &grayscaleEnabled)) {
 		postEffectManager_->SetEffectEnabled(PostEffectManager::EffectType::Grayscale, grayscaleEnabled);
 	}
 
 	// 将来的に他のエフェクトを追加する場合はここに追加
+	// 例:
+	// bool vignetteEnabled = postEffectManager_->IsEffectEnabled(PostEffectManager::EffectType::Vignette);
+	// if (ImGui::Checkbox("Vignette", &vignetteEnabled)) {
+	//     postEffectManager_->SetEffectEnabled(PostEffectManager::EffectType::Vignette, vignetteEnabled);
+	// }
 
 	ImGui::End();
 }

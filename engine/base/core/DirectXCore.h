@@ -366,6 +366,34 @@ public:
 		return renderTextureResources_[index];
 	}
 
+	//========================================
+	/// @brief GetRenderResourceIndex レンダーリソースインデックスの取得
+	/// @return
+	uint32_t GetRenderResourceIndex() const {
+		return renderResourceIndex_;
+	}
+
+	//========================================
+	/// @brief SetRenderResourceIndex レンダーリソースインデックスの設定
+	/// @param index インデックス
+	void SetRenderResourceIndex(uint32_t index) {
+		renderResourceIndex_ = index;
+	}
+
+	//========================================
+	/// @brief GetRenderTextureRootSignature レンダーテクスチャのルートシグネチャ取得
+	/// @return
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRenderTextureRootSignature() {
+		return renderTextureRootSignature_;
+	}
+
+	//========================================
+	/// @brief GetRenderTexturePipelineState レンダーテクスチャのパイプラインステート取得
+	/// @return
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> GetRenderTexturePipelineState() {
+		return renderTextureGraphicsPipelineState_;
+	}
+
 	///--------------------------------------------------------------
 	///						 メンバ変数
 private:
