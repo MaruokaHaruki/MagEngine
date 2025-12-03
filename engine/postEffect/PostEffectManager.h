@@ -41,7 +41,15 @@ public:
 	// 有効なエフェクトを適用
 	void ApplyEffects();
 
+	// DirectXCoreへのアクセス
+	DirectXCore *GetDXCore() const {
+		return dxCore_;
+	}
+
 private:
+	// DirectXCoreポインタ
+	DirectXCore *dxCore_ = nullptr;
+
 	// 各エフェクトのON/OFF状態
 	bool effectEnabled_[static_cast<size_t>(EffectType::Count)] = {};
 

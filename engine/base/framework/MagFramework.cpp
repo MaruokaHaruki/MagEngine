@@ -62,6 +62,11 @@ void MagFramework::Initialize() {
 	dxCore_->CreateRenderTextureRTV();
 
 	///--------------------------------------------------------------
+	///						 ポストエフェクトマネージャ
+	postEffectManager_ = std::make_unique<PostEffectManager>();
+	postEffectManager_->Initialize(dxCore_.get());
+
+	///--------------------------------------------------------------
 	///						 ImGuiのセットアップ
 	imguiSetup_ = std::make_unique<ImguiSetup>();
 	// ImGuiの初期化
@@ -169,8 +174,8 @@ void MagFramework::Initialize() {
 	sceneManager_ = std::make_unique<SceneManager>();
 	// シーンマネージャの初期化
 	sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get(),
-		skyboxSetup_.get(), cloudSetup_.get());
-	// シーンファクトリーのセット		
+							  skyboxSetup_.get(), cloudSetup_.get());
+	// シーンファクトリーのセット
 	sceneFactory_ = std::make_unique<SceneFactory>();
 	sceneManager_->SetSceneFactory(sceneFactory_.get());
 
@@ -271,8 +276,8 @@ void MagFramework::RenderPostDraw() {
 ///						フレームワーク共通前処理
 void MagFramework::PreDraw() {
 	//========================================
-	// ループ前処理
-	dxCore_->PreDraw();
+	// ループ前処理(ポストエフェクト適用)
+	dxCore_->PreDraw(postEffectManager_.get());
 	//========================================
 	//  Lineの描画
 	LineManager::GetInstance()->Draw();
@@ -308,6 +313,8 @@ void MagFramework::ImGuiPreDraw() {
 	LineManager::GetInstance()->DrawImGui();
 	// ImGuiでデバッグテキストを描画
 	DebugTextManager::GetInstance()->DrawImGui();
+	// ポストエフェクトのImGui描画
+	DrawPostEffectImGui();
 #endif // DEBUG
 }
 
@@ -367,4 +374,19 @@ void MagFramework::CloudCommonDraw() {
 	cloudSetup_->CommonDrawSetup();
 	// Cloud描画
 	sceneManager_->CloudDraw();
+}
+
+///=============================================================================
+///						ポストエフェクトのImGui描画
+void MagFramework::DrawPostEffectImGui() {
+	ImGui::Begin("Post Effects");
+
+	bool grayscaleEnabled = postEffectManager_->IsEffectEnabled(PostEffectManager::EffectType::Grayscale);
+	if (ImGui::Checkbox("Grayscale", &grayscaleEnabled)) {
+		postEffectManager_->SetEffectEnabled(PostEffectManager::EffectType::Grayscale, grayscaleEnabled);
+	}
+
+	// 将来的に他のエフェクトを追加する場合はここに追加
+
+	ImGui::End();
 }

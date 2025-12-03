@@ -22,6 +22,7 @@
 #include "LineManager.h"
 #include "MAudioG.h"
 #include "ModelManager.h"
+#include "PostEffectManager.h"
 #include "SceneFactory.h"
 #include "SceneManager.h"
 #include "TextureManager.h"
@@ -55,6 +56,9 @@ public:
 
 	/// \brief 終了処理
 	virtual void Finalize();
+
+	/// @brief ポストエフェクトのImGui描画
+	void DrawPostEffectImGui();
 
 	///--------------------------------------------------------------
 	///						 静的メンバ関数
@@ -134,6 +138,8 @@ protected:
 	std::unique_ptr<CloudSetup> cloudSetup_;
 	//========================================
 	// マネージャ
+	// ポストエフェクトマネージャ
+	std::unique_ptr<PostEffectManager> postEffectManager_;
 	// シーンマネージャ
 	std::unique_ptr<SceneManager> sceneManager_;
 	// シーンファクトリー

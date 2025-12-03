@@ -50,6 +50,8 @@ using namespace Logger;
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 ///=============================================================================
 ///						クラス
+class PostEffectManager;
+
 class DirectXCore {
 public:
 	///--------------------------------------------------------------
@@ -57,7 +59,8 @@ public:
 
 	//========================================
 	/// @brief PostDraw 描画前処理
-	void PreDraw();
+	/// @param postEffectManager ポストエフェクトマネージャ
+	void PreDraw(PostEffectManager *postEffectManager = nullptr);
 
 	//========================================
 	/// @brief 描画前処理

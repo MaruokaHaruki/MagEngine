@@ -7,6 +7,7 @@
  * \note
  *********************************************************************/
 #include "DirectXCore.h"
+#include "PostEffectManager.h"
 #include "TextureManager.h"
 //========================================
 // 標準ライブラリ
@@ -16,14 +17,14 @@
 #include "d3dx12.h"
 #pragma comment(lib, "winmm.lib")
 // HOTFIX:リンクエラー対策
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 ///=============================================================================
 ///						描画前処理
 // TODO:ループ内の前処理後処理を作成
-void DirectXCore::PreDraw() {
+void DirectXCore::PreDraw(PostEffectManager *postEffectManager) {
 	/// バックバッファの決定
 	SettleCommandList();
 	/// バリア設定
@@ -37,8 +38,7 @@ void DirectXCore::PreDraw() {
 
 	commandList_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	//========================================
-	// 以下の内容を繰り返す
+	// デフォルトのレンダーテクスチャ描画
 	commandList_->SetGraphicsRootSignature(renderTextureRootSignature_.Get());
 	commandList_->SetPipelineState(renderTextureGraphicsPipelineState_.Get());
 
@@ -57,18 +57,11 @@ void DirectXCore::PreDraw() {
 
 	commandList_->DrawInstanced(3, 1, 0, 0);
 
-//	// グレースケールエフェクトの前描画処理
-//	grayscaleEffect_.PreDraw();
-//
-//	if (renderResourceIndex_ == 0) {
-//		srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture0");
-//	} else {
-//		srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture1");
-//	}
-//	// srvHandle.ptr が 0 または異常な値でないか確認
-//	assert(srvHandle.ptr != 0);
-//	commandList_->SetGraphicsRootDescriptorTable(0, srvHandle);
-//	commandList_->DrawInstanced(3, 1, 0, 0);
+	//========================================
+	// ポストエフェクトがある場合は適用
+	if (postEffectManager) {
+		postEffectManager->ApplyEffects();
+	}
 }
 
 ///=============================================================================
@@ -617,15 +610,13 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCore::CreateDescriptorHeap(D
 	return descriptorHeap;
 }
 
-// HOTFIX : 
-void WriteToFile(const std::string& fileName, const std::string& text)
-{
+// HOTFIX :
+void WriteToFile(const std::string &fileName, const std::string &text) {
 	// 出力ファイルストリームを生成
 	std::ofstream outputFile(fileName);
 
 	// ファイルが開けなかった場合のエラーチェック
-	if (!outputFile)
-	{
+	if (!outputFile) {
 		std::cerr << "ファイルを開けませんでした: " << fileName << std::endl;
 		return;
 	}
@@ -668,8 +659,7 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 		L"-Qembed_debug",
 		L"-Od",
 		L"-Zpr",
-		L"-I", L"resources/shader/"
-	};
+		L"-I", L"resources/shader/"};
 	// 実際にShaderをコンパイルする
 	IDxcResult *shaderResult = nullptr;
 	hr = dxcCompiler_->Compile(
@@ -995,10 +985,10 @@ void DirectXCore::CreateRenderTextureRTV() {
 	renderResourceIndex_ = 0;
 	renderTargetIndex_ = 1;
 
-	//NOTE:
-	//FIXME:
-	//CHANGED:
-	//HOTFIX:
+	// NOTE:
+	// FIXME:
+	// CHANGED:
+	// HOTFIX:
 }
 
 ///--------------------------------------------------------------
