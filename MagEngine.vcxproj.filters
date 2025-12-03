@@ -188,8 +188,8 @@
     <ClCompile Include="application\SceneTransition.cpp" />
     <ClCompile Include="application\StartAnimation.cpp" />
     <ClCompile Include="application\GameOverUI.cpp" />
-    <ClCompile Include="engine\3d\Cloud.cpp" />
-    <ClCompile Include="engine\3d\CloudSetup.cpp" />
+    <ClCompile Include="engine\3d\cloud\Cloud.cpp" />
+    <ClCompile Include="engine\3d\cloud\CloudSetup.cpp" />
     <ClCompile Include="application\GameClearAnimation.cpp" />
     <ClCompile Include="application\player\PlayerCombatComponent.cpp" />
     <ClCompile Include="application\player\PlayerMovementComponent.cpp" />
@@ -440,8 +440,8 @@
     <ClInclude Include="engine\math\MagMath.h" />
     <ClInclude Include="application\StartAnimation.h" />
     <ClInclude Include="application\GameOverUI.h" />
-    <ClInclude Include="engine\3d\Cloud.h" />
-    <ClInclude Include="engine\3d\CloudSetup.h" />
+    <ClInclude Include="engine\3d\cloud\Cloud.h" />
+    <ClInclude Include="engine\3d\cloud\CloudSetup.h" />
     <ClInclude Include="application\GameClearAnimation.h" />
     <ClInclude Include="application\player\PlayerCombatComponent.h" />
     <ClInclude Include="application\player\PlayerMovementComponent.h" />
