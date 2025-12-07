@@ -199,6 +199,7 @@ void DirectXCore::SelectAdapter() {
 ///						D3D12Deviceの作成
 void DirectXCore::CreateD3D12Device() {
 	device_ = nullptr;
+	//=======================================
 	// 機能レベルとログ出力用の文字列
 	D3D_FEATURE_LEVEL featureLevels[] = {
 		D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0};
@@ -214,7 +215,7 @@ void DirectXCore::CreateD3D12Device() {
 			break;
 		}
 	}
-
+	//=======================================
 	// デバイスの生成がうまくいかなかったので起動できない
 	assert(device_ != nullptr);
 	// 初期化完了のログの出力
@@ -234,8 +235,8 @@ void DirectXCore::SetupErrorHandling() {
 		/// 警告時に停止
 		// NOTE:開放を忘れた場合、以下のコードをコメントアウトすること
 		infoQueue_->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-
-		/// ===特定のエラーの無視など=== ///
+		//=======================================
+		// 特定のエラーの無視など
 		// 抑制するメッセージのID
 		D3D12_MESSAGE_ID denyIds[] = {
 			// NOTE:Windows11でのDXGIデバックレイヤーとDX12デバックレイヤーの相互作用バグによるエラーメッセージ
@@ -272,7 +273,6 @@ void DirectXCore::CreateCommandAllocator() {
 	hr_ = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator_));
 	// コマンドアロケータのせいせがうまくいかなかったので起動できない
 	assert(SUCCEEDED(hr_));
-
 	// コマンドリスト
 	commandList_ = nullptr;
 	hr_ = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator_.Get(), nullptr,
@@ -305,7 +305,6 @@ void DirectXCore::CreateFence() {
 	fenceValue_ = 0;
 	hr_ = device_->CreateFence(fenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_));
 	assert(SUCCEEDED(hr_));
-
 	// FenceのSignalを持つためのイベントを生成する
 	fenceEvent_ = CreateEvent(NULL, FALSE, FALSE, NULL);
 	assert(fenceEvent_ != nullptr);
@@ -314,11 +313,14 @@ void DirectXCore::CreateFence() {
 ///=============================================================================
 ///						深度バッファの生成
 void DirectXCore::CreateDepthBuffer() {
-	/// ===DepthStencilTextureをウィンドウのサイズで作成=== ///
+	//=======================================
+	// DepthStencilTextureをウィンドウのサイズで作成
 	depthStencilResource_ = CreateDepthStencilTextureResource(winApp_->GetWindowWidth(), winApp_->GetWindowHeight());
-	/// ===dsv用DescriptorHeap=== ///
+	//=======================================
+	// dsv用DescriptorHeap
 	dsvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-	/// ===dsvの設定=== ///
+	//=======================================
+	// dsvの設定
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;		   // Format。基本的にはResourceに合わせる
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D; // 2dTexture
@@ -331,7 +333,8 @@ void DirectXCore::CreateDepthBuffer() {
 ///=============================================================================
 ///						各種ディスクリプタヒープの生成
 void DirectXCore::CreateVariousDescriptorHeap() {
-	/// ===DescriptorHeapのサイズを取得=== ///
+	//=======================================
+	// DescriptorHeapのサイズを取得
 	// descriptorSizeSRV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	descriptorSizeRTV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	descriptorSizeDSV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
@@ -368,11 +371,11 @@ void DirectXCore::CreateRenderTargetViews() {
 	// ディスクリプタの先頭を取得する
 	rtvStarHandle_ = rtvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
 	// RTVを2つ作るのでディスクリプタを2つ用意
-
+	//=======================================
 	// １つ目の作成
 	rtvHandles_[0] = rtvStarHandle_;
 	device_->CreateRenderTargetView(swapChainResource_[0].Get(), &rtvDesc_, rtvHandles_[0]);
-
+	//=======================================
 	// 2つめのディスクリプハンドルの作成
 	rtvHandles_[1].ptr = rtvHandles_[0].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	// 2つめの作成
@@ -453,7 +456,6 @@ void DirectXCore::CreateViewportAndScissorRect() {
 ///=============================================================================
 ///						コマンドリストの決定
 void DirectXCore::CloseCommandList() {
-
 	// 画面に書く処理はすべて終わり。画面に映すので状態を遷移
 	// 今回はRenderTargetからPresebtにする
 	barrier_.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -473,7 +475,7 @@ void DirectXCore::ExecuteCommandList() {
 	commandQueue_->ExecuteCommandLists(1, commandLists->GetAddressOf());
 	// GPUとOSに画面の交換を行うように通知する
 	swapChain_->Present(1, 0);
-
+	//=======================================
 	fenceValue_++;
 	// GPUがここまでたどり着いついたときに、Fenceの値を指定した値に代入するようにSignalを送る
 	commandQueue_->Signal(fence_.Get(), fenceValue_);
@@ -484,7 +486,7 @@ void DirectXCore::ExecuteCommandList() {
 		// イベントを待つ
 		WaitForSingleObject(fenceEvent_, INFINITE);
 	}
-
+	//=======================================
 	// 次フレーム用のコマンドリストを準備
 	hr_ = commandAllocator_->Reset();
 	assert(SUCCEEDED(hr_));
@@ -530,7 +532,8 @@ void DirectXCore::CreateDXCCompiler() {
 ///=============================================================================
 ///						深度BufferステンシルBufferの生成関数
 Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateDepthStencilTextureResource(int32_t width, int32_t height) {
-	/// ===生成するResouceの設定=== ///
+	//=======================================
+	// 生成するResouceの設定
 	D3D12_RESOURCE_DESC resourceDesc{};
 	resourceDesc.Width = width;									  // テクスチャの幅
 	resourceDesc.Height = height;								  // テクスチャの高さ
@@ -540,17 +543,17 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateDepthStencilTextureRes
 	resourceDesc.SampleDesc.Count = 1;							  // サンプリングカウント。1固定
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;  // 2次元
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL; // DepthStencillとして使う通知
-
-	/// ===利用するHeapの設定=== ///
+	//=======================================
+	// 利用するHeapの設定
 	D3D12_HEAP_PROPERTIES heapProperties{};
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // VRAM上に作る
-
-	/// ===深度値のクリア設定=== ///
+	//=======================================
+	// 深度値のクリア設定
 	D3D12_CLEAR_VALUE depthClearValue{};
 	depthClearValue.DepthStencil.Depth = 1.0f;				// 1.0F(最大値)でクリア
 	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマット。Resourceと合わせる
-
-	/// ===設定を元にResourceの生成を行う=== ///
+	//=======================================
+	// 設定を元にResourceの生成を行う
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 	HRESULT hr = device_->CreateCommittedResource(
 		&heapProperties,				  // Heapの設定
@@ -559,9 +562,8 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateDepthStencilTextureRes
 		D3D12_RESOURCE_STATE_DEPTH_WRITE, // 深度値を書き込む状態にしておく
 		&depthClearValue,				  // Clear最適値
 		IID_PPV_ARGS(&resource));		  // 作成するResourceポインタへのポインタ
-
-	//========================================
-	// エラーチェック
+										  //========================================
+										  // エラーチェック
 #ifdef _DEBUG
 	assert(SUCCEEDED(hr));
 #endif // _DEBUG
@@ -570,7 +572,6 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateDepthStencilTextureRes
 		Log("Failed to create depth stencil texture resource.", LogLevel::Error);
 		return nullptr;
 	}
-
 	//========================================
 	// 出力
 	return resource;
@@ -623,8 +624,8 @@ void WriteToFile(const std::string &fileName, const std::string &text) {
 ///=============================================================================
 ///						シェーダーのコンパイル
 IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t *profile) {
-
-	/// ===hlseファイルを読む=== ///
+	//=======================================
+	// hlseファイルを読む
 	// これからシェーダーをコンパイルする旨をログに出す
 	Log(ConvertString(std::format(L"Begin Compiler,path:{},profile:{}", filePath, profile)), LogLevel::Info);
 	// hlseファイルを読む
@@ -637,8 +638,8 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 	shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
 	shaderSourceBuffer.Size = shaderSource->GetBufferSize();
 	shaderSourceBuffer.Encoding = DXC_CP_UTF8; // UTF-8の文字コードであることを通知
-
-	/// ===コンパイルする=== ///
+	//=======================================
+	// コンパイルする
 	LPCWSTR arguments[] = {
 		filePath.c_str(),
 		L"-E",
@@ -660,8 +661,8 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 		IID_PPV_ARGS(&shaderResult));
 	// コンパイルエラーではなくdxcが起動できないと致命的な状況
 	assert(SUCCEEDED(hr));
-
-	/// ===警告・エラーがでてないか確認する=== ///
+	//=======================================
+	// 警告・エラーがでてないか確認する
 	IDxcBlobUtf8 *shaderError = nullptr;
 	if (shaderResult->HasOutput(DXC_OUT_ERRORS)) {
 		shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
@@ -679,8 +680,8 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 		// 警告・エラーダメ絶対
 		assert(false);
 	}
-
-	/// ===Compile結果を受け取って返す=== ///
+	//=======================================
+	// Compile結果を受け取って返す
 	// コンパイル結果から実行用のバイナリ部分を取得
 	IDxcBlob *shaderBlob = nullptr;
 	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
@@ -704,12 +705,12 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateBufferResource(size_t 
 	resourceDesc.MipLevels = 1;
 	resourceDesc.SampleDesc.Count = 1;
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
+	//=======================================
 	// アップロードヒープのプロパティを設定
 	// 頂点リソース用のヒープ設定
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-
+	//=======================================
 	// リソースを作成
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 	HRESULT hr = device_->CreateCommittedResource(
@@ -719,7 +720,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateBufferResource(size_t 
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&resource));
-
+	//=======================================
 	// エラーチェック
 	if (FAILED(hr) || !resource) {
 		// リソースの作成に失敗した場合、エラーメッセージを出力して nullptr を返す
@@ -732,7 +733,8 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateBufferResource(size_t 
 ///=============================================================================
 ///						テクスチャリソースの生成
 Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateTextureResource(const DirectX::TexMetadata &metadata) {
-	/// ===1.metadataを元にResouceの設定=== ///
+	//=======================================
+	// 1.metadataを元にResouceの設定
 	D3D12_RESOURCE_DESC resouceDesc{};
 	resouceDesc.Width = UINT(metadata.width);							  // Textureの幅
 	resouceDesc.Height = UINT(metadata.height);							  // Textureの高さ
@@ -741,13 +743,13 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateTextureResource(const 
 	resouceDesc.Format = metadata.format;								  // TextureのFormat
 	resouceDesc.SampleDesc.Count = 1;									  // サンプリングカウント
 	resouceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metadata.dimension); // Textureの次元数。普段つかているのは2次元。
-
-	/// ===2.利用するHeapの設定===///
+	//=======================================
+	// 2.利用するHeapの設定
 	// TODO:リソースの場所を変更する03_00_ex
 	D3D12_HEAP_PROPERTIES heapProperties{};
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // 細かい設定を行う
-
-	/// ===3.resouceを生成する=== ///
+	//=======================================
+	// 3.resouceを生成する
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 	HRESULT hr = device_->CreateCommittedResource(
 		&heapProperties,				// Heapの設定
@@ -756,7 +758,6 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateTextureResource(const 
 		D3D12_RESOURCE_STATE_COPY_DEST, // 初回のResouceState。Textureは基本読むだけ
 		nullptr,
 		IID_PPV_ARGS(&resource));
-
 	//========================================
 	// エラーチェック
 #ifdef _DEBUG
@@ -767,7 +768,6 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateTextureResource(const 
 		Log("Failed to create depth stencil texture resource.", LogLevel::Error);
 		return nullptr;
 	}
-
 	//========================================
 	// 出力
 	return resource;
@@ -782,19 +782,20 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateTextureResource(const 
 // NOTE:以下の文字は属性というもの。戻り値を破棄してはならないことを示す。
 [[nodiscard]]
 Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::UploadTextureData(Microsoft::WRL::ComPtr<ID3D12Resource> texture, const DirectX::ScratchImage &mipImages) {
-	///----------------中間リソースの作成----------------///
+	//=======================================
+	// 中間リソースの作成
 	std::vector<D3D12_SUBRESOURCE_DATA> subresource;
 	DirectX::PrepareUpload(device_.Get(), mipImages.GetImages(), mipImages.GetImageCount(), mipImages.GetMetadata(), subresource);
 	// Subresourceの数を元に、コピー元となるintermediateResourceに必要なサイズを計算する
 	uint64_t intermediateSize = GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresource.size()));
 	// 計算したサイズでintermediateResourceを作る
 	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = CreateBufferResource(intermediateSize);
-
-	///----------------データ転送をコマンドに積む----------------///
+	//=======================================
+	// データ転送をコマンドに積む
 	// interにsubreのデータを書き込み、textureに転送する
 	UpdateSubresources(commandList_.Get(), texture.Get(), intermediateResource.Get(), 0, 0, UINT(subresource.size()), subresource.data());
-
-	///----------------読み込み変更コマンド----------------///
+	//=======================================
+	// 読み込み変更コマンド
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -809,18 +810,19 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::UploadTextureData(Microsoft:
 ///=============================================================================
 ///						DXTecを使ってファイルを読む
 DirectX::ScratchImage DirectXCore::LoadTexture(const std::string &filePath) {
-	/// ===テクスチャファイルを読んでプログラムを扱えるようにする=== ///
+	//=======================================
+	// テクスチャファイルを読んでプログラムを扱えるようにする
 	DirectX::ScratchImage image{};
 	std::wstring filePathW = ConvertString(filePath);
 	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
 	assert(SUCCEEDED(hr));
-
-	/// ===ミニマップの作成=== ///
+	//=======================================
+	// ミニマップの作成
 	DirectX::ScratchImage mipImages{};
 	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
 	assert(SUCCEEDED(hr));
-
-	/// ===ミニマップ付きのデータを返す=== ///
+	//=======================================
+	// ミニマップ付きのデータを返す
 	return mipImages;
 }
 
@@ -833,25 +835,24 @@ void DirectXCore::RenderTexturePreDraw() {
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
-
+	//=======================================
 	// 現在の状態を使用して正しく設定
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
+	//=======================================
 	// 現在と次の状態が異なる場合のみバリアを適用
 	commandList_->ResourceBarrier(1, &barrier);
-
+	//=======================================
 	// 以降のDSV設定やクリア処理...
 	uint32_t renderTargetIndex = 2 + renderResourceIndex_;
 	commandList_->OMSetRenderTargets(1, &rtvHandles_[renderTargetIndex], false, &dsvHandle_);
-
+	//=======================================
 	// 指定した色で画面全体をクリアする#4c6cb3
 	float clearColor[] = {0.298f, 0.427f, 0.698f, 1.0f}; // この色を変更することでウィンドウの色を黒に変更できます
 	commandList_->ClearRenderTargetView(rtvHandles_[renderTargetIndex], clearColor, 0, nullptr);
-
+	//=======================================
 	// 画面全体の深度をクリア
 	commandList_->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
 	commandList_->RSSetViewports(1, &viewport_);	   // Viewportを設定
 	commandList_->RSSetScissorRects(1, &scissorRect_); // Scissorを設定
 }
@@ -863,11 +864,11 @@ void DirectXCore::RenderTexturePostDraw() {
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
-
+	//=======================================
 	// 現在の状態を使用して正しく設定
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-
+	//=======================================
 	commandList_->ResourceBarrier(1, &barrier);
 }
 
@@ -974,11 +975,6 @@ void DirectXCore::CreateRenderTextureRTV() {
 	// レンダーテクスチャ
 	renderResourceIndex_ = 0;
 	renderTargetIndex_ = 1;
-
-	// NOTE:
-	// FIXME:
-	// CHANGED:
-	// HOTFIX:
 }
 
 ///--------------------------------------------------------------
