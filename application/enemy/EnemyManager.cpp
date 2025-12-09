@@ -83,6 +83,20 @@ void EnemyManager::DrawImGui() {
 	ImGui::Text("Alive Enemies: %zu / %d", GetAliveEnemyCount(), maxEnemies_);
 	ImGui::Text("Defeated: %d / %d", defeatedCount_, targetDefeatedCount_);
 
+	// ヒットリアクション中の敵をカウント
+	int hitReactingCount = 0;
+	int totalHP = 0;
+	for (const auto &enemy : enemies_) {
+		if (enemy && enemy->IsInHitReaction()) {
+			hitReactingCount++;
+		}
+		if (enemy && enemy->IsAlive()) {
+			totalHP += enemy->GetCurrentHP();
+		}
+	}
+	ImGui::Text("Hit Reacting: %d", hitReactingCount);
+	ImGui::Text("Total HP: %d", totalHP);
+
 	if (IsGameClear()) {
 		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "GAME CLEAR!");
 	}

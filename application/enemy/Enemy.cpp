@@ -36,11 +36,23 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	destroyState_ = DestroyState::Alive;
 	destroyTimer_ = 0.0f;
 	destroyDuration_ = 2.0f; // 2秒間破壊演出を表示
+	maxHP_ = 3;				 // 最大HP（3回ヒットで撃破）
+	currentHP_ = maxHP_;	 // 現在のHPを最大値で初期化
 
 	//========================================
 	// パーティクル関連の初期化
 	particle_ = nullptr;
 	particleCreated_ = false;
+
+	//========================================
+	// ヒットリアクション関連の初期化
+	isHitReacting_ = false;
+	hitReactionTimer_ = 0.0f;
+	hitReactionDuration_ = 0.15f; // 0.15秒間のヒットリアクション
+	hitFlashCount_ = 0;
+	originalScale_ = transform_.scale;
+	hitScale_ = {1.3f, 1.3f, 1.3f}; // ヒット時に1.3倍に拡大
+	shouldRenderThisFrame_ = true;	// 初期状態は描画する
 
 	//========================================
 	// BaseObjectの初期化（当たり判定）
@@ -70,6 +82,38 @@ void Enemy::Update() {
 		return;
 	}
 
+	//========================================
+	// ヒットリアクションの更新
+	if (isHitReacting_) {
+		hitReactionTimer_ += 1.0f / 60.0f;
+
+		// 点滅効果（0.05秒ごとに切り替え）
+		int flashInterval = static_cast<int>(hitReactionTimer_ / 0.05f);
+		shouldRenderThisFrame_ = (flashInterval % 2 == 0);
+
+		// スケール変化（徐々に元に戻る）
+		float t = hitReactionTimer_ / hitReactionDuration_;
+		t = std::clamp(t, 0.0f, 1.0f);
+
+		// イージングアウト（二次関数）
+		float easeOut = 1.0f - (1.0f - t) * (1.0f - t);
+		transform_.scale = {
+			hitScale_.x + (originalScale_.x - hitScale_.x) * easeOut,
+			hitScale_.y + (originalScale_.y - hitScale_.y) * easeOut,
+			hitScale_.z + (originalScale_.z - hitScale_.z) * easeOut};
+
+		// ヒットリアクション終了
+		if (hitReactionTimer_ >= hitReactionDuration_) {
+			isHitReacting_ = false;
+			hitReactionTimer_ = 0.0f;
+			transform_.scale = originalScale_;
+			shouldRenderThisFrame_ = true;
+		}
+	} else {
+		// 通常状態では常に描画
+		shouldRenderThisFrame_ = true;
+	}
+
 	// Z方向（正面）へ移動
 	transform_.translate.z += speed_ * (1.0f / 60.0f);
 
@@ -94,8 +138,8 @@ void Enemy::Update() {
 ///=============================================================================
 ///                        描画
 void Enemy::Draw() {
-	// 生存中のみ描画
-	if (destroyState_ == DestroyState::Alive && obj_) {
+	// 生存中かつ描画フラグが立っている場合のみ描画
+	if (destroyState_ == DestroyState::Alive && obj_ && shouldRenderThisFrame_) {
 		obj_->Draw();
 	}
 }
@@ -107,7 +151,9 @@ void Enemy::DrawImGui() {
 	ImGui::Begin("Enemy Debug");
 	ImGui::Text("Position: (%.2f, %.2f, %.2f)", transform_.translate.x, transform_.translate.y, transform_.translate.z);
 	ImGui::Text("Is Alive: %s", isAlive_ ? "Yes" : "No");
+	ImGui::Text("HP: %d / %d", currentHP_, maxHP_);
 	ImGui::SliderFloat("Speed", &speed_, 5.0f, 30.0f);
+	ImGui::SliderInt("Max HP", &maxHP_, 1, 10);
 	ImGui::End();
 }
 ///=============================================================================
@@ -126,29 +172,8 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 		return;
 	}
 
-	//========================================
-	// パーティクルエフェクトの生成
-	if (particle_ && !particleCreated_) {
-		Vector3 enemyPos = transform_.translate; // メイントランスフォームから位置取得
-
-		//========================================
-		// 1. 火花エフェクト（Board形状）- メインの爆発
-		particle_->SetVelocityRange({-10.0f, -5.0f, -10.0f}, {10.0f, 10.0f, 10.0f});
-		particle_->SetColorRange({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.3f, 1.0f}); // オレンジ～黄色
-		particle_->SetLifetimeRange(0.5f, 1.5f);
-		particle_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.8f, 0.8f, 0.8f});
-		particle_->SetEndScaleRange({0.1f, 0.1f, 0.1f}, {0.3f, 0.3f, 0.3f}); // 最小値を0.0fから変更
-		particle_->SetGravity({0.0f, -8.0f, 0.0f});
-		particle_->SetFadeInOut(0.02f, 0.8f);
-		particle_->Emit("ExplosionSparks", enemyPos, 30); // 30個の火花
-
-		particleCreated_ = true;
-	}
-
-	//========================================
-	// 破壊状態に移行（すぐには消さない）
-	destroyState_ = DestroyState::Destroying;
-	destroyTimer_ = 0.0f;
+	// ダメージを与える（1ダメージ）
+	TakeDamage(1);
 }
 ///=============================================================================
 ///                        衝突継続処理
@@ -163,4 +188,82 @@ void Enemy::OnCollisionExit(BaseObject *other) {
 	// FIXME: otherが使用されていないので修正すること
 	other;
 	// 衝突終了時の処理（必要に応じて実装）
+}
+
+void Enemy::StartHitReaction() {
+	// 既に破壊中の場合は実行しない
+	if (destroyState_ != DestroyState::Alive) {
+		return;
+	}
+
+	isHitReacting_ = true;
+	hitReactionTimer_ = 0.0f;
+	hitFlashCount_ = 0;
+}
+
+///=============================================================================
+///                        ダメージ処理
+void Enemy::TakeDamage(int damage) {
+	// 既に破壊中または死亡している場合は処理しない
+	if (destroyState_ != DestroyState::Alive) {
+		return;
+	}
+
+	// HPを減らす
+	currentHP_ -= damage;
+
+	// ヒットリアクション開始
+	StartHitReaction();
+
+	// ヒット時のパーティクルエフェクト（軽量版）
+	if (particle_) {
+		Vector3 enemyPos = transform_.translate;
+
+		//========================================
+		// ヒット時の衝撃波エフェクト（Ring形状）
+		particle_->SetVelocityRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
+		particle_->SetColorRange({1.0f, 0.8f, 0.0f, 1.0f}, {1.0f, 0.5f, 0.0f, 1.0f}); // 黄～オレンジ
+		particle_->SetLifetimeRange(0.2f, 0.3f);
+		particle_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.5f, 0.5f, 0.5f});
+		particle_->SetEndScaleRange({1.5f, 1.5f, 1.5f}, {2.0f, 2.0f, 2.0f}); // 急速に拡大
+		particle_->SetGravity({0.0f, 0.0f, 0.0f});
+		particle_->SetFadeInOut(0.0f, 1.0f);
+		particle_->Emit("ExplosionRing", enemyPos, 1); // 衝撃波1個
+	}
+
+	// HPが0以下になったら破壊
+	if (currentHP_ <= 0) {
+		// 破壊時の大規模なエフェクト
+		if (particle_ && !particleCreated_) {
+			Vector3 enemyPos = transform_.translate;
+
+			//========================================
+			// 1. 破壊時の衝撃波エフェクト（Ring形状）
+			particle_->SetVelocityRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
+			particle_->SetColorRange({1.0f, 0.8f, 0.0f, 1.0f}, {1.0f, 0.5f, 0.0f, 1.0f});
+			particle_->SetLifetimeRange(0.2f, 0.3f);
+			particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {0.8f, 0.8f, 0.8f});
+			particle_->SetEndScaleRange({2.5f, 2.5f, 2.5f}, {3.5f, 3.5f, 3.5f});
+			particle_->SetGravity({0.0f, 0.0f, 0.0f});
+			particle_->SetFadeInOut(0.0f, 1.0f);
+			particle_->Emit("ExplosionRing", enemyPos, 2);
+
+			//========================================
+			// 2. 火花エフェクト（Board形状）
+			particle_->SetVelocityRange({-10.0f, -5.0f, -10.0f}, {10.0f, 10.0f, 10.0f});
+			particle_->SetColorRange({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.3f, 1.0f});
+			particle_->SetLifetimeRange(0.5f, 1.5f);
+			particle_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.8f, 0.8f, 0.8f});
+			particle_->SetEndScaleRange({0.1f, 0.1f, 0.1f}, {0.3f, 0.3f, 0.3f}); // 最小値が最大値以下であることを確認
+			particle_->SetGravity({0.0f, -8.0f, 0.0f});
+			particle_->SetFadeInOut(0.02f, 0.8f);
+			particle_->Emit("ExplosionSparks", enemyPos, 30);
+
+			particleCreated_ = true;
+		}
+
+		// 破壊状態に移行
+		destroyState_ = DestroyState::Destroying;
+		destroyTimer_ = 0.0f;
+	}
 }

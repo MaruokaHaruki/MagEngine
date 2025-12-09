@@ -63,8 +63,8 @@ void Particle::Update() {
 	}
 
 	// スケール調整用の倍率を設定
-	//constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
-	
+	// constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
+
 	//========================================
 	// パーティクルの更新
 	for (auto &group : particleGroups) {
@@ -188,8 +188,6 @@ void Particle::Emit(const std::string name, const Vector3 &position, uint32_t co
 
 	// 指定された数のパーティクルを生成して追加
 	for (uint32_t i = 0; i < count; ++i) {
-		/*Particle newParticle = MakeNewParticle(randomEngine, position);
-		group.particleList.push_back(newParticle);*/
 		group.particleList.push_back(CreateNewParticle(randomEngine_, position));
 	}
 }
@@ -457,30 +455,89 @@ void Particle::CreateMaterialData() {
 ///=============================================================================
 ///						新しいパーティクルを生成
 ParticleStr Particle::CreateNewParticle(std::mt19937 &randomEngine, const Vector3 &position) {
-	// カラーと寿命のランダム分布
-	std::uniform_real_distribution<float> distTranslateX(translateMin_.x, translateMax_.x);
-	std::uniform_real_distribution<float> distTranslateY(translateMin_.y, translateMax_.y);
-	std::uniform_real_distribution<float> distTranslateZ(translateMin_.z, translateMax_.z);
-	std::uniform_real_distribution<float> distVelocityX(velocityMin_.x, velocityMax_.x);
-	std::uniform_real_distribution<float> distVelocityY(velocityMin_.y, velocityMax_.y);
-	std::uniform_real_distribution<float> distVelocityZ(velocityMin_.z, velocityMax_.z);
-	std::uniform_real_distribution<float> distColorR(colorMin_.x, colorMax_.x);
-	std::uniform_real_distribution<float> distColorG(colorMin_.y, colorMax_.y);
-	std::uniform_real_distribution<float> distColorB(colorMin_.z, colorMax_.z);
-	std::uniform_real_distribution<float> distColorA(colorMin_.w, colorMax_.w);
-	std::uniform_real_distribution<float> distTime(lifetimeRange_.min, lifetimeRange_.max);
-	std::uniform_real_distribution<float> distInitialScaleX(initialScaleMin_.x, initialScaleMax_.x);
-	std::uniform_real_distribution<float> distInitialScaleY(initialScaleMin_.y, initialScaleMax_.y);
-	std::uniform_real_distribution<float> distInitialScaleZ(initialScaleMin_.z, initialScaleMax_.z);
-	std::uniform_real_distribution<float> distEndScaleX(endScaleMin_.x, endScaleMax_.x);
-	std::uniform_real_distribution<float> distEndScaleY(endScaleMin_.y, endScaleMax_.y);
-	std::uniform_real_distribution<float> distEndScaleZ(endScaleMin_.z, endScaleMax_.z);
-	std::uniform_real_distribution<float> distInitialRotationX(initialRotationMin_.x, initialRotationMax_.x);
-	std::uniform_real_distribution<float> distInitialRotationY(initialRotationMin_.y, initialRotationMax_.y);
-	std::uniform_real_distribution<float> distInitialRotationZ(initialRotationMin_.z, initialRotationMax_.z);
-	std::uniform_real_distribution<float> distEndRotationX(endRotationMin_.x, endRotationMax_.x);
-	std::uniform_real_distribution<float> distEndRotationY(endRotationMin_.y, endRotationMax_.y);
-	std::uniform_real_distribution<float> distEndRotationZ(endRotationMin_.z, endRotationMax_.z);
+	// 範囲の安全性チェック（min > maxの場合はスワップ）
+	auto safeRange = [](float &min, float &max) {
+		if (min > max) {
+			std::swap(min, max);
+		}
+		// 同じ値の場合は微小な差を追加
+		if (std::abs(max - min) < 0.0001f) {
+			max = min + 0.0001f;
+		}
+	};
+
+	// 各範囲の安全性チェック
+	Vector3 safeTranslateMin = translateMin_;
+	Vector3 safeTranslateMax = translateMax_;
+	safeRange(safeTranslateMin.x, safeTranslateMax.x);
+	safeRange(safeTranslateMin.y, safeTranslateMax.y);
+	safeRange(safeTranslateMin.z, safeTranslateMax.z);
+
+	Vector3 safeVelocityMin = velocityMin_;
+	Vector3 safeVelocityMax = velocityMax_;
+	safeRange(safeVelocityMin.x, safeVelocityMax.x);
+	safeRange(safeVelocityMin.y, safeVelocityMax.y);
+	safeRange(safeVelocityMin.z, safeVelocityMax.z);
+
+	Vector4 safeColorMin = colorMin_;
+	Vector4 safeColorMax = colorMax_;
+	safeRange(safeColorMin.x, safeColorMax.x);
+	safeRange(safeColorMin.y, safeColorMax.y);
+	safeRange(safeColorMin.z, safeColorMax.z);
+	safeRange(safeColorMin.w, safeColorMax.w);
+
+	float safeLifeMin = lifetimeRange_.min;
+	float safeLifeMax = lifetimeRange_.max;
+	safeRange(safeLifeMin, safeLifeMax);
+
+	Vector3 safeInitialScaleMin = initialScaleMin_;
+	Vector3 safeInitialScaleMax = initialScaleMax_;
+	safeRange(safeInitialScaleMin.x, safeInitialScaleMax.x);
+	safeRange(safeInitialScaleMin.y, safeInitialScaleMax.y);
+	safeRange(safeInitialScaleMin.z, safeInitialScaleMax.z);
+
+	Vector3 safeEndScaleMin = endScaleMin_;
+	Vector3 safeEndScaleMax = endScaleMax_;
+	safeRange(safeEndScaleMin.x, safeEndScaleMax.x);
+	safeRange(safeEndScaleMin.y, safeEndScaleMax.y);
+	safeRange(safeEndScaleMin.z, safeEndScaleMax.z);
+
+	Vector3 safeInitialRotationMin = initialRotationMin_;
+	Vector3 safeInitialRotationMax = initialRotationMax_;
+	safeRange(safeInitialRotationMin.x, safeInitialRotationMax.x);
+	safeRange(safeInitialRotationMin.y, safeInitialRotationMax.y);
+	safeRange(safeInitialRotationMin.z, safeInitialRotationMax.z);
+
+	Vector3 safeEndRotationMin = endRotationMin_;
+	Vector3 safeEndRotationMax = endRotationMax_;
+	safeRange(safeEndRotationMin.x, safeEndRotationMax.x);
+	safeRange(safeEndRotationMin.y, safeEndRotationMax.y);
+	safeRange(safeEndRotationMin.z, safeEndRotationMax.z);
+
+	// カラーと寿命のランダム分布（安全な範囲を使用）
+	std::uniform_real_distribution<float> distTranslateX(safeTranslateMin.x, safeTranslateMax.x);
+	std::uniform_real_distribution<float> distTranslateY(safeTranslateMin.y, safeTranslateMax.y);
+	std::uniform_real_distribution<float> distTranslateZ(safeTranslateMin.z, safeTranslateMax.z);
+	std::uniform_real_distribution<float> distVelocityX(safeVelocityMin.x, safeVelocityMax.x);
+	std::uniform_real_distribution<float> distVelocityY(safeVelocityMin.y, safeVelocityMax.y);
+	std::uniform_real_distribution<float> distVelocityZ(safeVelocityMin.z, safeVelocityMax.z);
+	std::uniform_real_distribution<float> distColorR(safeColorMin.x, safeColorMax.x);
+	std::uniform_real_distribution<float> distColorG(safeColorMin.y, safeColorMax.y);
+	std::uniform_real_distribution<float> distColorB(safeColorMin.z, safeColorMax.z);
+	std::uniform_real_distribution<float> distColorA(safeColorMin.w, safeColorMax.w);
+	std::uniform_real_distribution<float> distTime(safeLifeMin, safeLifeMax);
+	std::uniform_real_distribution<float> distInitialScaleX(safeInitialScaleMin.x, safeInitialScaleMax.x);
+	std::uniform_real_distribution<float> distInitialScaleY(safeInitialScaleMin.y, safeInitialScaleMax.y);
+	std::uniform_real_distribution<float> distInitialScaleZ(safeInitialScaleMin.z, safeInitialScaleMax.z);
+	std::uniform_real_distribution<float> distEndScaleX(safeEndScaleMin.x, safeEndScaleMax.x);
+	std::uniform_real_distribution<float> distEndScaleY(safeEndScaleMin.y, safeEndScaleMax.y);
+	std::uniform_real_distribution<float> distEndScaleZ(safeEndScaleMin.z, safeEndScaleMax.z);
+	std::uniform_real_distribution<float> distInitialRotationX(safeInitialRotationMin.x, safeInitialRotationMax.x);
+	std::uniform_real_distribution<float> distInitialRotationY(safeInitialRotationMin.y, safeInitialRotationMax.y);
+	std::uniform_real_distribution<float> distInitialRotationZ(safeInitialRotationMin.z, safeInitialRotationMax.z);
+	std::uniform_real_distribution<float> distEndRotationX(safeEndRotationMin.x, safeEndRotationMax.x);
+	std::uniform_real_distribution<float> distEndRotationY(safeEndRotationMin.y, safeEndRotationMax.y);
+	std::uniform_real_distribution<float> distEndRotationZ(safeEndRotationMin.z, safeEndRotationMax.z);
 
 	// 新たなパーティクルの生成
 	ParticleStr particle = {};

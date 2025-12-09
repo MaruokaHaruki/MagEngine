@@ -53,10 +53,31 @@ public:
 		return radius_;
 	}
 
+	/// \brief 現在のHPを取得
+	int GetCurrentHP() const {
+		return currentHP_;
+	}
+
+	/// \brief 最大HPを取得
+	int GetMaxHP() const {
+		return maxHP_;
+	}
+
+	/// \brief ダメージを受ける
+	void TakeDamage(int damage);
+
 	/// \brief 衝突処理関数（BaseObjectの純粋仮想関数を実装）
 	void OnCollisionEnter(BaseObject *other) override;
 	void OnCollisionStay(BaseObject *other) override;
 	void OnCollisionExit(BaseObject *other) override;
+
+	/// \brief ヒットリアクションの開始
+	void StartHitReaction();
+
+	/// \brief ヒットリアクション中かどうか
+	bool IsInHitReaction() const {
+		return isHitReacting_;
+	}
 
 	///--------------------------------------------------------------
 	///							メンバ変数
@@ -80,8 +101,10 @@ private:
 
 	//========================================
 	// 状態管理
-	bool isAlive_; // 生存フラグ
-	float radius_; // 当たり判定用の半径
+	bool isAlive_;	// 生存フラグ
+	float radius_;	// 当たり判定用の半径
+	int currentHP_; // 現在のHP
+	int maxHP_;		// 最大HP
 
 	//========================================
 	// パーティクル関連
@@ -99,4 +122,14 @@ private:
 	DestroyState destroyState_; // 破壊状態
 	float destroyTimer_;		// 破壊演出タイマー
 	float destroyDuration_;		// 破壊演出の持続時間
+
+	//========================================
+	// ヒットリアクション関連
+	bool isHitReacting_;		 // ヒットリアクション中フラグ
+	float hitReactionTimer_;	 // ヒットリアクションタイマー
+	float hitReactionDuration_;	 // ヒットリアクション持続時間
+	int hitFlashCount_;			 // 点滅カウント
+	Vector3 originalScale_;		 // 元のスケール
+	Vector3 hitScale_;			 // ヒット時のスケール
+	bool shouldRenderThisFrame_; // このフレームで描画するか
 };

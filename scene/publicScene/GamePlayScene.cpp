@@ -68,7 +68,7 @@ void GamePlayScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3d
 	// 爆発エフェクト用の複数の形状を作成
 	// 1. メインの爆発エフェクト（Board形状 - 火花）
 	particle_->CreateParticleGroup("ExplosionSparks", "circle2.png", ParticleShape::Board);
-	// 2. リング形状の衝撃波
+	// 2. リング形状の衝撃波（ヒットリアクション用にも使用）
 	particle_->CreateParticleGroup("ExplosionRing", "circle2.png", ParticleShape::Ring);
 	// 3. シリンダー形状の煙柱
 	particle_->CreateParticleGroup("ExplosionSmoke", "circle2.png", ParticleShape::Cylinder);
