@@ -41,22 +41,16 @@ class MagFramework {
 public:
 	/// \brief 仮想デストラクタ
 	virtual ~MagFramework() = default;
-
 	/// \brief メインループ
 	void Run();
-
 	/// \brief 初期化
 	virtual void Initialize();
-
 	/// \brief 更新
 	virtual void Update();
-
 	/// \brief 描画
 	virtual void Draw() = 0;
-
 	/// \brief 終了処理
 	virtual void Finalize();
-
 	/// @brief ポストエフェクトのImGui描画
 	void DrawPostEffectImGui();
 
@@ -65,34 +59,24 @@ public:
 public:
 	/// @brief レンダーテクスチャ前処理
 	void RenderPreDraw();
-
 	/// @biref レンダーテクスチャ後処理
 	void RenderPostDraw();
-
 	/// @brief フレームワーク共通前処理
 	void PreDraw();
-
 	/// @brief フレームワーク共通後処理
 	void PostDraw();
-
 	/// @brief ImGuiの更新前処理
 	void ImGuiPreDraw();
-
 	/// @brief ImGuiの更新後処理
 	void ImGuiPostDraw();
-
 	/// @brief オブジェクト2D共通描画設定
 	void Object2DCommonDraw();
-
 	/// @brief パーティクル共通描画設定
 	void ParticleCommonDraw();
-
 	/// @brief オブジェクト3D共通描画設定
 	void Object3DCommonDraw();
-
 	/// @brief Skybox共通描画設定
 	void SkyboxCommonDraw();
-
 	/// @brief Cloud共通描画設定
 	void CloudCommonDraw();
 

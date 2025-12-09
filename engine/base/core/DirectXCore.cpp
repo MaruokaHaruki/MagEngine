@@ -59,6 +59,7 @@ void DirectXCore::PreDraw(PostEffectManager *postEffectManager) {
 
 	//========================================
 	// ポストエフェクトがある場合は適用
+	// TODO:ポストエフェクトマネージャをDirectXCoreに持たせるか検討
 	if (postEffectManager) {
 		postEffectManager->ApplyEffects();
 	}

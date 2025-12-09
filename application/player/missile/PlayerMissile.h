@@ -27,25 +27,38 @@ class PlayerMissile : public BaseObject {
 public:
 	//========================================
 	// 初期化・更新・描画
+	/// @brief Initialize 初期化
+	/// @param object3dSetup オブジェクト設定
+	/// @param modelPath モデルパス
+	/// @param startPos 初期位置
+	/// @param initialDirection 初期進行方向
 	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath,
 					const Vector3 &startPos, const Vector3 &initialDirection);
+	/// @brief Update 更新
 	void Update();
+	/// @brief Draw 描画
 	void Draw();
+	/// @brief DrawImGui ImGui描画
 	void DrawImGui();
 
 	//========================================
 	// ターゲット設定
+	/// \brief SetTarget 追尾ターゲット設定
 	void SetTarget(Enemy *target);
 
 	//========================================
 	// ゲッター
+	/// \brief GetPosition 位置取得
 	Vector3 GetPosition() const;
+	/// \brief GetObject3d 3Dオブジェクト取得
 	Object3d *GetObject3d() const {
 		return obj_.get();
 	}
+	/// \brief IsAlive 生存フラグ取得
 	bool IsAlive() const {
 		return isAlive_;
 	}
+	/// \brief HasTarget ターゲット有無取得
 	bool HasTarget() const {
 		return target_ != nullptr;
 	}
@@ -58,33 +71,46 @@ public:
 
 	//========================================
 	// EnemyManager設定（追尾ターゲット検索用）
+	/// @brief SetEnemyManager EnemyManager設定
+	/// @param enemyManager EnemyManagerポインタ
 	void SetEnemyManager(EnemyManager *enemyManager) {
 		enemyManager_ = enemyManager;
 	}
 
 	//========================================
 	// ロックオン機能
+	/// \brief StartLockOn ロックオン開始
 	void StartLockOn();
+	/// \brief IsLockedOn ロックオン状態取得
 	bool IsLockedOn() const {
 		return isLockedOn_;
 	}
+	/// \brief GetLockedTarget ロックオンターゲット取得
 	Enemy *GetLockedTarget() const {
 		return lockedTarget_;
 	}
 
 	//========================================
 	// 視覚化機能
+	/// \brief DrawDebugInfo デバッグ情報描画
 	void DrawDebugInfo();
 
 private:
 	//========================================
 	// 内部処理
+	/// @brief UpdateMovement 移動更新
 	void UpdateMovement();
+	/// @brief UpdateTracking 追尾更新
 	void UpdateTracking();
+	/// @brief UpdateRotation 回転更新
 	void UpdatePhysics();
+	/// @brief UpdateRotation 回転更新
 	void UpdateRotation();
+	/// @brief UpdateLifetime 寿命更新
 	void UpdateLifetime();
+	/// @brief Explode 爆発処理
 	void Explode();
+	/// @brief FindNearestTarget 最寄りのターゲット探索
 	Enemy *FindNearestTarget();
 
 	//========================================
@@ -97,32 +123,19 @@ private:
 	Vector3 velocity_;	   // 現在の速度
 	Vector3 acceleration_; // 加速度
 	Vector3 forward_;	   // 前方向ベクトル
-	float thrustPower_;	   // 推進力
-	float maxSpeed_;	   // 最大速度
-	float drag_;		   // 空気抵抗係数
-
-	// 新しい推進力システム
-	float initialThrustPower_; // 初期推進力
-	float maxThrustPower_;	   // 最大推進力
-	float thrustAcceleration_; // 推進力加速度
-	float fuelRemaining_;	   // 残り燃料（0.0〜1.0）
-	float fuelConsumption_;	   // 燃料消費率
-	bool isBoosterActive_;	   // ブースター段階フラグ
-	float boosterDuration_;	   // ブースター持続時間
-	float boosterTime_;		   // ブースター経過時間
-	float thrustBuildupTime_;  // 推進力立ち上がり時間
+	float speed_;		   // 移動速度（一定）
+	float maxTurnRate_;	   // 最大旋回速度（度/秒）
 
 	//========================================
 	// 追尾関連
 	Enemy *target_;				 // 追尾対象
 	Enemy *lockedTarget_;		 // ロックオンターゲット
-	float trackingStrength_;	 // 追尾強度
+	float trackingStrength_;	 // 追尾強度（0.0〜1.0）
 	float lockOnRange_;			 // ロックオン範囲
-	float trackingDelay_;		 // 追尾開始遅延
+	float trackingStartTime_;	 // 追尾開始時間
 	bool isTracking_;			 // 追尾状態フラグ
 	bool isLockedOn_;			 // ロックオン状態フラグ
 	float lockOnTime_;			 // ロックオン時間
-	float maxLockOnTime_;		 // 最大ロックオン時間
 	EnemyManager *enemyManager_; // 敵管理への参照
 
 	//========================================
