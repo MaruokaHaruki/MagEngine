@@ -1,9 +1,50 @@
 #pragma once
-#include <d3d12.h>
-#include <wrl/client.h>
+//========================================
+// 標準ライブラリ
+#include <chrono>
 #include <cstdint>
-#include <windows.h>
-
+#include <format>
+#include <string>
+#include <thread>
+#include <wrl.h>
+//========================================
+// 自作関数
+#include "WstringUtility.h"
+using namespace WstringUtility;
+#include "Logger.h"
+using namespace Logger;
+#include "CommandContext.h"
+#include "FullscreenPassRendere.h"
+#include "GraphicsDevice.h"
+#include "RenderTargetManager.h"
+#include "ResourceFactory.h"
+#include "ShaderCompiler.h"
+#include "SwapChainManager.h"
+#include "Vector4.h"
+#include "WinApp.h"
+//========================================
+// ReportLiveObj
+#include <dxgidebug.h>
+#pragma comment(lib, "dxguid.lib")
+//========================================
+// DX12 include
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl/client.h>
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+//========================================
+// DXC
+#include <dxcapi.h>
+#pragma comment(lib, "dxcompiler.lib")
+// DXtec
+#include "DirectXTex.h"
+//========================================
+// imgui
+#include "imgui.h"
+#include "imgui_impl_dx12.h"
+#include "imgui_impl_win32.h"
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 /// @brief コマンド実行管理クラス
 class CommandContext {
 public:

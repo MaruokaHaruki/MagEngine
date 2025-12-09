@@ -1,10 +1,17 @@
-#include "resourceFactory.h"
-#include "Logger.h"
-#include "d3dx12.h"
-#include <cassert>
+#include "DirectXCore.h"
+#include "PostEffectManager.h"
+#include "TextureManager.h"
+//========================================
+// 標準ライブラリ
 #include <vector>
-
-using namespace Logger;
+//========================================
+// DirectXTex
+#include "d3dx12.h"
+#pragma comment(lib, "winmm.lib")
+// HOTFIX:リンクエラー対策
+#include <fstream>
+#include <iostream>
+#include <string>
 
 ///=============================================================================
 ///						バッファリソースの生成

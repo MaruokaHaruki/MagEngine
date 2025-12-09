@@ -121,7 +121,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\base\core\directXCore\commandContext\commandContext.cpp" />
     <ClCompile Include="engine\base\core\directXCore\graphicsDevice\GraphicsDevice.cpp" />
     <ClCompile Include="engine\base\core\directXCore\renderTargetManager\renderTargetManager.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\resourceFactory\resourceFactory.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\resourceFactory\ResourceFactory.cpp" />
     <ClCompile Include="engine\base\core\directXCore\shaderCompiler\shaderCompiler.cpp" />
     <ClCompile Include="engine\base\core\directXCore\swapChainManager\swapChainManager.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
