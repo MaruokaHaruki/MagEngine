@@ -83,7 +83,7 @@
     <ClCompile Include="scene\publicScene\TitleScene.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\core\directXCore\DirectXCore.cpp">
+    <ClCompile Include="engine\base\core\DirectXCore.cpp">
       <Filter>engine\base\core</Filter>
     </ClCompile>
     <ClCompile Include="engine\base\imGui\ImguiSetup.cpp">
@@ -195,12 +195,6 @@
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerHelthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\graphicsDevice\GraphicsDevice.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\commandContext\CommandContext.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\renderTargetManager\RenderTargetManager.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\resourceFactory\ResourceFactory.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\shaderCompiler\ShaderCompiler.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\swapChainManager\SwapChainManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -332,7 +326,7 @@
     <ClInclude Include="engine\math\operations\RenderingMatrices.h">
       <Filter>engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\core\directXCore\DirectXCore.h">
+    <ClInclude Include="engine\base\core\DirectXCore.h">
       <Filter>engine\base\core</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\imGui\ImguiSetup.h">
@@ -453,12 +447,6 @@
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerHelthComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
-    <ClInclude Include="engine\base\core\directXCore\graphicsDevice\GraphicsDevice.h" />
-    <ClInclude Include="engine\base\core\directXCore\commandContext\CommandContext.h" />
-    <ClInclude Include="engine\base\core\directXCore\renderTargetManager\RenderTargetManager.h" />
-    <ClInclude Include="engine\base\core\directXCore\resourceFactory\ResourceFactory.h" />
-    <ClInclude Include="engine\base\core\directXCore\shaderCompiler\ShaderCompiler.h" />
-    <ClInclude Include="engine\base\core\directXCore\swapChainManager\SwapChainManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

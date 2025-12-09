@@ -116,7 +116,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\enemy\Enemy.cpp" />
     <ClCompile Include="application\enemy\EnemyManager.cpp" />
     <ClCompile Include="application\utils\Ball.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\commandContext\CommandContext.cpp" />
     <ClCompile Include="engine\3d\cloud\Cloud.cpp" />
     <ClCompile Include="engine\3d\cloud\CloudSetup.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
@@ -150,9 +149,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerHelthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\graphicsDevice\GraphicsDevice.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\renderTargetManager\RenderTargetManager.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\resourceFactory\ResourceFactory.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -160,7 +156,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\audio\MAudioG.cpp" />
     <ClCompile Include="engine\base\core\SrvSetup.cpp" />
     <ClCompile Include="engine\camera\Camera.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\DirectXCore.cpp" />
+    <ClCompile Include="engine\base\core\DirectXCore.cpp" />
     <ClCompile Include="engine\utils\WstringUtility.cpp" />
     <ClCompile Include="engine\utils\Logger.cpp" />
     <ClCompile Include="engine\input\Input.cpp" />
@@ -186,14 +182,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
     <ClCompile Include="application\utils\TitleCamera.cpp" />
     <ClCompile Include="application\StartAnimation.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\shaderCompiler\ShaderCompiler.cpp" />
-    <ClCompile Include="engine\base\core\directXCore\swapChainManager\SwapChainManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\enemy\Enemy.h" />
     <ClInclude Include="application\enemy\EnemyManager.h" />
     <ClInclude Include="application\utils\Ball.h" />
-    <ClInclude Include="engine\base\core\directXCore\commandContext\CommandContext.h" />
     <ClInclude Include="engine\3d\cloud\Cloud.h" />
     <ClInclude Include="engine\3d\cloud\CloudSetup.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
@@ -232,9 +225,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\player\component\PlayerHelthComponent.h" />
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
-    <ClInclude Include="engine\base\core\directXCore\graphicsDevice\GraphicsDevice.h" />
-    <ClInclude Include="engine\base\core\directXCore\renderTargetManager\RenderTargetManager.h" />
-    <ClInclude Include="engine\base\core\directXCore\resourceFactory\ResourceFactory.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
@@ -246,7 +236,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\audio\MAudioG.h" />
     <ClInclude Include="engine\base\core\SrvSetup.h" />
     <ClInclude Include="engine\camera\Camera.h" />
-    <ClInclude Include="engine\base\core\directXCore\DirectXCore.h" />
+    <ClInclude Include="engine\base\core\DirectXCore.h" />
     <ClInclude Include="engine\utils\WstringUtility.h" />
     <ClInclude Include="engine\utils\Logger.h" />
     <ClInclude Include="engine\input\Input.h" />
@@ -286,8 +276,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
     <ClInclude Include="application\utils\TitleCamera.h" />
     <ClInclude Include="application\StartAnimation.h" />
-    <ClInclude Include="engine\base\core\directXCore\shaderCompiler\ShaderCompiler.h" />
-    <ClInclude Include="engine\base\core\directXCore\swapChainManager\SwapChainManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
