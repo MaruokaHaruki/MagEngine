@@ -66,7 +66,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/3d/cloud;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/postEffect/grayscale;$(ProjectDir)engine/postEffect/fullscreenPass;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)engine/base/levelDataLoader;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)application;$(ProjectDir)application/enemy;$(ProjectDir)application/collision;$(ProjectDir)application/player;$(ProjectDir)application/player/bullet;$(ProjectDir)application/player/missile;$(ProjectDir)application/player/component;$(ProjectDir)application/utils;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/3d/cloud;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/postEffect/grayscale;$(ProjectDir)engine/postEffect/fullscreenPass;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/core/directXCore;$(ProjectDir)engine/base/core/directXCore/graphicsDevice;$(ProjectDir)engine/base/imGui;$(ProjectDir)engine/base/levelDataLoader;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)application;$(ProjectDir)application/enemy;$(ProjectDir)application/collision;$(ProjectDir)application/player;$(ProjectDir)application/player/bullet;$(ProjectDir)application/player/missile;$(ProjectDir)application/player/component;$(ProjectDir)application/utils;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
@@ -93,7 +93,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/3d/cloud;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/postEffect/grayscale;$(ProjectDir)engine/postEffect/fullscreenPass;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)engine/base/levelDataLoader;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)application;$(ProjectDir)application/enemy;$(ProjectDir)application/collision;$(ProjectDir)application/player;$(ProjectDir)application/player/bullet;$(ProjectDir)application/player/missile;$(ProjectDir)application/player/component;$(ProjectDir)application/utils;$(ProjectDir)engine/input;$(ProjectDir)engine/utils;$(ProjectDir)engine/math;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/2d;$(ProjectDir)engine/2d/particle;$(ProjectDir)engine/2d/sprite;$(ProjectDir)engine/2d/texture;$(ProjectDir)engine/3d;$(ProjectDir)engine/3d/model;$(ProjectDir)engine/3d/object3d;$(ProjectDir)engine/3d/skybox;$(ProjectDir)engine/3d/line;$(ProjectDir)engine/3d/cloud;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/postEffect;$(ProjectDir)engine/postEffect/grayscale;$(ProjectDir)engine/postEffect/fullscreenPass;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/core/directXCore;$(ProjectDir)engine/base/core/directXCore/graphicsDevice;$(ProjectDir)engine/base/imGui;$(ProjectDir)engine/base/levelDataLoader;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)application;$(ProjectDir)application/enemy;$(ProjectDir)application/collision;$(ProjectDir)application/player;$(ProjectDir)application/player/bullet;$(ProjectDir)application/player/missile;$(ProjectDir)application/player/component;$(ProjectDir)application/utils;$(ProjectDir)engine/input;$(ProjectDir)engine/utils;$(ProjectDir)engine/math;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/drawData;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/imGui;$(ProjectDir)application;$(ProjectDir)application/collision;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -116,6 +116,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\enemy\Enemy.cpp" />
     <ClCompile Include="application\enemy\EnemyManager.cpp" />
     <ClCompile Include="application\utils\Ball.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\commandContext\CommandContext.cpp" />
     <ClCompile Include="engine\3d\cloud\Cloud.cpp" />
     <ClCompile Include="engine\3d\cloud\CloudSetup.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
@@ -149,6 +150,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerHelthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\graphicsDevice\GraphicsDevice.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\renderTargetManager\RenderTargetManager.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\resourceFactory\ResourceFactory.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -156,7 +160,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\audio\MAudioG.cpp" />
     <ClCompile Include="engine\base\core\SrvSetup.cpp" />
     <ClCompile Include="engine\camera\Camera.cpp" />
-    <ClCompile Include="engine\base\core\DirectXCore.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\DirectXCore.cpp" />
     <ClCompile Include="engine\utils\WstringUtility.cpp" />
     <ClCompile Include="engine\utils\Logger.cpp" />
     <ClCompile Include="engine\input\Input.cpp" />
@@ -182,11 +186,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
     <ClCompile Include="application\utils\TitleCamera.cpp" />
     <ClCompile Include="application\StartAnimation.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\shaderCompiler\ShaderCompiler.cpp" />
+    <ClCompile Include="engine\base\core\directXCore\swapChainManager\SwapChainManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\enemy\Enemy.h" />
     <ClInclude Include="application\enemy\EnemyManager.h" />
     <ClInclude Include="application\utils\Ball.h" />
+    <ClInclude Include="engine\base\core\directXCore\commandContext\CommandContext.h" />
     <ClInclude Include="engine\3d\cloud\Cloud.h" />
     <ClInclude Include="engine\3d\cloud\CloudSetup.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
@@ -225,6 +232,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\player\component\PlayerHelthComponent.h" />
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
+    <ClInclude Include="engine\base\core\directXCore\graphicsDevice\GraphicsDevice.h" />
+    <ClInclude Include="engine\base\core\directXCore\renderTargetManager\RenderTargetManager.h" />
+    <ClInclude Include="engine\base\core\directXCore\resourceFactory\ResourceFactory.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
@@ -236,7 +246,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\audio\MAudioG.h" />
     <ClInclude Include="engine\base\core\SrvSetup.h" />
     <ClInclude Include="engine\camera\Camera.h" />
-    <ClInclude Include="engine\base\core\DirectXCore.h" />
+    <ClInclude Include="engine\base\core\directXCore\DirectXCore.h" />
     <ClInclude Include="engine\utils\WstringUtility.h" />
     <ClInclude Include="engine\utils\Logger.h" />
     <ClInclude Include="engine\input\Input.h" />
@@ -276,6 +286,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
     <ClInclude Include="application\utils\TitleCamera.h" />
     <ClInclude Include="application\StartAnimation.h" />
+    <ClInclude Include="engine\base\core\directXCore\shaderCompiler\ShaderCompiler.h" />
+    <ClInclude Include="engine\base\core\directXCore\swapChainManager\SwapChainManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
