@@ -1,6 +1,8 @@
 #pragma once
 #include <d3d12.h>
 #include <wrl/client.h>
+#include <cstdint>
+#include <windows.h>
 
 /// @brief コマンド実行管理クラス
 class CommandContext {

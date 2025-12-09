@@ -1,5 +1,6 @@
 #pragma once
 #include "Vector4.h"
+#include <cstdint>
 #include <d3d12.h>
 #include <wrl/client.h>
 
@@ -11,11 +12,13 @@ public:
 	// RTV作成
 	void CreateRTV(
 		uint32_t index,
-		Microsoft::WRL::ComPtr<ID3D12Resource> resource);
+		Microsoft::WRL::ComPtr<ID3D12Resource> resource,
+		Microsoft::WRL::ComPtr<ID3D12Device> device);
 
 	// DSV作成
 	void CreateDSV(
-		Microsoft::WRL::ComPtr<ID3D12Resource> depthResource);
+		Microsoft::WRL::ComPtr<ID3D12Resource> depthResource,
+		Microsoft::WRL::ComPtr<ID3D12Device> device);
 
 	// レンダーテクスチャ作成
 	Microsoft::WRL::ComPtr<ID3D12Resource> CreateRenderTexture(

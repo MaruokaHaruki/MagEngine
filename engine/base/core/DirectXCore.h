@@ -8,7 +8,6 @@
 #pragma once
 //========================================
 // 標準ライブラリ
-#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <format>
@@ -21,8 +20,13 @@
 using namespace WstringUtility;
 #include "Logger.h"
 using namespace Logger;
+#include "CommandContext.h"
 #include "FullscreenPassRendere.h"
-#include "GrayscaleEffect.h"
+#include "GraphicsDevice.h"
+#include "RenderTargetManager.h"
+#include "ResourceFactory.h"
+#include "ShaderCompiler.h"
+#include "SwapChainManager.h"
 #include "Vector4.h"
 #include "WinApp.h"
 //========================================
@@ -77,97 +81,97 @@ public:
 
 	///--------------------------------------------------------------
 	///						 ダイレクトXの初期化系
-	//========================================
-	/// @brief CreateDebugLayer デバッグレイヤーの生成
-	void CreateDebugLayer();
+	////========================================
+	///// @brief CreateDebugLayer デバッグレイヤーの生成
+	// void CreateDebugLayer();
 
-	//========================================
-	/// @brief CreateDxgiFactory DXGIファクトリーの生成
-	void CreateDxgiFactory();
+	////========================================
+	///// @brief CreateDxgiFactory DXGIファクトリーの生成
+	// void CreateDxgiFactory();
 
-	//========================================
-	/// @brief SelectAdapter アダプタの選択
-	void SelectAdapter();
+	////========================================
+	///// @brief SelectAdapter アダプタの選択
+	// void SelectAdapter();
 
-	//========================================
-	/// @brief CreateD3D12Device デバイスの生成
-	void CreateD3D12Device();
+	////========================================
+	///// @brief CreateD3D12Device デバイスの生成
+	// void CreateD3D12Device();
 
-	//========================================
-	/// @brief SetupErrorHandling エラーハンドリングの設定
-	void SetupErrorHandling();
+	////========================================
+	///// @brief SetupErrorHandling エラーハンドリングの設定
+	// void SetupErrorHandling();
 
-	//========================================
-	/// @brief CreateCommandQueue コマンドキューの生成
-	void CreateCommandQueue();
+	////========================================
+	///// @brief CreateCommandQueue コマンドキューの生成
+	// void CreateCommandQueue();
 
-	//========================================
-	/// @brief CreateCommandAllocator コマンドアロケータの生成
-	void CreateCommandAllocator();
+	////========================================
+	///// @brief CreateCommandAllocator コマンドアロケータの生成
+	// void CreateCommandAllocator();
 
-	//========================================
-	/// @brief CreateSwapChain SwapChainの生成
-	void CreateSwapChain();
+	////========================================
+	///// @brief CreateSwapChain SwapChainの生成
+	// void CreateSwapChain();
 
-	//========================================
-	/// @brief CreateFence FenceとEventの生成
-	void CreateFence();
+	////========================================
+	///// @brief CreateFence FenceとEventの生成
+	// void CreateFence();
 
-	//========================================
-	/// @brief CreateDepthBuffer 深度Bufferの生成
-	void CreateDepthBuffer();
+	////========================================
+	///// @brief CreateDepthBuffer 深度Bufferの生成
+	// void CreateDepthBuffer();
 
-	//========================================
-	/// @brief CreateVariousDescriptorHeap ディスクリプタヒープの生成
-	void CreateVariousDescriptorHeap();
+	////========================================
+	///// @brief CreateVariousDescriptorHeap ディスクリプタヒープの生成
+	// void CreateVariousDescriptorHeap();
 
-	//========================================
-	/// @brief CreateRTVDescriptorHeap RTVディスクリプタヒープの生成
-	void CreateRTVDescriptorHeap();
+	////========================================
+	///// @brief CreateRTVDescriptorHeap RTVディスクリプタヒープの生成
+	// void CreateRTVDescriptorHeap();
 
-	//========================================
-	/// @brief GetResourcesFromSwapChain スワップチェーンからリソースを取得
-	void GetResourcesFromSwapChain();
+	////========================================
+	///// @brief GetResourcesFromSwapChain スワップチェーンからリソースを取得
+	// void GetResourcesFromSwapChain();
 
-	//========================================
-	/// @brief CreateRenderTargetViews RTVの作成
-	void CreateRenderTargetViews();
+	////========================================
+	///// @brief CreateRenderTargetViews RTVの作成
+	// void CreateRenderTargetViews();
 
-	//========================================
-	/// @brief FenceGeneration フェンスの生成
-	void FenceGeneration();
+	////========================================
+	///// @brief FenceGeneration フェンスの生成
+	// void FenceGeneration();
 
 	//========================================
 	/// @brief SettleCommandList コマンドリストの決定
 	void SettleCommandList();
 
-	//========================================
-	/// @brief SetupTransitionBarrier TransitionBarrierの設定
-	void SetupTransitionBarrier();
+	////========================================
+	///// @brief SetupTransitionBarrier TransitionBarrierの設定
+	// void SetupTransitionBarrier();
 
-	//========================================
-	/// @brief RenderTargetPreference レンダーターゲットの設定
-	void RenderTargetPreference();
+	////========================================
+	///// @brief RenderTargetPreference レンダーターゲットの設定
+	// void RenderTargetPreference();
 
 	//========================================
 	/// @brief CreateViewportAndScissorRect ビューポートとシザーレクトの生成
 	void CreateViewportAndScissorRect();
 
-	//========================================
-	/// @brief CloseCommandList コマンドリストの終了
-	void CloseCommandList();
+	////========================================
+	///// @brief CloseCommandList コマンドリストの終了
+	// void CloseCommandList();
 
 	//========================================
 	/// @brief ExecuteCommandList コマンドリストの実行
 	void ExecuteCommandList();
 
-	//========================================
-	/// @brief ReleaseResources リソースの開放
-	void ReleaseResources();
+	////========================================
+	///// @brief ReleaseResources リソースの開放
+	// void ReleaseResources();
 
-	//========================================
-	/// @brief CheckResourceLeaks リソースリークのチェック
-	void CheckResourceLeaks();
+	////========================================
+	///// @brief CheckResourceLeaks リソースリークのチェック
+	// void CheckResourceLeaks();
 
 	//========================================
 	/// @brief CreateDXCCompiler DXCコンパイラーの初期化
@@ -234,19 +238,7 @@ public:
 	void RenderTexturePostDraw();
 
 	//========================================
-	/// @brief CreateRenderTextureResource レンダーテクスチャリソースの生成
-	/// @param width 幅
-	/// @param height 高さ
-	/// @param format フォーマット
-	/// @param clearColor クリアカラー
-	/// @return
-	Microsoft::WRL::ComPtr<ID3D12Resource>
-	CreateRenderTextureResource(
-		uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 &clearColor, D3D12_RESOURCE_STATES initialState);
-
-	//========================================
 	/// @brief CreateRenderTextureRTV レンダーテクスチャのRTVを生成
-	/// @param SRVはマネージャの方にあるので、RTVだけ生成する
 	void CreateRenderTextureRTV();
 
 	//========================================
@@ -321,21 +313,14 @@ public:
 	/// @brief GetDevice デバイスの取得
 	/// \return デバイスポインタ
 	Microsoft::WRL::ComPtr<ID3D12Device> GetDevice() {
-		return device_;
-	}
-
-	//========================================
-	/// @brief SetCommandList コマンドリストの設定
-	/// @param sCommandList コマンドリストポインタ
-	void SetCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> sCommandList) {
-		this->commandList_ = sCommandList;
+		return graphicsDevice_.GetDevice();
 	}
 
 	//========================================
 	/// @brief GetCommandList コマンドリストの取得
 	/// \return コマンドリストポインタ
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> GetCommandList() {
-		return commandList_.Get();
+		return commandContext_.GetCommandList();
 	}
 
 	//========================================
@@ -509,6 +494,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> renderTextureGraphicsPipelineState_;
 
 	//========================================
-	// グレースケール
-	GrayscaleEffect grayscaleEffect_;
+	// 新しいマネージャークラス
+	GraphicsDevice graphicsDevice_;
+	CommandContext commandContext_;
+	SwapChainManager swapChainManager_;
+	RenderTargetManager renderTargetManager_;
+	ShaderCompiler shaderCompiler_;
+	// 既存のメンバ変数は段階的に削除していく
 };

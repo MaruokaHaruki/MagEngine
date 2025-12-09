@@ -1,4 +1,5 @@
 #pragma once
+#include <d3d12.h>
 #include <dxcapi.h>
 #include <string>
 #include <wrl/client.h>
