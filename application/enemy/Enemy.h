@@ -9,6 +9,7 @@
 #include "BaseObject.h"
 #include "Object3d.h"
 #include "Vector3.h"
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -16,6 +17,26 @@
 class Object3dSetup;
 class Particle;
 class ParticleSetup;
+
+// EnemyTypeの前方宣言
+enum class EnemyType;
+
+// 定数定義
+namespace EnemyConstants {
+	constexpr float kDefaultSpeed = 10.0f;
+	constexpr float kDefaultRadius = 1.0f;
+	constexpr float kDefaultLifeTime = 5.0f;
+	constexpr float kDestroyDuration = 2.0f;
+	constexpr float kHitReactionDuration = 0.3f;
+	constexpr float kShakeAmplitude = 0.2f;
+	constexpr float kShakeFrequency = 25.0f;
+	constexpr float kKnockbackStrength = 3.0f;
+	constexpr int kDefaultMaxHP = 3;
+	constexpr int kNormalEnemyHP = 3;
+	constexpr int kFastEnemyHP = 2;
+	constexpr float kNormalEnemySpeed = 10.0f;
+	constexpr float kFastEnemySpeed = 15.0f;
+}
 
 ///=============================================================================
 ///						Enemyクラス
@@ -63,13 +84,11 @@ public:
 		return maxHP_;
 	}
 
-	/// \brief ダメージを受ける
-	void TakeDamage(int damage);
+	/// \brief ダメージを受ける（コールバック付き）
+	void TakeDamage(int damage, std::function<void()> onDefeatCallback = nullptr);
 
-	/// \brief 衝突処理関数（BaseObjectの純粋仮想関数を実装）
-	void OnCollisionEnter(BaseObject *other) override;
-	void OnCollisionStay(BaseObject *other) override;
-	void OnCollisionExit(BaseObject *other) override;
+	/// \brief 敵タイプを設定
+	void SetEnemyType(EnemyType type);
 
 	/// \brief ヒットリアクションの開始
 	void StartHitReaction();
@@ -78,6 +97,11 @@ public:
 	bool IsInHitReaction() const {
 		return isHitReacting_;
 	}
+
+	/// \brief 衝突処理関数（BaseObjectの純粋仮想関数を実装）
+	void OnCollisionEnter(BaseObject *other) override;
+	void OnCollisionStay(BaseObject *other) override;
+	void OnCollisionExit(BaseObject *other) override;
 
 	///--------------------------------------------------------------
 	///							メンバ変数
@@ -136,4 +160,9 @@ private:
 	float shakeAmplitude_;		 // 揺れの振幅
 	float shakeFrequency_;		 // 揺れの周波数
 	Vector3 hitStartPosition_;	 // ヒット開始時の位置（復帰用）
+	bool isInvincible_;			 // 無敵時間フラグ（ヒットリアクション中）
+
+	//========================================
+	// 撃破コールバック
+	std::function<void()> onDefeatCallback_; // 撃破時のコールバック
 };

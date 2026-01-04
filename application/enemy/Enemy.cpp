@@ -1,6 +1,7 @@
 #define _USE_MATH_DEFINES
 #define NOMINMAX
 #include "Enemy.h"
+#include "EnemyManager.h" // EnemyTypeの定義のため
 #include "ImguiSetup.h"
 #include "Object3d.h"
 #include "Particle.h"
@@ -28,16 +29,16 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 
 	//========================================
 	// 状態の初期化
-	isAlive_ = true;	 // 生存状態
-	radius_ = 1.0f;		 // 当たり判定の半径
-	speed_ = 10.0f;		 // 移動速度
-	lifeTimer_ = 0.0f;	 // 生存時間タイマー初期化
-	maxLifeTime_ = 5.0f; // 5秒後に自動消滅
+	isAlive_ = true;
+	radius_ = EnemyConstants::kDefaultRadius;
+	speed_ = EnemyConstants::kDefaultSpeed;
+	lifeTimer_ = 0.0f;
+	maxLifeTime_ = EnemyConstants::kDefaultLifeTime;
 	destroyState_ = DestroyState::Alive;
 	destroyTimer_ = 0.0f;
-	destroyDuration_ = 2.0f; // 2秒間破壊演出を表示
-	maxHP_ = 3;				 // 最大HP（3回ヒットで撃破）
-	currentHP_ = maxHP_;	 // 現在のHPを最大値で初期化
+	destroyDuration_ = EnemyConstants::kDestroyDuration;
+	maxHP_ = EnemyConstants::kDefaultMaxHP;
+	currentHP_ = maxHP_;
 
 	//========================================
 	// パーティクル関連の初期化
@@ -48,15 +49,16 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	// ヒットリアクション関連の初期化
 	isHitReacting_ = false;
 	hitReactionTimer_ = 0.0f;
-	hitReactionDuration_ = 0.3f; // 0.3秒間のヒットリアクション（復帰も含めて長めに）
+	hitReactionDuration_ = EnemyConstants::kHitReactionDuration;
 	hitFlashCount_ = 0;
 	originalScale_ = transform_.scale;
-	hitScale_ = {1.5f, 1.5f, 1.5f}; // ヒット時に1.5倍に拡大
-	shouldRenderThisFrame_ = true;	// 初期状態は描画する
+	hitScale_ = {1.5f, 1.5f, 1.5f};
+	shouldRenderThisFrame_ = true;
 	knockbackVelocity_ = {0.0f, 0.0f, 0.0f};
-	shakeAmplitude_ = 0.2f;	 // 揺れの振幅（少し控えめに）
-	shakeFrequency_ = 25.0f; // 揺れの周波数
+	shakeAmplitude_ = EnemyConstants::kShakeAmplitude;
+	shakeFrequency_ = EnemyConstants::kShakeFrequency;
 	hitStartPosition_ = {0.0f, 0.0f, 0.0f};
+	isInvincible_ = false; // 無敵フラグ初期化
 
 	//========================================
 	// BaseObjectの初期化（当たり判定）
@@ -172,6 +174,7 @@ void Enemy::Update() {
 		// ヒットリアクション終了
 		if (hitReactionTimer_ >= hitReactionDuration_) {
 			isHitReacting_ = false;
+			isInvincible_ = false; // 無敵時間終了
 			hitReactionTimer_ = 0.0f;
 			transform_.scale = originalScale_;
 			shouldRenderThisFrame_ = true;
@@ -233,11 +236,10 @@ Vector3 Enemy::GetPosition() const {
 ///=============================================================================
 ///                        衝突処理関数
 void Enemy::OnCollisionEnter(BaseObject *other) {
-	// FIXME: otherが使用されていないので修正すること
-	other;
+	other; // 警告回避
 
-	// 既に破壊中または死亡している場合は処理しない
-	if (destroyState_ != DestroyState::Alive) {
+	// 無敵時間中または破壊中は処理しない
+	if (isInvincible_ || destroyState_ != DestroyState::Alive) {
 		return;
 	}
 
@@ -247,16 +249,14 @@ void Enemy::OnCollisionEnter(BaseObject *other) {
 ///=============================================================================
 ///                        衝突継続処理
 void Enemy::OnCollisionStay(BaseObject *other) {
-	// FIXME: otherが使用されていないので修正すること
-	other;
-	// 継続中の衝突処理（必要に応じて実装）
+	other; // 警告回避
+		   // 継続中の衝突処理（必要に応じて実装）
 }
 ///=============================================================================
 ///                        衝突終了処理
 void Enemy::OnCollisionExit(BaseObject *other) {
-	// FIXME: otherが使用されていないので修正すること
-	other;
-	// 衝突終了時の処理（必要に応じて実装）
+	other; // 警告回避
+		   // 衝突終了時の処理（必要に応じて実装）
 }
 
 void Enemy::StartHitReaction() {
@@ -266,6 +266,7 @@ void Enemy::StartHitReaction() {
 	}
 
 	isHitReacting_ = true;
+	isInvincible_ = true; // 無敵時間開始
 	hitReactionTimer_ = 0.0f;
 	hitFlashCount_ = 0;
 
@@ -273,17 +274,16 @@ void Enemy::StartHitReaction() {
 	hitStartPosition_ = transform_.translate;
 
 	//========================================
-	// ランダムなノックバック方向を生成（控えめに）
-	float knockbackStrength = 3.0f; // ノックバックの強さ（減少）
+	// ランダムなノックバック方向を生成
+	float knockbackStrength = EnemyConstants::kKnockbackStrength;
 	knockbackVelocity_ = {
-		(static_cast<float>(rand() % 200) - 100.0f) / 100.0f * knockbackStrength, // -3.0 ~ 3.0
-		(static_cast<float>(rand() % 100)) / 100.0f * knockbackStrength * 0.3f,	  // 0.0 ~ 0.9 (上方向)
-		-knockbackStrength * 1.5f												  // 後方へ押し戻す
-	};
+		(static_cast<float>(rand() % 200) - 100.0f) / 100.0f * knockbackStrength,
+		(static_cast<float>(rand() % 100)) / 100.0f * knockbackStrength * 0.3f,
+		-knockbackStrength * 1.5f};
 }
 ///=============================================================================
 ///                        ダメージ処理
-void Enemy::TakeDamage(int damage) {
+void Enemy::TakeDamage(int damage, std::function<void()> onDefeatCallback) {
 	// 既に破壊中または死亡している場合は処理しない
 	if (destroyState_ != DestroyState::Alive) {
 		return;
@@ -295,7 +295,7 @@ void Enemy::TakeDamage(int damage) {
 	// ヒットリアクション開始
 	StartHitReaction();
 
-	// ヒット時のパーティクルエフェクト（より派手に）
+	// ヒット時のパーティクルエフェクト
 	if (particle_) {
 		Vector3 enemyPos = transform_.translate;
 
@@ -326,6 +326,11 @@ void Enemy::TakeDamage(int damage) {
 
 	// HPが0以下になったら破壊
 	if (currentHP_ <= 0) {
+		// 撃破コールバックを実行（撃破数カウント）
+		if (onDefeatCallback) {
+			onDefeatCallback();
+		}
+
 		// 破壊時の大規模なエフェクト
 		if (particle_ && !particleCreated_) {
 			Vector3 enemyPos = transform_.translate;
@@ -360,5 +365,21 @@ void Enemy::TakeDamage(int damage) {
 		// 破壊状態に移行
 		destroyState_ = DestroyState::Destroying;
 		destroyTimer_ = 0.0f;
+	}
+}
+///=============================================================================
+///                        敵タイプ設定
+void Enemy::SetEnemyType(EnemyType type) {
+	switch (type) {
+	case EnemyType::Normal:
+		maxHP_ = EnemyConstants::kNormalEnemyHP;
+		currentHP_ = maxHP_;
+		speed_ = EnemyConstants::kNormalEnemySpeed;
+		break;
+	case EnemyType::Fast:
+		maxHP_ = EnemyConstants::kFastEnemyHP;
+		currentHP_ = maxHP_;
+		speed_ = EnemyConstants::kFastEnemySpeed;
+		break;
 	}
 }

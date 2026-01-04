@@ -26,14 +26,14 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	// パラメータ初期化
 	gameTime_ = 0.0f;
 	lastSpawnTime_ = 0.0f;
-	spawnInterval_ = 3.0f; // 3秒間隔
-	maxEnemies_ = 10;	   // 最大10体
-	autoSpawn_ = true;	   // 自動スポーン有効
+	spawnInterval_ = EnemyManagerConstants::kDefaultSpawnInterval;
+	maxEnemies_ = EnemyManagerConstants::kDefaultMaxEnemies;
+	autoSpawn_ = true;
 
 	//========================================
 	// ゲーム進行管理
 	defeatedCount_ = 0;
-	targetDefeatedCount_ = 15; // デフォルトは50体撃破でクリア
+	targetDefeatedCount_ = EnemyManagerConstants::kDefaultTargetDefeatedCount;
 
 	//========================================
 	// スポーンデータの初期化（簡略化 - 自動スポーンに任せる）
@@ -125,7 +125,8 @@ void EnemyManager::DrawImGui() {
 ///                        当たり判定登録
 void EnemyManager::RegisterCollisions(CollisionManager *collisionManager) {
 	for (auto &enemy : enemies_) {
-		if (enemy && enemy->IsAlive()) {
+		// Destroying状態の敵は当たり判定から除外
+		if (enemy && enemy->IsAlive() && !enemy->IsInHitReaction()) {
 			collisionManager->RegisterObject(enemy.get());
 		}
 	}
@@ -155,18 +156,18 @@ void EnemyManager::UpdateSpawning() {
 		GetAliveEnemyCount() < static_cast<size_t>(maxEnemies_) &&
 		gameTime_ - lastSpawnTime_ >= spawnInterval_) {
 
-		// プレイヤーの後方にスポーン位置を設定
-		Vector3 spawnPos = {0.0f, 0.0f, -15.0f};
+		// プレイヤーの前方にスポーン位置を設定
+		Vector3 spawnPos = {0.0f, 0.0f, 30.0f};
 		if (player_) {
 			Vector3 playerPos = player_->GetPosition();
 			spawnPos = {
 				playerPos.x + static_cast<float>((rand() % 11) - 5), // -5 ～ 5
 				playerPos.y + static_cast<float>((rand() % 3) - 1),	 // -1 ～ 1
-				playerPos.z - static_cast<float>((rand() % 6) + 10)	 // -10 ～ -15
+				playerPos.z + static_cast<float>((rand() % 11) + 20) // +20 ～ +30
 			};
 		}
 
-		EnemyType type = (rand() % 3 == 0) ? EnemyType::Fast : EnemyType::Normal; // 1/3の確率でFast
+		EnemyType type = (rand() % 3 == 0) ? EnemyType::Fast : EnemyType::Normal;
 		SpawnEnemy(type, spawnPos);
 		lastSpawnTime_ = gameTime_;
 	}
@@ -178,8 +179,19 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	auto enemy = std::make_unique<Enemy>();
 	enemy->Initialize(object3dSetup_, "jet.obj", position);
 
+	// 敵タイプを設定（速度とHPが変わる）
+	enemy->SetEnemyType(type);
+
 	// パーティクルシステムの設定
 	enemy->SetParticleSystem(particle_, particleSetup_);
+
+	// 撃破時のコールバックを設定（撃破数カウント）
+	auto onDefeat = [this]() {
+		defeatedCount_++;
+	};
+
+	// コールバックを含めてダメージ処理を変更
+	// （実際にはEnemyクラス内で保持させる）
 
 	enemies_.push_back(std::move(enemy));
 }
@@ -187,19 +199,13 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 ///=============================================================================
 ///                        死んだ敵の削除
 void EnemyManager::RemoveDeadEnemies() {
-	// 削除前に撃破数をカウント
-	size_t beforeCount = enemies_.size();
-
+	// Dead状態の敵のみ削除（撃破数は既にカウント済み）
 	enemies_.erase(
 		std::remove_if(enemies_.begin(), enemies_.end(),
 					   [](const std::unique_ptr<Enemy> &enemy) {
 						   return !enemy || !enemy->IsAlive();
 					   }),
 		enemies_.end());
-
-	// 削除された敵の数だけ撃破数を増加
-	size_t afterCount = enemies_.size();
-	defeatedCount_ += static_cast<int>(beforeCount - afterCount);
 }
 
 ///=============================================================================

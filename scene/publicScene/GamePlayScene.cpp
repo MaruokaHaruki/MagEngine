@@ -273,6 +273,8 @@ void GamePlayScene::Update() {
 			}
 		}
 	}
+
+#ifdef _DEBUG
 	// デバック用にキーボードでゲームクリアを強制発動
 	if (Input::GetInstance()->TriggerKey(DIK_C)) {
 		isGameClear_ = true;
@@ -283,6 +285,7 @@ void GamePlayScene::Update() {
 			gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
 		}
 	}
+#endif
 
 	//========================================
 	// ゲームオーバーUI更新
@@ -390,10 +393,11 @@ void GamePlayScene::Update() {
 		hud_->Update(player_.get());
 	}
 
+#ifdef _DEBUG
 	//========================================
 	// タイトルへのシーン遷移（デバッグ用）
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
-		// トランジション開始（スタートアニメーションの逆再生も実行）
+		// トランジション開始
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
@@ -401,6 +405,7 @@ void GamePlayScene::Update() {
 			});
 		}
 	}
+#endif
 }
 
 ///=============================================================================

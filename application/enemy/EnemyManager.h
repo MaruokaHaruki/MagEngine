@@ -18,6 +18,16 @@ class ParticleSetup;
 class CollisionManager;
 class Player;
 
+namespace EnemyManagerConstants {
+	constexpr float kDefaultSpawnInterval = 3.0f;
+	constexpr int kDefaultMaxEnemies = 10;
+	constexpr int kDefaultTargetDefeatedCount = 15;
+	constexpr float kSpawnRangeX = 5.0f;
+	constexpr float kSpawnRangeY = 1.0f;
+	constexpr float kSpawnDistanceMin = 20.0f;
+	constexpr float kSpawnDistanceMax = 30.0f;
+}
+
 /// \brief 敵のタイプ
 enum class EnemyType {
 	Normal,
