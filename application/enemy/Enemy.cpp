@@ -5,6 +5,7 @@
 #include "ImguiSetup.h"
 #include "Object3d.h"
 #include "Particle.h"
+#include "Player.h" // プレイヤークラスの実体が必要
 #include <algorithm>
 #include <cmath>
 ///=============================================================================
@@ -59,6 +60,15 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	shakeFrequency_ = EnemyConstants::kShakeFrequency;
 	hitStartPosition_ = {0.0f, 0.0f, 0.0f};
 	isInvincible_ = false; // 無敵フラグ初期化
+
+	//========================================
+	// 行動ステート関連の初期化
+	behaviorState_ = BehaviorState::Approach;
+	combatTimer_ = 0.0f;
+	combatDuration_ = EnemyConstants::kCombatDuration;
+	combatCenter_ = {0.0f, 0.0f, 0.0f};
+	circleAngle_ = 0.0f;
+	player_ = nullptr;
 
 	//========================================
 	// BaseObjectの初期化（当たり判定）
@@ -184,9 +194,114 @@ void Enemy::Update() {
 		shouldRenderThisFrame_ = true;
 	}
 
-	// Z方向（正面）へ移動（通常の移動）
+	// === ステートマシンによる行動制御 ===
 	if (!isHitReacting_) {
-		transform_.translate.z += speed_ * (1.0f / 60.0f);
+		const float deltaTime = 1.0f / 60.0f;
+
+		switch (behaviorState_) {
+		case BehaviorState::Approach: {
+			// 接近フェーズ: プレイヤーの前方へ高速接近
+			if (player_) {
+				Vector3 playerPos = player_->GetPosition();
+				combatCenter_ = playerPos;
+
+				// プレイヤーの前方25m地点を目指す
+				Vector3 targetPos = {
+					playerPos.x,
+					playerPos.y,
+					playerPos.z + EnemyConstants::kCombatRadius};
+
+				Vector3 direction = {
+					targetPos.x - transform_.translate.x,
+					targetPos.y - transform_.translate.y,
+					targetPos.z - transform_.translate.z};
+
+				float distance = std::sqrt(
+					direction.x * direction.x +
+					direction.y * direction.y +
+					direction.z * direction.z);
+
+				// 目標地点に到達したら戦闘フェーズへ
+				if (distance < 5.0f) {
+					behaviorState_ = BehaviorState::Combat;
+					combatTimer_ = 0.0f;
+					circleAngle_ = std::atan2(
+						transform_.translate.x - playerPos.x,
+						transform_.translate.z - playerPos.z);
+				} else {
+					// 正規化して移動
+					direction.x /= distance;
+					direction.y /= distance;
+					direction.z /= distance;
+
+					transform_.translate.x += direction.x * EnemyConstants::kApproachSpeed * deltaTime;
+					transform_.translate.y += direction.y * EnemyConstants::kApproachSpeed * deltaTime;
+					transform_.translate.z += direction.z * EnemyConstants::kApproachSpeed * deltaTime;
+				}
+			} else {
+				// プレイヤーがいない場合は直進
+				transform_.translate.z += speed_ * deltaTime;
+			}
+			break;
+		}
+
+		case BehaviorState::Combat: {
+			// 戦闘フェーズ: プレイヤーの周囲を旋回
+			combatTimer_ += deltaTime;
+
+			if (player_) {
+				combatCenter_ = player_->GetPosition();
+			}
+
+			// 戦闘時間を超えたら退却へ
+			if (combatTimer_ >= combatDuration_) {
+				behaviorState_ = BehaviorState::Retreat;
+				break;
+			}
+
+			// 円運動 + 8の字運動
+			circleAngle_ += EnemyConstants::kCircleFrequency * deltaTime;
+			float radius = EnemyConstants::kCombatRadius;
+
+			// 8の字運動を追加
+			float verticalOffset = std::sin(circleAngle_ * 2.0f) * 4.0f;
+
+			// 目標位置を計算
+			Vector3 targetPos = {
+				combatCenter_.x + std::sin(circleAngle_) * radius,
+				combatCenter_.y + verticalOffset,
+				combatCenter_.z + std::cos(circleAngle_) * radius};
+
+			// スムーズに目標位置へ移動
+			Vector3 direction = {
+				targetPos.x - transform_.translate.x,
+				targetPos.y - transform_.translate.y,
+				targetPos.z - transform_.translate.z};
+
+			float distance = std::sqrt(
+				direction.x * direction.x +
+				direction.y * direction.y +
+				direction.z * direction.z);
+
+			if (distance > 0.1f) {
+				direction.x /= distance;
+				direction.y /= distance;
+				direction.z /= distance;
+
+				transform_.translate.x += direction.x * EnemyConstants::kCombatSpeed * deltaTime;
+				transform_.translate.y += direction.y * EnemyConstants::kCombatSpeed * deltaTime;
+				transform_.translate.z += direction.z * EnemyConstants::kCombatSpeed * deltaTime;
+			}
+			break;
+		}
+
+		case BehaviorState::Retreat: {
+			// 退却フェーズ: 高速で画面外へ
+			transform_.translate.z += EnemyConstants::kRetreatSpeed * deltaTime;
+			transform_.translate.y += 8.0f * deltaTime; // 上昇しながら退却
+			break;
+		}
+		}
 	}
 
 	// 生存時間の更新

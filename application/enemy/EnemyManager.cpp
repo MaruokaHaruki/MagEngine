@@ -156,15 +156,42 @@ void EnemyManager::UpdateSpawning() {
 		GetAliveEnemyCount() < static_cast<size_t>(maxEnemies_) &&
 		gameTime_ - lastSpawnTime_ >= spawnInterval_) {
 
-		// プレイヤーの前方にスポーン位置を設定
-		Vector3 spawnPos = {0.0f, 0.0f, 30.0f};
+		// カメラ外からスポーン
+		Vector3 spawnPos = {0.0f, 0.0f, -30.0f};
 		if (player_) {
 			Vector3 playerPos = player_->GetPosition();
-			spawnPos = {
-				playerPos.x + static_cast<float>((rand() % 11) - 5), // -5 ～ 5
-				playerPos.y + static_cast<float>((rand() % 3) - 1),	 // -1 ～ 1
-				playerPos.z + static_cast<float>((rand() % 11) + 20) // +20 ～ +30
-			};
+
+			// ランダムな方向から出現（左右・上方・斜め）
+			int spawnPattern = rand() % 4;
+			float distance = 50.0f + static_cast<float>(rand() % 20);
+
+			switch (spawnPattern) {
+			case 0: // 左から
+				spawnPos = {
+					playerPos.x - distance,
+					playerPos.y + static_cast<float>((rand() % 10) - 5),
+					playerPos.z + static_cast<float>((rand() % 30) - 15)};
+				break;
+			case 1: // 右から
+				spawnPos = {
+					playerPos.x + distance,
+					playerPos.y + static_cast<float>((rand() % 10) - 5),
+					playerPos.z + static_cast<float>((rand() % 30) - 15)};
+				break;
+			case 2: // 上から
+				spawnPos = {
+					playerPos.x + static_cast<float>((rand() % 30) - 15),
+					playerPos.y + distance * 0.6f,
+					playerPos.z + static_cast<float>((rand() % 30) - 15)};
+				break;
+			case 3: // 斜め前方から
+				float angle = static_cast<float>(rand() % 360) * 3.14159f / 180.0f;
+				spawnPos = {
+					playerPos.x + std::sin(angle) * distance,
+					playerPos.y + static_cast<float>((rand() % 10) - 5),
+					playerPos.z + std::cos(angle) * distance * 0.5f + 40.0f};
+				break;
+			}
 		}
 
 		EnemyType type = (rand() % 3 == 0) ? EnemyType::Fast : EnemyType::Normal;
@@ -184,6 +211,9 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 
 	// パーティクルシステムの設定
 	enemy->SetParticleSystem(particle_, particleSetup_);
+
+	// プレイヤー参照を設定
+	enemy->SetPlayer(player_);
 
 	// 撃破時のコールバックを設定（撃破数カウント）
 	auto onDefeat = [this]() {

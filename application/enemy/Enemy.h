@@ -17,6 +17,7 @@
 class Object3dSetup;
 class Particle;
 class ParticleSetup;
+class Player;
 
 // EnemyTypeの前方宣言
 enum class EnemyType;
@@ -36,6 +37,12 @@ namespace EnemyConstants {
 	constexpr int kFastEnemyHP = 2;
 	constexpr float kNormalEnemySpeed = 10.0f;
 	constexpr float kFastEnemySpeed = 15.0f;
+	constexpr float kApproachSpeed = 18.0f;	 // 接近速度
+	constexpr float kCombatSpeed = 10.0f;	 // 戦闘中の速度
+	constexpr float kCombatRadius = 25.0f;	 // 戦闘範囲の半径
+	constexpr float kCombatDuration = 10.0f; // 戦闘時間
+	constexpr float kCircleFrequency = 0.6f; // 旋回の周波数
+	constexpr float kRetreatSpeed = 25.0f;	 // 退却速度
 }
 
 ///=============================================================================
@@ -96,6 +103,11 @@ public:
 	/// \brief ヒットリアクション中かどうか
 	bool IsInHitReaction() const {
 		return isHitReacting_;
+	}
+
+	/// \brief プレイヤー参照を設定
+	void SetPlayer(Player *player) {
+		player_ = player;
 	}
 
 	/// \brief 衝突処理関数（BaseObjectの純粋仮想関数を実装）
@@ -161,6 +173,20 @@ private:
 	float shakeFrequency_;		 // 揺れの周波数
 	Vector3 hitStartPosition_;	 // ヒット開始時の位置（復帰用）
 	bool isInvincible_;			 // 無敵時間フラグ（ヒットリアクション中）
+
+	//========================================
+	// 行動ステート関連
+	enum class BehaviorState {
+		Approach, // 接近中
+		Combat,	  // 戦闘中
+		Retreat	  // 退却中
+	};
+	BehaviorState behaviorState_; // 現在の行動状態
+	float combatTimer_;			  // 戦闘時間タイマー
+	float combatDuration_;		  // 戦闘持続時間
+	Vector3 combatCenter_;		  // 戦闘中心位置
+	float circleAngle_;			  // 旋回角度
+	Player *player_;			  // プレイヤー参照
 
 	//========================================
 	// 撃破コールバック
