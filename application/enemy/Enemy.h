@@ -132,4 +132,8 @@ private:
 	Vector3 originalScale_;		 // 元のスケール
 	Vector3 hitScale_;			 // ヒット時のスケール
 	bool shouldRenderThisFrame_; // このフレームで描画するか
+	Vector3 knockbackVelocity_;	 // ノックバック速度
+	float shakeAmplitude_;		 // 揺れの振幅
+	float shakeFrequency_;		 // 揺れの周波数
+	Vector3 hitStartPosition_;	 // ヒット開始時の位置（復帰用）
 };

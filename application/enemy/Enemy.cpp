@@ -48,11 +48,15 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	// ヒットリアクション関連の初期化
 	isHitReacting_ = false;
 	hitReactionTimer_ = 0.0f;
-	hitReactionDuration_ = 0.15f; // 0.15秒間のヒットリアクション
+	hitReactionDuration_ = 0.3f; // 0.3秒間のヒットリアクション（復帰も含めて長めに）
 	hitFlashCount_ = 0;
 	originalScale_ = transform_.scale;
-	hitScale_ = {1.3f, 1.3f, 1.3f}; // ヒット時に1.3倍に拡大
+	hitScale_ = {1.5f, 1.5f, 1.5f}; // ヒット時に1.5倍に拡大
 	shouldRenderThisFrame_ = true;	// 初期状態は描画する
+	knockbackVelocity_ = {0.0f, 0.0f, 0.0f};
+	shakeAmplitude_ = 0.2f;	 // 揺れの振幅（少し控えめに）
+	shakeFrequency_ = 25.0f; // 揺れの周波数
+	hitStartPosition_ = {0.0f, 0.0f, 0.0f};
 
 	//========================================
 	// BaseObjectの初期化（当たり判定）
@@ -87,20 +91,83 @@ void Enemy::Update() {
 	if (isHitReacting_) {
 		hitReactionTimer_ += 1.0f / 60.0f;
 
-		// 点滅効果（0.05秒ごとに切り替え）
-		int flashInterval = static_cast<int>(hitReactionTimer_ / 0.05f);
+		// 点滅効果（0.03秒ごとに切り替え）
+		int flashInterval = static_cast<int>(hitReactionTimer_ / 0.03f);
 		shouldRenderThisFrame_ = (flashInterval % 2 == 0);
 
-		// スケール変化（徐々に元に戻る）
+		// 時間の正規化（0.0～1.0）
 		float t = hitReactionTimer_ / hitReactionDuration_;
 		t = std::clamp(t, 0.0f, 1.0f);
 
-		// イージングアウト（二次関数）
-		float easeOut = 1.0f - (1.0f - t) * (1.0f - t);
-		transform_.scale = {
-			hitScale_.x + (originalScale_.x - hitScale_.x) * easeOut,
-			hitScale_.y + (originalScale_.y - hitScale_.y) * easeOut,
-			hitScale_.z + (originalScale_.z - hitScale_.z) * easeOut};
+		//========================================
+		// フェーズ分割：前半50%でノックバック、後半50%で復帰
+		const float knockbackPhase = 0.5f; // 前半50%
+
+		if (t < knockbackPhase) {
+			// ノックバックフェーズ（0.0～0.5）
+			float knockbackT = t / knockbackPhase; // 0.0～1.0に正規化
+
+			// イージングアウト（スムーズに減速）
+			float easeOut = 1.0f - std::pow(1.0f - knockbackT, 2.0f);
+
+			// ノックバック移動（滑らかに減速）
+			Vector3 knockbackOffset = {
+				knockbackVelocity_.x * easeOut * (1.0f - knockbackT),
+				knockbackVelocity_.y * easeOut * (1.0f - knockbackT),
+				knockbackVelocity_.z * easeOut * (1.0f - knockbackT)};
+
+			transform_.translate = {
+				hitStartPosition_.x + knockbackOffset.x,
+				hitStartPosition_.y + knockbackOffset.y,
+				hitStartPosition_.z + knockbackOffset.z};
+
+			// スケール変化（最大まで拡大）
+			float scaleEase = 1.0f - std::pow(1.0f - knockbackT, 3.0f);
+			transform_.scale = {
+				hitScale_.x + (originalScale_.x - hitScale_.x) * scaleEase,
+				hitScale_.y + (originalScale_.y - hitScale_.y) * scaleEase,
+				hitScale_.z + (originalScale_.z - hitScale_.z) * scaleEase};
+
+		} else {
+			// 復帰フェーズ（0.5～1.0）
+			float returnT = (t - knockbackPhase) / (1.0f - knockbackPhase); // 0.0～1.0に正規化
+
+			// イージングイン（スムーズに加速して元の位置へ）
+			float easeIn = returnT * returnT;
+
+			// 現在のノックバック後の位置を計算
+			Vector3 knockbackEndPos = {
+				hitStartPosition_.x + knockbackVelocity_.x,
+				hitStartPosition_.y + knockbackVelocity_.y,
+				hitStartPosition_.z + knockbackVelocity_.z};
+
+			// 元の軌道上の位置（通常移動を考慮）
+			float timeElapsed = hitReactionTimer_;
+			Vector3 targetPos = {
+				hitStartPosition_.x,
+				hitStartPosition_.y,
+				hitStartPosition_.z + speed_ * timeElapsed};
+
+			// ノックバック終了位置から目標位置へ補間
+			transform_.translate = {
+				knockbackEndPos.x + (targetPos.x - knockbackEndPos.x) * easeIn,
+				knockbackEndPos.y + (targetPos.y - knockbackEndPos.y) * easeIn,
+				knockbackEndPos.z + (targetPos.z - knockbackEndPos.z) * easeIn};
+
+			// スケール復帰
+			float scaleEase = 1.0f - std::pow(1.0f - returnT, 3.0f);
+			transform_.scale = {
+				hitScale_.x + (originalScale_.x - hitScale_.x) * scaleEase,
+				hitScale_.y + (originalScale_.y - hitScale_.y) * scaleEase,
+				hitScale_.z + (originalScale_.z - hitScale_.z) * scaleEase};
+		}
+
+		//========================================
+		// 揺れ効果（全体を通して）
+		float shakeFade = 1.0f - t;
+		float shakeOffset = std::sin(hitReactionTimer_ * shakeFrequency_) * shakeAmplitude_ * shakeFade;
+		transform_.translate.x += shakeOffset;
+		transform_.translate.y += shakeOffset * 0.5f;
 
 		// ヒットリアクション終了
 		if (hitReactionTimer_ >= hitReactionDuration_) {
@@ -114,8 +181,10 @@ void Enemy::Update() {
 		shouldRenderThisFrame_ = true;
 	}
 
-	// Z方向（正面）へ移動
-	transform_.translate.z += speed_ * (1.0f / 60.0f);
+	// Z方向（正面）へ移動（通常の移動）
+	if (!isHitReacting_) {
+		transform_.translate.z += speed_ * (1.0f / 60.0f);
+	}
 
 	// 生存時間の更新
 	lifeTimer_ += 1.0f / 60.0f;
@@ -199,8 +268,19 @@ void Enemy::StartHitReaction() {
 	isHitReacting_ = true;
 	hitReactionTimer_ = 0.0f;
 	hitFlashCount_ = 0;
-}
 
+	// 現在の位置を保存（復帰用）
+	hitStartPosition_ = transform_.translate;
+
+	//========================================
+	// ランダムなノックバック方向を生成（控えめに）
+	float knockbackStrength = 3.0f; // ノックバックの強さ（減少）
+	knockbackVelocity_ = {
+		(static_cast<float>(rand() % 200) - 100.0f) / 100.0f * knockbackStrength, // -3.0 ~ 3.0
+		(static_cast<float>(rand() % 100)) / 100.0f * knockbackStrength * 0.3f,	  // 0.0 ~ 0.9 (上方向)
+		-knockbackStrength * 1.5f												  // 後方へ押し戻す
+	};
+}
 ///=============================================================================
 ///                        ダメージ処理
 void Enemy::TakeDamage(int damage) {
@@ -215,20 +295,33 @@ void Enemy::TakeDamage(int damage) {
 	// ヒットリアクション開始
 	StartHitReaction();
 
-	// ヒット時のパーティクルエフェクト（軽量版）
+	// ヒット時のパーティクルエフェクト（より派手に）
 	if (particle_) {
 		Vector3 enemyPos = transform_.translate;
 
 		//========================================
-		// ヒット時の衝撃波エフェクト（Ring形状）
+		// 1. ヒット時の衝撃波エフェクト（Ring形状 - より大きく）
+		particle_->SetBillboard(false); // リングはビルボード無効
 		particle_->SetVelocityRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
-		particle_->SetColorRange({1.0f, 0.8f, 0.0f, 1.0f}, {1.0f, 0.5f, 0.0f, 1.0f}); // 黄～オレンジ
-		particle_->SetLifetimeRange(0.2f, 0.3f);
-		particle_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.5f, 0.5f, 0.5f});
-		particle_->SetEndScaleRange({1.5f, 1.5f, 1.5f}, {2.0f, 2.0f, 2.0f}); // 急速に拡大
+		particle_->SetColorRange({1.0f, 0.9f, 0.2f, 1.0f}, {1.0f, 0.6f, 0.0f, 1.0f}); // 明るい黄色～オレンジ
+		particle_->SetLifetimeRange(0.25f, 0.35f);									  // 少し長めに
+		particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {0.8f, 0.8f, 0.8f});
+		particle_->SetEndScaleRange({2.5f, 2.5f, 2.5f}, {3.5f, 3.5f, 3.5f}); // より大きく拡大
 		particle_->SetGravity({0.0f, 0.0f, 0.0f});
 		particle_->SetFadeInOut(0.0f, 1.0f);
-		particle_->Emit("ExplosionRing", enemyPos, 1); // 衝撃波1個
+		particle_->Emit("ExplosionRing", enemyPos, 2); // 衝撃波2個
+
+		//========================================
+		// 2. ヒット時の火花エフェクト（Board形状）
+		particle_->SetBillboard(true); // Board形状はビルボード有効
+		particle_->SetVelocityRange({-5.0f, -3.0f, -5.0f}, {5.0f, 5.0f, 5.0f});
+		particle_->SetColorRange({1.0f, 0.9f, 0.3f, 1.0f}, {1.0f, 0.5f, 0.1f, 1.0f}); // 明るい黄色～オレンジ
+		particle_->SetLifetimeRange(0.2f, 0.4f);
+		particle_->SetInitialScaleRange({0.4f, 0.4f, 0.4f}, {0.7f, 0.7f, 0.7f});
+		particle_->SetEndScaleRange({0.1f, 0.1f, 0.1f}, {0.2f, 0.2f, 0.2f});
+		particle_->SetGravity({0.0f, -5.0f, 0.0f});
+		particle_->SetFadeInOut(0.0f, 0.8f);
+		particle_->Emit("ExplosionSparks", enemyPos, 20); // ヒット時も火花20個
 	}
 
 	// HPが0以下になったら破壊
@@ -238,26 +331,28 @@ void Enemy::TakeDamage(int damage) {
 			Vector3 enemyPos = transform_.translate;
 
 			//========================================
-			// 1. 破壊時の衝撃波エフェクト（Ring形状）
+			// 1. 破壊時の衝撃波エフェクト（Ring形状 - さらに大きく）
+			particle_->SetBillboard(false);
 			particle_->SetVelocityRange({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
-			particle_->SetColorRange({1.0f, 0.8f, 0.0f, 1.0f}, {1.0f, 0.5f, 0.0f, 1.0f});
-			particle_->SetLifetimeRange(0.2f, 0.3f);
-			particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {0.8f, 0.8f, 0.8f});
-			particle_->SetEndScaleRange({2.5f, 2.5f, 2.5f}, {3.5f, 3.5f, 3.5f});
+			particle_->SetColorRange({1.0f, 0.9f, 0.0f, 1.0f}, {1.0f, 0.5f, 0.0f, 1.0f});
+			particle_->SetLifetimeRange(0.3f, 0.5f);
+			particle_->SetInitialScaleRange({1.0f, 1.0f, 1.0f}, {1.5f, 1.5f, 1.5f});
+			particle_->SetEndScaleRange({4.0f, 4.0f, 4.0f}, {6.0f, 6.0f, 6.0f}); // 非常に大きく
 			particle_->SetGravity({0.0f, 0.0f, 0.0f});
 			particle_->SetFadeInOut(0.0f, 1.0f);
-			particle_->Emit("ExplosionRing", enemyPos, 2);
+			particle_->Emit("ExplosionRing", enemyPos, 3); // 衝撃波3個
 
 			//========================================
-			// 2. 火花エフェクト（Board形状）
-			particle_->SetVelocityRange({-10.0f, -5.0f, -10.0f}, {10.0f, 10.0f, 10.0f});
+			// 2. 破壊時の火花エフェクト（Board形状 - 大量）
+			particle_->SetBillboard(true);
+			particle_->SetVelocityRange({-15.0f, -10.0f, -15.0f}, {15.0f, 15.0f, 15.0f}); // より激しく
 			particle_->SetColorRange({1.0f, 0.5f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.3f, 1.0f});
 			particle_->SetLifetimeRange(0.5f, 1.5f);
-			particle_->SetInitialScaleRange({0.3f, 0.3f, 0.3f}, {0.8f, 0.8f, 0.8f});
-			particle_->SetEndScaleRange({0.1f, 0.1f, 0.1f}, {0.3f, 0.3f, 0.3f}); // 最小値が最大値以下であることを確認
+			particle_->SetInitialScaleRange({0.5f, 0.5f, 0.5f}, {1.2f, 1.2f, 1.2f}); // より大きく
+			particle_->SetEndScaleRange({0.1f, 0.1f, 0.1f}, {0.3f, 0.3f, 0.3f});
 			particle_->SetGravity({0.0f, -8.0f, 0.0f});
 			particle_->SetFadeInOut(0.02f, 0.8f);
-			particle_->Emit("ExplosionSparks", enemyPos, 30);
+			particle_->Emit("ExplosionSparks", enemyPos, 60); // 60個の火花
 
 			particleCreated_ = true;
 		}

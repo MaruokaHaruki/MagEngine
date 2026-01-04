@@ -99,10 +99,6 @@ void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSet
 	skybox_->SetTexture("moonless_golf_4k.dds");
 
 	///--------------------------------------------------------------
-	///						 ボールテスト
-	ball_.Initialize();
-
-	///--------------------------------------------------------------
 	///						 Cloud系
 	cloud_ = std::make_unique<Cloud>();
 	cloud_->Initialize(cloudSetup);
@@ -178,12 +174,6 @@ void DebugScene::Update() {
 	}
 
 	//========================================
-	// ボールテストの更新
-	ball_.Update();
-	// 描画
-	ball_.Draw();
-
-	//========================================
 	// Cloudの更新
 	cloud_->Update(*CameraManager::GetInstance()->GetCamera("DebugCamera"), 1.0f / 60.0f);
 }
@@ -214,7 +204,7 @@ void DebugScene::Object3DDraw() {
 ///						パーティクル描画
 void DebugScene::ParticleDraw() {
 	// パーティクルの描画
-	particleEmitter_->Draw();
+	//particleEmitter_->Draw();
 }
 
 ///=============================================================================
@@ -240,10 +230,6 @@ void DebugScene::ImGuiDraw() {
 	ImGui::Begin("DebugScene");
 	ImGui::Text("Hello, DebugScene!");
 	ImGui::End();
-
-	//========================================
-	// ボールのImGui描画
-	ball_.DrawImGui();
 
 	//========================================
 	// Cloudのデバッグ表示
