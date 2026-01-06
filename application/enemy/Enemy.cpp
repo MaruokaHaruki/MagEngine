@@ -13,6 +13,11 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	// 基底クラスの初期化
 	EnemyBase::Initialize(object3dSetup, modelPath, position);
 
+	// HPと速度をEnemyのデフォルト値で初期化
+	maxHP_ = EnemyConstants::kDefaultHP;
+	currentHP_ = maxHP_;
+	speed_ = EnemyConstants::kDefaultSpeed;
+
 	// Enemy固有の行動ステート初期化
 	behaviorState_ = BehaviorState::Approach;
 	combatTimer_ = 0.0f;
@@ -136,21 +141,4 @@ void Enemy::Update() {
 void Enemy::DrawImGui() {
 	EnemyBase::DrawImGui();
 	// Enemy固有のデバッグ情報を追加可能
-}
-
-///=============================================================================
-///                        敵タイプ設定
-void Enemy::SetEnemyType(EnemyType type) {
-	switch (type) {
-	case EnemyType::Normal:
-		maxHP_ = EnemyConstants::kNormalEnemyHP;
-		currentHP_ = maxHP_;
-		speed_ = EnemyConstants::kNormalEnemySpeed;
-		break;
-	case EnemyType::Fast:
-		maxHP_ = EnemyConstants::kFastEnemyHP;
-		currentHP_ = maxHP_;
-		speed_ = EnemyConstants::kFastEnemySpeed;
-		break;
-	}
 }

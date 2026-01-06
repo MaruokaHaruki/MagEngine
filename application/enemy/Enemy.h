@@ -8,15 +8,10 @@
 #pragma once
 #include "EnemyBase.h"
 
-// 前方宣言
-enum class EnemyType;
-
 // 定数定義（Enemy固有の行動パラメータ）
 namespace EnemyConstants {
-	constexpr int kNormalEnemyHP = 3;
-	constexpr int kFastEnemyHP = 2;
-	constexpr float kNormalEnemySpeed = 10.0f;
-	constexpr float kFastEnemySpeed = 15.0f;
+	constexpr int kDefaultHP = 3;		   // デフォルトHP
+	constexpr float kDefaultSpeed = 10.0f; // デフォルト速度
 	constexpr float kApproachSpeed = 18.0f;
 	constexpr float kCombatSpeed = 10.0f;
 	constexpr float kCombatRadius = 25.0f;
@@ -39,9 +34,6 @@ public:
 
 	/// \brief ImGui描画
 	void DrawImGui() override;
-
-	/// \brief 敵タイプを設定
-	void SetEnemyType(EnemyType type);
 
 	///--------------------------------------------------------------
 	///							メンバ変数

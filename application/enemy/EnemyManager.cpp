@@ -35,10 +35,6 @@ void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, 
 	// ゲーム進行管理
 	defeatedCount_ = 0;
 	targetDefeatedCount_ = EnemyManagerConstants::kDefaultTargetDefeatedCount;
-
-	//========================================
-	// スポーンデータの初期化（簡略化 - 自動スポーンに任せる）
-	spawnQueue_.clear();
 }
 
 ///=============================================================================
@@ -108,11 +104,8 @@ void EnemyManager::DrawImGui() {
 	ImGui::SliderInt("Target Defeated", &targetDefeatedCount_, 1, 50);
 	ImGui::Checkbox("Auto Spawn", &autoSpawn_);
 
-	if (ImGui::Button("Spawn Normal Enemy")) {
-		SpawnEnemy(EnemyType::Normal, {0.0f, 0.0f, 30.0f});
-	}
-	if (ImGui::Button("Spawn Fast Enemy")) {
-		SpawnEnemy(EnemyType::Fast, {3.0f, 0.0f, 15.0f});
+	if (ImGui::Button("Spawn Enemy")) {
+		SpawnEnemy({0.0f, 0.0f, 30.0f});
 	}
 	if (ImGui::Button("Clear All Enemies")) {
 		Clear();
@@ -143,16 +136,7 @@ void EnemyManager::Clear() {
 ///                        スポーン処理
 void EnemyManager::UpdateSpawning() {
 	//========================================
-	// 予定されたスポーンの処理（キューベースのスポーン）
-	for (auto &spawnInfo : spawnQueue_) {
-		if (!spawnInfo.spawned && gameTime_ >= spawnInfo.spawnTime) {
-			SpawnEnemy(spawnInfo.type, spawnInfo.position);
-			spawnInfo.spawned = true;
-		}
-	}
-
-	//========================================
-	// 自動スポーン（最適化版）
+	// 自動スポーン
 	if (autoSpawn_ &&
 		GetAliveEnemyCount() < static_cast<size_t>(maxEnemies_) &&
 		gameTime_ - lastSpawnTime_ >= spawnInterval_) {
@@ -195,21 +179,17 @@ void EnemyManager::UpdateSpawning() {
 			}
 		}
 
-		EnemyType type = (rand() % 3 == 0) ? EnemyType::Fast : EnemyType::Normal;
-		SpawnEnemy(type, spawnPos);
+		SpawnEnemy(spawnPos);
 		lastSpawnTime_ = gameTime_;
 	}
 }
 
 ///=============================================================================
 ///                        敵の生成
-void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
-	// 具体的なEnemyクラスを生成（将来的にFactoryパターンも検討）
+void EnemyManager::SpawnEnemy(const Vector3 &position) {
+	// 通常の敵を生成
 	auto enemy = std::make_unique<Enemy>();
 	enemy->Initialize(object3dSetup_, "jet.obj", position);
-
-	// 敵タイプを設定（速度とHPが変わる）
-	enemy->SetEnemyType(type);
 
 	// パーティクルシステムの設定
 	enemy->SetParticleSystem(particle_, particleSetup_);

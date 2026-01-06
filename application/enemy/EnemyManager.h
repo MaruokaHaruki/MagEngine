@@ -7,7 +7,7 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "EnemyBase.h" // Enemy.h から EnemyBase.h に変更
+#include "EnemyBase.h"
 #include <memory>
 #include <vector>
 
@@ -22,26 +22,7 @@ namespace EnemyManagerConstants {
 	constexpr float kDefaultSpawnInterval = 3.0f;
 	constexpr int kDefaultMaxEnemies = 10;
 	constexpr int kDefaultTargetDefeatedCount = 15;
-	constexpr float kSpawnRangeX = 5.0f;
-	constexpr float kSpawnRangeY = 1.0f;
-	constexpr float kSpawnDistanceMin = 20.0f;
-	constexpr float kSpawnDistanceMax = 30.0f;
 }
-
-/// \brief 敵のタイプ
-enum class EnemyType {
-	Normal,
-	Fast
-	// Boss // 将来的に追加予定
-};
-
-/// \brief スポーン情報（手動スポーン用 - オプション）
-struct SpawnInfo {
-	EnemyType type;
-	Vector3 position;
-	float spawnTime; // スポーンする時間
-	bool spawned;	 // スポーン済みフラグ
-};
 
 ///=============================================================================
 ///						EnemyManagerクラス
@@ -75,11 +56,11 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
-	/// \brief 敵のスポーン処理(通常)
+	/// \brief 敵のスポーン処理
 	void UpdateSpawning();
 
 	/// \brief 敵の生成
-	void SpawnEnemy(EnemyType type, const Vector3 &position);
+	void SpawnEnemy(const Vector3 &position);
 
 	/// \brief 死んだ敵の削除
 	void RemoveDeadEnemies();
@@ -119,22 +100,21 @@ public:
 	///							メンバ変数
 private:
 	//========================================
-	// 敵管理（EnemyBase のリストに変更）
+	// 敵管理
 	std::vector<std::unique_ptr<EnemyBase>> enemies_;
 
 	//========================================
 	// スポーン管理
-	std::vector<SpawnInfo> spawnQueue_; // 手動スポーン用（オプション）
-	float gameTime_;					// ゲーム経過時間
-	float lastSpawnTime_;				// 最後のスポーン時間
-	float spawnInterval_;				// スポーン間隔
+	float gameTime_;	  // ゲーム経過時間
+	float lastSpawnTime_; // 最後のスポーン時間
+	float spawnInterval_; // スポーン間隔
 
 	//========================================
 	// システム参照
 	Object3dSetup *object3dSetup_;
 	Particle *particle_;
 	ParticleSetup *particleSetup_;
-	Player *player_; // プレイヤー参照
+	Player *player_;
 
 	//========================================
 	// 設定パラメータ
