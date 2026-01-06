@@ -23,7 +23,11 @@ void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPat
 	combatTimer_ = 0.0f;
 	combatDuration_ = EnemyConstants::kCombatDuration;
 	combatCenter_ = {0.0f, 0.0f, 0.0f};
-	circleAngle_ = 0.0f;
+
+	// 移動関連初期化
+	moveTimer_ = 0.0f;
+	currentVelocity_ = {0.0f, 0.0f, 0.0f};
+	targetPosition_ = position;
 }
 
 ///=============================================================================
@@ -45,37 +49,45 @@ void Enemy::Update() {
 		// 接近フェーズ
 		if (player_) {
 			Vector3 playerPos = player_->GetPosition();
-			combatCenter_ = playerPos;
 
-			Vector3 targetPos = {
+			targetPosition_ = {
 				playerPos.x,
 				playerPos.y,
-				playerPos.z + EnemyConstants::kCombatRadius};
+				playerPos.z - EnemyConstants::kCombatDepth};
 
 			Vector3 direction = {
-				targetPos.x - transform_.translate.x,
-				targetPos.y - transform_.translate.y,
-				targetPos.z - transform_.translate.z};
+				targetPosition_.x - transform_.translate.x,
+				targetPosition_.y - transform_.translate.y,
+				targetPosition_.z - transform_.translate.z};
 
 			float distance = std::sqrt(
 				direction.x * direction.x +
 				direction.y * direction.y +
 				direction.z * direction.z);
 
-			if (distance < 5.0f) {
+			if (distance < 20.0f) {
 				behaviorState_ = BehaviorState::Combat;
 				combatTimer_ = 0.0f;
-				circleAngle_ = std::atan2(
-					transform_.translate.x - playerPos.x,
-					transform_.translate.z - playerPos.z);
+				combatCenter_ = playerPos;
+				moveTimer_ = 0.0f;
 			} else {
 				direction.x /= distance;
 				direction.y /= distance;
 				direction.z /= distance;
 
-				transform_.translate.x += direction.x * EnemyConstants::kApproachSpeed * deltaTime;
-				transform_.translate.y += direction.y * EnemyConstants::kApproachSpeed * deltaTime;
-				transform_.translate.z += direction.z * EnemyConstants::kApproachSpeed * deltaTime;
+				Vector3 targetVelocity = {
+					direction.x * EnemyConstants::kApproachSpeed,
+					direction.y * EnemyConstants::kApproachSpeed,
+					direction.z * EnemyConstants::kApproachSpeed};
+
+				// イージングで加減速
+				currentVelocity_.x += (targetVelocity.x - currentVelocity_.x) * EnemyConstants::kMovementSmoothing;
+				currentVelocity_.y += (targetVelocity.y - currentVelocity_.y) * EnemyConstants::kMovementSmoothing;
+				currentVelocity_.z += (targetVelocity.z - currentVelocity_.z) * EnemyConstants::kMovementSmoothing;
+
+				transform_.translate.x += currentVelocity_.x * deltaTime;
+				transform_.translate.y += currentVelocity_.y * deltaTime;
+				transform_.translate.z += currentVelocity_.z * deltaTime;
 			}
 		} else {
 			transform_.translate.z += speed_ * deltaTime;
@@ -86,29 +98,40 @@ void Enemy::Update() {
 	case BehaviorState::Combat: {
 		// 戦闘フェーズ
 		combatTimer_ += deltaTime;
-
-		if (player_) {
-			combatCenter_ = player_->GetPosition();
-		}
+		moveTimer_ += deltaTime;
 
 		if (combatTimer_ >= combatDuration_) {
 			behaviorState_ = BehaviorState::Retreat;
 			break;
 		}
 
-		circleAngle_ += EnemyConstants::kCircleFrequency * deltaTime;
-		float radius = EnemyConstants::kCombatRadius;
-		float verticalOffset = std::sin(circleAngle_ * 2.0f) * 4.0f;
+		// プレイヤー位置を滑らかに追跡
+		if (player_) {
+			Vector3 currentPlayerPos = player_->GetPosition();
+			combatCenter_.x += (currentPlayerPos.x - combatCenter_.x) * EnemyConstants::kPlayerTrackingSpeed;
+			combatCenter_.y += (currentPlayerPos.y - combatCenter_.y) * EnemyConstants::kPlayerTrackingSpeed;
+			combatCenter_.z += (currentPlayerPos.z - combatCenter_.z) * EnemyConstants::kPlayerTrackingSpeed;
+		}
 
-		Vector3 targetPos = {
-			combatCenter_.x + std::sin(circleAngle_) * radius,
-			combatCenter_.y + verticalOffset,
-			combatCenter_.z + std::cos(circleAngle_) * radius};
+		// 一定間隔で新しい目標位置を設定
+		if (moveTimer_ >= EnemyConstants::kMoveInterval) {
+			float angle = combatTimer_ * 1.2f;
+			float offsetX = std::sin(angle) * EnemyConstants::kCombatRadius;
+			float offsetY = std::cos(angle * 0.7f) * 5.0f;
 
+			targetPosition_ = {
+				combatCenter_.x + offsetX,
+				combatCenter_.y + offsetY,
+				combatCenter_.z - EnemyConstants::kCombatDepth};
+
+			moveTimer_ = 0.0f;
+		}
+
+		// 目標位置への滑らかな移動
 		Vector3 direction = {
-			targetPos.x - transform_.translate.x,
-			targetPos.y - transform_.translate.y,
-			targetPos.z - transform_.translate.z};
+			targetPosition_.x - transform_.translate.x,
+			targetPosition_.y - transform_.translate.y,
+			targetPosition_.z - transform_.translate.z};
 
 		float distance = std::sqrt(
 			direction.x * direction.x +
@@ -120,17 +143,35 @@ void Enemy::Update() {
 			direction.y /= distance;
 			direction.z /= distance;
 
-			transform_.translate.x += direction.x * EnemyConstants::kCombatSpeed * deltaTime;
-			transform_.translate.y += direction.y * EnemyConstants::kCombatSpeed * deltaTime;
-			transform_.translate.z += direction.z * EnemyConstants::kCombatSpeed * deltaTime;
+			Vector3 targetVelocity = {
+				direction.x * EnemyConstants::kCombatSpeed,
+				direction.y * EnemyConstants::kCombatSpeed,
+				direction.z * EnemyConstants::kCombatSpeed};
+
+			// きれいなイージングで加減速
+			currentVelocity_.x += (targetVelocity.x - currentVelocity_.x) * EnemyConstants::kMovementSmoothing;
+			currentVelocity_.y += (targetVelocity.y - currentVelocity_.y) * EnemyConstants::kMovementSmoothing;
+			currentVelocity_.z += (targetVelocity.z - currentVelocity_.z) * EnemyConstants::kMovementSmoothing;
+
+			transform_.translate.x += currentVelocity_.x * deltaTime;
+			transform_.translate.y += currentVelocity_.y * deltaTime;
+			transform_.translate.z += currentVelocity_.z * deltaTime;
 		}
+
 		break;
 	}
 
 	case BehaviorState::Retreat: {
 		// 退却フェーズ
-		transform_.translate.z += EnemyConstants::kRetreatSpeed * deltaTime;
-		transform_.translate.y += 8.0f * deltaTime;
+		Vector3 targetVelocity = {0.0f, 8.0f, EnemyConstants::kRetreatSpeed};
+
+		currentVelocity_.x += (targetVelocity.x - currentVelocity_.x) * EnemyConstants::kMovementSmoothing;
+		currentVelocity_.y += (targetVelocity.y - currentVelocity_.y) * EnemyConstants::kMovementSmoothing;
+		currentVelocity_.z += (targetVelocity.z - currentVelocity_.z) * EnemyConstants::kMovementSmoothing;
+
+		transform_.translate.x += currentVelocity_.x * deltaTime;
+		transform_.translate.y += currentVelocity_.y * deltaTime;
+		transform_.translate.z += currentVelocity_.z * deltaTime;
 		break;
 	}
 	}

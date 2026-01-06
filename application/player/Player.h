@@ -96,6 +96,17 @@ public:
 		return obj_ ? obj_->GetTransform() : nullptr;
 	}
 
+	// //========================================
+	// // 敗北演出関連（Crash から Defeat に変更）
+	// /// @brief 敗北判定
+	// bool IsDefeated() const {
+	// 	return isDefeated_;
+	// }
+	// /// @brief 敗北演出完了判定
+	// bool IsDefeatAnimationComplete() const {
+	// 	return defeatAnimationComplete_;
+	// }
+
 	//========================================
 	// HP関連
 	/// @brief 現在のHPの取得

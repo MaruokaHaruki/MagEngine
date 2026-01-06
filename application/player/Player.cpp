@@ -20,29 +20,29 @@
 
 namespace { // 無名名前空間でファイルスコープの定数を定義
 	const float PI = 3.1415926535f;
-	constexpr float kFrameDelta = 1.0f / 60.0f; // こちらは1フレーム分の時間を丁寧に共有しております。
+	constexpr float kFrameDelta = 1.0f / 60.0f;
 
-	inline float Lerp(float a, float b, float t) {
-		return a + t * (b - a);
-	}
-	inline float DegreesToRadians(float degrees) {
-		return degrees * (PI / 180.0f);
-	}
+	// inline float Lerp(float a, float b, float t) {
+	// 	return a + t * (b - a);
+	// }
+	// inline float DegreesToRadians(float degrees) {
+	// 	return degrees * (PI / 180.0f);
+	// }
 	inline float RadiansToDegrees(float radians) {
 		return radians * (180.0f / PI);
 	}
-	template <class T>
-	void UpdateProjectileList(std::vector<std::unique_ptr<T>> &items) {
-		for (auto &item : items) {
-			if (item) {
-				item->Update();
-			}
-		}
-		items.erase(
-			std::remove_if(items.begin(), items.end(),
-						   [](const std::unique_ptr<T> &item) { return !item || !item->IsAlive(); }),
-			items.end());
-	}
+	// template <class T>
+	// void UpdateProjectileList(std::vector<std::unique_ptr<T>> &items) {
+	// 	for (auto &item : items) {
+	// 		if (item) {
+	// 			item->Update();
+	// 		}
+	// 	}
+	// 	items.erase(
+	// 		std::remove_if(items.begin(), items.end(),
+	// 					   [](const std::unique_ptr<T> &item) { return !item || !item->IsAlive(); }),
+	// 		items.end());
+	// }
 } // namespace
 
 Transform *Player::GetTransformSafe() const {
@@ -464,7 +464,7 @@ void Player::StartDefeatAnimation() {
 	defeatAnimationComplete_ = false;
 	defeatAnimationTime_ = 0.0f;
 
-	// 演出用の速度を設定
+	// 演出用の速度を設定（疑似ランダム）
 	unsigned int seed = static_cast<unsigned int>(defeatAnimationTime_ * 1000.0f);
 
 	float pseudoRandom1 = (seed % 100) / 50.0f - 1.0f;
