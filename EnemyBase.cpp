@@ -150,8 +150,12 @@ void EnemyBase::OnCollisionEnter(BaseObject *other) {
 	if (isInvincible_ || destroyState_ != DestroyState::Alive) {
 		return;
 	}
-	// コールバックを保持したままダメージ処理
-	TakeDamage(1);
+	// ミサイルとマシンガン弾を区別してダメージ処理
+	if (dynamic_cast<PlayerMissile *>(other)) {
+		TakeDamage(2);
+	} else if (dynamic_cast<PlayerBullet *>(other)) {
+		TakeDamage(1);
+	}
 }
 
 void EnemyBase::OnCollisionStay(BaseObject *other) {
