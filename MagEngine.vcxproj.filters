@@ -195,6 +195,7 @@
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerHelthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
+    <ClCompile Include="EnemyBase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -447,6 +448,7 @@
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerHelthComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
+    <ClInclude Include="EnemyBase.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

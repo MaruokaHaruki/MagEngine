@@ -116,6 +116,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\enemy\Enemy.cpp" />
     <ClCompile Include="application\enemy\EnemyManager.cpp" />
     <ClCompile Include="application\utils\Ball.cpp" />
+    <ClCompile Include="EnemyBase.cpp" />
     <ClCompile Include="engine\3d\cloud\Cloud.cpp" />
     <ClCompile Include="engine\3d\cloud\CloudSetup.cpp" />
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
@@ -187,6 +188,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\enemy\Enemy.h" />
     <ClInclude Include="application\enemy\EnemyManager.h" />
     <ClInclude Include="application\utils\Ball.h" />
+    <ClInclude Include="EnemyBase.h" />
     <ClInclude Include="engine\3d\cloud\Cloud.h" />
     <ClInclude Include="engine\3d\cloud\CloudSetup.h" />
     <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
