@@ -109,7 +109,7 @@ void EnemyGunner::Update() {
 			targetPosition_ = {
 				combatCenter_.x + offsetX,
 				combatCenter_.y + offsetY,
-				combatCenter_.z + EnemyGunnerConstants::kCombatDepth}; // プラス記号に修正
+				combatCenter_.z + EnemyGunnerConstants::kCombatDepth};
 
 			moveTimer_ = 0.0f;
 		}
@@ -122,7 +122,9 @@ void EnemyGunner::Update() {
 
 		float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
 
-		if (distance > 0.1f) {
+		// 停止閾値を設定してガクガクを防ぐ
+		const float stopThreshold = 2.0f;
+		if (distance > stopThreshold) {
 			direction.x /= distance;
 			direction.y /= distance;
 			direction.z /= distance;
@@ -130,6 +132,9 @@ void EnemyGunner::Update() {
 			transform_.translate.x += direction.x * 18.0f * deltaTime;
 			transform_.translate.y += direction.y * 18.0f * deltaTime;
 			transform_.translate.z += direction.z * 18.0f * deltaTime;
+		} else {
+			// 目標位置に到達したら位置を固定
+			transform_.translate = targetPosition_;
 		}
 
 		// 射撃処理

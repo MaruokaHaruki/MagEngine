@@ -10,7 +10,7 @@ class Particle;
 class ParticleSetup;
 
 namespace EnemyBulletConstants {
-	constexpr float kSpeed = 25.0f;
+	constexpr float kSpeed = 35.0f; // 25.0f から 35.0f に変更
 	constexpr float kRadius = 0.5f;
 	constexpr float kLifeTime = 5.0f;
 }

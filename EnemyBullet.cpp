@@ -1,7 +1,9 @@
+#define _USE_MATH_DEFINES
 #include "EnemyBullet.h"
 #include "Object3dSetup.h"
 #include "Particle.h"
 #include "Player.h"
+#include <cmath>
 
 ///=============================================================================
 ///                        初期化
@@ -12,7 +14,16 @@ void EnemyBullet::Initialize(Object3dSetup *object3dSetup, const std::string &mo
 
 	transform_.translate = position;
 	transform_.scale = {0.5f, 0.5f, 0.5f};
-	transform_.rotate = {0.0f, 0.0f, 0.0f};
+
+	// 進行方向に向けて回転を設定
+	// Y軸周りの回転（ヨー）
+	float yaw = std::atan2(direction.x, direction.z);
+
+	// X軸周りの回転（ピッチ）
+	float horizontalDistance = std::sqrt(direction.x * direction.x + direction.z * direction.z);
+	float pitch = std::atan2(-direction.y, horizontalDistance);
+
+	transform_.rotate = {pitch, yaw, 0.0f};
 
 	velocity_ = {
 		direction.x * EnemyBulletConstants::kSpeed,
