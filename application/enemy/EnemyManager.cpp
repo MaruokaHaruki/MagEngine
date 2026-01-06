@@ -8,6 +8,8 @@
 #include "EnemyManager.h"
 #include "CollisionManager.h"
 #include "Enemy.h" // 具体的なクラスは.cppでインクルード
+#include "EnemyBullet.h"
+#include "EnemyGunner.h"
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include "Player.h"
@@ -179,7 +181,12 @@ void EnemyManager::UpdateSpawning() {
 			}
 		}
 
-		SpawnEnemy(spawnPos);
+		// 30%の確率でガンナータイプをスポーン
+		if (rand() % 100 < 50) {
+			SpawnGunner(spawnPos);
+		} else {
+			SpawnEnemy(spawnPos);
+		}
 		lastSpawnTime_ = gameTime_;
 	}
 }
@@ -207,6 +214,20 @@ void EnemyManager::SpawnEnemy(const Vector3 &position) {
 }
 
 ///=============================================================================
+///                        ガンナータイプの生成
+void EnemyManager::SpawnGunner(const Vector3 &position) {
+	auto gunner = std::make_unique<EnemyGunner>();
+	gunner->Initialize(object3dSetup_, "jet.obj", position);
+	gunner->SetParticleSystem(particle_, particleSetup_);
+	gunner->SetPlayer(player_);
+	gunner->SetDefeatCallback([this]() {
+		defeatedCount_++;
+	});
+
+	enemies_.push_back(std::move(gunner));
+}
+
+///=============================================================================
 ///                        死んだ敵の削除
 void EnemyManager::RemoveDeadEnemies() {
 	// Dead状態の敵のみ削除（撃破数は既にカウント済み）
@@ -225,4 +246,26 @@ size_t EnemyManager::GetAliveEnemyCount() const {
 						 [](const std::unique_ptr<EnemyBase> &enemy) {
 							 return enemy && enemy->IsAlive();
 						 });
+}
+
+///=============================================================================
+///                        敵の弾をすべて取得
+std::vector<EnemyBullet *> EnemyManager::GetAllEnemyBullets() {
+	std::vector<EnemyBullet *> allBullets;
+
+	for (auto &enemy : enemies_) {
+		if (enemy && enemy->IsAlive()) {
+			// EnemyGunnerかどうかチェック
+			if (EnemyGunner *gunner = dynamic_cast<EnemyGunner *>(enemy.get())) {
+				auto &bullets = gunner->GetBullets();
+				for (auto &bullet : bullets) {
+					if (bullet && bullet->IsAlive()) {
+						allBullets.push_back(bullet.get());
+					}
+				}
+			}
+		}
+	}
+
+	return allBullets;
 }

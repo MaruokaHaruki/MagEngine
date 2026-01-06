@@ -22,6 +22,7 @@
 class Object3dSetup;
 class EnemyManager;
 class EnemyBase; // Enemy から EnemyBase に変更
+class EnemyBullet;
 
 ///=============================================================================
 ///						クラス定義

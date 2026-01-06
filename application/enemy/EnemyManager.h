@@ -17,6 +17,7 @@ class Particle;
 class ParticleSetup;
 class CollisionManager;
 class Player;
+class EnemyBullet;
 
 namespace EnemyManagerConstants {
 	constexpr float kDefaultSpawnInterval = 3.0f;
@@ -62,6 +63,9 @@ private:
 	/// \brief 敵の生成
 	void SpawnEnemy(const Vector3 &position);
 
+	/// \brief ガンナータイプの生成
+	void SpawnGunner(const Vector3 &position);
+
 	/// \brief 死んだ敵の削除
 	void RemoveDeadEnemies();
 
@@ -95,6 +99,9 @@ public:
 	const std::vector<std::unique_ptr<EnemyBase>> &GetEnemies() const {
 		return enemies_;
 	}
+
+	/// \brief 敵の弾をすべて取得
+	std::vector<EnemyBullet *> GetAllEnemyBullets();
 
 	///--------------------------------------------------------------
 	///							メンバ変数

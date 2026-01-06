@@ -11,6 +11,8 @@ class Object3dSetup;
 class Particle;
 class ParticleSetup;
 class Player;
+class PlayerBullet;
+class PlayerMissile;
 
 ///=============================================================================
 ///						EnemyBase クラス（敵の基底クラス）

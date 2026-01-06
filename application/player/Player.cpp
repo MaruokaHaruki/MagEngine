@@ -9,6 +9,8 @@
 // 以下はstd::maxを使用する場合に必要
 #define NOMINMAX
 #include "Player.h"
+#include "EnemyBase.h"
+#include "EnemyBullet.h"
 #include "EnemyManager.h"
 #include "ImguiSetup.h"
 #include "LineManager.h"
@@ -22,27 +24,9 @@ namespace { // 無名名前空間でファイルスコープの定数を定義
 	const float PI = 3.1415926535f;
 	constexpr float kFrameDelta = 1.0f / 60.0f;
 
-	// inline float Lerp(float a, float b, float t) {
-	// 	return a + t * (b - a);
-	// }
-	// inline float DegreesToRadians(float degrees) {
-	// 	return degrees * (PI / 180.0f);
-	// }
 	inline float RadiansToDegrees(float radians) {
 		return radians * (180.0f / PI);
 	}
-	// template <class T>
-	// void UpdateProjectileList(std::vector<std::unique_ptr<T>> &items) {
-	// 	for (auto &item : items) {
-	// 		if (item) {
-	// 			item->Update();
-	// 		}
-	// 	}
-	// 	items.erase(
-	// 		std::remove_if(items.begin(), items.end(),
-	// 					   [](const std::unique_ptr<T> &item) { return !item || !item->IsAlive(); }),
-	// 		items.end());
-	// }
 } // namespace
 
 Transform *Player::GetTransformSafe() const {
@@ -441,8 +425,16 @@ void Player::Heal(int healAmount) {
 //=======================================================================
 // 衝突処理
 void Player::OnCollisionEnter(BaseObject *other) {
-	// 敵との衝突時にダメージを受ける
-	TakeDamage(10); // 衝突時のダメージ量
+	// 敵の弾との衝突チェック
+	if (dynamic_cast<EnemyBullet *>(other)) {
+		TakeDamage(15); // 敵の弾のダメージ
+		return;
+	}
+
+	// 敵本体との衝突時にダメージを受ける
+	if (dynamic_cast<EnemyBase *>(other)) {
+		TakeDamage(10); // 衝突時のダメージ量
+	}
 }
 
 void Player::OnCollisionStay(BaseObject *other) {

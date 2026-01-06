@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "GamePlayScene.h"
 #include "CameraManager.h"
+#include "EnemyBullet.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
 #include "HUD.h"
@@ -382,6 +383,13 @@ void GamePlayScene::Update() {
 			if (missile->IsAlive()) {
 				collisionManager_->RegisterObject(missile.get());
 			}
+		}
+	}
+	//  敵の弾の当たり判定を登録
+	if (enemyManager_) {
+		auto enemyBullets = enemyManager_->GetAllEnemyBullets();
+		for (auto *bullet : enemyBullets) {
+			collisionManager_->RegisterObject(bullet);
 		}
 	}
 	//  当たり判定の更新
