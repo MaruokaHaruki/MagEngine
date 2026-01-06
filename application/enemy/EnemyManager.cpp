@@ -7,6 +7,7 @@
  *********************************************************************/
 #include "EnemyManager.h"
 #include "CollisionManager.h"
+#include "Enemy.h" // 具体的なクラスは.cppでインクルード
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include "Player.h"
@@ -203,6 +204,7 @@ void EnemyManager::UpdateSpawning() {
 ///=============================================================================
 ///                        敵の生成
 void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
+	// 具体的なEnemyクラスを生成（将来的にFactoryパターンも検討）
 	auto enemy = std::make_unique<Enemy>();
 	enemy->Initialize(object3dSetup_, "jet.obj", position);
 
@@ -216,13 +218,11 @@ void EnemyManager::SpawnEnemy(EnemyType type, const Vector3 &position) {
 	enemy->SetPlayer(player_);
 
 	// 撃破時のコールバックを設定（撃破数カウント）
-	auto onDefeat = [this]() {
+	enemy->SetDefeatCallback([this]() {
 		defeatedCount_++;
-	};
+	});
 
-	// コールバックを含めてダメージ処理を変更
-	// （実際にはEnemyクラス内で保持させる）
-
+	// EnemyBase* にアップキャストして格納
 	enemies_.push_back(std::move(enemy));
 }
 
@@ -232,7 +232,7 @@ void EnemyManager::RemoveDeadEnemies() {
 	// Dead状態の敵のみ削除（撃破数は既にカウント済み）
 	enemies_.erase(
 		std::remove_if(enemies_.begin(), enemies_.end(),
-					   [](const std::unique_ptr<Enemy> &enemy) {
+					   [](const std::unique_ptr<EnemyBase> &enemy) {
 						   return !enemy || !enemy->IsAlive();
 					   }),
 		enemies_.end());
@@ -242,7 +242,7 @@ void EnemyManager::RemoveDeadEnemies() {
 ///                        生存敵数の取得
 size_t EnemyManager::GetAliveEnemyCount() const {
 	return std::count_if(enemies_.begin(), enemies_.end(),
-						 [](const std::unique_ptr<Enemy> &enemy) {
+						 [](const std::unique_ptr<EnemyBase> &enemy) {
 							 return enemy && enemy->IsAlive();
 						 });
 }

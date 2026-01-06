@@ -8,7 +8,7 @@
 // 前方宣言
 class Object3dSetup;
 class EnemyManager;
-class Enemy;
+class EnemyBase; // Enemy から EnemyBase に変更
 
 ///=============================================================================
 ///						戦闘管理コンポーネント
@@ -22,7 +22,7 @@ public:
 	///--------------------------------------------------------------
 	///                        射撃処理
 	void ShootBullet(const Vector3 &position, const Vector3 &direction);
-	void ShootMissile(const Vector3 &position, const Vector3 &direction, Enemy *target);
+	void ShootMissile(const Vector3 &position, const Vector3 &direction, EnemyBase *target); // Enemy* から EnemyBase* に変更
 	void UpdateBullets();
 	void UpdateMissiles();
 

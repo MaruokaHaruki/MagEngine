@@ -21,7 +21,7 @@
 // 前方宣言
 class Object3dSetup;
 class EnemyManager;
-class Enemy;
+class EnemyBase; // Enemy から EnemyBase に変更
 
 ///=============================================================================
 ///						クラス定義
@@ -60,13 +60,13 @@ public:
 	/// @brief ロックオンモード切替
 	void UpdateLockOn();
 	/// @brief 最寄りの敵を取得
-	Enemy *GetNearestEnemy() const;
+	EnemyBase *GetNearestEnemy() const; // Enemy* から EnemyBase* に変更
 	/// @brief ロックオン状態クリア
 	bool HasLockOnTarget() const {
 		return lockOnTarget_ != nullptr;
 	}
 	/// @brief ロックオン対象の取得
-	Enemy *GetLockOnTarget() const {
+	EnemyBase *GetLockOnTarget() const { // Enemy* から EnemyBase* に変更
 		return lockOnTarget_;
 	}
 
@@ -171,7 +171,7 @@ private:
 
 	//========================================
 	// ロックオン関連
-	Enemy *lockOnTarget_;
+	EnemyBase *lockOnTarget_; // Enemy* から EnemyBase* に変更
 	float lockOnRange_;
 	bool lockOnMode_;
 

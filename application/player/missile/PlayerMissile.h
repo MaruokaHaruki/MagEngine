@@ -8,18 +8,17 @@
  *********************************************************************/
 #pragma once
 #include "BaseObject.h"
-#include "Enemy.h"
 #include "Object3d.h"
-#include "ParticleEmitter.h"
+#include "Transform.h"
+#include "Vector3.h"
 #include <memory>
 #include <string>
 #include <vector>
 
-// 前方宣言
+// Forward declarations
 class Object3dSetup;
-class Particle;
-class ParticleSetup;
-class EnemyManager;
+class EnemyBase;
+class EnemyManager; // 前方宣言を追加
 
 ///=============================================================================
 ///                        プレイヤーミサイルクラス
@@ -32,19 +31,23 @@ public:
 	/// @param modelPath モデルパス
 	/// @param startPos 初期位置
 	/// @param initialDirection 初期進行方向
+	/// @param target ターゲット（初期値はnullptr）
 	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath,
-					const Vector3 &startPos, const Vector3 &initialDirection);
+					const Vector3 &startPos, const Vector3 &initialDirection,
+					EnemyBase *target = nullptr); // Enemy* から EnemyBase* に変更
 	/// @brief Update 更新
 	void Update();
 	/// @brief Draw 描画
 	void Draw();
+	/// @brief DrawDebugInfo デバッグ情報描画
+	void DrawDebugInfo();
 	/// @brief DrawImGui ImGui描画
 	void DrawImGui();
 
 	//========================================
 	// ターゲット設定
 	/// \brief SetTarget 追尾ターゲット設定
-	void SetTarget(Enemy *target);
+	void SetTarget(EnemyBase *target); // Enemy* から EnemyBase* に変更
 
 	//========================================
 	// ゲッター
@@ -73,7 +76,7 @@ public:
 	// EnemyManager設定（追尾ターゲット検索用）
 	/// @brief SetEnemyManager EnemyManager設定
 	/// @param enemyManager EnemyManagerポインタ
-	void SetEnemyManager(EnemyManager *enemyManager) {
+	void SetEnemyManager(EnemyManager *enemyManager) { // 引数を追加
 		enemyManager_ = enemyManager;
 	}
 
@@ -86,14 +89,9 @@ public:
 		return isLockedOn_;
 	}
 	/// \brief GetLockedTarget ロックオンターゲット取得
-	Enemy *GetLockedTarget() const {
+	EnemyBase *GetLockedTarget() const {
 		return lockedTarget_;
 	}
-
-	//========================================
-	// 視覚化機能
-	/// \brief DrawDebugInfo デバッグ情報描画
-	void DrawDebugInfo();
 
 private:
 	//========================================
@@ -102,7 +100,7 @@ private:
 	void UpdateMovement();
 	/// @brief UpdateTracking 追尾更新
 	void UpdateTracking();
-	/// @brief UpdateRotation 回転更新
+	/// @brief UpdatePhysics 物理更新
 	void UpdatePhysics();
 	/// @brief UpdateRotation 回転更新
 	void UpdateRotation();
@@ -111,7 +109,7 @@ private:
 	/// @brief Explode 爆発処理
 	void Explode();
 	/// @brief FindNearestTarget 最寄りのターゲット探索
-	Enemy *FindNearestTarget();
+	EnemyBase *FindNearestTarget(); // Enemy* から EnemyBase* に変更
 
 	//========================================
 	// コア
@@ -128,15 +126,15 @@ private:
 
 	//========================================
 	// 追尾関連
-	Enemy *target_;				 // 追尾対象
-	Enemy *lockedTarget_;		 // ロックオンターゲット
-	float trackingStrength_;	 // 追尾強度（0.0〜1.0）
-	float lockOnRange_;			 // ロックオン範囲
-	float trackingStartTime_;	 // 追尾開始時間
-	bool isTracking_;			 // 追尾状態フラグ
-	bool isLockedOn_;			 // ロックオン状態フラグ
-	float lockOnTime_;			 // ロックオン時間
-	EnemyManager *enemyManager_; // 敵管理への参照
+	EnemyBase *target_;		  // 現在のターゲット（EnemyBase*に変更）
+	EnemyBase *lockedTarget_; // ロックオンしたターゲット（EnemyBase*に変更）
+	float trackingStrength_;
+	float lockOnRange_;
+	float trackingStartTime_;
+	bool isTracking_;
+	bool isLockedOn_;
+	float lockOnTime_;
+	EnemyManager *enemyManager_; // EnemyManager参照
 
 	//========================================
 	// 回転関連

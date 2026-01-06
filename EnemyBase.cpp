@@ -150,6 +150,7 @@ void EnemyBase::OnCollisionEnter(BaseObject *other) {
 	if (isInvincible_ || destroyState_ != DestroyState::Alive) {
 		return;
 	}
+	// コールバックを保持したままダメージ処理
 	TakeDamage(1);
 }
 
@@ -271,13 +272,19 @@ void EnemyBase::TakeDamage(int damage, std::function<void()> onDefeatCallback) {
 		return;
 	}
 
+	// コールバックが渡された場合は更新（初回設定用）
+	if (onDefeatCallback) {
+		onDefeatCallback_ = onDefeatCallback;
+	}
+
 	currentHP_ -= damage;
 	StartHitReaction();
 	CreateHitParticle();
 
 	if (currentHP_ <= 0) {
-		if (onDefeatCallback) {
-			onDefeatCallback();
+		// 保持しているコールバックを実行
+		if (onDefeatCallback_) {
+			onDefeatCallback_();
 		}
 		CreateDestroyParticle();
 		StartDestroy();

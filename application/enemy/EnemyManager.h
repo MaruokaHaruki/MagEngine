@@ -7,7 +7,7 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "Enemy.h"
+#include "EnemyBase.h" // Enemy.h から EnemyBase.h に変更
 #include <memory>
 #include <vector>
 
@@ -111,7 +111,7 @@ public:
 	}
 
 	/// \brief 敵リストの取得（当たり判定用）
-	const std::vector<std::unique_ptr<Enemy>> &GetEnemies() const {
+	const std::vector<std::unique_ptr<EnemyBase>> &GetEnemies() const {
 		return enemies_;
 	}
 
@@ -119,8 +119,8 @@ public:
 	///							メンバ変数
 private:
 	//========================================
-	// 敵管理
-	std::vector<std::unique_ptr<Enemy>> enemies_; // 敵のリスト
+	// 敵管理（EnemyBase のリストに変更）
+	std::vector<std::unique_ptr<EnemyBase>> enemies_;
 
 	//========================================
 	// スポーン管理

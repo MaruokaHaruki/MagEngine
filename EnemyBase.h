@@ -65,6 +65,11 @@ public:
 	/// \brief ダメージを受ける
 	virtual void TakeDamage(int damage, std::function<void()> onDefeatCallback = nullptr);
 
+	/// \brief 撃破コールバックを設定（初期化時に使用）
+	void SetDefeatCallback(std::function<void()> callback) {
+		onDefeatCallback_ = callback;
+	}
+
 	/// \brief ヒットリアクション中かどうか
 	bool IsInHitReaction() const {
 		return isHitReacting_;

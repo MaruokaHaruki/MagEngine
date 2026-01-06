@@ -60,7 +60,7 @@ void PlayerCombatComponent::ShootBullet(const Vector3 &position, const Vector3 &
 
 //=============================================================================
 // ミサイル発射
-void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 &direction, Enemy *target) {
+void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 &direction, EnemyBase *target) { // Enemy* から EnemyBase* に変更
 	if (!CanShootMissile()) {
 		return;
 	}

@@ -149,13 +149,13 @@ void Player::UpdateLockOn() {
 
 //=============================================================================
 // 最寄りの敵を取得
-Enemy *Player::GetNearestEnemy() const {
+EnemyBase *Player::GetNearestEnemy() const { // Enemy* から EnemyBase* に変更
 	if (!enemyManager_) {
 		return nullptr;
 	}
 
 	const Vector3 playerPos = GetPosition();
-	Enemy *nearestEnemy = nullptr;
+	EnemyBase *nearestEnemy = nullptr; // Enemy* から EnemyBase* に変更
 	float nearestDistance = lockOnRange_;
 
 	const auto &enemies = enemyManager_->GetEnemies();

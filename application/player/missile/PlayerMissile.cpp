@@ -46,8 +46,12 @@ namespace {
 
 //=============================================================================
 // 初期化
-void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath,
-							   const Vector3 &startPos, const Vector3 &initialDirection) {
+void PlayerMissile::Initialize(
+	Object3dSetup *object3dSetup,
+	const std::string &modelPath,
+	const Vector3 &position,
+	const Vector3 &direction,
+	EnemyBase *target) { // Enemy* から EnemyBase* に変更
 	//========================================
 	// コア初期化
 	obj_ = std::make_unique<Object3d>();
@@ -57,7 +61,7 @@ void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &
 
 	//========================================
 	// 物理パラメータ初期化（シンプルな一定速度）
-	forward_ = NormalizeVector(initialDirection);
+	forward_ = NormalizeVector(direction);
 	speed_ = 50.0f;		   // 一定速度
 	maxTurnRate_ = 120.0f; // 最大旋回速度（度/秒）- 急カーブを防ぐ
 
@@ -96,11 +100,11 @@ void PlayerMissile::Initialize(Object3dSetup *object3dSetup, const std::string &
 	if (obj_) {
 		Transform *objTransform = obj_->GetTransform();
 		if (objTransform) {
-			objTransform->translate = startPos;
+			objTransform->translate = position;
 			objTransform->rotate = {0.0f, 0.0f, 0.0f};
 			objTransform->scale = {0.5f, 0.5f, 0.5f};
 
-			Vector3 pos = startPos;
+			Vector3 pos = position;
 			BaseObject::Initialize(pos, 1.0f);
 		}
 	}
@@ -261,7 +265,7 @@ void PlayerMissile::StartLockOn() {
 	if (!enemyManager_)
 		return;
 
-	Enemy *nearestEnemy = FindNearestTarget();
+	EnemyBase *nearestEnemy = FindNearestTarget(); // Enemy* から EnemyBase* に変更
 	if (nearestEnemy) {
 		lockedTarget_ = nearestEnemy;
 		isLockedOn_ = true;
@@ -309,13 +313,13 @@ void PlayerMissile::UpdateLifetime() {
 	}
 }
 
-Enemy *PlayerMissile::FindNearestTarget() {
+EnemyBase *PlayerMissile::FindNearestTarget() { // Enemy* から EnemyBase* に変更
 	if (!enemyManager_) {
 		return nullptr;
 	}
 
 	Vector3 missilePos = obj_->GetPosition();
-	Enemy *nearestEnemy = nullptr;
+	EnemyBase *nearestEnemy = nullptr; // Enemy* から EnemyBase* に変更
 	float nearestDistance = lockOnRange_;
 
 	// EnemyManagerから敵リストを取得
@@ -629,15 +633,15 @@ Vector3 PlayerMissile::GetPosition() const {
 	return obj_ ? obj_->GetPosition() : Vector3{0.0f, 0.0f, 0.0f};
 }
 
-void PlayerMissile::SetTarget(Enemy *target) {
+void PlayerMissile::SetTarget(EnemyBase *target) {
 	target_ = target;
 }
 
 //=============================================================================
 // 衝突処理
 void PlayerMissile::OnCollisionEnter(BaseObject *other) {
-	// 敵との衝突で爆発
-	if (dynamic_cast<Enemy *>(other)) {
+	// 敵との衝突で爆発（EnemyBase にキャスト）
+	if (dynamic_cast<EnemyBase *>(other)) { // Enemy* から EnemyBase* に変更
 		Explode();
 	}
 }
