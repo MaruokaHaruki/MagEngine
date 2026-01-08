@@ -95,6 +95,7 @@ void Player::Update() {
 
 	// === プレイヤーの各種更新処理 ===
 	UpdateMovement();
+	UpdateBarrelRollAndBoost(); // 追加
 	UpdateLockOn();
 	ProcessShooting();
 	combatComponent_.UpdateBullets();
@@ -165,6 +166,8 @@ void Player::UpdateMovement() {
 	Input *input = Input::GetInstance();
 	float moveX = 0.0f;
 	float moveY = 0.0f;
+
+	// キーボード入力
 	if (input->PushKey(DIK_W)) {
 		moveY += 1.0f;
 	}
@@ -177,12 +180,129 @@ void Player::UpdateMovement() {
 	if (input->PushKey(DIK_A)) {
 		moveX -= 1.0f;
 	}
+
+	// コントローラー入力（左スティック）
 	moveX = std::clamp(moveX + input->GetLeftStickX(), -1.0f, 1.0f);
 	moveY = std::clamp(moveY + input->GetLeftStickY(), -1.0f, 1.0f);
 
 	// 移動コンポーネントで処理
 	movementComponent_.ProcessInput(moveX, moveY);
 	movementComponent_.Update(GetTransformSafe(), kFrameDelta);
+}
+
+//=============================================================================
+// バレルロールとブーストの更新
+void Player::UpdateBarrelRollAndBoost() {
+	Input *input = Input::GetInstance();
+
+	// === バレルロール入力（方向キー+Shift または 左スティック+Aボタン） ===
+	static float directionKeyHoldTime = 0.0f; // 方向キーを押している時間
+	static bool leftKeyHeld = false;
+	static bool rightKeyHeld = false;
+	static bool wasBarrelRolling = false; // 前フレームでバレルロール中だったか
+
+	bool barrelRollTriggered = false;
+	bool barrelRollRight = false;
+
+	// === キーボード入力 ===
+	bool currentLeftKey = input->PushKey(DIK_LEFT);
+	bool currentRightKey = input->PushKey(DIK_RIGHT);
+	bool shiftPressed = input->PushKey(DIK_LSHIFT);
+	bool shiftTriggered = input->TriggerKey(DIK_LSHIFT);
+
+	// 方向キーの状態を更新
+	if (currentLeftKey || currentRightKey) {
+		directionKeyHoldTime += kFrameDelta;
+		leftKeyHeld = currentLeftKey;
+		rightKeyHeld = currentRightKey;
+	} else {
+		directionKeyHoldTime = 0.0f;
+		leftKeyHeld = false;
+		rightKeyHeld = false;
+	}
+
+	// バレルロール判定（キーボード）
+	if (!movementComponent_.IsBarrelRolling()) {
+		// パターン1: 方向キー+Shiftの同時押し
+		if (shiftPressed && (input->TriggerKey(DIK_LEFT) || input->TriggerKey(DIK_RIGHT))) {
+			barrelRollTriggered = true;
+			barrelRollRight = input->TriggerKey(DIK_RIGHT);
+		}
+		// パターン2: 方向キーを押した後にShiftトリガー（0.5秒以内）
+		else if (shiftTriggered && directionKeyHoldTime > 0.0f && directionKeyHoldTime < 0.5f) {
+			barrelRollTriggered = true;
+			barrelRollRight = rightKeyHeld;
+		}
+	}
+
+	// === コントローラー入力 ===
+	bool aButtonPressed = input->PushButton(XINPUT_GAMEPAD_A);
+	bool aButtonTriggered = input->TriggerButton(XINPUT_GAMEPAD_A);
+	float stickX = input->GetLeftStickX();
+
+	static float stickDirectionHoldTime = 0.0f;
+	static bool stickLeftHeld = false;
+	static bool stickRightHeld = false;
+
+	// スティックの方向状態を更新
+	bool currentStickTilted = std::abs(stickX) > 0.5f;
+
+	if (currentStickTilted) {
+		stickDirectionHoldTime += kFrameDelta;
+		stickLeftHeld = stickX < -0.5f;
+		stickRightHeld = stickX > 0.5f;
+	} else {
+		stickDirectionHoldTime = 0.0f;
+		stickLeftHeld = false;
+		stickRightHeld = false;
+	}
+
+	// コントローラーでのバレルロール判定
+	if (!movementComponent_.IsBarrelRolling() && !barrelRollTriggered) {
+		// パターン1: Aボタン押した瞬間にスティックが倒されている
+		if (aButtonTriggered && currentStickTilted) {
+			barrelRollTriggered = true;
+			barrelRollRight = stickX > 0.0f;
+		}
+		// パターン2: スティックを倒した後にAボタン（0.5秒以内）
+		else if (aButtonTriggered && stickDirectionHoldTime > 0.0f && stickDirectionHoldTime < 0.5f) {
+			barrelRollTriggered = true;
+			barrelRollRight = stickRightHeld;
+		}
+	}
+
+	// バレルロール実行
+	if (barrelRollTriggered && movementComponent_.CanBarrelRoll()) {
+		movementComponent_.StartBarrelRoll(barrelRollRight);
+		helthComponent_.SetBarrelRollInvincible(true);
+		// 入力状態をリセット
+		directionKeyHoldTime = 0.0f;
+		stickDirectionHoldTime = 0.0f;
+	}
+
+	// バレルロール終了時に無敵解除
+	bool currentlyBarrelRolling = movementComponent_.IsBarrelRolling();
+	if (wasBarrelRolling && !currentlyBarrelRolling) {
+		helthComponent_.SetBarrelRollInvincible(false);
+	}
+	wasBarrelRolling = currentlyBarrelRolling;
+
+	// === ブースト入力（Shift長押し または Aボタン長押し） ===
+	bool boostInput = false;
+
+	// バレルロール中はブースト不可
+	if (!currentlyBarrelRolling) {
+		// キーボード：Shift長押し（方向キー不要）
+		if (shiftPressed) {
+			boostInput = true;
+		}
+		// コントローラー：Aボタン長押し（スティック方向不問）
+		else if (aButtonPressed) {
+			boostInput = true;
+		}
+	}
+
+	movementComponent_.ProcessBoost(boostInput, kFrameDelta);
 }
 
 //=============================================================================
@@ -193,13 +313,15 @@ void Player::ProcessShooting() {
 	const Vector3 playerPos = obj_->GetPosition();
 	const Vector3 forward{0.0f, 0.0f, 1.0f};
 
-	// 通常弾の発射
-	if ((input->PushKey(DIK_SPACE) || input->PushButton(XINPUT_GAMEPAD_A)) && combatComponent_.CanShootBullet()) {
+	// マシンガン発射（キーボード：SPACE または コントローラー：Rトリガー）
+	bool shootBullet = input->PushKey(DIK_SPACE) || input->GetRightTrigger() > 0.3f;
+	if (shootBullet && combatComponent_.CanShootBullet()) {
 		combatComponent_.ShootBullet(playerPos, forward);
 	}
 
-	// ミサイルの発射
-	if ((input->PushKey(DIK_M) || input->PushButton(XINPUT_GAMEPAD_B)) && combatComponent_.CanShootMissile()) {
+	// ミサイル発射（キーボード：M または コントローラー：Lトリガー）
+	bool shootMissile = input->PushKey(DIK_M) || input->GetLeftTrigger() > 0.3f;
+	if (shootMissile && combatComponent_.CanShootMissile()) {
 		combatComponent_.ShootMissile(playerPos, forward, lockOnTarget_);
 	}
 }
@@ -329,6 +451,53 @@ void Player::DrawImGui() {
 
 		ImGui::Separator();
 
+		// === ブーストゲージ情報 ===
+		ImGui::Text("=== Boost Gauge ===");
+		ImGui::Text("Boost: %.1f / %.1f", movementComponent_.GetBoostGauge(), movementComponent_.GetMaxBoostGauge());
+		ImGui::ProgressBar(movementComponent_.GetBoostGaugeRatio(), ImVec2(200, 20), "");
+		ImGui::Text("Boosting: %s", movementComponent_.IsBoosting() ? "Yes" : "No");
+		ImGui::Text("Can Boost: %s", movementComponent_.CanBoost() ? "Yes" : "No");
+		float boostSpeed = 2.0f;
+		if (ImGui::SliderFloat("Boost Speed", &boostSpeed, 1.5f, 3.0f)) {
+			movementComponent_.SetBoostSpeed(boostSpeed);
+		}
+		float boostConsumption = 30.0f;
+		if (ImGui::SliderFloat("Boost Consumption", &boostConsumption, 10.0f, 50.0f)) {
+			movementComponent_.SetBoostConsumption(boostConsumption);
+		}
+		float boostRecovery = 15.0f;
+		if (ImGui::SliderFloat("Boost Recovery", &boostRecovery, 5.0f, 30.0f)) {
+			movementComponent_.SetBoostRecovery(boostRecovery);
+		}
+
+		ImGui::Separator();
+
+		// === バレルロール情報 ===
+		ImGui::Text("=== Barrel Roll ===");
+		ImGui::Text("Is Rolling: %s", movementComponent_.IsBarrelRolling() ? "Yes" : "No");
+		ImGui::Text("Can Roll: %s", movementComponent_.CanBarrelRoll() ? "Yes" : "No");
+		if (movementComponent_.IsBarrelRolling()) {
+			ImGui::ProgressBar(movementComponent_.GetBarrelRollProgress(), ImVec2(200, 20), "");
+		}
+		float rollDuration = 0.8f;
+		if (ImGui::SliderFloat("Roll Duration", &rollDuration, 0.3f, 2.0f)) {
+			movementComponent_.SetBarrelRollDuration(rollDuration);
+		}
+		float rollCooldown = 1.5f;
+		if (ImGui::SliderFloat("Roll Cooldown", &rollCooldown, 0.5f, 3.0f)) {
+			movementComponent_.SetBarrelRollCooldown(rollCooldown);
+		}
+		float rollCost = 30.0f;
+		if (ImGui::SliderFloat("Roll Cost", &rollCost, 10.0f, 50.0f)) {
+			movementComponent_.SetBarrelRollCost(rollCost);
+		}
+		ImGui::Text("Controls:");
+		ImGui::Text("  Keyboard: Arrow(hold) + Shift = Roll, Shift Hold = Boost");
+		ImGui::Text("  Controller: L-Stick(hold) + A = Roll/Boost");
+		ImGui::Text("  Note: Direction key/stick can be pressed before Roll button");
+
+		ImGui::Separator();
+
 		// === 射撃情報 ===
 		ImGui::Text("=== Shooting Status ===");
 		ImGui::Text("Bullets Count: %zu", combatComponent_.GetBullets().size());
@@ -341,9 +510,9 @@ void Player::DrawImGui() {
 		if (ImGui::SliderFloat("Missile Cool Time", &maxMissileCoolTime, 0.5f, 5.0f)) {
 			combatComponent_.SetMaxMissileCoolTime(maxMissileCoolTime);
 		}
-		ImGui::Text("Controls: SPACE = Bullet, M = Missile, L = Lock-On");
-
-		ImGui::Separator();
+		ImGui::Text("Controls:");
+		ImGui::Text("  Keyboard: SPACE = Gun, M = Missile, L = Lock-On");
+		ImGui::Text("  Controller: R-Trigger = Gun, L-Trigger = Missile, Y = Lock-On");
 
 		// === ロックオン情報 ===
 		ImGui::Text("=== Lock-On Status ===");

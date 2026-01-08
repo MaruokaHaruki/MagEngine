@@ -20,6 +20,39 @@ public:
 	void ApplyRotation(Transform *transform);
 
 	///--------------------------------------------------------------
+	///                        バレルロール処理
+	void StartBarrelRoll(bool isRight);
+	void UpdateBarrelRoll(Transform *transform, float deltaTime);
+	bool IsBarrelRolling() const {
+		return isBarrelRolling_;
+	}
+	float GetBarrelRollProgress() const {
+		return barrelRollTime_ / barrelRollDuration_;
+	}
+	bool CanBarrelRoll() const {
+		return boostGauge_ >= barrelRollCost_ && barrelRollCoolTimer_ <= 0.0f;
+	}
+
+	///--------------------------------------------------------------
+	///                        ブースト処理
+	void ProcessBoost(bool boostInput, float deltaTime);
+	bool CanBoost() const {
+		return boostGauge_ > 0.0f && !isBarrelRolling_;
+	}
+	bool IsBoosting() const {
+		return isBoosting_;
+	}
+	float GetBoostGauge() const {
+		return boostGauge_;
+	}
+	float GetMaxBoostGauge() const {
+		return maxBoostGauge_;
+	}
+	float GetBoostGaugeRatio() const {
+		return boostGauge_ / maxBoostGauge_;
+	}
+
+	///--------------------------------------------------------------
 	///                        ゲッター
 	const Vector3 &GetCurrentVelocity() const {
 		return currentVelocity_;
@@ -54,6 +87,24 @@ public:
 	void SetMaxPitchAngle(float angle) {
 		maxPitchAngle_ = angle;
 	}
+	void SetBoostSpeed(float speed) {
+		boostSpeed_ = speed;
+	}
+	void SetBoostConsumption(float consumption) {
+		boostConsumption_ = consumption;
+	}
+	void SetBoostRecovery(float recovery) {
+		boostRecovery_ = recovery;
+	}
+	void SetBarrelRollDuration(float duration) {
+		barrelRollDuration_ = duration;
+	}
+	void SetBarrelRollCooldown(float cooldown) {
+		barrelRollCooldown_ = cooldown;
+	}
+	void SetBarrelRollCost(float cost) {
+		barrelRollCost_ = cost;
+	}
 
 private:
 	///--------------------------------------------------------------
@@ -72,4 +123,25 @@ private:
 	float rotationSmoothing_; // 回転の滑らかさ
 	float maxRollAngle_;	  // 最大ロール角（度）
 	float maxPitchAngle_;	  // 最大ピッチ角（度）
+
+	///--------------------------------------------------------------
+	///                        ブースト関連
+	float boostGauge_;		 // 現在のブーストゲージ
+	float maxBoostGauge_;	 // 最大ブーストゲージ
+	float boostSpeed_;		 // ブースト時の移動速度倍率
+	float boostConsumption_; // ブーストゲージ消費速度（per second）
+	float boostRecovery_;	 // ブーストゲージ回復速度（per second）
+	bool isBoosting_;		 // ブースト中フラグ
+
+	///--------------------------------------------------------------
+	///                        バレルロール関連
+	bool isBarrelRolling_;			   // バレルロール実行中フラグ
+	float barrelRollTime_;			   // バレルロール経過時間
+	float barrelRollDuration_;		   // バレルロール全体時間
+	float barrelRollCooldown_;		   // バレルロールクールダウン時間
+	float barrelRollCoolTimer_;		   // 現在のクールダウンタイマー
+	float barrelRollCost_;			   // バレルロール消費ゲージ量
+	bool barrelRollDirection_;		   // true=右回転, false=左回転
+	Vector3 barrelRollStartRotation_;  // バレルロール開始時の回転
+	Vector3 barrelRollMovementOffset_; // バレルロール中の横移動オフセット
 };

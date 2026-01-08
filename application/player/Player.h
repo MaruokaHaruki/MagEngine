@@ -91,6 +91,29 @@ public:
 	}
 
 	//========================================
+	// ブースト・バレルロール関連ゲッター（HUD用）
+	/// @brief ブーストゲージの取得
+	float GetBoostGauge() const {
+		return movementComponent_.GetBoostGauge();
+	}
+	/// @brief 最大ブーストゲージの取得
+	float GetMaxBoostGauge() const {
+		return movementComponent_.GetMaxBoostGauge();
+	}
+	/// @brief バレルロール中判定
+	bool IsBarrelRolling() const {
+		return movementComponent_.IsBarrelRolling();
+	}
+	/// @brief バレルロール進行度の取得
+	float GetBarrelRollProgress() const {
+		return movementComponent_.GetBarrelRollProgress();
+	}
+	/// @brief ブースト中判定
+	bool IsBoosting() const {
+		return movementComponent_.IsBoosting();
+	}
+
+	//========================================
 	// Transform関連のゲッター（GameClearAnimation用）
 	/// @brief Transformの取得
 	Transform *GetTransform() const {
@@ -155,6 +178,8 @@ public:
 private:
 	/// @brief 移動更新
 	void UpdateMovement();
+	/// @brief バレルロール・ブースト更新
+	void UpdateBarrelRollAndBoost();
 	/// @brief 射撃処理
 	void ProcessShooting();
 	/// @brief 敗北演出更新

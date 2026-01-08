@@ -38,6 +38,8 @@ private:
 	void DrawAltitudeTape(float progress = 1.0f);				   // 右側: 高度テープ
 	void DrawHeadingTape(float progress = 1.0f);				   // 上部: 方位テープ
 	void DrawGForceIndicator(float progress = 1.0f);			   // G-Force表示
+	void DrawBoostGauge(float progress = 1.0f);					   // ブーストゲージ表示
+	void DrawBarrelRollIndicator(float progress = 1.0f);		   // バレルロール状態表示
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);
@@ -68,7 +70,11 @@ private:
 	float currentGForce_;
 	float currentSpeed_;
 	float currentAltitude_;
-	float currentHeading_; // 方位角（度）
+	float currentHeading_;	   // 方位角（度）
+	float currentBoostGauge_;  // ブーストゲージ
+	float maxBoostGauge_;	   // 最大ブーストゲージ
+	bool isBarrelRolling_;	   // バレルロール中
+	float barrelRollProgress_; // バレルロール進行度
 
 	// HUD表示制御
 	bool showBoresight_;
@@ -81,6 +87,8 @@ private:
 	bool showVelocityVector_;
 	bool showFlightPath_;
 	bool showPitchLadder_;
+	bool showBoostGauge_;		   // 追加
+	bool showBarrelRollIndicator_; // 追加
 
 	// アニメーション状態
 	bool isAnimating_;
@@ -97,6 +105,8 @@ private:
 	float altitudeTapeDeployStart_;
 	float headingTapeDeployStart_;
 	float gForceDeployStart_;
+	float boostGaugeDeployStart_;		   // 追加
+	float barrelRollIndicatorDeployStart_; // 追加
 
 	// アニメーション関連の内部処理
 	void UpdateAnimation();

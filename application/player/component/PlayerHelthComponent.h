@@ -40,6 +40,8 @@ public:
 	///                        セッター
 	void SetMaxHP(int maxHP);
 
+	void SetBarrelRollInvincible(bool invincible);
+
 private:
 	///--------------------------------------------------------------
 	///                        メンバ変数

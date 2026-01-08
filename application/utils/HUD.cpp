@@ -33,9 +33,9 @@ void HUD::Initialize() {
 	hudColor_ = {0.0f, 1.0f, 0.0f, 1.0f};		  // 緑色のHUD
 	hudColorWarning_ = {1.0f, 1.0f, 0.0f, 1.0f};  // 黄色（警告）
 	hudColorCritical_ = {1.0f, 0.0f, 0.0f, 1.0f}; // 赤色（危険）
-	hudDistance_ = 15.0f;						  // カメラから15単位前方にHUDを配置
-	hudSizeX_ = 0.4f;							  // HUD横幅サイズ倍率
-	hudSizeY_ = 0.250f;							  // HUD縦幅サイズ倍率
+	hudDistance_ = 20.0f;						  // カメラから20単位前方にHUDを配置
+	hudSizeX_ = 0.5f;							  // HUD横幅サイズ倍率
+	hudSizeY_ = 0.3f;							  // HUD縦幅サイズ倍率
 
 	// プレイヤー正面HUD要素の位置調整初期化
 	boresightOffset_ = {0.0f, -3.0f, 0.0f}; // ガンボアサイトのオフセット
@@ -55,6 +55,8 @@ void HUD::Initialize() {
 	showVelocityVector_ = true;
 	showFlightPath_ = true;
 	showPitchLadder_ = true;
+	showBoostGauge_ = true;			 // 追加
+	showBarrelRollIndicator_ = true; // 追加
 
 	// データの初期化
 	playerPosition_ = {0.0f, 0.0f, 0.0f};
@@ -64,6 +66,10 @@ void HUD::Initialize() {
 	currentSpeed_ = 0.0f;
 	currentAltitude_ = 0.0f;
 	currentHeading_ = 0.0f;
+	currentBoostGauge_ = 100.0f; // 追加
+	maxBoostGauge_ = 100.0f;	 // 追加
+	isBarrelRolling_ = false;	 // 追加
+	barrelRollProgress_ = 0.0f;	 // 追加
 
 	// アニメーション状態の初期化
 	isAnimating_ = false;
@@ -82,6 +88,8 @@ void HUD::Initialize() {
 	altitudeTapeDeployStart_ = 0.35f;
 	headingTapeDeployStart_ = 0.4f;
 	gForceDeployStart_ = 0.45f;
+	boostGaugeDeployStart_ = 0.5f;			 // 追加
+	barrelRollIndicatorDeployStart_ = 0.55f; // 追加
 }
 
 ///=============================================================================
@@ -348,6 +356,12 @@ void HUD::Update(const Player *player) {
 		currentHeading_ += 360.0f;
 	while (currentHeading_ >= 360.0f)
 		currentHeading_ -= 360.0f;
+
+	// ブーストゲージの取得
+	currentBoostGauge_ = player->GetBoostGauge();
+	maxBoostGauge_ = player->GetMaxBoostGauge();
+	isBarrelRolling_ = player->IsBarrelRolling();
+	barrelRollProgress_ = player->GetBarrelRollProgress();
 }
 
 ///=============================================================================
@@ -427,6 +441,18 @@ void HUD::Draw() {
 	float gForceProgress = std::max(0.0f, (deployProgress_ - gForceDeployStart_) / (1.0f - gForceDeployStart_));
 	if (showGForce_ && gForceProgress > 0.0f) {
 		DrawGForceIndicator(gForceProgress);
+	}
+
+	// ブーストゲージの描画
+	float boostProgress = std::max(0.0f, (deployProgress_ - boostGaugeDeployStart_) / (1.0f - boostGaugeDeployStart_));
+	if (showBoostGauge_ && boostProgress > 0.0f) {
+		DrawBoostGauge(boostProgress);
+	}
+
+	// バレルロールインジケーターの描画
+	float barrelRollProgress = std::max(0.0f, (deployProgress_ - barrelRollIndicatorDeployStart_) / (1.0f - barrelRollIndicatorDeployStart_));
+	if (showBarrelRollIndicator_ && barrelRollProgress > 0.0f && isBarrelRolling_) {
+		DrawBarrelRollIndicator(barrelRollProgress);
 	}
 }
 
@@ -960,7 +986,7 @@ void HUD::DrawGForceIndicator(float progress) {
 		lineManager->DrawLine(barLeft, barRightDraw, hudColor_);
 	}
 
-	// G-Force値バー（進行度50%以降）
+	// G-Force値バー（進行度50%以降で表示）
 	if (progress > 0.5f) {
 		float barProgress = (progress - 0.5f) / 0.5f;
 		Vector4 gColor = hudColor_;
@@ -979,6 +1005,85 @@ void HUD::DrawGForceIndicator(float progress) {
 }
 
 ///=============================================================================
+///                        ブーストゲージ表示（左下、G-Forceの下）
+void HUD::DrawBoostGauge(float progress) {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	float posX = -13.0f;
+	float posY = -10.0f;
+
+	// ゲージ枠（左から右に展開）
+	if (progress > 0.0f) {
+		Vector3 frameLeft = GetHUDPosition(posX, posY);
+		Vector3 frameRight = GetHUDPosition(posX + 4.0f, posY);
+		Vector3 frameRightDraw = Lerp(frameLeft, frameRight, progress);
+		lineManager->DrawLine(frameLeft, frameRightDraw, hudColor_);
+
+		// 上下の枠線
+		if (progress > 0.3f) {
+			Vector3 frameTop = GetHUDPosition(posX + 4.0f, posY + 0.3f);
+			Vector3 frameBottom = GetHUDPosition(posX + 4.0f, posY - 0.3f);
+			lineManager->DrawLine(frameTop, frameBottom, hudColor_);
+		}
+	}
+
+	// ゲージ本体（進行度50%以降）
+	if (progress > 0.5f) {
+		float gaugeProgress = (progress - 0.5f) / 0.5f;
+		float gaugeRatio = currentBoostGauge_ / maxBoostGauge_;
+		float gaugeLength = 4.0f * gaugeRatio;
+
+		Vector4 gaugeColor = hudColor_;
+		if (gaugeRatio < 0.3f) {
+			gaugeColor = hudColorWarning_;
+		}
+
+		Vector3 gaugeLeft = GetHUDPosition(posX, posY);
+		Vector3 gaugeRight = GetHUDPosition(posX + gaugeLength, posY);
+		Vector3 gaugeRightDraw = Lerp(gaugeLeft, gaugeRight, gaugeProgress);
+		lineManager->DrawLine(gaugeLeft, gaugeRightDraw, gaugeColor, 4.0f);
+	}
+}
+
+///=============================================================================
+///                        バレルロールインジケーター（画面中央上部）
+void HUD::DrawBarrelRollIndicator(float progress) {
+	LineManager *lineManager = LineManager::GetInstance();
+
+	float posY = 5.0f;
+
+	// "BARREL ROLL"テキスト風の線（簡易表現）
+	Vector3 textCenter = GetHUDPosition(0.0f, posY);
+
+	// 点滅効果
+	int blinkCycle = static_cast<int>(barrelRollProgress_ * 20.0f);
+	if (blinkCycle % 2 == 0) {
+		// 左右の矢印（回転方向を示唆）
+		Vector3 leftArrow1 = GetHUDPosition(-3.0f, posY);
+		Vector3 leftArrow2 = GetHUDPosition(-2.0f, posY + 0.5f);
+		Vector3 leftArrow3 = GetHUDPosition(-2.0f, posY - 0.5f);
+
+		lineManager->DrawLine(leftArrow1, leftArrow2, hudColor_, 2.0f);
+		lineManager->DrawLine(leftArrow1, leftArrow3, hudColor_, 2.0f);
+
+		Vector3 rightArrow1 = GetHUDPosition(3.0f, posY);
+		Vector3 rightArrow2 = GetHUDPosition(2.0f, posY + 0.5f);
+		Vector3 rightArrow3 = GetHUDPosition(2.0f, posY - 0.5f);
+
+		lineManager->DrawLine(rightArrow1, rightArrow2, hudColor_, 2.0f);
+		lineManager->DrawLine(rightArrow1, rightArrow3, hudColor_, 2.0f);
+
+		// 中央の円（回転を示唆）
+		lineManager->DrawCircle(textCenter, 0.8f, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, 16);
+	}
+
+	// 進行度バー
+	Vector3 progressBarLeft = GetHUDPosition(-2.0f, posY - 1.5f);
+	Vector3 progressBarRight = GetHUDPosition(-2.0f + 4.0f * barrelRollProgress_, posY - 1.5f);
+	lineManager->DrawLine(progressBarLeft, progressBarRight, hudColor_, 3.0f);
+}
+
+///=============================================================================
 ///                        ImGui描画
 void HUD::DrawImGui() {
 #ifdef _DEBUG
@@ -994,6 +1099,8 @@ void HUD::DrawImGui() {
 	ImGui::Checkbox("Show Altitude Indicator", &showAltitudeIndicator_);
 	ImGui::Checkbox("Show Compass", &showCompass_);
 	ImGui::Checkbox("Show G-Force", &showGForce_);
+	ImGui::Checkbox("Show Boost Gauge", &showBoostGauge_);					  // 追加
+	ImGui::Checkbox("Show Barrel Roll Indicator", &showBarrelRollIndicator_); // 追加
 
 	ImGui::Separator();
 	ImGui::Text("Animation Control");
@@ -1019,6 +1126,8 @@ void HUD::DrawImGui() {
 	ImGui::SliderFloat("Altitude Tape Start", &altitudeTapeDeployStart_, 0.0f, 0.5f);
 	ImGui::SliderFloat("Heading Tape Start", &headingTapeDeployStart_, 0.0f, 0.5f);
 	ImGui::SliderFloat("G-Force Start", &gForceDeployStart_, 0.0f, 0.5f);
+	ImGui::SliderFloat("Boost Gauge Start", &boostGaugeDeployStart_, 0.0f, 0.5f);					 // 追加
+	ImGui::SliderFloat("Barrel Roll Indicator Start", &barrelRollIndicatorDeployStart_, 0.0f, 0.5f); // 追加
 
 	ImGui::Separator();
 	ImGui::SliderFloat("HUD Scale", &hudScale_, 0.5f, 2.0f);
@@ -1042,6 +1151,8 @@ void HUD::DrawImGui() {
 	ImGui::Text("Pitch: %.1f deg", RadiansToDegrees(playerRotation_.x));
 	ImGui::Text("Roll: %.1f deg", RadiansToDegrees(playerRotation_.z));
 	ImGui::Text("G-Force: %.2f G", currentGForce_);
+	ImGui::Text("Boost: %.1f / %.1f", currentBoostGauge_, maxBoostGauge_); // 追加
+	ImGui::Text("Barrel Rolling: %s", isBarrelRolling_ ? "Yes" : "No");	   // 追加
 
 	// デバッグ情報追加
 	ImGui::Separator();

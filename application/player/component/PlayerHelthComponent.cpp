@@ -66,3 +66,14 @@ void PlayerHelthComponent::SetMaxHP(int maxHP) {
 	maxHP_ = maxHP;
 	currentHP_ = std::min(currentHP_, maxHP_);
 }
+
+//=============================================================================
+// バレルロール無敵設定
+void PlayerHelthComponent::SetBarrelRollInvincible(bool invincible) {
+	isInvincible_ = invincible;
+	if (invincible) {
+		invincibleTime_ = maxInvincibleTime_;
+	} else {
+		invincibleTime_ = 0.0f;
+	}
+}
