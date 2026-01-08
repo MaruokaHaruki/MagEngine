@@ -1,8 +1,8 @@
 #pragma once
-#include"Matrix4x4.h"
-#include"AffineTransformations.h"
+#include "AffineTransformations.h"
+#include "MathConstants.h"
 #include "MathFunc4x4.h"
-#include <cmath>
+#include "Matrix4x4.h"
 
 /// <summary>
 /// 正射影行列
@@ -19,15 +19,14 @@ inline Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, floa
 	Matrix4x4 result = Identity4x4();
 
 	// 正射影平面の範囲から正射影行列を構築する
-	result.m[0][0] = 2.0f / ( right - left );
-	result.m[1][1] = 2.0f / ( top - bottom );
-	result.m[2][2] = -2.0f / ( farClip - nearClip );
-	result.m[3][0] = -( right + left ) / ( right - left );
-	result.m[3][1] = -( top + bottom ) / ( top - bottom );
-	result.m[3][2] = -( farClip + nearClip ) / ( farClip - nearClip );
+	result.m[0][0] = 2.0f / (right - left);
+	result.m[1][1] = 2.0f / (top - bottom);
+	result.m[2][2] = -2.0f / (farClip - nearClip);
+	result.m[3][0] = -(right + left) / (right - left);
+	result.m[3][1] = -(top + bottom) / (top - bottom);
+	result.m[3][2] = -(farClip + nearClip) / (farClip - nearClip);
 
 	return result;
-
 }
 
 /// <summary>
@@ -39,18 +38,15 @@ inline Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, floa
 /// <param name="farClip"></param>
 /// <returns></returns>
 inline Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
-	// 単位行列で初期化
 	Matrix4x4 result = Identity4x4();
 
-	// tanの逆説
-	float cot = tanf(fovY / 2.0f);
+	float cot = MagMath::Tan(fovY / 2.0f);
 
-	// 射影変換行列の要素を計算する
-	result.m[0][0] = 1.0f / ( aspectRatio * cot );
+	result.m[0][0] = 1.0f / (aspectRatio * cot);
 	result.m[1][1] = 1.0f / cot;
-	result.m[2][2] = farClip / ( farClip - nearClip );
+	result.m[2][2] = farClip / (farClip - nearClip);
 	result.m[2][3] = 1.0f;
-	result.m[3][2] = -nearClip * farClip / ( farClip - nearClip );
+	result.m[3][2] = -nearClip * farClip / (farClip - nearClip);
 	result.m[3][3] = 0.0f;
 
 	return result;
@@ -80,4 +76,3 @@ inline Matrix4x4 MakeViewportMatrix(float left, float top, float width, float he
 
 	return result;
 }
-

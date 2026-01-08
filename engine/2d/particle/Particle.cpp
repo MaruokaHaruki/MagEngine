@@ -1,12 +1,9 @@
 #include "Particle.h"
 #include "Camera.h"
+#include "TextureManager.h"
 //---------------------------------------
 // 数学関数　
-#include "AffineTransformations.h"
-#include "MathFunc4x4.h"
-#include "ParticleSetup.h"
-#include "TextureManager.h"
-#include "Vector3.h"
+#include "MagMath.h"
 #include <cmath>
 #include <numbers>
 

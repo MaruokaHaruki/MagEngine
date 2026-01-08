@@ -1,20 +1,19 @@
 #pragma once
-#include "Vector3.h"
-#include "Matrix4x4.h"
-#include "RenderingMatrices.h"
+#include "MathConstants.h"
 #include "MathFunc4x4.h"
-#include <cmath>
+#include "Matrix4x4.h"
+#include "Vector3.h"
 #include <cassert>
 
-///=====================================================/// 
-///3次元アフィン行列用関数
 ///=====================================================///
-	/// <summary>
-	/// 平行移動行列を作成する関数
-	/// </summary>
-	/// <param name="translate"></param>
-	/// <returns></returns>
-inline Matrix4x4 MakeTranslateMatrix(const Vector3& translate) {
+/// 3次元アフィン行列用関数
+///=====================================================///
+/// <summary>
+/// 平行移動行列を作成する関数
+/// </summary>
+/// <param name="translate"></param>
+/// <returns></returns>
+inline Matrix4x4 MakeTranslateMatrix(const Vector3 &translate) {
 	Matrix4x4 result = Identity4x4(); // 単位行列を初期化
 
 	// 平行移動成分をセット
@@ -30,7 +29,7 @@ inline Matrix4x4 MakeTranslateMatrix(const Vector3& translate) {
 /// </summary>
 /// <param name="scale"></param>
 /// <returns></returns>
-inline Matrix4x4 MakeScaleMatrix(const Vector3& scale) {
+inline Matrix4x4 MakeScaleMatrix(const Vector3 &scale) {
 	// 単位行列を初期化
 	Matrix4x4 result = Identity4x4();
 
@@ -48,14 +47,12 @@ inline Matrix4x4 MakeScaleMatrix(const Vector3& scale) {
 /// <param name="radian"></param>
 /// <returns></returns>
 inline Matrix4x4 MakeRotateXMatrix(float radian) {
-	// 単位行列で初期化
 	Matrix4x4 result = Identity4x4();
 
-	//行列の計算
-	result.m[1][1] = std::cos(radian);
-	result.m[1][2] = std::sin(radian);
-	result.m[2][1] = -std::sin(radian);
-	result.m[2][2] = std::cos(radian);
+	result.m[1][1] = MagMath::Cos(radian);
+	result.m[1][2] = MagMath::Sin(radian);
+	result.m[2][1] = -MagMath::Sin(radian);
+	result.m[2][2] = MagMath::Cos(radian);
 
 	return result;
 }
@@ -66,14 +63,12 @@ inline Matrix4x4 MakeRotateXMatrix(float radian) {
 /// <param name="radian"></param>
 /// <returns></returns>
 inline Matrix4x4 MakeRotateYMatrix(float radian) {
-	// 単位行列で初期化
 	Matrix4x4 result = Identity4x4();
 
-	//行列の計算
-	result.m[0][0] = std::cos(radian);
-	result.m[0][2] = -std::sin(radian);
-	result.m[2][0] = std::sin(radian);
-	result.m[2][2] = std::cos(radian);
+	result.m[0][0] = MagMath::Cos(radian);
+	result.m[0][2] = -MagMath::Sin(radian);
+	result.m[2][0] = MagMath::Sin(radian);
+	result.m[2][2] = MagMath::Cos(radian);
 
 	return result;
 }
@@ -84,14 +79,12 @@ inline Matrix4x4 MakeRotateYMatrix(float radian) {
 /// <param name="radian"></param>
 /// <returns></returns>
 inline Matrix4x4 MakeRotateZMatrix(float radian) {
-	// 単位行列で初期化
 	Matrix4x4 result = Identity4x4();
 
-	//行列の計算
-	result.m[0][0] = std::cos(radian);
-	result.m[0][1] = std::sin(radian);
-	result.m[1][0] = -std::sin(radian);
-	result.m[1][1] = std::cos(radian);
+	result.m[0][0] = MagMath::Cos(radian);
+	result.m[0][1] = MagMath::Sin(radian);
+	result.m[1][0] = -MagMath::Sin(radian);
+	result.m[1][1] = MagMath::Cos(radian);
 
 	return result;
 }
@@ -99,9 +92,9 @@ inline Matrix4x4 MakeRotateZMatrix(float radian) {
 /**----------------------------------------------------------------------------
  * \brief  MakeRotateMatrix 回転行列を作成する関数
  * \param  rotation
- * \return 
+ * \return
  */
-inline Matrix4x4 MakeRotateMatrix(const Vector3& rotation) {
+inline Matrix4x4 MakeRotateMatrix(const Vector3 &rotation) {
 	Matrix4x4 rotX = MakeRotateXMatrix(rotation.x);
 	Matrix4x4 rotY = MakeRotateYMatrix(rotation.y);
 	Matrix4x4 rotZ = MakeRotateZMatrix(rotation.z);
@@ -116,7 +109,7 @@ inline Matrix4x4 MakeRotateMatrix(const Vector3& rotation) {
 /// <param name="vector"></param>
 /// <param name="matrix"></param>
 /// <returns></returns>
-inline Vector3 Conversion(const Vector3& vector, const Matrix4x4& matrix) {
+inline Vector3 Conversion(const Vector3 &vector, const Matrix4x4 &matrix) {
 	Vector3 result;
 
 	// 行列とベクトルの乗算
@@ -124,7 +117,7 @@ inline Vector3 Conversion(const Vector3& vector, const Matrix4x4& matrix) {
 	result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] + matrix.m[3][1];
 	result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] + matrix.m[3][2];
 	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + matrix.m[3][3];
-	//この処理を忘れない！
+	// この処理を忘れない！
 	assert(w != 0.0f);
 	result.x /= w;
 	result.y /= w;
@@ -132,18 +125,18 @@ inline Vector3 Conversion(const Vector3& vector, const Matrix4x4& matrix) {
 	return result;
 }
 
-//アフィン変換
-inline Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
-	//縮小拡大
+// アフィン変換
+inline Matrix4x4 MakeAffineMatrix(const Vector3 &scale, const Vector3 &rotate, const Vector3 &translate) {
+	// 縮小拡大
 	Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
-	//回転
+	// 回転
 	Matrix4x4 rotateXMatrix = MakeRotateXMatrix(rotate.x);
 	Matrix4x4 rotateYMatrix = MakeRotateYMatrix(rotate.y);
 	Matrix4x4 rotateZMatrix = MakeRotateZMatrix(rotate.z);
 	Matrix4x4 rotateXYZMatrix = Multiply4x4(rotateXMatrix, Multiply4x4(rotateYMatrix, rotateZMatrix));
-	//並行移動
+	// 並行移動
 	Matrix4x4 translateMatrix = MakeTranslateMatrix(translate);
-	//合成
+	// 合成
 	Matrix4x4 result = Identity4x4();
 	result = Multiply4x4(scaleMatrix, rotateXYZMatrix);
 	result = Multiply4x4(result, translateMatrix);
