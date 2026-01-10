@@ -5,26 +5,6 @@
 #include <algorithm>
 #include <cmath>
 
-namespace {
-	const float PI = 3.14159265f;
-
-	inline float RadiansToDegrees(float radians) {
-		return radians * (180.0f / PI);
-	}
-
-	inline float DegreesToRadians(float degrees) {
-		return degrees * (PI / 180.0f);
-	}
-
-	// 2点間を補間する関数
-	inline Vector3 Lerp(const Vector3 &a, const Vector3 &b, float t) {
-		return {
-			a.x + (b.x - a.x) * t,
-			a.y + (b.y - a.y) * t,
-			a.z + (b.z - a.z) * t};
-	}
-}
-
 ///=============================================================================
 ///                        初期化
 void HUD::Initialize() {

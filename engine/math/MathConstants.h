@@ -83,9 +83,10 @@ namespace MagMath {
 	// 補間関数
 	//========================================
 
-	/// <summary>線形補間</summary>
-	inline float Lerp(float a, float b, float t) {
-		return a + t * (b - a);
+	/// <summary>線形補間（テンプレート版）</summary>
+	template <typename T>
+	inline T Lerp(T a, T b, float t) {
+		return a + (b - a) * t;
 	}
 
 	/// <summary>スムーズステップ補間（3次エルミート補間）</summary>
@@ -95,12 +96,12 @@ namespace MagMath {
 	}
 
 	/// <summary>度からラジアンへ変換</summary>
-	constexpr float ToRadians(float degrees) {
+	constexpr float DegreesToRadians(float degrees) {
 		return degrees * DEG_TO_RAD;
 	}
 
 	/// <summary>ラジアンから度へ変換</summary>
-	constexpr float ToDegrees(float radians) {
+	constexpr float RadiansToDegrees(float radians) {
 		return radians * RAD_TO_DEG;
 	}
 }

@@ -99,7 +99,7 @@ void ParticleSetup::CreateRootSignature() {
 	if (FAILED(hr)) {
 		throw std::runtime_error("ENGINE MESSAGE: Particle Failed to create root signature");
 	}
-	Log("Particle Root signature created successfully :)");
+	Logger::Log("Particle Root signature created successfully :)");
 }
 
 ///=============================================================================
@@ -156,13 +156,13 @@ void ParticleSetup::CreateGraphicsPipeline() {
 	if (!vertexShaderBlob) {
 		throw std::runtime_error("ENGINE MESSAGE: Particle Failed to compile vertex shader :(");
 	}
-	Log("Particle Vertex shader created successfully :)", LogLevel::Success);
+	Logger::Log("Particle Vertex shader created successfully :)", Logger::LogLevel::Success);
 
 	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Particle.PS.hlsl", L"ps_6_0");
 	if (!pixelShaderBlob) {
 		throw std::runtime_error("ENGINE MESSAGE: Particle Failed to compile pixel shader :(");
 	}
-	Log("Particle Pixel shader state created successfully :)", LogLevel::Success);
+	Logger::Log("Particle Pixel shader state created successfully :)", Logger::LogLevel::Success);
 
 	//========================================
 	// PSOを生成する
@@ -195,5 +195,5 @@ void ParticleSetup::CreateGraphicsPipeline() {
 	if (FAILED(hr)) {
 		throw std::runtime_error("Particle Failed to create graphics pipeline state :(");
 	}
-	Log("Particle Graphics pipeline state created successfully :)", LogLevel::Success);
+	Logger::Log("Particle Graphics pipeline state created successfully :)", Logger::LogLevel::Success);
 }

@@ -1,11 +1,11 @@
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "Camera.h"
 #include "CameraManager.h"
 #include "FollowCamera.h"
 #include "LineManager.h"
 #include "Player.h"
-#include "Vector3.h"
-#include "Vector4.h"
 #include <memory>
 
 class HUD {

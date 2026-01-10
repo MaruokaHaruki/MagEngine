@@ -1,9 +1,8 @@
 // Emit.h
 #pragma once
+#include "MagMath.h"
 #include "Particle.h"
 #include "ParticlePreset.h"
-#include "ParticleSetup.h"
-#include <vector>
 
 class ParticleEmitter {
 	///--------------------------------------------------------------
@@ -16,7 +15,7 @@ public:
 	/// \param count 発生させるパーティクルの数
 	/// \param frequency 発生頻度
 	/// \param repeat 繰り返し発生させるかどうかのフラグ
-	ParticleEmitter(Particle *particle, const std::string &name, const Transform &transform, uint32_t count, float frequency, bool repeat = false);
+	ParticleEmitter(Particle *particle, const std::string &name, const MagMath::Transform &transform, uint32_t count, float frequency, bool repeat = false);
 
 	/// \brief 更新
 	void Update();
@@ -34,12 +33,12 @@ public:
 
 	/// @brief SetScale
 	/// @param translate エミッターの位置を設定
-	void SetTranslate(const Vector3 &translate) {
+	void SetTranslate(const MagMath::Vector3 &translate) {
 		transform_.translate = translate;
 	}
 	/// @brief SetRotate
 	/// @param size エミッターの回転を設定
-	void SetCustomTextureSize(const Vector2 &size) {
+	void SetCustomTextureSize(const MagMath::Vector2 &size) {
 		particle_->SetCustomTextureSize(size);
 	}
 	/// @brief SetParticleShape
@@ -69,21 +68,21 @@ public:
 	/// @brief SetTranslateRange
 	/// @param min 最小移動量
 	/// @param max 最大移動量
-	void SetTranslateRange(const Vector3 &min, const Vector3 &max) {
+	void SetTranslateRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		particle_->SetTranslateRange(min, max);
 	}
 
 	/// @brief SetVelocityRange
 	/// @param min 最小初速度
 	/// @param max 最大初速度
-	void SetVelocityRange(const Vector3 &min, const Vector3 &max) {
+	void SetVelocityRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		particle_->SetVelocityRange(min, max);
 	}
 
 	/// @brief SetColorRange
 	/// @param min 最小色 (RGBA)
 	/// @param max 最大色 (RGBA)
-	void SetColorRange(const Vector4 &min, const Vector4 &max) {
+	void SetColorRange(const MagMath::Vector4 &min, const MagMath::Vector4 &max) {
 		particle_->SetColorRange(min, max);
 	}
 
@@ -97,34 +96,34 @@ public:
 	/// @brief SetInitialScaleRange
 	/// @param min 最小初期スケール
 	/// @param max 最大初期スケール
-	void SetInitialScaleRange(const Vector3 &min, const Vector3 &max) {
+	void SetInitialScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		particle_->SetInitialScaleRange(min, max);
 	}
 
 	/// @brief SetEndScaleRange
 	/// @param min 最小終了スケール
 	/// @param max 最大終了スケール
-	void SetEndScaleRange(const Vector3 &min, const Vector3 &max) {
+	void SetEndScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		particle_->SetEndScaleRange(min, max);
 	}
 
 	/// @brief SetInitialRotationRange
 	/// @param min 最小初期回転 (ラジアン)
 	/// @param max 最大初期回転 (ラジアン)
-	void SetInitialRotationRange(const Vector3 &min, const Vector3 &max) {
+	void SetInitialRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		particle_->SetInitialRotationRange(min, max);
 	}
 
 	/// @brief SetEndRotationRange
 	/// @param min 最小終了回転 (ラジアン)
 	/// @param max 最大終了回転 (ラジアン)
-	void SetEndRotationRange(const Vector3 &min, const Vector3 &max) {
+	void SetEndRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		particle_->SetEndRotationRange(min, max);
 	}
 
 	/// @brief SetGravity
 	/// @param gravity 重力ベクトル
-	void SetGravity(const Vector3 &gravity) {
+	void SetGravity(const MagMath::Vector3 &gravity) {
 		particle_->SetGravity(gravity);
 	}
 
@@ -140,19 +139,19 @@ public:
 	ParticleEmitter &ApplyConfig(const ParticleConfig &config);
 
 	/// \brief ビルダーパターン - 移動範囲
-	ParticleEmitter &SetTranslate(const Vector3 &min, const Vector3 &max) {
+	ParticleEmitter &SetTranslate(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		SetTranslateRange(min, max);
 		return *this;
 	}
 
 	/// \brief ビルダーパターン - 速度範囲
-	ParticleEmitter &SetVelocity(const Vector3 &min, const Vector3 &max) {
+	ParticleEmitter &SetVelocity(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		SetVelocityRange(min, max);
 		return *this;
 	}
 
 	/// \brief ビルダーパターン - 色範囲
-	ParticleEmitter &SetColor(const Vector4 &min, const Vector4 &max) {
+	ParticleEmitter &SetColor(const MagMath::Vector4 &min, const MagMath::Vector4 &max) {
 		SetColorRange(min, max);
 		return *this;
 	}
@@ -164,13 +163,13 @@ public:
 	}
 
 	/// \brief ビルダーパターン - 初期スケール
-	ParticleEmitter &SetInitialScale(const Vector3 &min, const Vector3 &max) {
+	ParticleEmitter &SetInitialScale(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		SetInitialScaleRange(min, max);
 		return *this;
 	}
 
 	/// \brief ビルダーパターン - 終了スケール
-	ParticleEmitter &SetEndScale(const Vector3 &min, const Vector3 &max) {
+	ParticleEmitter &SetEndScale(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		SetEndScaleRange(min, max);
 		return *this;
 	}
@@ -182,7 +181,7 @@ public:
 	}
 
 	/// \brief ビルダーパターン - 重力設定
-	ParticleEmitter &Gravity(const Vector3 &gravity) {
+	ParticleEmitter &Gravity(const MagMath::Vector3 &gravity) {
 		SetGravity(gravity);
 		return *this;
 	}
@@ -195,7 +194,7 @@ private:
 private:
 	Particle *particle_;  // Particleのインスタンスを保持
 	std::string name_;	  // パーティクルグループ名
-	Transform transform_; // エミッターの位置・回転・スケール
+	MagMath::Transform transform_; // エミッターの位置・回転・スケール
 	uint32_t count_;	  // 発生させるパーティクルの数
 	float frequency_;	  // 発生頻度
 	float elapsedTime_;	  // 経過時間

@@ -7,10 +7,9 @@
  * \note   
  *********************************************************************/
 #pragma once
+#include "MagMath.h"
 #include <vector>
-#include "TransformationMatrix.h"
 #include "Light.h"
-#include "Transform.h"
  //========================================
  // DX12include
 #include<d3d12.h>
@@ -24,8 +23,8 @@
 #pragma comment(lib,"dxcompiler.lib")
 
 struct LineVertex {
-	Vector3 position;
-	Vector4 color;
+	MagMath::Vector3 position;
+	MagMath::Vector4 color;
 };
 
 class Camera;
@@ -55,7 +54,7 @@ public:
 	 * \param  end 終点
 	 * \param  color 色
 	 */
-	void DrawLine(const Vector3 &start, const Vector3 &end, const Vector4 &color);
+	void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color);
 
 	///--------------------------------------------------------------
 	///						 静的メンバ関数
@@ -82,52 +81,52 @@ public:
 	* \param  transform トランスフォーメーション
 	* \note
 	*/
-	void SetTransform(const Transform& transform) { transform_ = transform; }
+	void SetTransform(const MagMath::Transform& transform) { transform_ = transform; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetTransform 
 	 * \return 
 	 */
-	Transform GetTransform() const { return transform_; }
+	MagMath::Transform GetTransform() const { return transform_; }
 
 	/**----------------------------------------------------------------------------
 	* \brief  SetModel モデルの設定
 	* \param  model モデル
 	* \note
 	*/
-	void SetScale(const Vector3& scale) { transform_.scale = scale; }
+	void SetScale(const MagMath::Vector3& scale) { transform_.scale = scale; }
 	/**----------------------------------------------------------------------------
 	* \brief  GetScale スケールの取得
-	* \return Vector3 スケール
+	* \return MagMath::Vector3 スケール
 	* \note
 	*/
-	const Vector3& GetScale() const { return transform_.scale; }
+	const MagMath::Vector3& GetScale() const { return transform_.scale; }
 
 	/**----------------------------------------------------------------------------
 	* \brief  SetRotate 回転の設定
 	* \param  rotate 回転
 	* \note
 	*/
-	void SetRotation(const Vector3& rotate) { transform_.rotate = rotate; }
+	void SetRotation(const MagMath::Vector3& rotate) { transform_.rotate = rotate; }
 	/**----------------------------------------------------------------------------
 	* \brief  GetRotate 回転の取得
-	* \return Vector3 回転
+	* \return MagMath::Vector3 回転
 	* \note
 	*/
-	const Vector3& GetRotation() const { return transform_.rotate; }
+	const MagMath::Vector3& GetRotation() const { return transform_.rotate; }
 
 	/**----------------------------------------------------------------------------
 	* \brief  SetTranslate 移動の設定
 	* \param  translate 移動
 	* \note
 	*/
-	void SetPosition(const Vector3& translate) { transform_.translate = translate; } 
+	void SetPosition(const MagMath::Vector3& translate) { transform_.translate = translate; } 
 	/**----------------------------------------------------------------------------
 	* \brief  GetTranslate 移動の取得
-	* \return Vector3 移動
+	* \return MagMath::Vector3 移動
 	* \note
 	*/
-	const Vector3& GetPosition() const { return transform_.translate; }
+	const MagMath::Vector3& GetPosition() const { return transform_.translate; }
 
 	/**----------------------------------------------------------------------------
 	* \brief  SetCamera カメラの設定
@@ -160,11 +159,11 @@ private:
 	//---------------------------------------
 	// バッファリソース内のデータを指すポインタ
 	//トランスフォーメーションマトリックス
-	TransformationMatrix* transformationMatrixData_ = nullptr;
+	MagMath::TransformationMatrix* transformationMatrixData_ = nullptr;
 
 	//--------------------------------------
 	// Transform
-	Transform transform_ = {};
+	MagMath::Transform transform_ = {};
 
 	//--------------------------------------
 	// カメラ

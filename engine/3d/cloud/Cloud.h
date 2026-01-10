@@ -7,8 +7,7 @@
  * \note   ボリュメトリック雲のレンダリングを管理
  *********************************************************************/
 #pragma once
-#include "MathFunc4x4.h"
-#include "Transform.h"
+#include "MagMath.h"
 #include <cstdint>
 #include <d3d12.h>
 #include <wrl/client.h>
@@ -26,14 +25,14 @@ class CloudSetup;
  * \note   シェーダーに渡すカメラ情報
  */
 struct alignas(16) CloudCameraConstant {
-	Matrix4x4 invViewProj;	   // 逆ビュープロジェクション行列（レイ方向計算用）
-	Vector3 cameraPosition;	   // カメラのワールド座標
+	MagMath::Matrix4x4 invViewProj;	   // 逆ビュープロジェクション行列（レイ方向計算用）
+	MagMath::Vector3 cameraPosition;	   // カメラのワールド座標
 	float padding = 0.0f;	   // パディング
 	float nearPlane = 0.1f;	   // ニアプレーン
 	float farPlane = 10000.0f; // ファープレーン
 	float padding2 = 0.0f;	   // パディング
 	float padding3 = 0.0f;	   // パディング
-	Matrix4x4 viewProj;		   // ビュープロジェクション行列（深度値計算用）
+	MagMath::Matrix4x4 viewProj;		   // ビュープロジェクション行列（深度値計算用）
 };
 
 /**----------------------------------------------------------------------------
@@ -43,18 +42,18 @@ struct alignas(16) CloudCameraConstant {
 struct alignas(16) CloudRenderParams {
 	//========================================
 	// 雲の位置とサイズ
-	Vector3 cloudCenter{0.0f, 150.0f, 0.0f}; // 雲の中心座標
+	MagMath::Vector3 cloudCenter{0.0f, 150.0f, 0.0f}; // 雲の中心座標
 	float cloudSizeX = 300.0f;				 // 未使用（構造体パディング用）
 
-	Vector3 cloudSize{300.0f, 100.0f, 300.0f}; // 雲のXYZサイズ
+	MagMath::Vector3 cloudSize{300.0f, 100.0f, 300.0f}; // 雲のXYZサイズ
 	float padding0 = 0.0f;					   // パディング
 
 	//========================================
 	// ライティング
-	Vector3 sunDirection{0.3f, 0.8f, 0.5f}; // 太陽光の方向
+	MagMath::Vector3 sunDirection{0.3f, 0.8f, 0.5f}; // 太陽光の方向
 	float sunIntensity = 1.2f;				// 太陽光の強度
 
-	Vector3 sunColor{1.0f, 0.96f, 0.88f}; // 太陽光の色
+	MagMath::Vector3 sunColor{1.0f, 0.96f, 0.88f}; // 太陽光の色
 	float ambient = 0.3f;				  // 環境光の強度
 
 	//========================================
@@ -135,7 +134,7 @@ public:
 	 * \brief  GetTransform Transformの取得
 	 * \return Transform参照
 	 */
-	Transform &GetTransform() {
+	MagMath::Transform &GetTransform() {
 		return transform_;
 	}
 
@@ -143,7 +142,7 @@ public:
 	 * \brief  GetTransform Transformの取得（const版）
 	 * \return Transform参照
 	 */
-	const Transform &GetTransform() const {
+	const MagMath::Transform &GetTransform() const {
 		return transform_;
 	}
 
@@ -151,19 +150,19 @@ public:
 	 * \brief  SetPosition 位置の設定
 	 * \param  pos 位置
 	 */
-	void SetPosition(const Vector3 &pos);
+	void SetPosition(const MagMath::Vector3 &pos);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetScale スケールの設定
 	 * \param  scale スケール
 	 */
-	void SetScale(const Vector3 &scale);
+	void SetScale(const MagMath::Vector3 &scale);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetSize サイズの設定
 	 * \param  size サイズ
 	 */
-	void SetSize(const Vector3 &size) {
+	void SetSize(const MagMath::Vector3 &size) {
 		paramsCPU_.cloudSize = size;
 	}
 
@@ -223,7 +222,7 @@ private:
 
 	//========================================
 	// Transform（雲の位置・回転・スケール）
-	Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 150.0f, 0.0f}};
+	MagMath::Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 150.0f, 0.0f}};
 
 	//========================================
 	// 頂点バッファ

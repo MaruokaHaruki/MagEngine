@@ -68,7 +68,7 @@ void LineSetup::CreateRootSignature() {
 	if (FAILED(hr)) {
 		throw std::runtime_error("Failed to create root signature");
 	}
-	Log("Particle Root signature created successfully :)", LogLevel::Success);
+	Logger::Log("Particle Root signature created successfully :)", Logger::LogLevel::Success);
 }
 
 
@@ -120,18 +120,18 @@ void LineSetup::CreateGraphicsPipeline() {
 	// VertexShaderをコンパイルする
 	Microsoft::WRL::ComPtr <IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(L"resources/shader/Line.VS.hlsl", L"vs_6_0");
 	if(!vertexShaderBlob) {
-		Log("Particle Failed to compile vertex shader :(", LogLevel::Error);
+		Logger::Log("Particle Failed to compile vertex shader :(", Logger::LogLevel::Error);
 		throw std::runtime_error("Particle Failed to compile vertex shader :(");
 	}
-	Log("Particle Vertex shader created successfully :)", LogLevel::Success);
+	Logger::Log("Particle Vertex shader created successfully :)", Logger::LogLevel::Success);
 	//========================================
 	// PixelShaderをコンパイルする
 	Microsoft::WRL::ComPtr <IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Line.PS.hlsl", L"ps_6_0");
 	if(!pixelShaderBlob) {
-		Log("Particle Failed to compile pixel shader :(", LogLevel::Error);
+		Logger::Log("Particle Failed to compile pixel shader :(", Logger::LogLevel::Error);
 		throw std::runtime_error("Particle Failed to compile pixel shader :(");
 	}
-	Log("Particle Pixel shader state created successfully :)", LogLevel::Success);
+	Logger::Log("Particle Pixel shader state created successfully :)", Logger::LogLevel::Success);
 
 	//========================================
 	// PSOを生成する
@@ -162,8 +162,8 @@ void LineSetup::CreateGraphicsPipeline() {
 	HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
 		IID_PPV_ARGS(&graphicsPipelineState_));
 	if(FAILED(hr)) {
-		Log("Particle Failed to create graphics pipeline state :(", LogLevel::Error);
+		Logger::Log("Particle Failed to create graphics pipeline state :(", Logger::LogLevel::Error);
 		throw std::runtime_error("Particle Failed to create graphics pipeline state :(");
 	}
-	Log("Particle Graphics pipeline state created successfully :)", LogLevel::Success);
+	Logger::Log("Particle Graphics pipeline state created successfully :)", Logger::LogLevel::Success);
 }

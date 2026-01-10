@@ -7,9 +7,8 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "MagMath.h"
 #include "Camera.h"
-#include "Matrix4x4.h" // Matrix4x4を使用するためインクルード
-#include "Vector3.h"
 #include <map> // std::map を使用するためインクルード
 #include <memory>
 #include <string> // std::string を使用するためインクルード
@@ -96,7 +95,7 @@ private:
 
 	//========================================
 	// デバッグカメラ用パラメータ
-	Vector3 debugCameraTarget_;
+	MagMath::Vector3 debugCameraTarget_;
 	float debugCameraDistanceToTarget_;
 	bool isDebugCameraTargetLocked_;
 	float debugCameraMoveSpeed_;

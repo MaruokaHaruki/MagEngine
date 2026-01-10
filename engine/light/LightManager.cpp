@@ -11,20 +11,19 @@
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include "Logger.h"
-using namespace Logger;
 
 ///=============================================================================
 ///						初期化
 void LightManager::Initialize() {
     // デフォルトの平行光源を追加
-    DirectionalLight mainDirLight{};
+    MagMath::DirectionalLight mainDirLight{};
     mainDirLight.color = { 1.0f, 1.0f, 1.0f, 1.0f };
     mainDirLight.direction = { 0.0f, -1.0f, 0.0f };
     mainDirLight.intensity = 0.8f;
     directionalLights_["Main"] = mainDirLight;
 
     // デフォルトのポイントライト追加
-    PointLight mainPointLight{};
+    MagMath::PointLight mainPointLight{};
     mainPointLight.color = { 1.0f, 1.0f, 1.0f, 1.0f };
     mainPointLight.position = { 0.0f, 2.0f, 0.0f };
     mainPointLight.intensity = 1.0f;
@@ -33,7 +32,7 @@ void LightManager::Initialize() {
     pointLights_["Main"] = mainPointLight;
 
     // デフォルトのスポットライト追加
-    SpotLight mainSpotLight{};
+    MagMath::SpotLight mainSpotLight{};
     mainSpotLight.color = { 1.0f, 1.0f, 1.0f, 1.0f };
     mainSpotLight.position = { 0.0f, 5.0f, 0.0f };
     mainSpotLight.direction = { 0.0f, -1.0f, 0.0f };
@@ -43,7 +42,7 @@ void LightManager::Initialize() {
     mainSpotLight.cosAngle = cosf(0.5f);
     spotLights_["Main"] = mainSpotLight;
 
-    Log("LightManager initialized", LogLevel::Info);
+    Logger::Log("LightManager initialized", Logger::LogLevel::Info);
 }
 
 ///=============================================================================
@@ -52,7 +51,7 @@ void LightManager::Finalize() {
 	directionalLights_.clear();
 	pointLights_.clear();
 	spotLights_.clear();
-	Log("LightManager finalized", LogLevel::Info);
+	Logger::Log("LightManager finalized", Logger::LogLevel::Info);
 }
 
 ///=============================================================================
@@ -104,7 +103,7 @@ void LightManager::DrawImGui() {
             }
         }
         
-        DirectionalLight& light = directionalLights_[activeDirectionalLightName_];
+        MagMath::DirectionalLight& light = directionalLights_[activeDirectionalLightName_];
         ImGui::ColorEdit4("Color##DirLight", &light.color.x);
         ImGui::DragFloat3("Direction##DirLight", &light.direction.x, 0.01f, -1.0f, 1.0f);
         ImGui::SliderFloat("Intensity##DirLight", &light.intensity, 0.0f, 5.0f);
@@ -122,7 +121,7 @@ void LightManager::DrawImGui() {
             }
         }
         
-        PointLight& light = pointLights_[activePointLightName_];
+        MagMath::PointLight& light = pointLights_[activePointLightName_];
         ImGui::ColorEdit4("Color##PointLight", &light.color.x);
         ImGui::DragFloat3("Position##PointLight", &light.position.x, 0.1f);
         ImGui::SliderFloat("Intensity##PointLight", &light.intensity, 0.0f, 5.0f);
@@ -142,7 +141,7 @@ void LightManager::DrawImGui() {
             }
         }
         
-        SpotLight& light = spotLights_[activeSpotLightName_];
+        MagMath::SpotLight& light = spotLights_[activeSpotLightName_];
         ImGui::ColorEdit4("Color##SpotLight", &light.color.x);
         ImGui::DragFloat3("Position##SpotLight", &light.position.x, 0.1f);
         ImGui::DragFloat3("Direction##SpotLight", &light.direction.x, 0.01f, -1.0f, 1.0f);
@@ -181,9 +180,9 @@ void LightManager::DrawLightDebugLines() {
 
 ///=============================================================================
 ///						ディレクショナルライトの追加
-void LightManager::AddDirectionalLight(const std::string& name, const Vector4& color, 
-    const Vector3& direction, float intensity) {
-    DirectionalLight light{};
+void LightManager::AddDirectionalLight(const std::string& name, const MagMath::Vector4& color, 
+    const MagMath::Vector3& direction, float intensity) {
+    MagMath::DirectionalLight light{};
     light.color = color;
     light.direction = direction;
     light.intensity = intensity;
@@ -192,7 +191,7 @@ void LightManager::AddDirectionalLight(const std::string& name, const Vector4& c
 
 ///=============================================================================
 ///						ディレクショナルライトの取得
-const DirectionalLight& LightManager::GetDirectionalLight(const std::string& name) const {
+const MagMath::DirectionalLight& LightManager::GetDirectionalLight(const std::string& name) const {
     std::string lightName = name.empty() ? activeDirectionalLightName_ : name;
     auto it = directionalLights_.find(lightName);
     if (it != directionalLights_.end()) {
@@ -214,15 +213,15 @@ void LightManager::SetActiveDirectionalLight(const std::string& name) {
 void LightManager::VisualizeDirectionalLight(const std::string& lightName) {
     if (!lineManager_) return;
     
-    const DirectionalLight& light = GetDirectionalLight(lightName);
+    const MagMath::DirectionalLight& light = GetDirectionalLight(lightName);
     if (light.intensity <= 0) return;  // 強度が0以下なら表示しない
     
     // カメラの位置を取得（シーンのカメラから取得することが望ましい）
     // ここではデモとして固定位置を使用
-    Vector3 cameraPos = {0.0f, 2.0f, -5.0f};
+    MagMath::Vector3 cameraPos = {0.0f, 2.0f, -5.0f};
     
     // ディレクショナルライトの基準点（カメラからの相対位置）
-    Vector3 center = {
+    MagMath::Vector3 center = {
         cameraPos.x,
         cameraPos.y + 3.0f,
         cameraPos.z + 5.0f
@@ -232,14 +231,14 @@ void LightManager::VisualizeDirectionalLight(const std::string& lightName) {
     float arrowLength = 3.0f * debugLightScale_ * light.intensity;
     
     // 方向ベクトル
-    Vector3 direction = {
+    MagMath::Vector3 direction = {
         light.direction.x * arrowLength,
         light.direction.y * arrowLength,
         light.direction.z * arrowLength
     };
     
     // 正規化された方向ベクトル（矢印の先端用）
-    Vector3 normalizedDir;
+    MagMath::Vector3 normalizedDir;
     float dirLength = sqrtf(light.direction.x * light.direction.x + 
                            light.direction.y * light.direction.y + 
                            light.direction.z * light.direction.z);
@@ -255,14 +254,14 @@ void LightManager::VisualizeDirectionalLight(const std::string& lightName) {
     }
     
     // 方向ベクトルの先端
-    Vector3 arrowTip = {
+    MagMath::Vector3 arrowTip = {
         center.x + direction.x,
         center.y + direction.y,
         center.z + direction.z
     };
     
     // ライトの色を取得（強度に応じて明るさを調整）
-    Vector4 color = {
+    MagMath::Vector4 color = {
         light.color.x * light.intensity,
         light.color.y * light.intensity,
         light.color.z * light.intensity,
@@ -298,9 +297,9 @@ void LightManager::VisualizeDirectionalLight(const std::string& lightName) {
 
 ///=============================================================================
 ///						ポイントライトの追加
-void LightManager::AddPointLight(const std::string& name, const Vector4& color, 
-    const Vector3& position, float intensity, float radius, float decay) {
-    PointLight light{};
+void LightManager::AddPointLight(const std::string& name, const MagMath::Vector4& color, 
+    const MagMath::Vector3& position, float intensity, float radius, float decay) {
+    MagMath::PointLight light{};
     light.color = color;
     light.position = position;
     light.intensity = intensity;
@@ -311,7 +310,7 @@ void LightManager::AddPointLight(const std::string& name, const Vector4& color,
 
 ///=============================================================================
 ///						ポイントライトの取得
-const PointLight& LightManager::GetPointLight(const std::string& name) const {
+const MagMath::PointLight& LightManager::GetPointLight(const std::string& name) const {
     std::string lightName = name.empty() ? activePointLightName_ : name;
     auto it = pointLights_.find(lightName);
     if (it != pointLights_.end()) {
@@ -333,17 +332,17 @@ void LightManager::SetActivePointLight(const std::string& name) {
 void LightManager::VisualizePointLight(const std::string& lightName) {
     if (!lineManager_) return;
     
-    const PointLight& light = GetPointLight(lightName);
+    const MagMath::PointLight& light = GetPointLight(lightName);
     if (light.intensity <= 0) return;  // 強度が0以下なら表示しない
     
     // 光源の位置
-    Vector3 position = light.position;
+    MagMath::Vector3 position = light.position;
     
     // 影響範囲の球体（半径に強度を反映）
     float radius = light.radius * debugLightScale_;
     
     // ライトの色（強度に応じて明るさを調整）
-    Vector4 color = {
+    MagMath::Vector4 color = {
         light.color.x * light.intensity,
         light.color.y * light.intensity,
         light.color.z * light.intensity,
@@ -354,7 +353,7 @@ void LightManager::VisualizePointLight(const std::string& lightName) {
     int rings = 3;
     for (int i = 1; i <= rings; i++) {
         float ringRadius = radius * (float)i / rings;
-        Vector4 ringColor = color;
+        MagMath::Vector4 ringColor = color;
         ringColor.w = 1.0f - (float)(i - 1) / rings; // 外側ほど透明に
         
         // XY平面
@@ -388,10 +387,10 @@ void LightManager::VisualizePointLight(const std::string& lightName) {
 
 ///=============================================================================
 ///						スポットライトの追加
-void LightManager::AddSpotLight(const std::string& name, const Vector4& color,
-    const Vector3& position, const Vector3& direction, float intensity,
+void LightManager::AddSpotLight(const std::string& name, const MagMath::Vector4& color,
+    const MagMath::Vector3& position, const MagMath::Vector3& direction, float intensity,
     float distance, float decay, float angle) {
-    SpotLight light{};
+    MagMath::SpotLight light{};
     light.color = color;
     light.position = position;
     light.direction = direction;
@@ -404,7 +403,7 @@ void LightManager::AddSpotLight(const std::string& name, const Vector4& color,
 
 ///=============================================================================
 ///						スポットライトの取得
-const SpotLight& LightManager::GetSpotLight(const std::string& name) const {
+const MagMath::SpotLight& LightManager::GetSpotLight(const std::string& name) const {
     std::string lightName = name.empty() ? activeSpotLightName_ : name;
     auto it = spotLights_.find(lightName);
     if (it != spotLights_.end()) {
@@ -426,12 +425,12 @@ void LightManager::SetActiveSpotLight(const std::string& name) {
 void LightManager::VisualizeSpotLight(const std::string& lightName) {
     if (!lineManager_) return;
     
-    const SpotLight& light = GetSpotLight(lightName);
+    const MagMath::SpotLight& light = GetSpotLight(lightName);
     if (light.intensity <= 0) return;  // 強度が0以下なら表示しない
     
     // 光源の位置と方向
-    Vector3 position = light.position;
-    Vector3 direction = light.direction;
+    MagMath::Vector3 position = light.position;
+    MagMath::Vector3 direction = light.direction;
     
     // 強度による距離の調整
     float distance = light.distance * debugLightScale_;
@@ -443,7 +442,7 @@ void LightManager::VisualizeSpotLight(const std::string& lightName) {
     float radius = distance * tanf(angle);
     
     // ライトの色（強度を反映）
-    Vector4 color = {
+    MagMath::Vector4 color = {
         light.color.x * light.intensity,
         light.color.y * light.intensity,
         light.color.z * light.intensity,
@@ -451,7 +450,7 @@ void LightManager::VisualizeSpotLight(const std::string& lightName) {
     };
     
     // 方向ベクトルを正規化
-    Vector3 normalizedDir;
+    MagMath::Vector3 normalizedDir;
     float dirLength = sqrtf(direction.x * direction.x + 
                            direction.y * direction.y + 
                            direction.z * direction.z);
@@ -466,7 +465,7 @@ void LightManager::VisualizeSpotLight(const std::string& lightName) {
     }
     
     // 円錐の先端から底面中心への線
-    Vector3 coneEnd = {
+    MagMath::Vector3 coneEnd = {
         position.x + normalizedDir.x * distance,
         position.y + normalizedDir.y * distance,
         position.z + normalizedDir.z * distance
@@ -479,7 +478,7 @@ void LightManager::VisualizeSpotLight(const std::string& lightName) {
     lineManager_->DrawLine(position, coneEnd, {1.0f, 1.0f, 1.0f, 0.9f}, debugLineThickness_ * 1.5f);
     
     // 垂直ベクトルを計算（光の方向に垂直な2軸）
-    Vector3 perpVector1, perpVector2;
+    MagMath::Vector3 perpVector1, perpVector2;
     lineManager_->CalculatePerpendicularVectors(normalizedDir, perpVector1, perpVector2);
     
     // 円錐の輪郭線（光の広がりを表現）
@@ -493,14 +492,14 @@ void LightManager::VisualizeSpotLight(const std::string& lightName) {
         float ringRadius = ringDistance * tanf(angle);
         
         // 円の中心
-        Vector3 ringCenter = {
+        MagMath::Vector3 ringCenter = {
             position.x + normalizedDir.x * ringDistance,
             position.y + normalizedDir.y * ringDistance,
             position.z + normalizedDir.z * ringDistance
         };
         
         // 減衰を反映した色
-        Vector4 ringColor = color;
+        MagMath::Vector4 ringColor = color;
         ringColor.w = color.w * (1.0f - powf((float)(r-1) / rings, light.decay));
         
         // 円を描画
@@ -508,13 +507,13 @@ void LightManager::VisualizeSpotLight(const std::string& lightName) {
             float angle1 = angleStep * i;
             float angle2 = angleStep * (i + 1);
             
-            Vector3 point1 = {
+            MagMath::Vector3 point1 = {
                 ringCenter.x + (perpVector1.x * cosf(angle1) + perpVector2.x * sinf(angle1)) * ringRadius,
                 ringCenter.y + (perpVector1.y * cosf(angle1) + perpVector2.y * sinf(angle1)) * ringRadius,
                 ringCenter.z + (perpVector1.z * cosf(angle1) + perpVector2.z * sinf(angle1)) * ringRadius
             };
             
-            Vector3 point2 = {
+            MagMath::Vector3 point2 = {
                 ringCenter.x + (perpVector1.x * cosf(angle2) + perpVector2.x * sinf(angle2)) * ringRadius,
                 ringCenter.y + (perpVector1.y * cosf(angle2) + perpVector2.y * sinf(angle2)) * ringRadius,
                 ringCenter.z + (perpVector1.z * cosf(angle2) + perpVector2.z * sinf(angle2)) * ringRadius
@@ -529,7 +528,7 @@ void LightManager::VisualizeSpotLight(const std::string& lightName) {
     for (int i = 0; i < 4; i++) {
         float angle1 = 3.14159f / 2.0f * i;
         
-        Vector3 edgePoint = {
+        MagMath::Vector3 edgePoint = {
             coneEnd.x + (perpVector1.x * cosf(angle1) + perpVector2.x * sinf(angle1)) * radius,
             coneEnd.y + (perpVector1.y * cosf(angle1) + perpVector2.y * sinf(angle1)) * radius,
             coneEnd.z + (perpVector1.z * cosf(angle1) + perpVector2.z * sinf(angle1)) * radius

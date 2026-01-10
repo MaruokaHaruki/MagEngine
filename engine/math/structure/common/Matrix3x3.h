@@ -10,6 +10,3 @@ namespace MagMath {
 	};
 
 } // namespace MagMath
-
-// 後方互換性のためのグローバルエイリアス
-using Matrix3x3 = MagMath::Matrix3x3;

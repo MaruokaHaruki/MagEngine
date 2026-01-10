@@ -11,6 +11,3 @@ namespace MagMath {
 	};
 
 } // namespace MagMath
-
-// 後方互換性のためのグローバルエイリアス
-using Vector2 = MagMath::Vector2;

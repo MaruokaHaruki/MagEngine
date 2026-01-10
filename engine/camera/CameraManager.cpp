@@ -7,11 +7,9 @@
  * \note
  *********************************************************************/
 #include "CameraManager.h"
-#include "AffineTransformations.h"
 #include "ImguiSetup.h"
 #include "Input.h"
 #include "LineManager.h" // LineManager をインクルード
-#include "MathFunc4x4.h"
 
 ///=============================================================================
 ///						シングルトンインスタンスの取得
@@ -138,18 +136,18 @@ void CameraManager::DebugCameraUpdate() {
 	bool isShiftPressed = input->PushKey(DIK_LSHIFT) || input->PushKey(DIK_RSHIFT);
 
 	// カメラのトランスフォームを取得
-	Transform cameraTransform = debugCamera->GetTransform();
+	MagMath::Transform cameraTransform = debugCamera->GetTransform();
 
 	if (isDebugCameraTargetLocked_) {
 		// ターゲット追従モード
-		Matrix4x4 rotationMatrix = MakeRotateMatrix(cameraTransform.rotate);
+		MagMath::Matrix4x4 rotationMatrix = MagMath::MakeRotateMatrix(cameraTransform.rotate);
 
 		// パン（Shift + 中マウスボタンドラッグ）
 		if (isMiddleButtonPressed && isShiftPressed) {
 			const float panSpeed = 0.01f;
-			Vector3 right = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
-			Vector3 up = {rotationMatrix.m[0][1], rotationMatrix.m[1][1], rotationMatrix.m[2][1]};
-			Vector3 moveAmount = (right * (-mouseDx * panSpeed)) + (up * (mouseDy * panSpeed));
+			MagMath::Vector3 right = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
+			MagMath::Vector3 up = {rotationMatrix.m[0][1], rotationMatrix.m[1][1], rotationMatrix.m[2][1]};
+			MagMath::Vector3 moveAmount = (right * (-mouseDx * panSpeed)) + (up * (mouseDy * panSpeed));
 			cameraTransform.translate = cameraTransform.translate + moveAmount;
 			debugCameraTarget_ = debugCameraTarget_ + moveAmount;
 		}
@@ -166,7 +164,7 @@ void CameraManager::DebugCameraUpdate() {
 				cameraTransform.rotate.x = -maxPitch;
 
 			rotationMatrix = MakeRotateMatrix(cameraTransform.rotate);
-			Vector3 directionToCamera = {0.0f, 0.0f, -1.0f};
+			MagMath::Vector3 directionToCamera = {0.0f, 0.0f, -1.0f};
 			directionToCamera = Conversion(directionToCamera, rotationMatrix);
 			cameraTransform.translate = debugCameraTarget_ + directionToCamera * debugCameraDistanceToTarget_;
 		}
@@ -174,9 +172,9 @@ void CameraManager::DebugCameraUpdate() {
 		// WASDまたは矢印キー（中心点の平行移動）
 		const float targetMoveSpeed = 0.1f;
 		rotationMatrix = MakeRotateMatrix(cameraTransform.rotate); // パンや回転で更新されている可能性があるので再取得
-		Vector3 forward = {rotationMatrix.m[0][2], rotationMatrix.m[1][2], rotationMatrix.m[2][2]};
-		Vector3 right = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
-		Vector3 moveDirection = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 forward = {rotationMatrix.m[0][2], rotationMatrix.m[1][2], rotationMatrix.m[2][2]};
+		MagMath::Vector3 right = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
+		MagMath::Vector3 moveDirection = {0.0f, 0.0f, 0.0f};
 
 		if (input->PushKey(DIK_UPARROW)) {
 			moveDirection = moveDirection + forward * targetMoveSpeed;
@@ -193,7 +191,7 @@ void CameraManager::DebugCameraUpdate() {
 
 		if (Length(moveDirection) > 0.001f) {
 			debugCameraTarget_ = debugCameraTarget_ + moveDirection;
-			Vector3 directionToCamera = {0.0f, 0.0f, -1.0f};
+			MagMath::Vector3 directionToCamera = {0.0f, 0.0f, -1.0f};
 			directionToCamera = Conversion(directionToCamera, MakeRotateMatrix(cameraTransform.rotate));
 			cameraTransform.translate = debugCameraTarget_ + directionToCamera * debugCameraDistanceToTarget_;
 		}
@@ -205,19 +203,19 @@ void CameraManager::DebugCameraUpdate() {
 			if (debugCameraDistanceToTarget_ < 0.1f) {
 				debugCameraDistanceToTarget_ = 0.1f;
 			}
-			Vector3 directionToCamera = {0.0f, 0.0f, -1.0f};
+			MagMath::Vector3 directionToCamera = {0.0f, 0.0f, -1.0f};
 			directionToCamera = Conversion(directionToCamera, MakeRotateMatrix(cameraTransform.rotate));
 			cameraTransform.translate = debugCameraTarget_ + directionToCamera * debugCameraDistanceToTarget_;
 		}
 	} else {
 		// フリーカメラモード
-		Matrix4x4 rotationMatrix = MakeRotateMatrix(cameraTransform.rotate);
+		MagMath::Matrix4x4 rotationMatrix = MakeRotateMatrix(cameraTransform.rotate);
 
 		// パン（Shift + 中マウスボタンドラッグ）
 		if (isMiddleButtonPressed && isShiftPressed) {
 			const float panSpeed = 0.02f; // フリーカメラ用のパン速度
-			Vector3 camRight = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
-			Vector3 camUp = {rotationMatrix.m[0][1], rotationMatrix.m[1][1], rotationMatrix.m[2][1]};
+			MagMath::Vector3 camRight = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
+			MagMath::Vector3 camUp = {rotationMatrix.m[0][1], rotationMatrix.m[1][1], rotationMatrix.m[2][1]};
 			cameraTransform.translate = cameraTransform.translate + (camRight * (-mouseDx * panSpeed)) + (camUp * (mouseDy * panSpeed));
 		}
 		// 回転 (中マウスボタンドラッグ)
@@ -233,12 +231,12 @@ void CameraManager::DebugCameraUpdate() {
 		}
 
 		// キーボード移動 (WASDQE)
-		Vector3 moveDirection = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 moveDirection = {0.0f, 0.0f, 0.0f};
 		// 回転後の行列を再計算
 		rotationMatrix = MakeRotateMatrix(cameraTransform.rotate);
-		Vector3 camForward = {rotationMatrix.m[0][2], rotationMatrix.m[1][2], rotationMatrix.m[2][2]};
-		Vector3 camRight = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
-		Vector3 worldUp = {0.0f, 1.0f, 0.0f}; // ワールドY軸で上下移動
+		MagMath::Vector3 camForward = {rotationMatrix.m[0][2], rotationMatrix.m[1][2], rotationMatrix.m[2][2]};
+		MagMath::Vector3 camRight = {rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0]};
+		MagMath::Vector3 worldUp = {0.0f, 1.0f, 0.0f}; // ワールドY軸で上下移動
 
 		if (input->PushKey(DIK_UPARROW)) {
 			moveDirection = moveDirection + camForward;
@@ -306,9 +304,9 @@ void CameraManager::DrawImGui() {
 			Camera *debugCam = GetCamera("DebugCamera");
 			if (debugCam) {
 				// 現在のカメラ位置と回転から、前方にターゲットを設定する
-				Transform currentCamTransform = debugCam->GetTransform();
-				Matrix4x4 rotMat = MakeRotateMatrix(currentCamTransform.rotate);
-				Vector3 forwardVec = {rotMat.m[0][2], rotMat.m[1][2], rotMat.m[2][2]};
+				MagMath::Transform currentCamTransform = debugCam->GetTransform();
+				MagMath::Matrix4x4 rotMat = MagMath::MakeRotateMatrix(currentCamTransform.rotate);
+				MagMath::Vector3 forwardVec = {rotMat.m[0][2], rotMat.m[1][2], rotMat.m[2][2]};
 				debugCameraTarget_ = currentCamTransform.translate + forwardVec * debugCameraDistanceToTarget_;
 			}
 		}
@@ -331,7 +329,7 @@ void CameraManager::DrawImGui() {
 		if (pair.second) {
 			ImGui::PushID(pair.first.c_str()); // IDの重複を避ける
 			ImGui::Text("Name: %s", pair.first.c_str());
-			Transform camTransform = pair.second->GetTransform();
+			MagMath::Transform camTransform = pair.second->GetTransform();
 			ImGui::Text("Pos: %.2f, %.2f, %.2f", camTransform.translate.x, camTransform.translate.y, camTransform.translate.z);
 			ImGui::Text("Rot: %.2f, %.2f, %.2f", camTransform.rotate.x, camTransform.rotate.y, camTransform.rotate.z);
 			if (ImGui::Button("Set as Current")) {
@@ -361,13 +359,13 @@ void CameraManager::ResetDebugCameraTransform() {
 
 	Camera *debugCamera = GetCamera("DebugCamera");
 	if (debugCamera) {
-		Transform camTransform;
+		MagMath::Transform camTransform;
 		camTransform.scale = {1.0f, 1.0f, 1.0f};
 		// 少し見下ろすような初期回転
 		camTransform.rotate = {0.3f, 0.0f, 0.0f};
 
-		Matrix4x4 rotationMatrix = MakeRotateMatrix(camTransform.rotate);
-		Vector3 directionToCamera = {0.0f, 0.0f, -1.0f}; // カメラはターゲットのZ軸負方向
+		MagMath::Matrix4x4 rotationMatrix = MakeRotateMatrix(camTransform.rotate);
+		MagMath::Vector3 directionToCamera = {0.0f, 0.0f, -1.0f}; // カメラはターゲットのZ軸負方向
 		directionToCamera = Conversion(directionToCamera, rotationMatrix);
 		camTransform.translate = debugCameraTarget_ + directionToCamera * debugCameraDistanceToTarget_;
 
@@ -416,27 +414,27 @@ void CameraManager::DrawDebugVisualizations() {
 			lineManager->SetDefaultCamera(currentActiveMainCamera);
 		}
 
-		Transform camTransform = targetCamera->GetTransform();
-		Matrix4x4 rotationMatrix = MakeRotateMatrix(camTransform.rotate);
+		MagMath::Transform camTransform = targetCamera->GetTransform();
+		MagMath::Matrix4x4 rotationMatrix = MakeRotateMatrix(camTransform.rotate);
 
-		Vector3 camPos = camTransform.translate;
+		MagMath::Vector3 camPos = camTransform.translate;
 		float axisLength = 1.5f;
 		float arrowHeadSize = 0.15f;
 
 		// カメラの前方ベクトル (Z軸) - 青
-		Vector3 forward = {0.0f, 0.0f, 1.0f};
+		MagMath::Vector3 forward = {0.0f, 0.0f, 1.0f};
 		forward = Conversion(forward, rotationMatrix);
 		forward = Normalize(forward);
 		lineManager->DrawArrow(camPos, camPos + forward * axisLength, {0.0f, 0.0f, 1.0f, 1.0f}, arrowHeadSize);
 
 		// カメラの上方ベクトル (Y軸) - 緑
-		Vector3 up = {0.0f, 1.0f, 0.0f};
+		MagMath::Vector3 up = {0.0f, 1.0f, 0.0f};
 		up = Conversion(up, rotationMatrix);
 		up = Normalize(up);
 		lineManager->DrawArrow(camPos, camPos + up * axisLength, {0.0f, 1.0f, 0.0f, 1.0f}, arrowHeadSize);
 
 		// カメラの右方ベクトル (X軸) - 赤
-		Vector3 right = {1.0f, 0.0f, 0.0f};
+		MagMath::Vector3 right = {1.0f, 0.0f, 0.0f};
 		right = Conversion(right, rotationMatrix);
 		right = Normalize(right);
 		lineManager->DrawArrow(camPos, camPos + right * axisLength, {1.0f, 0.0f, 0.0f, 1.0f}, arrowHeadSize);

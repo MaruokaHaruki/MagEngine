@@ -21,12 +21,7 @@
 #include <cmath> // std::abs, std::min, std::max のため
 
 namespace { // 無名名前空間でファイルスコープの定数を定義
-	const float PI = 3.1415926535f;
 	constexpr float kFrameDelta = 1.0f / 60.0f;
-
-	inline float RadiansToDegrees(float radians) {
-		return radians * (180.0f / PI);
-	}
 } // namespace
 
 Transform *Player::GetTransformSafe() const {

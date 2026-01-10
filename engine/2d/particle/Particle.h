@@ -15,10 +15,9 @@ enum class ParticleShape {
 	Cylinder // シリンダー形状
 };
 
-#include "Material.h"
+#include "MagMath.h"
 #include "ModelData.h"
 #include "ParticleSetup.h"
-#include "VertexData.h"
 
 //========================================
 // 標準ライブラリ
@@ -38,21 +37,21 @@ enum class ParticleShape {
 
 // Particle構造体
 struct ParticleStr {
-	Transform transform;
-	Vector3 velocity;
-	Vector4 color;
+	MagMath::Transform transform;
+	MagMath::Vector3 velocity;
+	MagMath::Vector4 color;
 	float lifeTime;
 	float currentTime;
-	Vector3 initialScale;	 // 初期スケール
-	Vector3 endScale;		 // 終了スケール
-	Vector3 initialRotation; // 初期回転
-	Vector3 endRotation;	 // 終了回転
+	MagMath::Vector3 initialScale;	 // 初期スケール
+	MagMath::Vector3 endScale;		 // 終了スケール
+	MagMath::Vector3 initialRotation; // 初期回転
+	MagMath::Vector3 endRotation;	 // 終了回転
 };
 
 struct ParticleForGPU {
-	Matrix4x4 WVP;
-	Matrix4x4 World;
-	Vector4 color;
+	MagMath::Matrix4x4 WVP;
+	MagMath::Matrix4x4 World;
+	MagMath::Vector4 color;
 };
 
 // パーティクルグループ構造体の定義
@@ -71,8 +70,8 @@ struct ParticleGroup {
 	// インスタンシングデータを書き込むためのポインタ
 	ParticleForGPU *instancingDataPtr = nullptr;
 
-	Vector2 textureLeftTop = {0.0f, 0.0f}; // テクスチャ左上座標
-	Vector2 textureSize = {0.0f, 0.0f};	   // テクスチャサイズを追加
+	MagMath::Vector2 textureLeftTop = {0.0f, 0.0f};    // テクスチャ左上座標
+	MagMath::Vector2 textureSize = {0.0f, 0.0f};	   // テクスチャサイズを追加
 
 	ParticleShape shape;   // このグループのパーティクル形状
 	UINT vertexOffset = 0; // 頂点バッファのオフセット
@@ -100,7 +99,7 @@ public:
 	 * \param  position
 	 * \param  count
 	 */
-	void Emit(const std::string name, const Vector3 &position, uint32_t count);
+	void Emit(const std::string name, const MagMath::Vector3 &position, uint32_t count);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  CreateParticleGroup
@@ -135,7 +134,7 @@ public:
 	 * \param  min 最小値
 	 * \param  max 最大値
 	 */
-	void SetTranslateRange(const Vector3 &min, const Vector3 &max) {
+	void SetTranslateRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		translateMin_ = min;
 		translateMax_ = max;
 	}
@@ -145,7 +144,7 @@ public:
 	 * \param  min 最小値
 	 * \param  max 最大値
 	 */
-	void SetVelocityRange(const Vector3 &min, const Vector3 &max) {
+	void SetVelocityRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		velocityMin_ = min;
 		velocityMax_ = max;
 	}
@@ -155,7 +154,7 @@ public:
 	 * \param  min 最小値 (RGBA)
 	 * \param  max 最大値 (RGBA)
 	 */
-	void SetColorRange(const Vector4 &min, const Vector4 &max) {
+	void SetColorRange(const MagMath::Vector4 &min, const MagMath::Vector4 &max) {
 		colorMin_ = min;
 		colorMax_ = max;
 	}
@@ -174,7 +173,7 @@ public:
 	 * \param  min 最小値
 	 * \param  max 最大値
 	 */
-	void SetInitialScaleRange(const Vector3 &min, const Vector3 &max) {
+	void SetInitialScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		initialScaleMin_ = min;
 		initialScaleMax_ = max;
 	}
@@ -184,7 +183,7 @@ public:
 	 * \param  min 最小値
 	 * \param  max 最大値
 	 */
-	void SetEndScaleRange(const Vector3 &min, const Vector3 &max) {
+	void SetEndScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		endScaleMin_ = min;
 		endScaleMax_ = max;
 	}
@@ -194,7 +193,7 @@ public:
 	 * \param  min 最小値 (ラジアン)
 	 * \param  max 最大値 (ラジアン)
 	 */
-	void SetInitialRotationRange(const Vector3 &min, const Vector3 &max) {
+	void SetInitialRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		initialRotationMin_ = min;
 		initialRotationMax_ = max;
 	}
@@ -204,7 +203,7 @@ public:
 	 * \param  min 最小値 (ラジアン)
 	 * \param  max 最大値 (ラジアン)
 	 */
-	void SetEndRotationRange(const Vector3 &min, const Vector3 &max) {
+	void SetEndRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
 		endRotationMin_ = min;
 		endRotationMax_ = max;
 	}
@@ -213,7 +212,7 @@ public:
 	 * \brief  SetGravity 重力の設定
 	 * \param  gravity 重力ベクトル
 	 */
-	void SetGravity(const Vector3 &gravity) {
+	void SetGravity(const MagMath::Vector3 &gravity) {
 		gravity_ = gravity;
 	}
 
@@ -258,13 +257,13 @@ private:
 	 * \param  randomEngine 乱数生成器
 	 * \param  position 生成位置
 	 */
-	ParticleStr CreateNewParticle(std::mt19937 &randomEngine, const Vector3 &position);
+	ParticleStr CreateNewParticle(std::mt19937 &randomEngine, const MagMath::Vector3 &position);
 
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
 	// 画像のサイズを設定
-	void SetCustomTextureSize(const Vector2 &size) {
+	void SetCustomTextureSize(const MagMath::Vector2 &size) {
 		customTextureSize = size;
 	}
 
@@ -281,7 +280,7 @@ private:
 
 	//---------------------------------------
 	// モデルデータ
-	ModelData modelData_;
+	MagMath::ModelData modelData_;
 
 	//---------------------------------------
 	// 頂点データ
@@ -289,13 +288,13 @@ private:
 	// バッファリソースの使い道を指すポインタ
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
 	// バッファリソース内のデータを指すポインタ
-	VertexData *vertexData_ = nullptr;
+	MagMath::VertexData *vertexData_ = nullptr;
 
 	//---------------------------------------
 	// マテリアルデータ
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialBuffer_;
 	// バッファリソース内のデータを指すポインタ
-	Material *materialData_ = nullptr;
+	MagMath::Material *materialData_ = nullptr;
 
 	//---------------------------------------
 	// インスタンシングバッファ
@@ -321,30 +320,30 @@ private:
 	};
 
 	// パーティクルの設定
-	Vector3 translateMin_ = {0.0f, 0.0f, 0.0f};
-	Vector3 translateMax_ = {0.0f, 0.0f, 0.0f};
-	Vector3 velocityMin_ = {-0.1f, -0.1f, -0.1f};
-	Vector3 velocityMax_ = {0.1f, 0.1f, 0.1f};
-	Vector4 colorMin_ = {1.0f, 1.0f, 1.0f, 1.0f};
-	Vector4 colorMax_ = {1.0f, 1.0f, 1.0f, 1.0f};
+	MagMath::Vector3 translateMin_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 translateMax_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 velocityMin_ = {-0.1f, -0.1f, -0.1f};
+	MagMath::Vector3 velocityMax_ = {0.1f, 0.1f, 0.1f};
+	MagMath::Vector4 colorMin_ = {1.0f, 1.0f, 1.0f, 1.0f};
+	MagMath::Vector4 colorMax_ = {1.0f, 1.0f, 1.0f, 1.0f};
 	RangeForRandom lifetimeRange_ = {1.0f, 3.0f};
-	Vector3 initialScaleMin_ = {1.0f, 1.0f, 1.0f};
-	Vector3 initialScaleMax_ = {1.0f, 1.0f, 1.0f};
-	Vector3 endScaleMin_ = {0.0f, 0.0f, 0.0f};
-	Vector3 endScaleMax_ = {0.0f, 0.0f, 0.0f};
-	Vector3 initialRotationMin_ = {0.0f, 0.0f, 0.0f};
-	Vector3 initialRotationMax_ = {0.0f, 0.0f, 0.0f};
-	Vector3 endRotationMin_ = {0.0f, 0.0f, 0.0f};
-	Vector3 endRotationMax_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 initialScaleMin_ = {1.0f, 1.0f, 1.0f};
+	MagMath::Vector3 initialScaleMax_ = {1.0f, 1.0f, 1.0f};
+	MagMath::Vector3 endScaleMin_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 endScaleMax_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 initialRotationMin_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 initialRotationMax_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 endRotationMin_ = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 endRotationMax_ = {0.0f, 0.0f, 0.0f};
 
 	// エフェクト用の追加パラメータ
-	Vector3 gravity_ = {0.0f, -9.8f, 0.0f}; // 重力
+	MagMath::Vector3 gravity_ = {0.0f, -9.8f, 0.0f}; // 重力
 	float emissionDelay_ = 0.0f;			// エミッション遅延
 	float fadeInRatio_ = 0.1f;				// フェードイン比率
 	float fadeOutRatio_ = 0.7f;				// フェードアウト比率
 
 	// TODO:設定しているテクスチャサイズを使うかどうかを変更できるようにする
-	Vector2 customTextureSize = {100.0f, 100.0f};
+	MagMath::Vector2 customTextureSize = {100.0f, 100.0f};
 
 	// パーティクルの形状 (グループごとに設定するため、クラスメンバからは削除)
 	// ParticleShape particleShape_ = ParticleShape::Ring;

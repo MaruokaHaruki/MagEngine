@@ -7,9 +7,7 @@
  *********************************************************************/
 #pragma once
 #include "Particle.h"
-#include "Vector3.h"
-#include "Vector4.h"
-
+#include "MagMath.h"
 /// パーティクル設定構造体
 struct ParticleConfig {
 	// 形状設定
@@ -19,31 +17,31 @@ struct ParticleConfig {
 	float cylinderRadius = 0.5f;
 
 	// 基本設定
-	Vector3 translateMin = {0.0f, 0.0f, 0.0f};
-	Vector3 translateMax = {0.0f, 0.0f, 0.0f};
-	Vector3 velocityMin = {-0.1f, -0.1f, -0.1f};
-	Vector3 velocityMax = {0.1f, 0.1f, 0.1f};
+	MagMath::Vector3 translateMin = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 translateMax = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 velocityMin = {-0.1f, -0.1f, -0.1f};
+	MagMath::Vector3 velocityMax = {0.1f, 0.1f, 0.1f};
 
 	// スケール設定
-	Vector3 initialScaleMin = {1.0f, 1.0f, 1.0f};
-	Vector3 initialScaleMax = {1.0f, 1.0f, 1.0f};
-	Vector3 endScaleMin = {0.0f, 0.0f, 0.0f};
-	Vector3 endScaleMax = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 initialScaleMin = {1.0f, 1.0f, 1.0f};
+	MagMath::Vector3 initialScaleMax = {1.0f, 1.0f, 1.0f};
+	MagMath::Vector3 endScaleMin = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 endScaleMax = {0.0f, 0.0f, 0.0f};
 
 	// 回転設定
-	Vector3 initialRotationMin = {0.0f, 0.0f, 0.0f};
-	Vector3 initialRotationMax = {0.0f, 0.0f, 0.0f};
-	Vector3 endRotationMin = {0.0f, 0.0f, 0.0f};
-	Vector3 endRotationMax = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 initialRotationMin = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 initialRotationMax = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 endRotationMin = {0.0f, 0.0f, 0.0f};
+	MagMath::Vector3 endRotationMax = {0.0f, 0.0f, 0.0f};
 
 	// 色設定
-	Vector4 colorMin = {1.0f, 1.0f, 1.0f, 1.0f};
-	Vector4 colorMax = {1.0f, 1.0f, 1.0f, 1.0f};
+	MagMath::Vector4 colorMin = {1.0f, 1.0f, 1.0f, 1.0f};
+	MagMath::Vector4 colorMax = {1.0f, 1.0f, 1.0f, 1.0f};
 
 	// その他
 	float lifetimeMin = 1.0f;
 	float lifetimeMax = 3.0f;
-	Vector3 gravity = {0.0f, -9.8f, 0.0f};
+	MagMath::Vector3 gravity = {0.0f, -9.8f, 0.0f};
 	float fadeInRatio = 0.1f;
 	float fadeOutRatio = 0.1f;
 	bool billboard = true;

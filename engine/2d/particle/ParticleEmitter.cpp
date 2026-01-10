@@ -1,15 +1,11 @@
 // Emit.cpp
 #include "ParticleEmitter.h"
-#include "AffineTransformations.h"
-#include "Camera.h"
-#include "MathFunc4x4.h"
-#include "TextureManager.h"
 #include <cmath>
 #include <random>
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-ParticleEmitter::ParticleEmitter(Particle *particle, const std::string &name, const Transform &transform, uint32_t count, float frequency, bool repeat)
+ParticleEmitter::ParticleEmitter(Particle *particle, const std::string &name, const MagMath::Transform &transform, uint32_t count, float frequency, bool repeat)
 	: particle_(particle), name_(name), transform_(transform), count_(count), frequency_(frequency), elapsedTime_(frequency), repeat_(repeat) {
 	Emit(); // 初期化時に即時発生
 }

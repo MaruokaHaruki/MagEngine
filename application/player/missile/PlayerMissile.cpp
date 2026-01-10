@@ -19,12 +19,6 @@
 #include <cmath>
 
 namespace {
-	const float PI = 3.14159265359f;
-
-	inline float Lerp(float a, float b, float t) {
-		return a + t * (b - a);
-	}
-
 	inline Vector3 NormalizeVector(const Vector3 &v) {
 		float length = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 		if (length < 0.001f)
@@ -237,7 +231,7 @@ void PlayerMissile::UpdateTracking() {
 			// 現在の前方向とターゲット方向の角度差を計算
 			float dotProduct = DotProduct(forward_, targetDirection); // 関数名を変更
 			dotProduct = std::max(-1.0f, std::min(1.0f, dotProduct)); // クランプ
-			float angleToTarget = std::acos(dotProduct) * 180.0f / PI;
+			float angleToTarget = std::acos(dotProduct) * 180.0f / MagMath::PI;
 
 			//========================================
 			// 最大旋回速度による角度制限
@@ -253,9 +247,9 @@ void PlayerMissile::UpdateTracking() {
 			float effectiveStrength = trackingStrength_ * turnRatio;
 
 			// 滑らかに前方向を更新
-			forward_.x = Lerp(forward_.x, targetDirection.x, effectiveStrength);
-			forward_.y = Lerp(forward_.y, targetDirection.y, effectiveStrength);
-			forward_.z = Lerp(forward_.z, targetDirection.z, effectiveStrength);
+			forward_.x = MagMath::Lerp(forward_.x, targetDirection.x, effectiveStrength);
+			forward_.y = MagMath::Lerp(forward_.y, targetDirection.y, effectiveStrength);
+			forward_.z = MagMath::Lerp(forward_.z, targetDirection.z, effectiveStrength);
 			forward_ = NormalizeVector(forward_);
 		}
 	}
@@ -299,8 +293,8 @@ void PlayerMissile::UpdateRotation() {
 	const float deltaTime = 1.0f / 60.0f;
 	float lerpFactor = std::min(rotationSpeed_ * deltaTime, 0.9f);
 
-	currentRotation_.x = Lerp(currentRotation_.x, targetRotation_.x, lerpFactor);
-	currentRotation_.y = Lerp(currentRotation_.y, targetRotation_.y, lerpFactor);
+	currentRotation_.x = MagMath::Lerp(currentRotation_.x, targetRotation_.x, lerpFactor);
+	currentRotation_.y = MagMath::Lerp(currentRotation_.y, targetRotation_.y, lerpFactor);
 
 	objTransform->rotate = currentRotation_;
 }

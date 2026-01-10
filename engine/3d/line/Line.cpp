@@ -10,15 +10,12 @@
 #include "LineSetup.h"
 #include "DirectXCore.h"
 #include "Camera.h"
-#include "TransformationMatrix.h"
 #include "Object3dSetup.h"
 #include "LineManager.h"
 //========================================
 // 数学関数のインクルード
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "AffineTransformations.h"
-#include "MathFunc4x4.h"
 
 ///=============================================================================
 ///						初期化
@@ -46,17 +43,17 @@ void Line::Update() {
     camera_ = lineSetup_->GetDefaultCamera();
 
     // ワールド行列の作成
-    Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
-    Matrix4x4 worldViewProjectionMatrix;
+	MagMath::Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
+	MagMath::Matrix4x4 worldViewProjectionMatrix;
 
     if(camera_) {
         // ビュー行列とプロジェクション行列を取得
-        const Matrix4x4& viewMatrix = camera_->GetViewMatrix();
-        const Matrix4x4& projectionMatrix = camera_->GetProjectionMatrix();
+        const MagMath::Matrix4x4& viewMatrix = camera_->GetViewMatrix();
+        const MagMath::Matrix4x4& projectionMatrix = camera_->GetProjectionMatrix();
 
         // 行列の乗算（ワールド → ビュー → プロジェクション）
-        Matrix4x4 worldViewMatrix = Multiply4x4(worldMatrix, viewMatrix);
-        worldViewProjectionMatrix = Multiply4x4(worldViewMatrix, projectionMatrix);
+		MagMath::Matrix4x4 worldViewMatrix = MagMath::Multiply4x4(worldMatrix, viewMatrix);
+        worldViewProjectionMatrix = MagMath::Multiply4x4(worldViewMatrix, projectionMatrix);
     } else {
         worldViewProjectionMatrix = worldMatrix;
     }
@@ -70,7 +67,7 @@ void Line::Update() {
 
 ///=============================================================================
 ///						ライン描画
-void Line::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color) {
+void Line::DrawLine(const MagMath::Vector3& start, const MagMath::Vector3& end, const MagMath::Vector4& color) {
 	// 頂点データを追加
 	vertices_.push_back({ start, color });
 	// 頂点データを追加
@@ -160,14 +157,14 @@ void Line::CreateVertexBuffer() {
 ///						
 void Line::CreateTransformationMatrixBuffer() {
 	// 定数バッファのサイズを 256 バイトの倍数に設定
-	size_t bufferSize = (sizeof(TransformationMatrix) + 255) & ~255;
+	size_t bufferSize = (sizeof(MagMath::TransformationMatrix) + 255) & ~255;
 	transfomationMatrixBuffer_ = lineSetup_->GetDXManager()->CreateBufferResource(bufferSize);
 	// 書き込み用変数
-	TransformationMatrix transformationMatrix = {};
+	MagMath::TransformationMatrix transformationMatrix = {};
 	// 書き込むためのアドレスを取得
 	transfomationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
 	// 書き込み
-	transformationMatrix.WVP = Identity4x4();
+	transformationMatrix.WVP = MagMath::Identity4x4();
 	// 単位行列を書き込む
 	*transformationMatrixData_ = transformationMatrix;
 }

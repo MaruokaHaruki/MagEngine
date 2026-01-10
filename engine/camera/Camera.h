@@ -7,8 +7,7 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "Transform.h"
-#include "Matrix4x4.h"
+#include "MagMath.h"
 
 ///=============================================================================
 ///						
@@ -42,58 +41,58 @@ public:
 	 * \brief  SetWorldMatrix ワールド行列の設定
 	 * \param  worldMatrix ワールド行列
 	 */
-	const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
+	const MagMath::Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetViewMatrix ビュー行列の設定
 	 * \param  viewMatrix ビュー行列
 	 */
-	const Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
+	const MagMath::Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetProjectionMatrix プロジェクション行列の設定
 	 * \param  projectionMatrix プロジェクション行列
 	 */
-	const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
+	const MagMath::Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetViewProjectionMatrix ビュープロジェクション行列の設定
 	 * \param  viewProjectionMatrix ビュープロジェクション行列
 	 */
-	const Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
+	const MagMath::Matrix4x4& GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTransform トランスフォームの設定
 	 * \param  transform トランスフォーム
 	 */
-	void SetTransform(const Transform& transform) { transform_ = transform; }
+	void SetTransform(const MagMath::Transform& transform) {transform_ = transform; }
 	/*
 	 * \brief  GetTransform　 トランスフォームの取得
 	 * \return translate トランスフォーム
 	 */
-	Transform GetTransform() const { return transform_; }
+	MagMath::Transform GetTransform() const { return transform_; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTranslate 移動の設定
 	 * \param  translate 移動
 	 */
-	void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
+	void SetTranslate(const MagMath::Vector3& translate) { transform_.translate = translate; }
 	/*
 	 * \brief  GetTranslate 移動の取得
 	 * \return translate 移動
 	 */
-	const Vector3& GetTranslate() const { return transform_.translate; }
+	const MagMath::Vector3& GetTranslate() const { return transform_.translate; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetRotate 回転の設定
 	 * \param  rotate 回転
 	 */
-	void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
+	void SetRotate(const MagMath::Vector3& rotate) { transform_.rotate = rotate; }
 	/*
 	 * \brief  GetRotate 回転の取得
 	 * \return 
 	 */
-	const Vector3& GetRotate() const { return transform_.rotate; }
+	const MagMath::Vector3& GetRotate() const { return transform_.rotate; }
 
 	/**----------------------------------------------------------------------------
 	 * \brief  SetFovY FovYの設定
@@ -145,17 +144,17 @@ public:
 private:
 	//---------------------------------------
 	// カメラのトランスフォーム
-	Transform transform_;
+	MagMath::Transform transform_;
 
 	//---------------------------------------
 	// ワールド行列
-	Matrix4x4 worldMatrix_;
+	MagMath::Matrix4x4 worldMatrix_;
 	// ビュー行列
-	Matrix4x4 viewMatrix_;
+	MagMath::Matrix4x4 viewMatrix_;
 
 	//---------------------------------------
 	// プロジェクション行列関連データ
-	Matrix4x4 projectionMatrix_;
+	MagMath::Matrix4x4 projectionMatrix_;
 	// 水平視野角(FOV)
 	float horizontalFieldOfView_;
 	// アスペクト比
@@ -167,7 +166,7 @@ private:
 
 	//---------------------------------------
 	// ビュープロジェクション行列
-	Matrix4x4 viewProjectionMatrix_;
+	MagMath::Matrix4x4 viewProjectionMatrix_;
 
 };
 

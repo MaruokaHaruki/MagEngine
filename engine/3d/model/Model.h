@@ -7,15 +7,13 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "Material.h"
-#include "ModelData.h"
-#include "VertexData.h"
+#include "MagMath.h"
 //========================================
 // DX12include
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl/client.h>
-#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "d3d12.lib")	
 #pragma comment(lib, "dxgi.lib")
 //========================================
 // DXC
@@ -59,7 +57,7 @@ private:
 	 * \return materialData マテリアルデータ
 	 * \note
 	 */
-	MaterialData LoadMaterialTemplateFile(const std::string &directoryPath, const std::string &filename);
+	MagMath::MaterialData LoadMaterialTemplateFile(const std::string &directoryPath, const std::string &filename);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  LoadObjFile .objファイル読み込み
@@ -72,7 +70,7 @@ private:
 	/// @brief ReadNode ノードの読み込み
 	/// @param node ノード
 	/// @return ノードデータ
-	Node ReadNode(aiNode *node);
+	MagMath::Node ReadNode(aiNode *node);
 
 	/**----------------------------------------------------------------------------
 	 * \brief  頂点バッファの作成
@@ -93,7 +91,7 @@ public:
 	 * \brief  SetMaterialColor マテリアルカラーの設定
 	 * \param  color カラー
 	 */
-	void SetMaterialColor(const Vector4 &color) {
+	void SetMaterialColor(const MagMath::Vector4 &color) {
 		materialData_->color = color;
 	}
 
@@ -101,7 +99,7 @@ public:
 	 * \brief  GetMaterialColor マテリアルカラーの取得
 	 * \return
 	 */
-	Vector4 GetMaterialColor() const {
+	MagMath::Vector4 GetMaterialColor() const {
 		return materialData_->color;
 	}
 
@@ -162,7 +160,7 @@ private:
 
 	//---------------------------------------
 	// モデルデータ
-	ModelData modelData_;
+	MagMath::ModelData modelData_;
 
 	//---------------------------------------
 	// 頂点データ
@@ -173,9 +171,9 @@ private:
 	///---------------------------------------
 	/// バッファリソース内のデータを指すポインタ
 	// 頂点
-	VertexData *vertexData_ = nullptr;
+	MagMath::VertexData *vertexData_ = nullptr;
 	// マテリアル
-	Material *materialData_ = nullptr;
+	MagMath::Material *materialData_ = nullptr;
 
 	///---------------------------------------
 	/// バッファリソースの使い道を指すポインタ

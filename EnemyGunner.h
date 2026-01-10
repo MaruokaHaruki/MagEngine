@@ -1,4 +1,6 @@
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "EnemyBase.h"
 #include "EnemyBullet.h"
 #include <memory>

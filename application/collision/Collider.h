@@ -1,6 +1,6 @@
 #pragma once
-#include "Vector3.h"
-#include "Vector4.h"
+#include "MagMath.h"
+using namespace MagMath;
 #include <memory>
 
 class BaseObject;

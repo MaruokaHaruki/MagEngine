@@ -1,7 +1,8 @@
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "BaseObject.h"
 #include "Object3d.h"
-#include "Vector3.h"
 #include <memory>
 #include <string>
 

@@ -124,21 +124,21 @@ void Input::OnMouseWheel(short delta) {
 
 ///=============================================================================
 ///						マウスの移動量を取得
-Vector2 Input::GetMouseMove() const {
-	return Vector2(
+MagMath::Vector2 Input::GetMouseMove() const {
+	return MagMath::Vector2(
 		static_cast<float>(mousePos_.x - mousePosPrev_.x),
 		static_cast<float>(mousePos_.y - mousePosPrev_.y));
 }
 
 ///=============================================================================
 ///						ウィンドウの中心からのマウスの位置を取得
-Vector2 Input::GetMousePosFromWindowCenter() const {
+MagMath::Vector2 Input::GetMousePosFromWindowCenter() const {
 	RECT rect;
 	GetClientRect(hwnd_, &rect);
 	float centerX = (rect.right - rect.left) / 2.0f;
 	float centerY = (rect.bottom - rect.top) / 2.0f;
 
-	return Vector2(
+	return MagMath::Vector2(
 		static_cast<float>(mousePos_.x) - centerX,
 		static_cast<float>(mousePos_.y) - centerY);
 }

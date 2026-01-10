@@ -22,7 +22,7 @@
 
 // 頂点データ構造体
 struct SkyboxVertex {
-	Vector4 position;
+	MagMath::Vector4 position;
 };
 
 // 前方宣言
@@ -66,42 +66,42 @@ public:
 	}
 
 	/// \brief GetTransform トランスフォーメーションのポインタを取得
-	Transform *GetTransform() {
+	MagMath::Transform *GetTransform() {
 		return &transform_;
 	}
 
 	/// \brief SetTransform トランスフォーメーションの設定
-	void SetTransform(const Transform &transform) {
+	void SetTransform(const MagMath::Transform &transform) {
 		transform_ = transform;
 	}
 
 	/// \brief SetScale スケールの設定
-	void SetScale(const Vector3 &scale) {
+	void SetScale(const MagMath::Vector3 &scale) {
 		transform_.scale = scale;
 	}
 
 	/// \brief GetScale スケールの取得
-	const Vector3 &GetScale() const {
+	const MagMath::Vector3 &GetScale() const {
 		return transform_.scale;
 	}
 
 	/// \brief SetRotation 回転の設定
-	void SetRotation(const Vector3 &rotate) {
+	void SetRotation(const MagMath::Vector3 &rotate) {
 		transform_.rotate = rotate;
 	}
 
 	/// \brief GetRotation 回転の取得
-	const Vector3 &GetRotation() const {
+	const MagMath::Vector3 &GetRotation() const {
 		return transform_.rotate;
 	}
 
 	/// \brief SetPosition 位置の設定
-	void SetPosition(const Vector3 &translate) {
+	void SetPosition(const MagMath::Vector3 &translate) {
 		transform_.translate = translate;
 	}
 
 	/// \brief GetPosition 位置の取得
-	const Vector3 &GetPosition() const {
+	const MagMath::Vector3 &GetPosition() const {
 		return transform_.translate;
 	}
 
@@ -123,7 +123,7 @@ private:
 	//========================================
 	// バッファリソース内のデータを指すポインタ
 	// トランスフォーメーションマトリックス
-	TransformationMatrix *transformationMatrixData_ = nullptr;
+	MagMath::TransformationMatrix *transformationMatrixData_ = nullptr;
 	// 頂点バッファビュー
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
 	// インデックスバッファビュー
@@ -144,5 +144,5 @@ private:
 
 	//========================================
 	// Transform
-	Transform transform_ = {};
+	MagMath::Transform transform_ = {};
 };

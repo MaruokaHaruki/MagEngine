@@ -140,7 +140,7 @@ void Cloud::CreateConstantBuffers() {
 
 ///--------------------------------------------------------------
 ///						 位置の設定
-void Cloud::SetPosition(const Vector3 &pos) {
+void Cloud::SetPosition(const MagMath::Vector3 &pos) {
 	// Transformの位置を更新
 	transform_.translate = pos;
 	// パラメータの雲中心座標を直接設定
@@ -149,7 +149,7 @@ void Cloud::SetPosition(const Vector3 &pos) {
 
 ///--------------------------------------------------------------
 ///						 スケールの設定
-void Cloud::SetScale(const Vector3 &scale) {
+void Cloud::SetScale(const MagMath::Vector3 &scale) {
 	// Transformのスケールを更新
 	transform_.scale = scale;
 	// NOTE: スケールは使わず、SetSizeを使う
@@ -181,10 +181,10 @@ void Cloud::Update(const Camera &camera, float deltaTime) {
 	//========================================
 	// カメラ行列の設定
 	// ビュープロジェクション行列を取得
-	const Matrix4x4 viewProj = camera.GetViewProjectionMatrix();
+	const MagMath::Matrix4x4 viewProj = camera.GetViewProjectionMatrix();
 
 	// 逆ビュープロジェクション行列を計算（レイの方向計算に使用）
-	cameraData_->invViewProj = Inverse4x4(viewProj);
+	cameraData_->invViewProj = MagMath::Inverse4x4(viewProj);
 
 	// ビュープロジェクション行列を設定（深度値計算に使用）
 	cameraData_->viewProj = viewProj;
@@ -272,7 +272,7 @@ void Cloud::DrawImGui() {
 		}
 		if (ImGui::Button("Move to Camera Front")) {
 			if (cameraData_) {
-				Vector3 forward = {0.0f, 0.0f, 1.0f};
+				MagMath::Vector3 forward = {0.0f, 0.0f, 1.0f};
 				transform_.translate.x = cameraData_->cameraPosition.x + forward.x * 200.0f;
 				transform_.translate.y = cameraData_->cameraPosition.y + 50.0f;
 				transform_.translate.z = cameraData_->cameraPosition.z + forward.z * 200.0f;
@@ -354,11 +354,11 @@ void Cloud::DrawImGui() {
 				paramsCPU_.cloudSize.x, paramsCPU_.cloudSize.y, paramsCPU_.cloudSize.z);
 
 	// AABB（軸平行境界ボックス）表示
-	Vector3 boxMin = {
+	MagMath::Vector3 boxMin = {
 		paramsCPU_.cloudCenter.x - paramsCPU_.cloudSize.x * 0.5f,
 		paramsCPU_.cloudCenter.y - paramsCPU_.cloudSize.y * 0.5f,
 		paramsCPU_.cloudCenter.z - paramsCPU_.cloudSize.z * 0.5f};
-	Vector3 boxMax = {
+	MagMath::Vector3 boxMax = {
 		paramsCPU_.cloudCenter.x + paramsCPU_.cloudSize.x * 0.5f,
 		paramsCPU_.cloudCenter.y + paramsCPU_.cloudSize.y * 0.5f,
 		paramsCPU_.cloudCenter.z + paramsCPU_.cloudSize.z * 0.5f};

@@ -1,5 +1,4 @@
 #include "DebugTextManager.h"
-#include "MathFunc4x4.h"
 #include "WinApp.h"
 #include "imgui.h"
 #include <iostream> // エラー出力用 (任意)
@@ -92,7 +91,7 @@ void DebugTextManager::DrawImGui() {
 	ImDrawList *drawList = ImGui::GetBackgroundDrawList();
 
 	for (const auto &text : debugTexts_) {
-		Vector2 screenPos;
+		MagMath::Vector2 screenPos;
 
 		if (text.useScreenPosition) {
 			// スクリーン座標指定の場合
@@ -107,8 +106,8 @@ void DebugTextManager::DrawImGui() {
 
 			// カメラの後ろにあるオブジェクトのテキストは表示しない
 			// 簡易的なカリング判定（より正確な判定が必要なら改良すること）
-			Matrix4x4 viewMatrix = camera_->GetViewMatrix();
-			Vector3 viewPos = Multiply(text.worldPosition, viewMatrix);
+			MagMath::Matrix4x4 viewMatrix = camera_->GetViewMatrix();
+			MagMath::Vector3 viewPos = Multiply(text.worldPosition, viewMatrix);
 			if (viewPos.z < 0) {
 				continue;
 			}
@@ -170,15 +169,15 @@ void DebugTextManager::DrawImGui() {
 	// }
 }
 
-Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
+MagMath::Vector2 DebugTextManager::WorldToScreen(const MagMath::Vector3 &worldPosition) const {
 	if (!camera_ || !winApp_)
-		return Vector2{0, 0};
+		return MagMath::Vector2{0, 0};
 
 	// ワールド→クリップ空間への変換
-	Matrix4x4 viewProjMatrix = camera_->GetViewProjectionMatrix();
+	MagMath::Matrix4x4 viewProjMatrix = camera_->GetViewProjectionMatrix();
 
 	// 同次座標でのクリップ空間変換（完全な行列乗算）
-	Vector4 clipPos;
+	MagMath::Vector4 clipPos;
 	clipPos.x = worldPosition.x * viewProjMatrix.m[0][0] + worldPosition.y * viewProjMatrix.m[1][0] +
 				worldPosition.z * viewProjMatrix.m[2][0] + viewProjMatrix.m[3][0];
 	clipPos.y = worldPosition.x * viewProjMatrix.m[0][1] + worldPosition.y * viewProjMatrix.m[1][1] +
@@ -190,7 +189,7 @@ Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
 
 	// wが0に近い場合はエラー防止（極端な位置）
 	if (std::abs(clipPos.w) < 1e-6f) {
-		return Vector2{-1000.0f, -1000.0f}; // 画面外の座標を返す
+		return MagMath::Vector2{-1000.0f, -1000.0f}; // 画面外の座標を返す
 	}
 
 	// 正規化デバイス座標（NDC）に変換
@@ -200,15 +199,15 @@ Vector2 DebugTextManager::WorldToScreen(const Vector3 &worldPosition) const {
 	// NDCからスクリーン座標へ変換
 	float width = static_cast<float>(winApp_->GetWindowWidth());
 	float height = static_cast<float>(winApp_->GetWindowHeight());
-	Vector2 screenPos;
+	MagMath::Vector2 screenPos;
 	screenPos.x = (ndcX + 1.0f) * width * 0.5f;
 	screenPos.y = (1.0f - ndcY) * height * 0.5f; // Y軸は反転
 
 	return screenPos;
 }
 
-void DebugTextManager::AddText3D(const std::string &text, const Vector3 &position,
-								 const Vector4 &color, float duration, float scale, const std::string &fontName,
+void DebugTextManager::AddText3D(const std::string &text, const MagMath::Vector3 &position,
+								 const MagMath::Vector4 &color, float duration, float scale, const std::string &fontName,
 								 bool isFixedToScreen, bool isPersistent) {
 	// 既存の永続的なテキストで同じ内容があれば追加しない（重複防止）
 	if (isPersistent) {
@@ -244,8 +243,8 @@ void DebugTextManager::AddText3D(const std::string &text, const Vector3 &positio
 	debugTexts_.push_back(newText);
 }
 
-void DebugTextManager::AddTextScreen(const std::string &text, const Vector2 &position,
-									 const Vector4 &color, float duration, float scale, const std::string &fontName,
+void DebugTextManager::AddTextScreen(const std::string &text, const MagMath::Vector2 &position,
+									 const MagMath::Vector4 &color, float duration, float scale, const std::string &fontName,
 									 bool isPersistent) {
 	DebugText newText{};
 	newText.text = text;
@@ -323,7 +322,7 @@ void DebugTextManager::AddGridLabels(float gridSize, int gridCount) {
 	}
 }
 
-void DebugTextManager::AddPointLabel(const std::string &label, const Vector3 &position, const Vector4 &color) {
+void DebugTextManager::AddPointLabel(const std::string &label, const MagMath::Vector3 &position, const MagMath::Vector4 &color) {
 	// 指定された位置にラベルを追加
 	AddText3D(label, position, color, -1.0f, 1.0f, "", false, true);
 }

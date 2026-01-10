@@ -7,6 +7,8 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "EnemyBase.h"
 #include <memory>
 #include <vector>

@@ -60,7 +60,7 @@ void TextureManager::LoadTexture(const std::string &filePath) {
 	//---------------------------------------
 	// テクスチャファイルを読んでプログラムを扱えるようにする
 	DirectX::ScratchImage image{};
-	std::wstring filePathW = ConvertString(fullPath);
+	std::wstring filePathW = WstringUtility::ConvertString(fullPath);
 	HRESULT hr;
 
 	// ファイル拡張子をチェックして読み込み関数を選択

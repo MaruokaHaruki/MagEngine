@@ -7,6 +7,8 @@
  * \note   エンジン内部使用に最適化済み
  *********************************************************************/
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "BaseObject.h"
 #include "Collider.h"
 #include <bitset>

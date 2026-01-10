@@ -1,8 +1,6 @@
 #pragma once
-#include "Vector3.h"
-
-// 前方宣言
-struct Transform;
+#include "MagMath.h"
+using namespace MagMath;
 
 ///=============================================================================
 ///						移動管理コンポーネント
@@ -11,18 +9,18 @@ public:
 	///--------------------------------------------------------------
 	///                        メンバ関数
 	void Initialize();
-	void Update(Transform *transform, float deltaTime);
+	void Update(MagMath::Transform *transform, float deltaTime);
 
 	///--------------------------------------------------------------
 	///                        移動処理
 	void ProcessInput(float inputX, float inputY);
-	void ApplyMovement(Transform *transform, float deltaTime);
-	void ApplyRotation(Transform *transform);
+	void ApplyMovement(MagMath::Transform *transform, float deltaTime);
+	void ApplyRotation(MagMath::Transform *transform);
 
 	///--------------------------------------------------------------
 	///                        バレルロール処理
 	void StartBarrelRoll(bool isRight);
-	void UpdateBarrelRoll(Transform *transform, float deltaTime);
+	void UpdateBarrelRoll(MagMath::Transform *transform, float deltaTime);
 	bool IsBarrelRolling() const {
 		return isBarrelRolling_;
 	}
@@ -54,13 +52,13 @@ public:
 
 	///--------------------------------------------------------------
 	///                        ゲッター
-	const Vector3 &GetCurrentVelocity() const {
+	const MagMath::Vector3 &GetCurrentVelocity() const {
 		return currentVelocity_;
 	}
-	const Vector3 &GetTargetVelocity() const {
+	const MagMath::Vector3 &GetTargetVelocity() const {
 		return targetVelocity_;
 	}
-	const Vector3 &GetTargetRotation() const {
+	const MagMath::Vector3 &GetTargetRotation() const {
 		return targetRotationEuler_;
 	}
 	float GetMoveSpeed() const {
@@ -114,9 +112,9 @@ private:
 
 	///--------------------------------------------------------------
 	///                        メンバ変数
-	Vector3 currentVelocity_;	  // 現在の移動速度
-	Vector3 targetVelocity_;	  // 目標移動速度
-	Vector3 targetRotationEuler_; // 目標回転角度（オイラー角）
+	MagMath::Vector3 currentVelocity_;	  // 現在の移動速度
+	MagMath::Vector3 targetVelocity_;	  // 目標移動速度
+	MagMath::Vector3 targetRotationEuler_; // 目標回転角度（オイラー角）
 
 	float moveSpeed_;		  // 基本移動速度
 	float acceleration_;	  // 加速度（速度変化の滑らかさ）
@@ -142,6 +140,6 @@ private:
 	float barrelRollCoolTimer_;		   // 現在のクールダウンタイマー
 	float barrelRollCost_;			   // バレルロール消費ゲージ量
 	bool barrelRollDirection_;		   // true=右回転, false=左回転
-	Vector3 barrelRollStartRotation_;  // バレルロール開始時の回転
-	Vector3 barrelRollMovementOffset_; // バレルロール中の横移動オフセット
+	MagMath::Vector3 barrelRollStartRotation_;  // バレルロール開始時の回転
+	MagMath::Vector3 barrelRollMovementOffset_; // バレルロール中の横移動オフセット
 };

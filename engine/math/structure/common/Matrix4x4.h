@@ -74,6 +74,3 @@ namespace MagMath {
 	};
 
 } // namespace MagMath
-
-// 後方互換性のためのグローバルエイリアス
-using Matrix4x4 = MagMath::Matrix4x4;

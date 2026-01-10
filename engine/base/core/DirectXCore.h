@@ -17,13 +17,11 @@
 #include <wrl.h>
 //========================================
 // 自作関数
+#include "MagMath.h"
 #include "WstringUtility.h"
-using namespace WstringUtility;
 #include "Logger.h"
-using namespace Logger;
 #include "FullscreenPassRendere.h"
 #include "GrayscaleEffect.h"
-#include "Vector4.h"
 #include "WinApp.h"
 //========================================
 // ReportLiveObj
@@ -242,7 +240,7 @@ public:
 	/// @return
 	Microsoft::WRL::ComPtr<ID3D12Resource>
 	CreateRenderTextureResource(
-		uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 &clearColor, D3D12_RESOURCE_STATES initialState);
+		uint32_t width, uint32_t height, DXGI_FORMAT format, const MagMath::Vector4 &clearColor, D3D12_RESOURCE_STATES initialState);
 
 	//========================================
 	/// @brief CreateRenderTextureRTV レンダーテクスチャのRTVを生成

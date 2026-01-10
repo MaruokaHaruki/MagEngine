@@ -73,11 +73,11 @@ std::unique_ptr<LevelObject> LevelDataLoader::ParseObjectFromJson(const nlohmann
 		const auto &transform = jsonObj["transform"];
 
 		// Blender座標系からエンジン座標系への変換を適用
-		Vector3 blenderTranslation = GetVector3FromJson(transform["translation"]);
-		Vector3 blenderRotation = GetVector3FromJson(transform["rotation"]);
-		Vector3 blenderScale = GetVector3FromJson(transform["scale"], {1, 1, 1});
+		MagMath::Vector3 blenderTranslation = GetVector3FromJson(transform["translation"]);
+		MagMath::Vector3 blenderRotation = GetVector3FromJson(transform["rotation"]);
+		MagMath::Vector3 blenderScale = GetVector3FromJson(transform["scale"], {1, 1, 1});
 
-		// 座標変換を実行（エンジンのTransformメンバー名に合わせる）
+		// 座標変換を実行（エンジンのTransformメンバー名に合わせる）MagMath::
 		levelObject->transform.translate = ConvertPositionFromBlender(blenderTranslation);
 		levelObject->transform.rotate = ConvertRotationFromBlender(blenderRotation);
 		levelObject->transform.scale = blenderScale; // スケールは変換不要
@@ -91,7 +91,7 @@ std::unique_ptr<LevelObject> LevelDataLoader::ParseObjectFromJson(const nlohmann
 		collider->type = colliderJson.value("type", "BOX");
 
 		// コライダーの中心位置とサイズも座標変換を適用
-		Vector3 blenderCenter = GetVector3FromJson(colliderJson["center"]);
+		MagMath::Vector3 blenderCenter = GetVector3FromJson(colliderJson["center"]);
 		collider->center = ConvertPositionFromBlender(blenderCenter);
 		collider->size = GetVector3FromJson(colliderJson["size"], {1, 1, 1});
 		// 注意: コライダーサイズは相対的な値なので、Z成分の符号は変更しない
@@ -114,10 +114,10 @@ std::unique_ptr<LevelObject> LevelDataLoader::ParseObjectFromJson(const nlohmann
 
 ///=============================================================================
 ///                        Blender（右手系）からエンジン（左手系）への座標変換
-Vector3 LevelDataLoader::ConvertPositionFromBlender(const Vector3 &blenderPos) {
+MagMath::Vector3 LevelDataLoader::ConvertPositionFromBlender(const MagMath::Vector3 &blenderPos) {
 	// Blender（右手系、Y-up）からエンジン（左手系、Y-up）への変換
 	// 変換式: X' = X, Y' = Y, Z' = -Z
-	return Vector3{
+	return MagMath::Vector3{
 		blenderPos.x, // X軸はそのまま
 		blenderPos.y, // Y軸はそのまま（両方ともY-up）
 		-blenderPos.z // Z軸は反転（右手系→左手系）
@@ -126,11 +126,11 @@ Vector3 LevelDataLoader::ConvertPositionFromBlender(const Vector3 &blenderPos) {
 
 ///=============================================================================
 ///                        Blender（右手系）からエンジン（左手系）への回転変換
-Vector3 LevelDataLoader::ConvertRotationFromBlender(const Vector3 &blenderRot) {
+MagMath::Vector3 LevelDataLoader::ConvertRotationFromBlender(const MagMath::Vector3 &blenderRot) {
 	// Blender（右手系）からエンジン（左手系）への回転変換
 	// 右手系から左手系への変換では、Y軸とZ軸周りの回転方向が反転する
 	// 注意: この変換は一般的なケースであり、特定の実装によって調整が必要な場合がある
-	return Vector3{
+	return MagMath::Vector3{
 		blenderRot.x,  // X軸周りの回転はそのまま
 		-blenderRot.y, // Y軸周りの回転は反転
 		-blenderRot.z  // Z軸周りの回転は反転
@@ -138,16 +138,16 @@ Vector3 LevelDataLoader::ConvertRotationFromBlender(const Vector3 &blenderRot) {
 }
 
 ///=============================================================================
-///                        JSONからVector3を安全に取得
-Vector3 LevelDataLoader::GetVector3FromJson(const nlohmann::json &jsonArray, const Vector3 &defaultValue) {
-	// JSON配列から安全にVector3を取得
+///                        JSONからMagMath::Vector3を安全に取得
+MagMath::Vector3 LevelDataLoader::GetVector3FromJson(const nlohmann::json &jsonArray, const MagMath::Vector3 &defaultValue) {
+	// JSON配列から安全にMagMath::Vector3を取得
 	if (!jsonArray.is_array() || jsonArray.size() < 3) {
 		Logger::Log("Invalid JSON array for Vector3, using default value", Logger::LogLevel::Warning);
 		return defaultValue;
 	}
 
 	try {
-		return Vector3{
+		return MagMath::Vector3{
 			jsonArray[0].get<float>(),
 			jsonArray[1].get<float>(),
 			jsonArray[2].get<float>()};
@@ -187,7 +187,7 @@ bool LevelDataLoader::CreateObjectsFromLevelData(Object3dSetup *object3dSetup, s
 	for (const auto &rootObject : levelData_.objects) {
 		if (rootObject) {
 			// 各ルートオブジェクトを再帰的にObject3Dに変換
-			Transform rootTransform = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+			MagMath::Transform rootTransform = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 			CreateObject3DFromLevelObject(rootObject, object3dSetup, outObjectList, rootTransform);
 		}
 	}
@@ -201,7 +201,7 @@ bool LevelDataLoader::CreateObjectsFromLevelData(Object3dSetup *object3dSetup, s
 void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelObject> &levelObject,
 													Object3dSetup *object3dSetup,
 													std::vector<std::unique_ptr<Object3d>> &outObjectList,
-													const Transform &parentTransform) {
+													const MagMath::Transform &parentTransform) {
 	if (!levelObject) {
 		return;
 	}
@@ -235,7 +235,7 @@ void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelO
 	}
 
 	// 親のトランスフォームと現在のオブジェクトのトランスフォームを合成
-	Transform combinedTransform = CombineTransforms(parentTransform, levelObject->transform);
+	MagMath::Transform combinedTransform = CombineTransforms(parentTransform, levelObject->transform);
 
 	// Object3Dにトランスフォームを設定（エンジンのメソッド名に合わせる）
 	object3d->SetScale(combinedTransform.scale);
@@ -259,8 +259,8 @@ void LevelDataLoader::CreateObject3DFromLevelObject(const std::unique_ptr<LevelO
 
 ///=============================================================================
 ///                        2つのTransformを合成（親→子の順で適用）
-Transform LevelDataLoader::CombineTransforms(const Transform &parent, const Transform &child) {
-	Transform combined;
+MagMath::Transform LevelDataLoader::CombineTransforms(const MagMath::Transform &parent, const MagMath::Transform &child) {
+	MagMath::Transform combined;
 
 	// スケールの合成（乗算）
 	combined.scale.x = parent.scale.x * child.scale.x;
@@ -316,9 +316,9 @@ void LevelDataLoader::ImGuiDraw(std::vector<std::unique_ptr<Object3d>> &outObjec
 			ImGui::Text("Object %d Controls", selectedObjectIndex_);
 
 			// 現在の位置を取得
-			Vector3 position = selectedObject->GetPosition();
-			Vector3 rotation = selectedObject->GetRotation();
-			Vector3 scale = selectedObject->GetScale();
+			MagMath::Vector3 position = selectedObject->GetPosition();
+			MagMath::Vector3 rotation = selectedObject->GetRotation();
+			MagMath::Vector3 scale = selectedObject->GetScale();
 
 			// 位置の編集
 			if (ImGui::SliderFloat3("Position", &position.x, -50.0f, 50.0f)) {

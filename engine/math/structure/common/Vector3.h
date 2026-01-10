@@ -85,13 +85,3 @@ namespace MagMath {
 	}
 
 } // namespace MagMath
-
-// 後方互換性のためのグローバルエイリアス
-using Vector3 = MagMath::Vector3;
-using MagMath::AddVec3;
-using MagMath::Distance;
-using MagMath::Dot;
-using MagMath::Length;
-using MagMath::Magnitude;
-using MagMath::MultiplyVec3;
-using MagMath::Normalize;

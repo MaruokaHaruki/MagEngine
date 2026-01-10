@@ -4,17 +4,8 @@
 #include "CameraManager.h"
 #include "FollowCamera.h"
 #include "ImguiSetup.h"
-#include "MathFunc4x4.h"
 #include "Player.h"
 #include <cmath>
-
-namespace {
-	const float PI = 3.14159265f;
-
-	inline float Lerp(float a, float b, float t) {
-		return a + t * (b - a);
-	}
-}
 
 ///=============================================================================
 ///                        初期化

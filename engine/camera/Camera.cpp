@@ -23,7 +23,7 @@ Camera::Camera()
 	, farClipRange_(100.0f)
 	, worldMatrix_(MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate))
 	, viewMatrix_(Inverse4x4(worldMatrix_))
-	, projectionMatrix_(MakePerspectiveFovMatrix(horizontalFieldOfView_, aspectRatio_, nearClipRange_, farClipRange_))
+	, projectionMatrix_(MagMath::MakePerspectiveFovMatrix(horizontalFieldOfView_, aspectRatio_, nearClipRange_, farClipRange_))
 	, viewProjectionMatrix_(Multiply4x4(viewMatrix_, projectionMatrix_)) {
 }
 
@@ -43,7 +43,7 @@ void Camera::Update() {
 
 	//---------------------------------------
 	// 正射影行列の作成
-	projectionMatrix_ = MakePerspectiveFovMatrix(
+	projectionMatrix_ = MagMath::MakePerspectiveFovMatrix(
 		horizontalFieldOfView_,
 		aspectRatio_,
 		nearClipRange_,
@@ -51,10 +51,5 @@ void Camera::Update() {
 
 	//========================================
 	// ビュー・プロジェクション行列を計算
-	viewProjectionMatrix_ = Multiply4x4(viewMatrix_, projectionMatrix_);
-}
-
-///=============================================================================
-///						描画
-void Camera::Draw() {
+	viewProjectionMatrix_ = MagMath::Multiply4x4(viewMatrix_, projectionMatrix_);
 }

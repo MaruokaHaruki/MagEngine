@@ -7,10 +7,10 @@
  * \note   リアリティのあるミサイル動作（推進力、慣性、追尾）
  *********************************************************************/
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "BaseObject.h"
 #include "Object3d.h"
-#include "Transform.h"
-#include "Vector3.h"
 #include <memory>
 #include <string>
 #include <vector>

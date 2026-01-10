@@ -1,4 +1,6 @@
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include <memory>
 #include <unordered_set>
 #include "Collider.h"

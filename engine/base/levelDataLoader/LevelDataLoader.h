@@ -9,9 +9,8 @@
  *********************************************************************/
 #pragma once
 #include "Object3d.h"
-#include "Transform.h"
-#include "Vector3.h"
-#include "engine/utils/Logger.h"
+#include "MagMath.h"
+#include "Logger.h"
 #include "externals/json.hpp"
 #include <memory>
 #include <string>
@@ -20,15 +19,15 @@
 // 名前衝突を避けるためLevelColliderに変更
 struct LevelCollider {
 	std::string type; // コライダータイプ（"BOX", "SPHERE"等）
-	Vector3 center;	  // コライダー中心位置
-	Vector3 size;	  // コライダーサイズ
+	MagMath::Vector3 center;	  // コライダー中心位置
+	MagMath::Vector3 size;	  // コライダーサイズ
 };
 
 struct LevelObject {
 	std::string name;									// オブジェクト名
 	std::string type;									// オブジェクトタイプ（"MESH", "EMPTY"等）
 	std::string file_name;								// モデルファイル名（空の場合あり）
-	Transform transform;								// トランスフォーム情報
+	MagMath::Transform transform;								// トランスフォーム情報
 	std::unique_ptr<LevelCollider> collider;			// コライダー情報（nullptrの場合あり）
 	std::vector<std::unique_ptr<LevelObject>> children; // 子オブジェクト
 };
@@ -98,7 +97,7 @@ private:
 	void CreateObject3DFromLevelObject(const std::unique_ptr<LevelObject> &levelObject,
 									   Object3dSetup *object3dSetup,
 									   std::vector<std::unique_ptr<Object3d>> &outObjectList,
-									   const Transform &parentTransform = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
+									   const MagMath::Transform &parentTransform = {{1, 1, 1}, {0, 0, 0}, {0, 0, 0}});
 
 	/// \brief 2つのTransformを合成（親→子の順で適用）
 	/// \param parent 親のTransform
@@ -106,27 +105,27 @@ private:
 	/// \return 合成されたTransform
 	/// \note スケール・回転・平行移動の順で適用
 	///       回転は度数法で計算される点に注意
-	Transform CombineTransforms(const Transform &parent, const Transform &child);
+	MagMath::Transform CombineTransforms(const MagMath::Transform &parent, const MagMath::Transform &child);
 
 	/// \brief Blender（右手系）からエンジン（左手系）への座標変換
 	/// \param blenderPos Blender座標系の位置ベクトル
 	/// \return エンジン座標系の位置ベクトル
 	/// \note Blender: Y-up, 右手系 → エンジン: Y-up, 左手系
 	///       変換: X' = X, Y' = Y, Z' = -Z
-	Vector3 ConvertPositionFromBlender(const Vector3 &blenderPos);
+	MagMath::Vector3 ConvertPositionFromBlender(const MagMath::Vector3 &blenderPos);
 
 	/// \brief Blender（右手系）からエンジン（左手系）への回転変換
 	/// \param blenderRot Blender座標系の回転（オイラー角、度数法）
 	/// \return エンジン座標系の回転（オイラー角、度数法）
 	/// \note 右手系から左手系への回転変換を適用
 	///       Y軸とZ軸の回転方向が反転する
-	Vector3 ConvertRotationFromBlender(const Vector3 &blenderRot);
+	MagMath::Vector3 ConvertRotationFromBlender(const MagMath::Vector3 &blenderRot);
 
-	/// \brief JSONからVector3を安全に取得
+	/// \brief JSONからMagMath::Vector3を安全に取得
 	/// \param jsonArray JSON配列
 	/// \param defaultValue デフォルト値
-	/// \return Vector3値
-	Vector3 GetVector3FromJson(const nlohmann::json &jsonArray, const Vector3 &defaultValue = {0, 0, 0});
+	/// \return MagMath::Vector3値
+	MagMath::Vector3 GetVector3FromJson(const nlohmann::json &jsonArray, const MagMath::Vector3 &defaultValue = {0, 0, 0});
 
 	///--------------------------------------------------------------
 	///							入出力関数

@@ -8,9 +8,7 @@
  *********************************************************************/
 #include "Sprite.h"
 #include "SpriteSetup.h"	
-#include "AffineTransformations.h"
 #include "TextureManager.h"
-#include "MathFunc4x4.h"
 
  ///=============================================================================
  ///								初期化
@@ -39,7 +37,7 @@ void Sprite::Initialize(SpriteSetup* SpriteSetup, std::string textureFilePath) {
 ///=============================================================================
 ///									更新
 //NOTE:引数としてローカル行列とビュー行列を持ってくること
-void Sprite::Update(Matrix4x4 viewMatrix) {
+void Sprite::Update(MagMath::Matrix4x4 viewMatrix) {
 
 	//---------------------------------------
 	// テクスチャ範囲の反映
@@ -55,12 +53,12 @@ void Sprite::Update(Matrix4x4 viewMatrix) {
 
 	//---------------------------------------
 	// スプライトの変換行列を作成
-	Matrix4x4 worldMatrixSprite = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
+	MagMath::Matrix4x4 worldMatrixSprite = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
 	transformationMatrixData_->World = worldMatrixSprite;
 
 	//---------------------------------------
 	// 正射影行列の作成
-	Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
+	MagMath::Matrix4x4 projectionMatrixSprite = MagMath::MakeOrthographicMatrix(
 		0.0f, 0.0f,
 		float(spriteSetup_->GetDXManager()->GetWinApp().GetWindowWidth()),
 		float(spriteSetup_->GetDXManager()->GetWinApp().GetWindowHeight()),
@@ -68,7 +66,7 @@ void Sprite::Update(Matrix4x4 viewMatrix) {
 
 	//---------------------------------------
 	// ワールド・ビュー・プロジェクション行列を計算
-	Matrix4x4 worldViewProjectionMatrixSprite = Multiply4x4(worldMatrixSprite, Multiply4x4(viewMatrix, projectionMatrixSprite));
+	MagMath::Matrix4x4 worldViewProjectionMatrixSprite = Multiply4x4(worldMatrixSprite, Multiply4x4(viewMatrix, projectionMatrixSprite));
 	transformationMatrixData_->WVP = worldViewProjectionMatrixSprite;
 }
 
@@ -113,7 +111,7 @@ void Sprite::Draw() {
 ///						 頂点バッファの作成
 void Sprite::CreateVertexBuffer() {
 	// 頂点データ用のバッファリソースを作成
-	vertexBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(VertexData) * 4);
+	vertexBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::VertexData) * 4);
 
 	if(!vertexBuffer_) {
 		throw std::runtime_error("Failed to Create Vertex Buffer");
@@ -122,8 +120,8 @@ void Sprite::CreateVertexBuffer() {
 
 	// バッファビューの設定
 	vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
-	vertexBufferView_.SizeInBytes = sizeof(VertexData) * 4;
-	vertexBufferView_.StrideInBytes = sizeof(VertexData);
+	vertexBufferView_.SizeInBytes = sizeof(MagMath::VertexData) * 4;
+	vertexBufferView_.StrideInBytes = sizeof(MagMath::VertexData);
 
 	// リソースにデータを書き込む
 	vertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>( &vertexData_ ));
@@ -176,13 +174,13 @@ void Sprite::CreateIndexBuffer() {
 ///						マテリアルバッファの作成
 void Sprite::CreateMaterialBuffer() {
 	// マテリアルデータ用のバッファリソースを作成
-	materialBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(Material));
+	materialBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::Material));
 	//書き込むためのアドレス取得
 	materialBuffer_->Map(0, nullptr, reinterpret_cast<void**>( &materialData_ ));
 	//マテリアルデータ書き込み用変数(赤色を書き込み)
-	Material materialSprite = { {1.0f, 1.0f, 1.0f, 1.0f},false };
+	MagMath::Material materialSprite = { {1.0f, 1.0f, 1.0f, 1.0f},false };
 	//UVトランスフォーム用の単位行列の書き込み
-	materialSprite.uvTransform = Identity4x4();
+	materialSprite.uvTransform = MagMath::Identity4x4();
 	//マテリアルデータの書き込み
 	*materialData_ = materialSprite;
 }
@@ -191,13 +189,13 @@ void Sprite::CreateMaterialBuffer() {
 ///			トランスフォーメーションマトリックスバッファの作成
 void Sprite::CreateTransformationMatrixBuffer() {
 	//wvp用のリソースを作る
-	transfomationMatrixBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(TransformationMatrix));
+	transfomationMatrixBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::TransformationMatrix));
 	//書き込むためのアドレスを取得
 	transfomationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>( &transformationMatrixData_ ));
 	//書き込み用変数
-	TransformationMatrix transformationMatrix;
+	MagMath::TransformationMatrix transformationMatrix;
 	//単位行列の書き込み
-	transformationMatrix.WVP = Identity4x4();
+	transformationMatrix.WVP = MagMath::Identity4x4();
 	//トランスフォーメーションマトリックスの書き込み
 	*transformationMatrixData_ = transformationMatrix;
 }

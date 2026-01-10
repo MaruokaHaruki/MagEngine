@@ -24,7 +24,7 @@ void Particle::Initialize(ParticleSetup *particleSetup) {
 	// 書き込むためのアドレスを取得
 	vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData_));
 	// 頂点データをリソースにコピー
-	std::memcpy(vertexData_, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
+	std::memcpy(vertexData_, modelData_.vertices.data(), sizeof(MagMath::VertexData) * modelData_.vertices.size());
 }
 
 ///=============================================================================
@@ -34,21 +34,21 @@ void Particle::Update() {
 	// カメラの取得
 	Camera *camera = particleSetup_->GetDefaultCamera();
 	// カメラ行列の取得
-	Matrix4x4 cameraMatrix = MakeAffineMatrix({1.0f, 1.0f, 1.0f},
+	MagMath::Matrix4x4 cameraMatrix = MakeAffineMatrix({1.0f, 1.0f, 1.0f},
 											  camera->GetRotate(), camera->GetTranslate());
 	// ビュー行列の取得
-	Matrix4x4 viewMatrix = Inverse4x4(cameraMatrix);
+	MagMath::Matrix4x4 viewMatrix = Inverse4x4(cameraMatrix);
 	// プロジェクション行列の取得
-	Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(0.45f,
+	MagMath::Matrix4x4 projectionMatrix = MagMath::MakePerspectiveFovMatrix(0.45f,
 														  float(particleSetup_->GetDXManager()->GetWinApp().kWindowWidth_) / float(particleSetup_->GetDXManager()->GetWinApp().kWindowHeight_),
 														  0.1f, 100.0f);
 	// ビュープロジェクション行列の取得
-	Matrix4x4 viewProjectionMatrix = Multiply4x4(viewMatrix, projectionMatrix);
+	MagMath::Matrix4x4 viewProjectionMatrix = Multiply4x4(viewMatrix, projectionMatrix);
 
 	//========================================
 	// ビルボード行列の取得
-	Matrix4x4 backToFrontMatrix = MakeRotateYMatrix(std::numbers::pi_v<float>);
-	Matrix4x4 billboardMatrix{};
+	MagMath::Matrix4x4 backToFrontMatrix = MagMath::MakeRotateYMatrix(std::numbers::pi_v<float>);
+	MagMath::Matrix4x4 billboardMatrix{};
 	if (isUsedBillboard) {
 		billboardMatrix = Multiply4x4(backToFrontMatrix, cameraMatrix);
 		// 平行移動成分は無視
@@ -56,7 +56,7 @@ void Particle::Update() {
 		billboardMatrix.m[3][1] = 0.0f;
 		billboardMatrix.m[3][2] = 0.0f;
 	} else {
-		billboardMatrix = Identity4x4();
+		billboardMatrix = MagMath::Identity4x4();
 	}
 
 	// スケール調整用の倍率を設定
@@ -66,7 +66,7 @@ void Particle::Update() {
 	// パーティクルの更新
 	for (auto &group : particleGroups) {
 		// テクスチャサイズの取得
-		Vector2 textureSize = group.second.textureSize;
+		MagMath::Vector2 textureSize = group.second.textureSize;
 		// インスタンス数の初期化
 		for (auto it = group.second.particleList.begin(); it != group.second.particleList.end();) {
 			// パーティクルの参照
@@ -98,11 +98,11 @@ void Particle::Update() {
 			// 経過時間を更新
 			particle.currentTime += kDeltaTime;
 			// ワールド行列の計算a
-			Matrix4x4 worldMatrix = Multiply4x4(
+			MagMath::Matrix4x4 worldMatrix = Multiply4x4(
 				billboardMatrix,
 				MakeAffineMatrix(particle.transform.scale, particle.transform.rotate, particle.transform.translate));
 			// ビュー・プロジェクションを掛け合わせて最終行列を計算
-			Matrix4x4 worldviewProjectionMatrix = Multiply4x4(worldMatrix, viewProjectionMatrix);
+			MagMath::Matrix4x4 worldviewProjectionMatrix = Multiply4x4(worldMatrix, viewProjectionMatrix);
 			//---------------------------------------
 			// インスタンシングデータの設定
 			if (group.second.instanceCount < kNumMaxInstance) {
@@ -169,7 +169,7 @@ void Particle::Draw() {
 
 ///=============================================================================
 ///						エミッター
-void Particle::Emit(const std::string name, const Vector3 &position, uint32_t count) {
+void Particle::Emit(const std::string name, const MagMath::Vector3 &position, uint32_t count) {
 	if (particleGroups.find(name) == particleGroups.end()) {
 		// パーティクルグループが存在しない場合はエラーを出力して終了
 		assert("Specified particle group does not exist!");
@@ -237,7 +237,7 @@ void Particle::CreateParticleGroup(const std::string &name, const std::string &t
 
 	// テクスチャサイズを取得
 	const DirectX::TexMetadata &metadata = TextureManager::GetInstance()->GetMetadata(textureFilePath);
-	Vector2 textureSize = {static_cast<float>(metadata.width), static_cast<float>(metadata.height)};
+	MagMath::Vector2 textureSize = {static_cast<float>(metadata.width), static_cast<float>(metadata.height)};
 	// カスタムサイズが指定されているかどうか
 	// newGroup.textureSize = textureSize;
 
@@ -259,8 +259,8 @@ void Particle::CreateParticleGroup(const std::string &name, const std::string &t
 
 	newGroup.instancingResource->Map(0, nullptr, reinterpret_cast<void **>(&newGroup.instancingDataPtr));
 	for (uint32_t index = 0; index < kNumMaxInstance; ++index) {
-		newGroup.instancingDataPtr[index].WVP = Identity4x4();
-		newGroup.instancingDataPtr[index].World = Identity4x4();
+		newGroup.instancingDataPtr[index].WVP = MagMath::Identity4x4();
+		newGroup.instancingDataPtr[index].World = MagMath::Identity4x4();
 		// newGroup.instancingDataPtr[index].color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
@@ -292,7 +292,7 @@ void Particle::CreateVertexData() {
 
 	// 板ポリゴン（四角形）の頂点データ
 	{
-		Vector3 normal = {0.0f, 0.0f, 1.0f};
+		MagMath::Vector3 normal = {0.0f, 0.0f, 1.0f};
 		// 左上
 		modelData_.vertices.push_back({{-0.5f, 0.5f, 0.0f, 1.0f}, {0.0f, 0.0f}, normal});
 		// 右上
@@ -328,13 +328,13 @@ void Particle::CreateVertexData() {
 			float uCurrent = float(index) / float(kRingDivide);
 			float uNext = float(index + 1) / float(kRingDivide);
 
-			Vector4 outerCurrent = {cosCurrent * kOuterRadius, sinCurrent * kOuterRadius, 0.0f, 1.0f};
-			Vector4 outerNext = {cosNext * kOuterRadius, sinNext * kOuterRadius, 0.0f, 1.0f};
+			MagMath::Vector4 outerCurrent = {cosCurrent * kOuterRadius, sinCurrent * kOuterRadius, 0.0f, 1.0f};
+			MagMath::Vector4 outerNext = {cosNext * kOuterRadius, sinNext * kOuterRadius, 0.0f, 1.0f};
 
-			Vector4 innerCurrent = {cosCurrent * kInnerRadius, sinCurrent * kInnerRadius, 0.0f, 1.0f};
-			Vector4 innerNext = {cosNext * kInnerRadius, sinNext * kInnerRadius, 0.0f, 1.0f};
+			MagMath::Vector4 innerCurrent = {cosCurrent * kInnerRadius, sinCurrent * kInnerRadius, 0.0f, 1.0f};
+			MagMath::Vector4 innerNext = {cosNext * kInnerRadius, sinNext * kInnerRadius, 0.0f, 1.0f};
 
-			Vector3 normal = {0.0f, 0.0f, 1.0f};
+			MagMath::Vector3 normal = {0.0f, 0.0f, 1.0f};
 
 			modelData_.vertices.push_back({outerCurrent, {uCurrent, 0.0f}, normal});
 			modelData_.vertices.push_back({outerNext, {uNext, 0.0f}, normal});
@@ -355,9 +355,9 @@ void Particle::CreateVertexData() {
 		const float radianPerDivide = 2.0f * std::numbers::pi_v<float> / float(kCylinderDivide);
 
 		// 上面の中心
-		Vector4 topCenter = {0.0f, halfHeight, 0.0f, 1.0f};
+		MagMath::Vector4 topCenter = {0.0f, halfHeight, 0.0f, 1.0f};
 		// 底面の中心
-		Vector4 bottomCenter = {0.0f, -halfHeight, 0.0f, 1.0f};
+		MagMath::Vector4 bottomCenter = {0.0f, -halfHeight, 0.0f, 1.0f};
 
 		// 上面と底面の頂点
 		for (uint32_t i = 0; i < kCylinderDivide; ++i) {
@@ -370,41 +370,41 @@ void Particle::CreateVertexData() {
 			float sinNext = std::sin(nextRadian);
 
 			// 上面の円周上の点
-			Vector4 topP0 = {cosCurrent * radius, halfHeight, sinCurrent * radius, 1.0f};
-			Vector4 topP1 = {cosNext * radius, halfHeight, sinNext * radius, 1.0f};
+			MagMath::Vector4 topP0 = {cosCurrent * radius, halfHeight, sinCurrent * radius, 1.0f};
+			MagMath::Vector4 topP1 = {cosNext * radius, halfHeight, sinNext * radius, 1.0f};
 			// 底面の円周上の点
-			Vector4 bottomP0 = {cosCurrent * radius, -halfHeight, sinCurrent * radius, 1.0f};
-			Vector4 bottomP1 = {cosNext * radius, -halfHeight, sinNext * radius, 1.0f};
+			MagMath::Vector4 bottomP0 = {cosCurrent * radius, -halfHeight, sinCurrent * radius, 1.0f};
+			MagMath::Vector4 bottomP1 = {cosNext * radius, -halfHeight, sinNext * radius, 1.0f};
 
 			// UV座標 (仮。適切に設定する必要がある)
-			Vector2 uvTopCenter = {0.5f, 0.5f};											  // 上面中心
-			Vector2 uvTopP0 = {(cosCurrent + 1.0f) * 0.25f, (sinCurrent + 1.0f) * 0.25f}; // 上面周
-			Vector2 uvTopP1 = {(cosNext + 1.0f) * 0.25f, (sinNext + 1.0f) * 0.25f};
+			MagMath::Vector2 uvTopCenter = {0.5f, 0.5f};											  // 上面中心
+			MagMath::Vector2 uvTopP0 = {(cosCurrent + 1.0f) * 0.25f, (sinCurrent + 1.0f) * 0.25f}; // 上面周
+			MagMath::Vector2 uvTopP1 = {(cosNext + 1.0f) * 0.25f, (sinNext + 1.0f) * 0.25f};
 
-			Vector2 uvBottomCenter = {0.5f, 0.5f};													// 底面中心
-			Vector2 uvBottomP0 = {(cosCurrent + 1.0f) * 0.25f + 0.5f, (sinCurrent + 1.0f) * 0.25f}; // 底面周
-			Vector2 uvBottomP1 = {(cosNext + 1.0f) * 0.25f + 0.5f, (sinNext + 1.0f) * 0.25f};
+			MagMath::Vector2 uvBottomCenter = {0.5f, 0.5f};													// 底面中心
+			MagMath::Vector2 uvBottomP0 = {(cosCurrent + 1.0f) * 0.25f + 0.5f, (sinCurrent + 1.0f) * 0.25f}; // 底面周
+			MagMath::Vector2 uvBottomP1 = {(cosNext + 1.0f) * 0.25f + 0.5f, (sinNext + 1.0f) * 0.25f};
 
 			float uSide0 = static_cast<float>(i) / kCylinderDivide;
 			float uSide1 = static_cast<float>(i + 1) / kCylinderDivide;
 
 			// 上面 (Y+)
-			Vector3 normalTop = {0.0f, 1.0f, 0.0f};
+			MagMath::Vector3 normalTop = {0.0f, 1.0f, 0.0f};
 			modelData_.vertices.push_back({topCenter, uvTopCenter, normalTop});
 			modelData_.vertices.push_back({topP1, uvTopP1, normalTop});
 			modelData_.vertices.push_back({topP0, uvTopP0, normalTop});
 
 			// 底面 (Y-)
-			Vector3 normalBottom = {0.0f, -1.0f, 0.0f};
+			MagMath::Vector3 normalBottom = {0.0f, -1.0f, 0.0f};
 			modelData_.vertices.push_back({bottomCenter, uvBottomCenter, normalBottom});
 			modelData_.vertices.push_back({bottomP0, uvBottomP0, normalBottom});
 			modelData_.vertices.push_back({bottomP1, uvBottomP1, normalBottom});
 
 			// 側面
-			Vector3 sideNormalP0 = {cosCurrent, 0.0f, sinCurrent};
-			Vector3 sideNormalP1 = {cosNext, 0.0f, sinNext};
-			Normalize(sideNormalP0); // 正規化
-			Normalize(sideNormalP1); // 正規化
+			MagMath::Vector3 sideNormalP0 = {cosCurrent, 0.0f, sinCurrent};
+			MagMath::Vector3 sideNormalP1 = {cosNext, 0.0f, sinNext};
+			MagMath::Normalize(sideNormalP0); // 正規化
+			MagMath::Normalize(sideNormalP1); // 正規化
 
 			// 側面 三角形1 (topP0, bottomP0, topP1)
 			modelData_.vertices.push_back({topP0, {uSide0, 0.0f}, sideNormalP0});
@@ -423,35 +423,35 @@ void Particle::CreateVertexData() {
 void Particle::CreateVertexBufferView() {
 	//========================================
 	// 1.頂点バッファの作成
-	vertexBuffer_ = particleSetup_->GetDXManager()->CreateBufferResource(sizeof(VertexData) * modelData_.vertices.size());
+	vertexBuffer_ = particleSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::VertexData) * modelData_.vertices.size());
 
 	//========================================
 	// 2.頂点バッファビューの作成
 	// リソースの先頭のアドレスから使う
 	vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
 	// 使用するリソースのサイズは頂点のサイズ
-	vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size());
+	vertexBufferView_.SizeInBytes = UINT(sizeof(MagMath::VertexData) * modelData_.vertices.size());
 	// 1頂点あたりのサイズ
-	vertexBufferView_.StrideInBytes = sizeof(VertexData);
+	vertexBufferView_.StrideInBytes = sizeof(MagMath::VertexData);
 }
 
 ///=============================================================================
 ///						マテリアルデータの作成
 void Particle::CreateMaterialData() {
 	// マテリアル用のリソースを作成
-	materialBuffer_ = particleSetup_->GetDXManager()->CreateBufferResource(sizeof(Material));
+	materialBuffer_ = particleSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::Material));
 
 	// 書き込むためのアドレスを取得
 	materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&materialData_));
-	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 0.9f);
+	materialData_->color = MagMath::Vector4(1.0f, 1.0f, 1.0f, 0.9f);
 	// SpriteはLightingしないのfalseを設定する
 	materialData_->enableLighting = false;
-	materialData_->uvTransform = Identity4x4();
+	materialData_->uvTransform = MagMath::Identity4x4();
 }
 
 ///=============================================================================
 ///						新しいパーティクルを生成
-ParticleStr Particle::CreateNewParticle(std::mt19937 &randomEngine, const Vector3 &position) {
+ParticleStr Particle::CreateNewParticle(std::mt19937 &randomEngine, const MagMath::Vector3 &position) {
 	// 範囲の安全性チェック（min > maxの場合はスワップ）
 	auto safeRange = [](float &min, float &max) {
 		if (min > max) {
@@ -464,20 +464,20 @@ ParticleStr Particle::CreateNewParticle(std::mt19937 &randomEngine, const Vector
 	};
 
 	// 各範囲の安全性チェック
-	Vector3 safeTranslateMin = translateMin_;
-	Vector3 safeTranslateMax = translateMax_;
+	MagMath::Vector3 safeTranslateMin = translateMin_;
+	MagMath::Vector3 safeTranslateMax = translateMax_;
 	safeRange(safeTranslateMin.x, safeTranslateMax.x);
 	safeRange(safeTranslateMin.y, safeTranslateMax.y);
 	safeRange(safeTranslateMin.z, safeTranslateMax.z);
 
-	Vector3 safeVelocityMin = velocityMin_;
-	Vector3 safeVelocityMax = velocityMax_;
+	MagMath::Vector3 safeVelocityMin = velocityMin_;
+	MagMath::Vector3 safeVelocityMax = velocityMax_;
 	safeRange(safeVelocityMin.x, safeVelocityMax.x);
 	safeRange(safeVelocityMin.y, safeVelocityMax.y);
 	safeRange(safeVelocityMin.z, safeVelocityMax.z);
 
-	Vector4 safeColorMin = colorMin_;
-	Vector4 safeColorMax = colorMax_;
+	MagMath::Vector4 safeColorMin = colorMin_;
+	MagMath::Vector4 safeColorMax = colorMax_;
 	safeRange(safeColorMin.x, safeColorMax.x);
 	safeRange(safeColorMin.y, safeColorMax.y);
 	safeRange(safeColorMin.z, safeColorMax.z);
@@ -487,26 +487,26 @@ ParticleStr Particle::CreateNewParticle(std::mt19937 &randomEngine, const Vector
 	float safeLifeMax = lifetimeRange_.max;
 	safeRange(safeLifeMin, safeLifeMax);
 
-	Vector3 safeInitialScaleMin = initialScaleMin_;
-	Vector3 safeInitialScaleMax = initialScaleMax_;
+	MagMath::Vector3 safeInitialScaleMin = initialScaleMin_;
+	MagMath::Vector3 safeInitialScaleMax = initialScaleMax_;
 	safeRange(safeInitialScaleMin.x, safeInitialScaleMax.x);
 	safeRange(safeInitialScaleMin.y, safeInitialScaleMax.y);
 	safeRange(safeInitialScaleMin.z, safeInitialScaleMax.z);
 
-	Vector3 safeEndScaleMin = endScaleMin_;
-	Vector3 safeEndScaleMax = endScaleMax_;
+	MagMath::Vector3 safeEndScaleMin = endScaleMin_;
+	MagMath::Vector3 safeEndScaleMax = endScaleMax_;
 	safeRange(safeEndScaleMin.x, safeEndScaleMax.x);
 	safeRange(safeEndScaleMin.y, safeEndScaleMax.y);
 	safeRange(safeEndScaleMin.z, safeEndScaleMax.z);
 
-	Vector3 safeInitialRotationMin = initialRotationMin_;
-	Vector3 safeInitialRotationMax = initialRotationMax_;
+	MagMath::Vector3 safeInitialRotationMin = initialRotationMin_;
+	MagMath::Vector3 safeInitialRotationMax = initialRotationMax_;
 	safeRange(safeInitialRotationMin.x, safeInitialRotationMax.x);
 	safeRange(safeInitialRotationMin.y, safeInitialRotationMax.y);
 	safeRange(safeInitialRotationMin.z, safeInitialRotationMax.z);
 
-	Vector3 safeEndRotationMin = endRotationMin_;
-	Vector3 safeEndRotationMax = endRotationMax_;
+	MagMath::Vector3 safeEndRotationMin = endRotationMin_;
+	MagMath::Vector3 safeEndRotationMax = endRotationMax_;
 	safeRange(safeEndRotationMin.x, safeEndRotationMax.x);
 	safeRange(safeEndRotationMin.y, safeEndRotationMax.y);
 	safeRange(safeEndRotationMin.z, safeEndRotationMax.z);

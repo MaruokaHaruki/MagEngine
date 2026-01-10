@@ -5,7 +5,7 @@
 #pragma comment(lib, "xinput.lib")
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
-#include "Vector2.h"
+#include "MagMath.h"
 #include "memory"
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
@@ -40,13 +40,13 @@ public:
 	* \brief  GetMouseMove マウスの移動量を取得
 	* \return マウスの移動量
 	*/
-	Vector2 GetMouseMove() const;
+	MagMath::Vector2 GetMouseMove() const;
 
 	/**----------------------------------------------------------------------------
 	* \brief  GetMousePositionFromCenter ウィンドウの中心からのマウスの位置を取得
 	* \return ウィンドウの中心からのマウスの位置
 	*/
-	Vector2 GetMousePosFromWindowCenter() const;
+	MagMath::Vector2 GetMousePosFromWindowCenter() const;
 
 	/**----------------------------------------------------------------------------
 	* \brief  GetMouseWheel マウスホイールの移動量を取得

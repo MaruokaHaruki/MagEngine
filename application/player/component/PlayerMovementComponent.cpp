@@ -3,18 +3,6 @@
 #include "Transform.h"
 #include <cmath>
 
-namespace {
-	const float PI = 3.1415926535f;
-
-	inline float Lerp(float a, float b, float t) {
-		return a + t * (b - a);
-	}
-
-	inline float DegreesToRadians(float degrees) {
-		return degrees * (PI / 180.0f);
-	}
-} // namespace
-
 //=============================================================================
 // 初期化
 void PlayerMovementComponent::Initialize() {
@@ -130,7 +118,7 @@ void PlayerMovementComponent::StartBarrelRoll(bool isRight) {
 
 //=============================================================================
 // バレルロール更新
-void PlayerMovementComponent::UpdateBarrelRoll(Transform *transform, float deltaTime) {
+void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, float deltaTime) {
 	if (!transform) {
 		return;
 	}
@@ -203,9 +191,9 @@ void PlayerMovementComponent::UpdateVelocity() {
 // 目標回転の更新
 void PlayerMovementComponent::UpdateTargetRotation(float inputX, float inputY) {
 	Vector3 desiredRotationEuler = {
-		DegreesToRadians(-maxPitchAngle_ * inputY),
+		MagMath::DegreesToRadians(-maxPitchAngle_ * inputY),
 		0.0f,
-		DegreesToRadians(-maxRollAngle_ * inputX)};
+		MagMath::DegreesToRadians(-maxRollAngle_ * inputX)};
 
 	targetRotationEuler_.x = Lerp(targetRotationEuler_.x, desiredRotationEuler.x, rotationSmoothing_);
 	targetRotationEuler_.y = Lerp(targetRotationEuler_.y, desiredRotationEuler.y, rotationSmoothing_);

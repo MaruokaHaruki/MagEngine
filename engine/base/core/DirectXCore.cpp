@@ -187,7 +187,7 @@ void DirectXCore::SelectAdapter() {
 		// ソフトウェアアダプタでなければ採用
 		if (!(adapterDesc_.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
 			// 採用したアダプタの情報をログに出力。Wstringの方に注意
-			Log(ConvertString(std::format(L"Use Adapter;{}", adapterDesc_.Description)), LogLevel::Info);
+			Logger::Log(WstringUtility::ConvertString(std::format(L"Use Adapter;{}", adapterDesc_.Description)), Logger::LogLevel::Info);
 			break;
 		}
 		useAdapter_ = nullptr; // ソフトウェアアダプタの場合は見なかったことにできる
@@ -212,7 +212,7 @@ void DirectXCore::CreateD3D12Device() {
 		// 指定した機能レベルでデバイスが生成できたかを確認
 		if (SUCCEEDED(hr_)) {
 			// 生成できたのでログ出力を行ってループを抜ける
-			Log(std::format("FeatureLevel : {}", feartureLevelStrings[i]), LogLevel::Info);
+			Logger::Log(std::format("FeatureLevel : {}", feartureLevelStrings[i]), Logger::LogLevel::Info);
 			break;
 		}
 	}
@@ -220,7 +220,7 @@ void DirectXCore::CreateD3D12Device() {
 	// デバイスの生成がうまくいかなかったので起動できない
 	assert(device_ != nullptr);
 	// 初期化完了のログの出力
-	Log("Complete create D3D12Device!!!", LogLevel::Success);
+	Logger::Log("Complete create D3D12Device!!!", Logger::LogLevel::Success);
 }
 
 ///=============================================================================
@@ -570,7 +570,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateDepthStencilTextureRes
 #endif // _DEBUG
 	if (FAILED(hr)) {
 		// 深度ステンシルテクスチャの生成がうまくいかなかったので起動できない
-		Log("Failed to create depth stencil texture resource.", LogLevel::Error);
+		Logger::Log("Failed to create depth stencil texture resource.", Logger::LogLevel::Error);
 		return nullptr;
 	}
 	//========================================
@@ -594,11 +594,11 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCore::CreateDescriptorHeap(D
 	//
 	if (FAILED(hr)) {
 		// ディスクリプタヒープの生成がうまくいかなかったので起動できない
-		Log("Failed to Create Descriptor Heap.");
+		Logger::Log("Failed to Create Descriptor Heap.");
 		return nullptr;
 	}
 	// 成功したログを出力
-	Log("Descriptor heap created successfully.");
+	Logger::Log("Descriptor heap created successfully.");
 	return descriptorHeap;
 }
 
@@ -628,7 +628,7 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 	//=======================================
 	// hlseファイルを読む
 	// これからシェーダーをコンパイルする旨をログに出す
-	Log(ConvertString(std::format(L"Begin Compiler,path:{},profile:{}", filePath, profile)), LogLevel::Info);
+	Logger::Log(WstringUtility::ConvertString(std::format(L"Begin Compiler,path:{},profile:{}", filePath, profile)), Logger::LogLevel::Info);
 	// hlseファイルを読む
 	IDxcBlobEncoding *shaderSource = nullptr;
 	HRESULT hr = dxcUtils_->LoadFile(filePath.c_str(), nullptr, &shaderSource);
@@ -670,7 +670,7 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 	}
 	// エラーがある場合はエラーを出力して終了
 	if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-		Log(shaderError->GetStringPointer(), LogLevel::Error);
+		Log(shaderError->GetStringPointer(), Logger::LogLevel::Error);
 		if (shaderResult->HasOutput(DXC_OUT_ERRORS)) {
 			shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
 		}
@@ -687,7 +687,7 @@ IDxcBlob *DirectXCore::CompileShader(const std::wstring &filePath, const wchar_t
 	IDxcBlob *shaderBlob = nullptr;
 	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
 	// 成功したログを出す
-	Log(ConvertString(std::format(L"Compile Succeeded, path:{},profile:{}", filePath, profile)), LogLevel::Success);
+	Logger::Log(WstringUtility::ConvertString(std::format(L"Compile Succeeded, path:{},profile:{}", filePath, profile)), Logger::LogLevel::Success);
 	// もう使わないリソースを開放
 	shaderSource->Release();
 	shaderResult->Release();
@@ -766,7 +766,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateTextureResource(const 
 #endif // _DEBUG
 	if (FAILED(hr)) {
 		// 深度ステンシルテクスチャの生成がうまくいかなかったので起動できない
-		Log("Failed to create depth stencil texture resource.", LogLevel::Error);
+		Log("Failed to create depth stencil texture resource.", Logger::LogLevel::Error);
 		return nullptr;
 	}
 	//========================================
@@ -814,7 +814,7 @@ DirectX::ScratchImage DirectXCore::LoadTexture(const std::string &filePath) {
 	//=======================================
 	// テクスチャファイルを読んでプログラムを扱えるようにする
 	DirectX::ScratchImage image{};
-	std::wstring filePathW = ConvertString(filePath);
+	std::wstring filePathW = WstringUtility::ConvertString(filePath);
 	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
 	assert(SUCCEEDED(hr));
 	//=======================================
@@ -875,7 +875,7 @@ void DirectXCore::RenderTexturePostDraw() {
 
 ///--------------------------------------------------------------
 ///                        レンダーテクスチャの生成
-Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4 &clearColor, D3D12_RESOURCE_STATES initialState) {
+Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(uint32_t width, uint32_t height, DXGI_FORMAT format, const MagMath::Vector4 &clearColor, D3D12_RESOURCE_STATES initialState) {
 	//========================================
 	// 1.metadataを元にResouceの設定
 	D3D12_RESOURCE_DESC resouceDesc{};
@@ -922,7 +922,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(
 #endif // _DEBUG
 	if (FAILED(hr)) {
 		// 深度ステンシルテクスチャの生成がうまくいかなかったので起動できない
-		Log("Failed to create depth stencil texture resource.", LogLevel::Error);
+		Log("Failed to create depth stencil texture resource.", Logger::LogLevel::Error);
 		return nullptr;
 	}
 
@@ -935,7 +935,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCore::CreateRenderTextureResource(
 void DirectXCore::CreateRenderTextureRTV() {
 	//========================================
 	// わかりやすくするために、赤色でクリアする
-	const Vector4 kRenderTargetClearValue{0.298f, 0.427f, 0.698f, 1.0f};
+	const MagMath::Vector4 kRenderTargetClearValue{0.298f, 0.427f, 0.698f, 1.0f};
 	//========================================
 	// 1つ目の作成
 	renderTextureResources_[0] = CreateRenderTextureResource(

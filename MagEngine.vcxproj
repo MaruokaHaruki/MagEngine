@@ -115,7 +115,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\BaseObject.cpp" />
     <ClCompile Include="application\enemy\Enemy.cpp" />
     <ClCompile Include="application\enemy\EnemyManager.cpp" />
-    <ClCompile Include="application\utils\Ball.cpp" />
     <ClCompile Include="EnemyBase.cpp" />
     <ClCompile Include="EnemyBullet.cpp" />
     <ClCompile Include="EnemyGunner.cpp" />
@@ -189,7 +188,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   <ItemGroup>
     <ClInclude Include="application\enemy\Enemy.h" />
     <ClInclude Include="application\enemy\EnemyManager.h" />
-    <ClInclude Include="application\utils\Ball.h" />
     <ClInclude Include="EnemyBase.h" />
     <ClInclude Include="EnemyBullet.h" />
     <ClInclude Include="EnemyGunner.h" />

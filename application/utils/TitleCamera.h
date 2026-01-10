@@ -1,5 +1,6 @@
 #pragma once
-#include "Vector3.h"
+#include "MagMath.h"
+using namespace MagMath;
 #include <string>
 
 //========================================

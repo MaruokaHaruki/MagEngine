@@ -6,6 +6,8 @@
  * \date   June 2025
  *********************************************************************/
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "EnemyBase.h"
 
 // 定数定義（Enemy固有の行動パラメータ）

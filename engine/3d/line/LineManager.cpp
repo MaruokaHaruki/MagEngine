@@ -136,7 +136,7 @@ void LineManager::ClearLines() {
 
 ///=============================================================================
 ///						ラインの追加
-void LineManager::DrawLine(const Vector3 &start, const Vector3 &end, const Vector4 &color, float thickness) {
+void LineManager::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness) {
 	if (!isDrawLine_) {
 		return;
 	}
@@ -152,7 +152,7 @@ void LineManager::DrawLine(const Vector3 &start, const Vector3 &end, const Vecto
 
 ///=============================================================================
 ///						グリッドの描画
-void LineManager::DrawGrid(float gridSize, int divisions, const Vector4 &color, float thickness) {
+void LineManager::DrawGrid(float gridSize, int divisions, const MagMath::Vector4 &color, float thickness) {
 	if (!isDrawGrid_ || divisions <= 0) {
 		return;
 	}
@@ -175,14 +175,14 @@ void LineManager::DrawGrid(float gridSize, int divisions, const Vector4 &color, 
 
 ///=============================================================================
 ///						円の描画
-void LineManager::DrawCircle(const Vector3 &center, float radius, const Vector4 &color,
-							 float thickness, const Vector3 &normal, int divisions) {
+void LineManager::DrawCircle(const MagMath::Vector3 &center, float radius, const MagMath::Vector4 &color,
+							 float thickness, const MagMath::Vector3 &normal, int divisions) {
 	if (!isDrawLine_ || divisions <= 0) {
 		return;
 	}
 
 	// 法線ベクトルから垂直な2つのベクトルを計算
-	Vector3 perpVector1, perpVector2;
+	MagMath::Vector3 perpVector1, perpVector2;
 	CalculatePerpendicularVectors(normal, perpVector1, perpVector2);
 
 	const float angleStep = 2.0f * static_cast<float>(M_PI) / divisions;
@@ -192,12 +192,12 @@ void LineManager::DrawCircle(const Vector3 &center, float radius, const Vector4 
 		float angle1 = angleStep * i;
 		float angle2 = angleStep * (i + 1);
 
-		Vector3 point1 = {
+		MagMath::Vector3 point1 = {
 			center.x + (perpVector1.x * cosf(angle1) + perpVector2.x * sinf(angle1)) * radius,
 			center.y + (perpVector1.y * cosf(angle1) + perpVector2.y * sinf(angle1)) * radius,
 			center.z + (perpVector1.z * cosf(angle1) + perpVector2.z * sinf(angle1)) * radius};
 
-		Vector3 point2 = {
+		MagMath::Vector3 point2 = {
 			center.x + (perpVector1.x * cosf(angle2) + perpVector2.x * sinf(angle2)) * radius,
 			center.y + (perpVector1.y * cosf(angle2) + perpVector2.y * sinf(angle2)) * radius,
 			center.z + (perpVector1.z * cosf(angle2) + perpVector2.z * sinf(angle2)) * radius};
@@ -209,7 +209,7 @@ void LineManager::DrawCircle(const Vector3 &center, float radius, const Vector4 
 
 ///=============================================================================
 ///						球体の描画
-void LineManager::DrawSphere(const Vector3 &center, float radius, const Vector4 &color,
+void LineManager::DrawSphere(const MagMath::Vector3 &center, float radius, const MagMath::Vector4 &color,
 							 int divisions, float thickness) {
 	if (!isDrawSphere_ || divisions <= 0) {
 		return;
@@ -231,13 +231,13 @@ void LineManager::DrawSphere(const Vector3 &center, float radius, const Vector4 
 			float nextPhi = (lon + 1) * lonStep;
 
 			// 現在の点
-			Vector3 point1 = {
+			MagMath::Vector3 point1 = {
 				center.x + radius * sinTheta * cosf(phi),
 				center.y + radius * cosTheta,
 				center.z + radius * sinTheta * sinf(phi)};
 
 			// 次の経度の点
-			Vector3 point2 = {
+			MagMath::Vector3 point2 = {
 				center.x + radius * sinTheta * cosf(nextPhi),
 				center.y + radius * cosTheta,
 				center.z + radius * sinTheta * sinf(nextPhi)};
@@ -248,7 +248,7 @@ void LineManager::DrawSphere(const Vector3 &center, float radius, const Vector4 
 				float sinNextTheta = sinf(nextTheta);
 				float cosNextTheta = cosf(nextTheta);
 
-				Vector3 point3 = {
+				MagMath::Vector3 point3 = {
 					center.x + radius * sinNextTheta * cosf(phi),
 					center.y + radius * cosNextTheta,
 					center.z + radius * sinNextTheta * sinf(phi)};
@@ -265,7 +265,7 @@ void LineManager::DrawSphere(const Vector3 &center, float radius, const Vector4 
 
 ///=============================================================================
 ///						3Dテキスト描画（プレースホルダー）
-void LineManager::DrawText3D(const Vector3 &position, const std::string &text, const Vector4 &color) {
+void LineManager::DrawText3D(const MagMath::Vector3 &position, const std::string &text, const MagMath::Vector4 &color) {
 	// 実装は別途DirectXのフォント機能やベクターフォント描画などで実装する必要があります
 	// ここではダミーの実装として、テキストの位置に小さなマーカーを描画します
 	DrawLine(position, {position.x + 0.1f, position.y + 0.1f, position.z}, color);
@@ -274,14 +274,14 @@ void LineManager::DrawText3D(const Vector3 &position, const std::string &text, c
 
 ///=============================================================================
 ///						矢じりの描画
-void LineManager::DrawArrowhead(const Vector3 &tip, const Vector3 &direction, float size,
-								const Vector4 &color, float thickness) {
+void LineManager::DrawArrowhead(const MagMath::Vector3 &tip, const MagMath::Vector3 &direction, float size,
+								const MagMath::Vector4 &color, float thickness) {
 	// 方向ベクトルに垂直な2つのベクトルを計算
-	Vector3 perpVector1, perpVector2;
+	MagMath::Vector3 perpVector1, perpVector2;
 	CalculatePerpendicularVectors(direction, perpVector1, perpVector2);
 
 	// 矢じりの基部
-	Vector3 arrowBase = {
+	MagMath::Vector3 arrowBase = {
 		tip.x - direction.x * size * 2.0f,
 		tip.y - direction.y * size * 2.0f,
 		tip.z - direction.z * size * 2.0f};
@@ -298,13 +298,13 @@ void LineManager::DrawArrowhead(const Vector3 &tip, const Vector3 &direction, fl
 
 ///=============================================================================
 ///						矢印の描画（線+矢じり）
-void LineManager::DrawArrow(const Vector3 &start, const Vector3 &end, const Vector4 &color,
+void LineManager::DrawArrow(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color,
 							float headSize, float thickness) {
 	// 線分を描画
 	DrawLine(start, end, color, thickness);
 
 	// 方向ベクトル計算
-	Vector3 direction = {
+	MagMath::Vector3 direction = {
 		end.x - start.x,
 		end.y - start.y,
 		end.z - start.z};
@@ -329,7 +329,7 @@ void LineManager::DrawArrow(const Vector3 &start, const Vector3 &end, const Vect
 
 ///=============================================================================
 ///						座標軸の描画
-void LineManager::DrawCoordinateAxes(const Vector3 &origin, float size, float thickness) {
+void LineManager::DrawCoordinateAxes(const MagMath::Vector3 &origin, float size, float thickness) {
 	// X軸（赤）
 	DrawArrow(origin, {origin.x + size, origin.y, origin.z}, {1.0f, 0.0f, 0.0f, 1.0f}, 0.1f, thickness);
 
@@ -342,19 +342,19 @@ void LineManager::DrawCoordinateAxes(const Vector3 &origin, float size, float th
 
 ///=============================================================================
 ///						立方体の描画
-void LineManager::DrawCube(const Vector3 &center, float size, const Vector4 &color, float thickness) {
+void LineManager::DrawCube(const MagMath::Vector3 &center, float size, const MagMath::Vector4 &color, float thickness) {
 	// halfSize
 	float halfSize = size * 0.5f;
 
 	// 8つの頂点を計算
-	Vector3 p1 = {center.x - halfSize, center.y - halfSize, center.z - halfSize};
-	Vector3 p2 = {center.x + halfSize, center.y - halfSize, center.z - halfSize};
-	Vector3 p3 = {center.x + halfSize, center.y - halfSize, center.z + halfSize};
-	Vector3 p4 = {center.x - halfSize, center.y - halfSize, center.z + halfSize};
-	Vector3 p5 = {center.x - halfSize, center.y + halfSize, center.z - halfSize};
-	Vector3 p6 = {center.x + halfSize, center.y + halfSize, center.z - halfSize};
-	Vector3 p7 = {center.x + halfSize, center.y + halfSize, center.z + halfSize};
-	Vector3 p8 = {center.x - halfSize, center.y + halfSize, center.z + halfSize};
+	MagMath::Vector3 p1 = {center.x - halfSize, center.y - halfSize, center.z - halfSize};
+	MagMath::Vector3 p2 = {center.x + halfSize, center.y - halfSize, center.z - halfSize};
+	MagMath::Vector3 p3 = {center.x + halfSize, center.y - halfSize, center.z + halfSize};
+	MagMath::Vector3 p4 = {center.x - halfSize, center.y - halfSize, center.z + halfSize};
+	MagMath::Vector3 p5 = {center.x - halfSize, center.y + halfSize, center.z - halfSize};
+	MagMath::Vector3 p6 = {center.x + halfSize, center.y + halfSize, center.z - halfSize};
+	MagMath::Vector3 p7 = {center.x + halfSize, center.y + halfSize, center.z + halfSize};
+	MagMath::Vector3 p8 = {center.x - halfSize, center.y + halfSize, center.z + halfSize};
 
 	// 下面
 	DrawLine(p1, p2, color, thickness);
@@ -377,21 +377,21 @@ void LineManager::DrawCube(const Vector3 &center, float size, const Vector4 &col
 
 ///=============================================================================
 ///						直方体の描画
-void LineManager::DrawBox(const Vector3 &center, const Vector3 &size, const Vector4 &color, float thickness) {
+void LineManager::DrawBox(const MagMath::Vector3 &center, const MagMath::Vector3 &size, const MagMath::Vector4 &color, float thickness) {
 	// halfSize
 	float halfSizeX = size.x * 0.5f;
 	float halfSizeY = size.y * 0.5f;
 	float halfSizeZ = size.z * 0.5f;
 
 	// 8つの頂点を計算
-	Vector3 p1 = {center.x - halfSizeX, center.y - halfSizeY, center.z - halfSizeZ};
-	Vector3 p2 = {center.x + halfSizeX, center.y - halfSizeY, center.z - halfSizeZ};
-	Vector3 p3 = {center.x + halfSizeX, center.y - halfSizeY, center.z + halfSizeZ};
-	Vector3 p4 = {center.x - halfSizeX, center.y - halfSizeY, center.z + halfSizeZ};
-	Vector3 p5 = {center.x - halfSizeX, center.y + halfSizeY, center.z - halfSizeZ};
-	Vector3 p6 = {center.x + halfSizeX, center.y + halfSizeY, center.z - halfSizeZ};
-	Vector3 p7 = {center.x + halfSizeX, center.y + halfSizeY, center.z + halfSizeZ};
-	Vector3 p8 = {center.x - halfSizeX, center.y + halfSizeY, center.z + halfSizeZ};
+	MagMath::Vector3 p1 = {center.x - halfSizeX, center.y - halfSizeY, center.z - halfSizeZ};
+	MagMath::Vector3 p2 = {center.x + halfSizeX, center.y - halfSizeY, center.z - halfSizeZ};
+	MagMath::Vector3 p3 = {center.x + halfSizeX, center.y - halfSizeY, center.z + halfSizeZ};
+	MagMath::Vector3 p4 = {center.x - halfSizeX, center.y - halfSizeY, center.z + halfSizeZ};
+	MagMath::Vector3 p5 = {center.x - halfSizeX, center.y + halfSizeY, center.z - halfSizeZ};
+	MagMath::Vector3 p6 = {center.x + halfSizeX, center.y + halfSizeY, center.z - halfSizeZ};
+	MagMath::Vector3 p7 = {center.x + halfSizeX, center.y + halfSizeY, center.z + halfSizeZ};
+	MagMath::Vector3 p8 = {center.x - halfSizeX, center.y + halfSizeY, center.z + halfSizeZ};
 
 	// 下面
 	DrawLine(p1, p2, color, thickness);
@@ -414,10 +414,10 @@ void LineManager::DrawBox(const Vector3 &center, const Vector3 &size, const Vect
 
 ///=============================================================================
 ///						円錐の描画
-void LineManager::DrawCone(const Vector3 &apex, const Vector3 &direction, float height, float radius,
-						   const Vector4 &color, int divisions, float thickness) {
+void LineManager::DrawCone(const MagMath::Vector3 &apex, const MagMath::Vector3 &direction, float height, float radius,
+						   const MagMath::Vector4 &color, int divisions, float thickness) {
 	// 方向ベクトルを正規化
-	Vector3 normalizedDir;
+	MagMath::Vector3 normalizedDir;
 	float dirLength = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
 
 	if (dirLength > 0.0001f) {
@@ -430,13 +430,13 @@ void LineManager::DrawCone(const Vector3 &apex, const Vector3 &direction, float 
 	}
 
 	// 底面の中心を計算
-	Vector3 baseCenter = {
+	MagMath::Vector3 baseCenter = {
 		apex.x + normalizedDir.x * height,
 		apex.y + normalizedDir.y * height,
 		apex.z + normalizedDir.z * height};
 
 	// 方向ベクトルに垂直な2つのベクトルを計算
-	Vector3 perpVector1, perpVector2;
+	MagMath::Vector3 perpVector1, perpVector2;
 	CalculatePerpendicularVectors(normalizedDir, perpVector1, perpVector2);
 
 	// 底面の円を描画
@@ -448,7 +448,7 @@ void LineManager::DrawCone(const Vector3 &apex, const Vector3 &direction, float 
 	for (int i = 0; i < divisions; ++i) {
 		float angle = angleStep * i;
 
-		Vector3 point = {
+		MagMath::Vector3 point = {
 			baseCenter.x + (perpVector1.x * cosf(angle) + perpVector2.x * sinf(angle)) * radius,
 			baseCenter.y + (perpVector1.y * cosf(angle) + perpVector2.y * sinf(angle)) * radius,
 			baseCenter.z + (perpVector1.z * cosf(angle) + perpVector2.z * sinf(angle)) * radius};
@@ -459,10 +459,10 @@ void LineManager::DrawCone(const Vector3 &apex, const Vector3 &direction, float 
 
 ///=============================================================================
 ///						円柱の描画
-void LineManager::DrawCylinder(const Vector3 &center, const Vector3 &direction, float height, float radius,
-							   const Vector4 &color, int divisions, float thickness) {
+void LineManager::DrawCylinder(const MagMath::Vector3 &center, const MagMath::Vector3 &direction, float height, float radius,
+							   const MagMath::Vector4 &color, int divisions, float thickness) {
 	// 方向ベクトルを正規化
-	Vector3 normalizedDir;
+	MagMath::Vector3 normalizedDir;
 	float dirLength = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
 
 	if (dirLength > 0.0001f) {
@@ -476,12 +476,12 @@ void LineManager::DrawCylinder(const Vector3 &center, const Vector3 &direction, 
 
 	// 上面と下面の中心を計算
 	float halfHeight = height * 0.5f;
-	Vector3 topCenter = {
+	MagMath::Vector3 topCenter = {
 		center.x + normalizedDir.x * halfHeight,
 		center.y + normalizedDir.y * halfHeight,
 		center.z + normalizedDir.z * halfHeight};
 
-	Vector3 bottomCenter = {
+	MagMath::Vector3 bottomCenter = {
 		center.x - normalizedDir.x * halfHeight,
 		center.y - normalizedDir.y * halfHeight,
 		center.z - normalizedDir.z * halfHeight};
@@ -492,18 +492,18 @@ void LineManager::DrawCylinder(const Vector3 &center, const Vector3 &direction, 
 
 	// 上面と下面を結ぶ線を描画
 	const float angleStep = 2.0f * static_cast<float>(M_PI) / divisions;
-	Vector3 perpVector1, perpVector2;
+	MagMath::Vector3 perpVector1, perpVector2;
 	CalculatePerpendicularVectors(normalizedDir, perpVector1, perpVector2);
 
 	for (int i = 0; i < divisions; ++i) {
 		float angle = angleStep * i;
 
-		Vector3 topPoint = {
+		MagMath::Vector3 topPoint = {
 			topCenter.x + (perpVector1.x * cosf(angle) + perpVector2.x * sinf(angle)) * radius,
 			topCenter.y + (perpVector1.y * cosf(angle) + perpVector2.y * sinf(angle)) * radius,
 			topCenter.z + (perpVector1.z * cosf(angle) + perpVector2.z * sinf(angle)) * radius};
 
-		Vector3 bottomPoint = {
+		MagMath::Vector3 bottomPoint = {
 			bottomCenter.x + (perpVector1.x * cosf(angle) + perpVector2.x * sinf(angle)) * radius,
 			bottomCenter.y + (perpVector1.y * cosf(angle) + perpVector2.y * sinf(angle)) * radius,
 			bottomCenter.z + (perpVector1.z * cosf(angle) + perpVector2.z * sinf(angle)) * radius};
@@ -514,18 +514,18 @@ void LineManager::DrawCylinder(const Vector3 &center, const Vector3 &direction, 
 
 ///=============================================================================
 ///						太陽シンボルの描画
-void LineManager::DrawSunSymbol(const Vector3 &center, float size, const Vector4 &color, float thickness) {
+void LineManager::DrawSunSymbol(const MagMath::Vector3 &center, float size, const MagMath::Vector4 &color, float thickness) {
 	// 中心の円
 	DrawCircle(center, size * 0.4f, {1.0f, 1.0f, 0.5f, 1.0f}, thickness);
 
 	// 放射状の光線
 	for (int i = 0; i < 8; i++) {
 		float angle = i * static_cast<float>(M_PI) / 4.0f;
-		Vector3 inner = {
+		MagMath::Vector3 inner = {
 			center.x + cosf(angle) * size * 0.5f,
 			center.y + sinf(angle) * size * 0.5f,
 			center.z};
-		Vector3 outer = {
+		MagMath::Vector3 outer = {
 			center.x + cosf(angle) * size,
 			center.y + sinf(angle) * size,
 			center.z};
@@ -535,7 +535,7 @@ void LineManager::DrawSunSymbol(const Vector3 &center, float size, const Vector4
 
 ///=============================================================================
 ///						光線パターンの描画
-void LineManager::DrawLightRays(const Vector3 &center, float maxLength, const Vector4 &color,
+void LineManager::DrawLightRays(const MagMath::Vector3 &center, float maxLength, const MagMath::Vector4 &color,
 								int rayCount, float decay, float thickness) {
 	// 球面上にランダムな方向の光線を描画
 	for (int i = 0; i < rayCount; i++) {
@@ -543,7 +543,7 @@ void LineManager::DrawLightRays(const Vector3 &center, float maxLength, const Ve
 		float phi = static_cast<float>(M_PI * 2.0f) * (float)i / rayCount;
 		float theta = static_cast<float>(M_PI) * (float)i / rayCount;
 
-		Vector3 direction = {
+		MagMath::Vector3 direction = {
 			sinf(theta) * cosf(phi),
 			sinf(theta) * sinf(phi),
 			cosf(theta)};
@@ -561,17 +561,17 @@ void LineManager::DrawLightRays(const Vector3 &center, float maxLength, const Ve
 			// 距離による減衰効果の反映（減衰係数に応じた透明度）
 			float alpha1 = 1.0f / (1.0f + powf(t1 * 5.0f, decay));
 
-			Vector3 point1 = {
+			MagMath::Vector3 point1 = {
 				center.x + direction.x * len1,
 				center.y + direction.y * len1,
 				center.z + direction.z * len1};
 
-			Vector3 point2 = {
+			MagMath::Vector3 point2 = {
 				center.x + direction.x * len2,
 				center.y + direction.y * len2,
 				center.z + direction.z * len2};
 
-			Vector4 segmentColor = {
+			MagMath::Vector4 segmentColor = {
 				color.x,
 				color.y,
 				color.z,
@@ -584,9 +584,9 @@ void LineManager::DrawLightRays(const Vector3 &center, float maxLength, const Ve
 
 ///=============================================================================
 ///						垂直ベクトルの計算
-void LineManager::CalculatePerpendicularVectors(const Vector3 &direction, Vector3 &perpVector1, Vector3 &perpVector2) {
+void LineManager::CalculatePerpendicularVectors(const MagMath::Vector3 &direction, MagMath::Vector3 &perpVector1, MagMath::Vector3 &perpVector2) {
 	// 正規化された方向ベクトルが必要
-	Vector3 normalizedDir = direction;
+	MagMath::Vector3 normalizedDir = direction;
 	float len = sqrtf(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
 
 	if (len > 0.0001f) {

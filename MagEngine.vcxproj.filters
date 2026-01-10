@@ -152,9 +152,6 @@
     <ClCompile Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
-    <ClCompile Include="application\utils\Ball.cpp">
-      <Filter>application</Filter>
-    </ClCompile>
     <ClCompile Include="application\enemy\Enemy.cpp">
       <Filter>application</Filter>
     </ClCompile>
@@ -404,9 +401,6 @@
     <ClInclude Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
-    <ClInclude Include="application\utils\Ball.h">
-      <Filter>application</Filter>
-    </ClInclude>
     <ClInclude Include="application\enemy\Enemy.h">
       <Filter>application</Filter>
     </ClInclude>
@@ -440,7 +434,6 @@
     <ClInclude Include="application\SceneTransition.h" />
     <ClInclude Include="engine\math\structure\GraphicsStructures.h" />
     <ClInclude Include="engine\math\structure\MathStructures.h" />
-    <ClInclude Include="engine\math\MagMath.h" />
     <ClInclude Include="application\StartAnimation.h" />
     <ClInclude Include="application\GameOverUI.h" />
     <ClInclude Include="engine\3d\cloud\Cloud.h" />
@@ -453,6 +446,7 @@
     <ClInclude Include="EnemyBase.h" />
     <ClInclude Include="EnemyBullet.h" />
     <ClInclude Include="EnemyGunner.h" />
+    <ClInclude Include="engine\math\MagMath.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

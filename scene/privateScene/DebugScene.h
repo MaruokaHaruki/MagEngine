@@ -6,10 +6,11 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "BaseScene.h"
 //========================================
 // Game
-#include "Ball.h"
 #include "Cloud.h"
 
 class DebugScene : public BaseScene {

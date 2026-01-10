@@ -21,7 +21,7 @@
 // DXC
 #include <dxcapi.h>
 #pragma comment(lib, "dxcompiler.lib")
-//========================================
+//========================================H
 // 自作構造体
 #include "MagMath.h"
 
@@ -45,7 +45,7 @@ public:
 	 * \param  viewMatrix ビュー行列
 	 * \note   ビュー行列はいれるとなんか便利な事ができる
 	 */
-	void Update(Matrix4x4 viewMatrix = Identity4x4());
+	void Update(MagMath::Matrix4x4 viewMatrix = MagMath::Identity4x4());
 
 	/**----------------------------------------------------------------------------
 	 * \brief  描画
@@ -113,7 +113,7 @@ public:
 	 * \return position 座標
 	 * \note
 	 */
-	const Vector2 &GetPosition() const {
+	const MagMath::Vector2 &GetPosition() const {
 		return position_;
 	}
 	/**----------------------------------------------------------------------------
@@ -121,7 +121,7 @@ public:
 	 * \param  position
 	 * \note
 	 */
-	void SetPosition(const Vector2 &position) {
+	void SetPosition(const MagMath::Vector2 &position) {
 		this->position_ = position;
 	}
 
@@ -147,7 +147,7 @@ public:
 	 * \return 色
 	 * \note
 	 */
-	const Vector4 &GetColor() const {
+	const MagMath::Vector4 &GetColor() const {
 		return materialData_->color;
 	}
 	/**----------------------------------------------------------------------------
@@ -155,7 +155,7 @@ public:
 	 * \param  color
 	 * \note
 	 */
-	void SetColor(const Vector4 &color) {
+	void SetColor(const MagMath::Vector4 &color) {
 		materialData_->color = color;
 	}
 
@@ -164,7 +164,7 @@ public:
 	 * \return
 	 * \note
 	 */
-	const Vector2 GetSize() const {
+	const MagMath::Vector2 GetSize() const {
 		return size_;
 	}
 	/**----------------------------------------------------------------------------
@@ -172,7 +172,7 @@ public:
 	 * \param  size
 	 * \note
 	 */
-	void SetSize(const Vector2 &size) {
+	void SetSize(const MagMath::Vector2 &size) {
 		this->size_ = size;
 	}
 
@@ -190,7 +190,7 @@ public:
 	 * \return anchorPoint_
 	 * \note
 	 */
-	const Vector2 &GetAnchorPoint() const {
+	const MagMath::Vector2 &GetAnchorPoint() const {
 		return anchorPoint_;
 	}
 	/**----------------------------------------------------------------------------
@@ -198,7 +198,7 @@ public:
 	 * \param  anchorPoint アンカーポイント
 	 * \note
 	 */
-	void SetAnchorPoint(const Vector2 &anchorPoint) {
+	void SetAnchorPoint(const MagMath::Vector2 &anchorPoint) {
 		this->anchorPoint_ = anchorPoint;
 	}
 
@@ -241,7 +241,7 @@ public:
 	 * \return textureLeftTop_ テクスチャ左上座標
 	 * \note
 	 */
-	const Vector2 &GetTextureLeftTop() const {
+	const MagMath::Vector2 &GetTextureLeftTop() const {
 		return textureLeftTop_;
 	}
 	/**----------------------------------------------------------------------------
@@ -249,7 +249,7 @@ public:
 	 * \param  textureLeftTop テクスチャ左上座標
 	 * \note
 	 */
-	void SetTextureLeftTop(const Vector2 &textureLeftTop) {
+	void SetTextureLeftTop(const MagMath::Vector2 &textureLeftTop) {
 		this->textureLeftTop_ = textureLeftTop;
 	}
 
@@ -258,7 +258,7 @@ public:
 	 * \return textureSize_ テクスチャ切り出しサイズ
 	 * \note
 	 */
-	const Vector2 &GetTextureSize() const {
+	const MagMath::Vector2 &GetTextureSize() const {
 		return textureSize_;
 	}
 	/**----------------------------------------------------------------------------
@@ -266,7 +266,7 @@ public:
 	 * \param  textureSize テクスチャ切り出しサイズ
 	 * \note
 	 */
-	void SetTextureSize(const Vector2 &textureSize) {
+	void SetTextureSize(const MagMath::Vector2 &textureSize) {
 		this->textureSize_ = textureSize;
 	}
 
@@ -291,13 +291,13 @@ private:
 	///---------------------------------------
 	/// バッファリソース内のデータを指すポインタ
 	// 頂点
-	VertexData *vertexData_ = nullptr;
+	MagMath::VertexData *vertexData_ = nullptr;
 	// インデックス
 	uint32_t *indexData_ = nullptr;
 	// マテリアル
-	Material *materialData_ = nullptr;
+	MagMath::Material *materialData_ = nullptr;
 	// トランスフォーメーションマトリックス
-	TransformationMatrix *transformationMatrixData_ = nullptr;
+	MagMath::TransformationMatrix *transformationMatrixData_ = nullptr;
 
 	///---------------------------------------
 	/// バッファリソースの使い道を指すポインタ
@@ -309,13 +309,13 @@ private:
 	///---------------------------------------
 	/// SRT設定
 	// トランスフォーム
-	Transform transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	MagMath::Transform transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 	// 座標
-	Vector2 position_ = {0.0f, 0.0f};
+	MagMath::Vector2 position_ = {0.0f, 0.0f};
 	// 回転
 	float rotation_ = 0.0f;
 	// サイズ
-	Vector2 size_ = {1.0f, 1.0f};
+	MagMath::Vector2 size_ = {1.0f, 1.0f};
 
 	///---------------------------------------
 	/// テクスチャ番号
@@ -325,7 +325,7 @@ private:
 
 	///---------------------------------------
 	/// アンカーポイント
-	Vector2 anchorPoint_ = {0.0f, 0.0f};
+	MagMath::Vector2 anchorPoint_ = {0.0f, 0.0f};
 
 	///---------------------------------------
 	/// フリップ
@@ -337,7 +337,7 @@ private:
 	///---------------------------------------
 	/// テクスチャ範囲指定
 	// テクスチャ左上座標
-	Vector2 textureLeftTop_ = {0.0f, 0.0f};
+	MagMath::Vector2 textureLeftTop_ = {0.0f, 0.0f};
 	// テクスチャ切り出しサイズ
-	Vector2 textureSize_ = {0.0f, 0.0f};
+	MagMath::Vector2 textureSize_ = {0.0f, 0.0f};
 };

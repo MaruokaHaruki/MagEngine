@@ -7,11 +7,9 @@
  * \note
  *********************************************************************/
 #pragma once
-#include "Light.h"
+#include "MagMath.h"
 #include "Model.h"
 #include "ModelManager.h"
-#include "Transform.h"
-#include "TransformationMatrix.h"
 //========================================
 // DX12include
 #include <d3d12.h>
@@ -25,7 +23,7 @@
 #pragma comment(lib, "dxcompiler.lib")
 
 struct CameraForGpu {
-	Vector3 worldPosition;
+	MagMath::Vector3 worldPosition;
 };
 
 class Object3dSetup;
@@ -85,14 +83,14 @@ public:
 		model_ = ModelManager::GetInstance()->FindModel(filePath);
 	}
 
-	Transform *GetTransform() {
+	MagMath::Transform *GetTransform() {
 		return &transform_;
 	} // Transformのポインタを取得する関数
 	/**----------------------------------------------------------------------------
 	 * \brief  SetTransform トランスフォーメーションの設定
 	 * \param  transform トランスフォーメーション
 	 */
-	void SetTransform(const Transform &transform) {
+	void SetTransform(const MagMath::Transform &transform) {
 		transform_ = transform;
 	}
 
@@ -100,14 +98,14 @@ public:
 	 * \brief  SetModel モデルの設定
 	 * \param  model モデル
 	 */
-	void SetScale(const Vector3 &scale) {
+	void SetScale(const MagMath::Vector3 &scale) {
 		transform_.scale = scale;
 	}
 	/*
 	 * \brief  GetScale スケールの取得
-	 * \return Vector3 スケール
+	 * \return MagMath::Vector3 スケール
 	 */
-	const Vector3 &GetScale() const {
+	const MagMath::Vector3 &GetScale() const {
 		return transform_.scale;
 	}
 
@@ -115,14 +113,14 @@ public:
 	 * \brief  SetRotate 回転の設定
 	 * \param  rotate 回転
 	 */
-	void SetRotation(const Vector3 &rotate) {
+	void SetRotation(const MagMath::Vector3 &rotate) {
 		transform_.rotate = rotate;
 	}
 	/*
 	 * \brief  GetRotate 回転の取得
-	 * \return Vector3 回転
+	 * \return MagMath::Vector3 回転
 	 */
-	const Vector3 &GetRotation() const {
+	const MagMath::Vector3 &GetRotation() const {
 		return transform_.rotate;
 	}
 
@@ -130,14 +128,14 @@ public:
 	 * \brief  SetTranslate 移動の設定
 	 * \param  translate 移動
 	 */
-	void SetPosition(const Vector3 &translate) {
+	void SetPosition(const MagMath::Vector3 &translate) {
 		transform_.translate = translate;
 	}
 	/*
 	 * \brief  GetTranslate 移動の取得
-	 * \return Vector3 移動
+	 * \return MagMath::Vector3 移動
 	 */
-	const Vector3 &GetPosition() const {
+	const MagMath::Vector3 &GetPosition() const {
 		return transform_.translate;
 	}
 
@@ -155,7 +153,7 @@ public:
 	 * \param  direction
 	 * \param  intensity
 	 */
-	void SetDirectionalLight(const Vector4 &color, const Vector3 &direction, float intensity) {
+	void SetDirectionalLight(const MagMath::Vector4 &color, const MagMath::Vector3 &direction, float intensity) {
 		directionalLightData_->color = color;
 		directionalLightData_->direction = direction;
 		directionalLightData_->intensity = intensity;
@@ -163,7 +161,7 @@ public:
 	/*
 	 * \brief  GetDirectionalLight 並行光源の取得
 	 */
-	const DirectionalLight &GetDirectionalLight() const {
+	const MagMath::DirectionalLight &GetDirectionalLight() const {
 		return *directionalLightData_;
 	}
 
@@ -175,7 +173,7 @@ public:
 	 * \param  radius ライトの影響範囲
 	 * \param  decay 減衰の度合い（1.0が線形、2.0が二乗減衰）
 	 */
-	void SetPointLight(const Vector4 &color, const Vector3 &position, float intensity,
+	void SetPointLight(const MagMath::Vector4 &color, const MagMath::Vector3 &position, float intensity,
 					   float radius = 10.0f, float decay = 2.0f) {
 		pointLightData_->color = color;
 		pointLightData_->position = position;
@@ -187,7 +185,7 @@ public:
 	 * \brief  GetPointLight ポイントライトの取得
 	 * \return 現在設定されているポイントライト情報
 	 */
-	const PointLight &GetPointLight() const {
+	const MagMath::PointLight &GetPointLight() const {
 		return *pointLightData_;
 	}
 
@@ -201,8 +199,8 @@ public:
 	 * \param  decay 減衰の度合い
 	 * \param  angle スポットライトの角度（ラジアン）
 	 */
-	void SetSpotLight(const Vector4 &color, const Vector3 &position,
-					  const Vector3 &direction, float intensity,
+	void SetSpotLight(const MagMath::Vector4 &color, const MagMath::Vector3 &position,
+					  const MagMath::Vector3 &direction, float intensity,
 					  float distance = 15.0f, float decay = 2.0f,
 					  float angle = 0.5f) {
 		spotLightData_->color = color;
@@ -217,7 +215,7 @@ public:
 	 * \brief  GetSpotLight スポットライトの取得
 	 * \return 現在設定されているスポットライト情報
 	 */
-	const SpotLight &GetSpotLight() const {
+	const MagMath::SpotLight &GetSpotLight() const {
 		return *spotLightData_;
 	}
 
@@ -225,13 +223,13 @@ public:
 	 * \brief  SetMaterialColor マテリアルカラーの設定
 	 * \param  color
 	 */
-	void SetMaterialColor(const Vector4 &color) {
+	void SetMaterialColor(const MagMath::Vector4 &color) {
 		model_->SetMaterialColor(color);
 	}
 	/*
 	 * \brief  GetMaterialColor マテリアルカラーの取得
 	 */
-	Vector4 GetMaterialColor() const {
+	MagMath::Vector4 GetMaterialColor() const {
 		return model_->GetMaterialColor();
 	}
 
@@ -304,18 +302,18 @@ private:
 	//========================================
 	// バッファリソース内のデータを指すポインタ
 	// トランスフォーメーションマトリックス
-	TransformationMatrix *transformationMatrixData_ = nullptr;
+	MagMath::TransformationMatrix *transformationMatrixData_ = nullptr;
 	// カメラ
 	CameraForGpu *cameraData_ = nullptr;
 	// 並行光源
-	DirectionalLight *directionalLightData_ = nullptr;
+	MagMath::DirectionalLight *directionalLightData_ = nullptr;
 	// 点光源
-	PointLight *pointLightData_ = nullptr;
+	MagMath::PointLight *pointLightData_ = nullptr;
 	// TODO:スポットライト
-	SpotLight *spotLightData_ = nullptr;
+	MagMath::SpotLight *spotLightData_ = nullptr;
 	//========================================
 	// Transform
-	Transform transform_ = {};
+	MagMath::Transform transform_ = {};
 	//========================================
 	// カメラ
 	Camera *camera_ = nullptr;

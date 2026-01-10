@@ -13,9 +13,7 @@
 #include <fstream>
 #include <sstream>
 //---------------------------------------
-// 数学関数　
-#include "AffineTransformations.h"
-#include "MathFunc4x4.h"
+// テクスチャマネージャ
 #include "TextureManager.h"
 #include <cmath>
 
@@ -105,8 +103,8 @@ void Model::ChangeTexture(const std::string &textureFilePath) {
 ///--------------------------------------------------------------
 ///						 ファイル読み込み関数
 /// NOTE:ディレクトリパスとファイルネームの設定を忘れずに
-MaterialData Model::LoadMaterialTemplateFile(const std::string &directoryPath, const std::string &filename) {
-	MaterialData materialData;
+MagMath::MaterialData Model::LoadMaterialTemplateFile(const std::string &directoryPath, const std::string &filename) {
+	MagMath::MaterialData materialData;
 	std::string line;
 	std::ifstream file(directoryPath + "/" + filename);
 
@@ -153,7 +151,7 @@ void Model::LoadModelFile(const std::string &directoryPath, const std::string &f
 			// 頂点データの取得
 			for (uint32_t vertexIndex = 0; vertexIndex < face.mNumIndices; ++vertexIndex) {
 				uint32_t index = face.mIndices[vertexIndex];
-				VertexData vertexData;
+				MagMath::VertexData vertexData;
 				vertexData.position.x = mesh->mVertices[index].x;
 				vertexData.position.y = mesh->mVertices[index].y;
 				vertexData.position.z = mesh->mVertices[index].z;
@@ -186,13 +184,13 @@ void Model::LoadModelFile(const std::string &directoryPath, const std::string &f
 
 ///--------------------------------------------------------------
 ///                      Nodeの読み込み
-Node Model::ReadNode(aiNode *node) {
-	Node result;
+MagMath::Node Model::ReadNode(aiNode *node) {
+	MagMath::Node result;
 
 	// Assimpの行列を自前の行列形式に変換
 	aiMatrix4x4 aiLocalMatrix = node->mTransformation;
 	// 行列変換（aiMatrixは行優先、自前のMatrix4x4は列優先と仮定）
-	Matrix4x4 localMatrix;
+	MagMath::Matrix4x4 localMatrix;
 	localMatrix.m[0][0] = aiLocalMatrix.a1;
 	localMatrix.m[0][1] = aiLocalMatrix.b1;
 	localMatrix.m[0][2] = aiLocalMatrix.c1;
@@ -228,32 +226,32 @@ Node Model::ReadNode(aiNode *node) {
 void Model::CreateVertexBuffer() {
 	//========================================
 	// 頂点リソースを作る
-	vertexBuffer_ = modelSetup_->GetDXManager()->CreateBufferResource(sizeof(VertexData) * modelData_.vertices.size());
+	vertexBuffer_ = modelSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::VertexData) * modelData_.vertices.size());
 	//========================================
 	// 頂点バッファビューを作成する
 	vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();			   // リソースの先頭アドレスから使う
-	vertexBufferView_.SizeInBytes = UINT(sizeof(VertexData) * modelData_.vertices.size()); // 使用するリソースのサイズは頂点サイズ
-	vertexBufferView_.StrideInBytes = sizeof(VertexData);								   // 1頂点あたりのサイズ
+	vertexBufferView_.SizeInBytes = UINT(sizeof(MagMath::VertexData) * modelData_.vertices.size()); // 使用するリソースのサイズは頂点サイズ
+	vertexBufferView_.StrideInBytes = sizeof(MagMath::VertexData);								   // 1頂点あたりのサイズ
 	//========================================
 	// 頂点リソースにデータを書き込む
-	VertexData *vertexData = nullptr;
+	MagMath::VertexData *vertexData = nullptr;
 	vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
-	std::memcpy(vertexData, modelData_.vertices.data(), sizeof(VertexData) * modelData_.vertices.size());
+	std::memcpy(vertexData, modelData_.vertices.data(), sizeof(MagMath::VertexData) * modelData_.vertices.size());
 }
 
 ///--------------------------------------------------------------
 ///						 マテリアルデータの作成
 void Model::CreateMaterialBuffer() {
-	materialBuffer_ = modelSetup_->GetDXManager()->CreateBufferResource(sizeof(Material));
+	materialBuffer_ = modelSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::Material));
 	// マテリアルデータ
 	materialData_ = nullptr;
 	// マテリアルデータ書き込み用変数
-	Material material = {{1.0f, 1.0f, 1.0f, 1.0f}, true};
+	MagMath::Material material = {{1.0f, 1.0f, 1.0f, 1.0f}, true};
 	// 書き込むためのアドレス取得
 	materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&materialData_));
 	// 今回は赤を書き込む
 	*materialData_ = material;
-	materialData_->uvTransform = Identity4x4();
+	materialData_->uvTransform = MagMath::Identity4x4();
 	// 光沢度
 	materialData_->shininess = 32.0f;
 	// 環境マップの初期設定

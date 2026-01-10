@@ -1,4 +1,6 @@
 #pragma once
+#include "MagMath.h"
+using namespace MagMath;
 #include "Sprite.h"
 #include "SpriteSetup.h"
 #include <functional>

@@ -9,9 +9,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "Light.h"
-#include "Vector3.h"
-#include "Vector4.h"
+#include "MagMath.h"
 
 // LineManagerのインクルードを追加
 class LineManager;
@@ -50,13 +48,13 @@ public:
     /// @param color 色
     /// @param direction 方向 
     /// @param intensity 強度
-    void AddDirectionalLight(const std::string& name, const Vector4& color, 
-        const Vector3& direction, float intensity);
+    void AddDirectionalLight(const std::string& name, const MagMath::Vector4& color, 
+        const MagMath::Vector3& direction, float intensity);
 
     /// @brief GetDirectionalLight ディレクショナルライトの取得
     /// @param name ライト名（空文字の場合は現在のアクティブライト） 
     /// @return 現在のアクティブライト
-    const DirectionalLight& GetDirectionalLight(const std::string& name = "") const;
+    const MagMath::DirectionalLight& GetDirectionalLight(const std::string& name = "") const;
 
     /// @brief SetActiveDirectionalLight 現在のディレクショナルライトの設定
     /// @param name ライト名
@@ -72,14 +70,14 @@ public:
     /// @param intensity 強度
     /// @param radius 半径
     /// @param decay 減衰
-    void AddPointLight(const std::string& name, const Vector4& color, 
-        const Vector3& position, float intensity,
+    void AddPointLight(const std::string& name, const MagMath::Vector4& color, 
+        const MagMath::Vector3& position, float intensity,
         float radius = 10.0f, float decay = 2.0f);
 
     /// @brief GetPointLight ポイントライトの取得
     /// @param name ライト名（空文字の場合は現在のアクティブライト）
     /// @return 現在のアクティブライト
-    const PointLight& GetPointLight(const std::string& name = "") const;
+    const MagMath::PointLight& GetPointLight(const std::string& name = "") const;
 
     /// @brief SetActivePointLight 現在のポイントライトの設定
     /// @param name ライト名
@@ -97,14 +95,14 @@ public:
     /// @param distance 距離
     /// @param decay  減衰
     /// @param angle 角度
-    void AddSpotLight(const std::string& name, const Vector4& color,
-        const Vector3& position, const Vector3& direction, float intensity,
+    void AddSpotLight(const std::string& name, const MagMath::Vector4& color,
+        const MagMath::Vector3& position, const MagMath::Vector3& direction, float intensity,
         float distance = 15.0f, float decay = 2.0f, float angle = 0.5f);
 
     /// @brief GetSpotLight スポットライトの取得
     /// @param name ライト名（空文字の場合は現在のアクティブライト）
     /// @return 現在のアクティブライト
-    const SpotLight& GetSpotLight(const std::string& name = "") const;
+    const MagMath::SpotLight& GetSpotLight(const std::string& name = "") const;
 
     /// @brief SetActiveSpotLight 現在のスポットライトの設定
     /// @param name ライト名
@@ -132,17 +130,17 @@ private:
     
     //========================================
     // ディレクショナルライト管理
-    std::map<std::string, DirectionalLight> directionalLights_;
+    std::map<std::string, MagMath::DirectionalLight> directionalLights_;
     std::string activeDirectionalLightName_ = "Main";
     
     //========================================
     // ポイントライト管理
-    std::map<std::string, PointLight> pointLights_;
+    std::map<std::string, MagMath::PointLight> pointLights_;
     std::string activePointLightName_ = "Main";
 
     //========================================
     // スポットライト管理
-    std::map<std::string, SpotLight> spotLights_;
+    std::map<std::string, MagMath::SpotLight> spotLights_;
     std::string activeSpotLightName_ = "Main";
     
     //========================================
