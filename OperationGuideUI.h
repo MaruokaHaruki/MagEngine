@@ -40,7 +40,17 @@ struct ButtonDisplayInfo {
 	float targetScale;
 	bool isPressed;
 	float pulseTime;
-	std::string labelText; // ボタンの説明テキスト（将来の拡張用）
+	std::string labelText;	   // ボタンの説明テキスト
+	Vector2 textLabelPosition; // テキストラベル表示位置
+
+	// テキストラベル用スプライト
+	std::unique_ptr<MagEngine::Sprite> textSprite;
+	Vector2 textBasePosition;
+	Vector2 textSize;
+	float textAlpha;		// テキストの不透明度
+	float textTargetAlpha;	// 目標不透明度
+	float textSlideOffset;	// スライドアニメーション用オフセット
+	float textTargetOffset; // 目標オフセット
 };
 
 ///=============================================================================
@@ -108,7 +118,7 @@ private:
 	// 表示設定
 	bool isVisible_ = true;
 	float opacity_ = 0.8f;
-	Vector2 guideBasePosition_ = {50.0f, 400.0f}; // デフォルトは左下寄り
+	Vector2 guideBasePosition_ = {16.0f, 600.0f}; // デフォルトは左下寄り
 
 	// アニメーション設定
 	float pressAnimationSpeed_ = 8.0f;
@@ -119,4 +129,14 @@ private:
 	// 画面サイズ
 	float screenWidth_ = 1280.0f;
 	float screenHeight_ = 720.0f;
+
+	// スティック傾き連動
+	Vector2 leftStickOffset_ = {0.0f, 0.0f};
+	Vector2 currentStickOffset_ = {0.0f, 0.0f};
+	float stickMoveRange_ = 15.0f;	   // スティックUIの最大移動範囲
+	float stickMoveSmoothing_ = 0.15f; // 移動の滑らかさ
+
+	// グロー効果
+	float glowIntensity_ = 0.0f;
+	float glowPulseSpeed_ = 5.0f;
 };

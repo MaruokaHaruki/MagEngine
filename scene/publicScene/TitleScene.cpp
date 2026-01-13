@@ -26,15 +26,30 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	//========================================
 	// 読み込み関係
+	//TextureManager::GetInstance()->LoadTexture(".png");
 	// スプライト
 	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
+	//演出系
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Engage.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_GameOver.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Comprete.png");
+	//操作ガイドUI
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_a.png");
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_b.png");
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_x.png");
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_y.png");
+	TextureManager::GetInstance()->LoadTexture("xbox_rt.png");
+	TextureManager::GetInstance()->LoadTexture("xbox_ls.png");
 	TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
+	// 操作テキスト
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Dodge.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_MachineGun.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_ControlStick.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Missile.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Test.png");
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("Bullet.obj");	// 弾のモデル
