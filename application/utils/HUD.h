@@ -50,6 +50,7 @@ private:
 	Vector4 hudColor_;
 	Vector4 hudColorWarning_;
 	Vector4 hudColorCritical_;
+	Vector4 hudColorCyan_;
 	float hudDistance_;
 	float hudSizeX_;
 	float hudSizeY_;
