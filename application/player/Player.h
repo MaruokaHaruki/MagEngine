@@ -213,4 +213,22 @@ private:
 	//========================================
 	//
 	friend class FollowCamera;
+
+	//========================================
+	// 射撃・弾発射方向（HUD用）
+public:
+	/// @brief 弾の発射方向を取得
+	Vector3 GetBulletFireDirection() const {
+		return combatComponent_.GetBulletFireDirection();
+	}
+	/// @brief 実際の前方ベクトルを取得
+	Vector3 GetForwardVector() const {
+		if(auto *transform = GetTransformSafe()) {
+			return Vector3{
+				sinf(transform->rotate.y) * cosf(transform->rotate.x),
+				-sinf(transform->rotate.x),
+				cosf(transform->rotate.y) * cosf(transform->rotate.x) };
+		}
+		return { 0.0f, 0.0f, 1.0f };
+	}
 };
