@@ -195,6 +195,7 @@
     <ClCompile Include="application\enemy\EnemyBase.cpp" />
     <ClCompile Include="application\enemy\EnemyBullet.cpp" />
     <ClCompile Include="application\enemy\EnemyGunner.cpp" />
+    <ClCompile Include="OperationGuideUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -447,6 +448,7 @@
     <ClInclude Include="application\enemy\EnemyBullet.h" />
     <ClInclude Include="application\enemy\EnemyGunner.h" />
     <ClInclude Include="engine\math\MagMath.h" />
+    <ClInclude Include="OperationGuideUI.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

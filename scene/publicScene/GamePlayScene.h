@@ -27,6 +27,7 @@
 // Game
 #include "GameClearAnimation.h"
 #include "GameOverUI.h"
+#include "OperationGuideUI.h"
 #include "StartAnimation.h"
 
 //========================================
@@ -142,4 +143,8 @@ private:
 	// クリアアニメーション`
 	std::unique_ptr<GameClearAnimation> gameClearAnimation_;
 	bool isGameClear_;
+
+	//========================================
+	// 操作ガイドUI
+	std::unique_ptr<OperationGuideUI> operationGuideUI_;
 };

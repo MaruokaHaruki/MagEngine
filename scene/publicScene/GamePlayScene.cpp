@@ -19,6 +19,7 @@
 #include "GameOverUI.h"
 #include "HUD.h"
 #include "ModelManager.h"
+#include "OperationGuideUI.h"
 #include "Player.h"
 #include "SceneTransition.h"
 #include "Skydome.h"
@@ -231,6 +232,13 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	// トランジションは使用しない（スタートアニメーションで代用）
 	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
+
+	//========================================
+	// 操作ガイドUIの初期化
+	operationGuideUI_ = std::make_unique<OperationGuideUI>();
+	operationGuideUI_->Initialize(spriteSetup);
+	operationGuideUI_->SetGuidePosition({50.0f, 370.0f}); // 左下に配置
+	operationGuideUI_->SetVisible(true);
 }
 
 ///=============================================================================
@@ -313,6 +321,12 @@ void GamePlayScene::Update() {
 	// トランジションの更新
 	if (sceneTransition_) {
 		sceneTransition_->Update();
+	}
+
+	//========================================
+	// 操作ガイドUIの更新
+	if (operationGuideUI_) {
+		operationGuideUI_->Update();
 	}
 
 	//========================================
@@ -440,6 +454,12 @@ void GamePlayScene::Object2DDraw() {
 	// ゲームオーバーUI（最前面）
 	if (gameOverUI_) {
 		gameOverUI_->Draw();
+	}
+
+	//========================================
+	// 操作ガイドUI
+	if (operationGuideUI_) {
+		operationGuideUI_->Draw();
 	}
 
 	//========================================
@@ -604,6 +624,12 @@ void GamePlayScene::ImGuiDraw() {
 	// ゲームクリアアニメーション
 	if (gameClearAnimation_) {
 		gameClearAnimation_->DrawImGui();
+	}
+
+	//========================================
+	// 操作ガイドUI
+	if (operationGuideUI_) {
+		operationGuideUI_->DrawImGui();
 	}
 #endif // _DEBUG
 }
