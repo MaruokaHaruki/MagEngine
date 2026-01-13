@@ -7,30 +7,31 @@
  * \note
  *********************************************************************/
 #include "GamePlayScene.h"
- //========================================
- // Game
+//========================================
+// Game
+#include "CameraManager.h"
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
+#include "EnemyBullet.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
 #include "GameClearAnimation.h"
 #include "GameOverUI.h"
 #include "HUD.h"
+#include "ModelManager.h"
 #include "Player.h"
 #include "SceneTransition.h"
 #include "Skydome.h"
 #include "StartAnimation.h"
-#include "CameraManager.h"
-#include "ModelManager.h"
 using namespace MagEngine;
 
 ///=============================================================================
 ///						初期化
 void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
-	MagEngine::Object3dSetup *object3dSetup,
-	MagEngine::ParticleSetup *particleSetup,
-	MagEngine::SkyboxSetup *skyboxSetup,
-	MagEngine::CloudSetup *cloudSetup) {
+							   MagEngine::Object3dSetup *object3dSetup,
+							   MagEngine::ParticleSetup *particleSetup,
+							   MagEngine::SkyboxSetup *skyboxSetup,
+							   MagEngine::CloudSetup *cloudSetup) {
 	//========================================
 	// 適当に引数を使用
 	// 引数を使用しない場合は警告を出さないようにする
@@ -40,7 +41,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	//========================================
 	// カメラ設定
 	CameraManager::GetInstance()->AddCamera("FollowCamera");
-	CameraManager::GetInstance()->GetCamera("FollowCamera")->SetTransform({ {1.0f, 1.0f, 1.0f}, {0.3f, 0.0f, 0.0f}, {0.0f, 2.3f, -8.0f} });
+	CameraManager::GetInstance()->GetCamera("FollowCamera")->SetTransform({{1.0f, 1.0f, 1.0f}, {0.3f, 0.0f, 0.0f}, {0.0f, 2.3f, -8.0f}});
 
 	//========================================
 	// FollowCameraの初期化
@@ -69,14 +70,14 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// Skyboxのモデルを設定
 	skybox_->SetTexture("overcast_soil_puresky_4k.dds");
 	// SkyboxのTransformを設定
-	skybox_->SetTransform({ {1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} });
+	skybox_->SetTransform({{1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
 
 	//========================================
 	// パーティクルクラス
 	particle_ = std::make_unique<MagEngine::Particle>();
 	// パーティクルの初期化
 	particle_->Initialize(particleSetup);
-	particle_->SetCustomTextureSize({ 10.0f, 10.0f });
+	particle_->SetCustomTextureSize({10.0f, 10.0f});
 	particle_->SetBillboard(true); // ビルボードを有効化
 	// 雲パーティクルグループの作成（Board形状、白っぽいテクスチャ）
 	particle_->CreateParticleGroup("CloudParticles", "circle2.png", ParticleShape::Board);
@@ -103,11 +104,11 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	cloud_->Initialize(cloudSetup);
 
 	// 雲のサイズ設定（広い範囲に配置）
-	cloud_->SetSize({ 500.0f, 100.0f, 500.0f });
+	cloud_->SetSize({500.0f, 100.0f, 500.0f});
 	cloud_->SetEnabled(true);
 
 	// 雲のTransform設定
-	cloud_->GetTransform().translate = { 0.0f, -50.0f, 250.0f };
+	cloud_->GetTransform().translate = {0.0f, -50.0f, 250.0f};
 
 	// 雲の密度と速度を調整（まばらな雲に）
 	auto &cloudParams = cloud_->GetMutableParams();
@@ -143,7 +144,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	//========================================
 	// 敵の位置にデバッグテキストを配置（固定位置）
-	DebugTextManager::GetInstance()->AddText3D("Enemy", { 5.0f, 1.0f, 5.0f }, { 1.0f, 0.0f, 0.0f, 1.0f });
+	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
 
 	//========================================
 	// HUDの初期化
@@ -151,7 +152,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	hud_->Initialize();
 
 	// HUDにFollowCameraを設定（FollowCameraが初期化された後）
-	if(followCamera_) {
+	if (followCamera_) {
 		hud_->SetFollowCamera(followCamera_.get());
 	}
 
@@ -160,29 +161,29 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	gameOverUI_ = std::make_unique<GameOverUI>();
 	gameOverUI_->Initialize(spriteSetup);
 	gameOverUI_->SetTextTexture("WolfOne_GameOver.png");
-	gameOverUI_->SetBackgroundColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-	gameOverUI_->SetTextSize({ 1000.0f, 200.0f });
+	gameOverUI_->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
+	gameOverUI_->SetTextSize({1000.0f, 200.0f});
 	isGameOver_ = false;
 
 	gameOverUI_->SetOnCompleteCallback([this]() {
-		if(sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::TITLE;
-				});
+			});
 		}
-		});
+	});
 
-		//========================================
-		// ゲームクリアアニメーションの初期化
+	//========================================
+	// ゲームクリアアニメーションの初期化
 	gameClearAnimation_ = std::make_unique<GameClearAnimation>();
 	gameClearAnimation_->Initialize(spriteSetup);
 	gameClearAnimation_->SetFollowCamera(followCamera_.get());
 	gameClearAnimation_->SetPlayer(player_.get());				 // プレイヤー参照を追加
 	gameClearAnimation_->SetTextTexture("WolfOne_Comprete.png"); // クリア画像
-	gameClearAnimation_->SetBarColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+	gameClearAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
 	gameClearAnimation_->SetBarHeightRatio(0.15f);
-	gameClearAnimation_->SetTextSize({ 800.0f, 150.0f });
+	gameClearAnimation_->SetTextSize({800.0f, 150.0f});
 	gameClearAnimation_->SetCameraUpParameters(20.0f, -30.0f);
 	// かっこいい飛行演出パラメータを設定
 	gameClearAnimation_->SetFlightParameters(
@@ -195,40 +196,40 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// クリア演出完了後のコールバック
 	gameClearAnimation_->SetOnCompleteCallback([this]() {
 		// タイトルへ戻る（またはクリアシーンへ遷移）
-		if(sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::TITLE; // TODO: クリアシーンに変更する場合はここを修正
-				});
+			});
 		}
-		});
+	});
 
-		//========================================
-		// トランジションの初期化
+	//========================================
+	// トランジションの初期化
 	sceneTransition_ = std::make_unique<SceneTransition>();
 	sceneTransition_->Initialize(spriteSetup);
-	sceneTransition_->SetColor({ 0.0f, 0.0f, 0.0f, 1.0f }); // 黒
+	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
 
 	//========================================
 	// スタートアニメーションの初期化
 	startAnimation_ = std::make_unique<StartAnimation>();
 	startAnimation_->SetTextTexture("WolfOne_Engage.png"); // 仮のテキスト画像
 	startAnimation_->Initialize(spriteSetup);
-	startAnimation_->SetBarColor({ 0.0f, 0.0f, 0.0f, 1.0f }); // 黒
+	startAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
 	startAnimation_->SetBarHeightRatio(0.15f);				// 画面の15%
-	startAnimation_->SetTextSize({ 600.0f, 100.0f });
+	startAnimation_->SetTextSize({600.0f, 100.0f});
 
 	// シーン開始時にスタートアニメーション（シネマスコープ演出）
 	startAnimation_->StartOpening(2.0f, 1.0f, 1.0f);
 
 	// HUDの展開はスタートアニメーション完了後に開始
 	startAnimation_->SetOnCompleteCallback([this]() {
-		if(hud_) {
+		if (hud_) {
 			hud_->StartDeployAnimation(2.0f);
 		}
-		});
+	});
 
-		// トランジションは使用しない（スタートアニメーションで代用）
+	// トランジションは使用しない（スタートアニメーションで代用）
 	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
 }
 
@@ -242,32 +243,32 @@ void GamePlayScene::Finalize() {
 void GamePlayScene::Update() {
 	//========================================
 	// 雲の更新
-	if(cloud_) {
+	if (cloud_) {
 		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
 	}
 	//========================================
 	// スタートアニメーションの更新
-	if(startAnimation_) {
+	if (startAnimation_) {
 		startAnimation_->Update();
 	}
 
 	//========================================
 	// ゲームクリアアニメーションの更新
-	if(gameClearAnimation_) {
+	if (gameClearAnimation_) {
 		gameClearAnimation_->Update();
 	}
 
 	//========================================
 	// ゲーム終了チェック（用語変更）
-	if(player_ && !isGameOver_ && !isGameClear_) {
+	if (player_ && !isGameOver_ && !isGameClear_) {
 		// プレイヤーの敗北演出が完了したらゲーム終了演出開始
-		if(player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
+		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
-			if(gameOverUI_) {
+			if (gameOverUI_) {
 				gameOverUI_->StartGameOver(2.0f, 3.0f);
 			}
 			// HUDを格納
-			if(hud_ && !hud_->IsAnimating()) {
+			if (hud_ && !hud_->IsAnimating()) {
 				hud_->StartRetractAnimation(1.0f);
 			}
 		}
@@ -275,15 +276,15 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// ゲームクリアチェック
-	if(enemyManager_ && !isGameOver_ && !isGameClear_) {
-		if(enemyManager_->IsGameClear()) {
+	if (enemyManager_ && !isGameOver_ && !isGameClear_) {
+		if (enemyManager_->IsGameClear()) {
 			isGameClear_ = true;
 			// クリア演出を開始
-			if(gameClearAnimation_) {
+			if (gameClearAnimation_) {
 				gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
 			}
 			// HUDを格納
-			if(hud_ && !hud_->IsAnimating()) {
+			if (hud_ && !hud_->IsAnimating()) {
 				hud_->StartRetractAnimation(1.0f);
 			}
 		}
@@ -291,12 +292,12 @@ void GamePlayScene::Update() {
 
 #ifdef _DEBUG
 	// デバック用にキーボードでゲームクリアを強制発動
-	if(Input::GetInstance()->TriggerKey(DIK_C)) {
+	if (Input::GetInstance()->TriggerKey(DIK_C)) {
 		isGameClear_ = true;
 		// HUDを格納
 		hud_->StartRetractAnimation(1.0f);
 		// クリア演出を開始
-		if(gameClearAnimation_) {
+		if (gameClearAnimation_) {
 			gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
 		}
 	}
@@ -304,44 +305,44 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// ゲームオーバーUI更新
-	if(gameOverUI_) {
+	if (gameOverUI_) {
 		gameOverUI_->Update();
 	}
 
 	//========================================
 	// トランジションの更新
-	if(sceneTransition_) {
+	if (sceneTransition_) {
 		sceneTransition_->Update();
 	}
 
 	//========================================
 	// FollowCameraの更新
-	if(followCamera_) {
+	if (followCamera_) {
 		followCamera_->Update();
 	}
 
 	//========================================
 	// プレイヤー
-	if(player_) {
+	if (player_) {
 		player_->Update();
 
 		// プレイヤーの位置にデバッグテキストを配置
 		Vector3 playerPos = player_->GetPosition();
 		playerPos.y += 2.0f; // プレイヤーの少し上に表示
-		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, { 0.0f, 1.0f, 0.0f, 1.0f });
+		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 	}
 
 	// ゲームオーバーまたはクリア中は以降の更新をスキップ
-	if(isGameOver_ || isGameClear_) {
+	if (isGameOver_ || isGameClear_) {
 		//========================================
 		// パーティクルの更新（墜落エフェクト用）
-		if(particle_) {
+		if (particle_) {
 			particle_->Update();
 		}
 
 		//========================================
 		// HUDの更新
-		if(hud_ && player_) {
+		if (hud_ && player_) {
 			hud_->Update(player_.get());
 		}
 		return;
@@ -349,25 +350,25 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// 敵の更新
-	if(enemyManager_) {
+	if (enemyManager_) {
 		enemyManager_->Update();
 	}
 
 	//========================================
 	// パーティクルの更新
-	if(particle_) {
+	if (particle_) {
 		particle_->Update();
 	}
 
 	//========================================
 	// スカイドーム
-	if(skydome_) {
+	if (skydome_) {
 		skydome_->Update();
 	}
 
 	//=========================================
 	// Skyboxの更新
-	if(skybox_) {
+	if (skybox_) {
 		skybox_->Update();
 	}
 
@@ -376,34 +377,36 @@ void GamePlayScene::Update() {
 	//  リセットではなく登録解除/登録で管理
 	collisionManager_->Reset(); // 一旦リセット（簡単のため）
 	//  プレイヤーの当たり判定を登録
-	if(player_) {
+	if (player_) {
 		collisionManager_->RegisterObject(player_.get());
 	}
 	//  敵の当たり判定を登録
-	if(enemyManager_) {
+	if (enemyManager_) {
 		enemyManager_->RegisterCollisions(collisionManager_.get());
 	}
 	//  プレイヤーの弾とミサイルの当たり判定を登録
-	if(player_) {
+	if (player_) {
 		const auto &bullets = player_->GetBullets();
-		for(const auto &bullet : bullets) {
-			if(bullet->IsAlive()) {
+		for (const auto &bullet : bullets) {
+			if (bullet->IsAlive()) {
 				collisionManager_->RegisterObject(bullet.get());
 			}
 		}
 
 		const auto &missiles = player_->GetMissiles();
-		for(const auto &missile : missiles) {
-			if(missile->IsAlive()) {
+		for (const auto &missile : missiles) {
+			if (missile->IsAlive()) {
 				collisionManager_->RegisterObject(missile.get());
 			}
 		}
 	}
 	//  敵の弾の当たり判定を登録
-	if(enemyManager_) {
+	if (enemyManager_) {
 		auto enemyBullets = enemyManager_->GetAllEnemyBullets();
-		for(auto *bullet : enemyBullets) {
-			collisionManager_->RegisterObject(bullet);
+		for (auto *bullet : enemyBullets) {
+			if (bullet) {
+				collisionManager_->RegisterObject(bullet);
+			}
 		}
 	}
 	//  当たり判定の更新
@@ -411,20 +414,20 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// HUDの更新
-	if(hud_ && player_) {
+	if (hud_ && player_) {
 		hud_->Update(player_.get());
 	}
 
 #ifdef _DEBUG
 	//========================================
 	// タイトルへのシーン遷移（デバッグ用）
-	if(Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
 		// トランジション開始
-		if(sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
 				sceneNo = SCENE::TITLE;
-				});
+			});
 		}
 	}
 #endif
@@ -435,25 +438,25 @@ void GamePlayScene::Update() {
 void GamePlayScene::Object2DDraw() {
 	//========================================
 	// ゲームオーバーUI（最前面）
-	if(gameOverUI_) {
+	if (gameOverUI_) {
 		gameOverUI_->Draw();
 	}
 
 	//========================================
 	// スタートアニメーションの描画（最前面）
-	if(startAnimation_) {
+	if (startAnimation_) {
 		startAnimation_->Draw();
 	}
 
 	//========================================
 	// ゲームクリアアニメーション（最前面）
-	if(gameClearAnimation_) {
+	if (gameClearAnimation_) {
 		gameClearAnimation_->Draw();
 	}
 
 	//========================================
 	// トランジションの描画
-	if(sceneTransition_) {
+	if (sceneTransition_) {
 		sceneTransition_->Draw();
 	}
 }
@@ -464,13 +467,13 @@ void GamePlayScene::Object3DDraw() {
 
 	//=========================================
 	// スカイドーム
-	if(skydome_) {
+	if (skydome_) {
 		// skydome_->Draw();
 	}
 
 	//========================================
 	// プレイヤー
-	if(player_) {
+	if (player_) {
 		player_->Draw();
 		// プレイヤーの弾とミサイルも描画
 		player_->DrawBullets();
@@ -479,7 +482,7 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// 敵マネージャー
-	if(enemyManager_ && !isGameClear_) {
+	if (enemyManager_ && !isGameClear_) {
 		enemyManager_->Draw();
 	}
 
@@ -489,9 +492,9 @@ void GamePlayScene::Object3DDraw() {
 
 	//========================================
 	// HUDの描画
-	if(hud_) {
+	if (hud_) {
 		// トランジション完了後にHUDを表示開始
-		if(!sceneTransition_ || !sceneTransition_->IsTransitioning()) {
+		if (!sceneTransition_ || !sceneTransition_->IsTransitioning()) {
 			hud_->Draw();
 		}
 	}
@@ -502,7 +505,7 @@ void GamePlayScene::Object3DDraw() {
 void GamePlayScene::ParticleDraw() {
 	//========================================
 	// パーティクル描画
-	if(particle_) {
+	if (particle_) {
 		particle_->Draw();
 	}
 }
@@ -512,7 +515,7 @@ void GamePlayScene::ParticleDraw() {
 void GamePlayScene::SkyboxDraw() {
 	//=========================================
 	// Skyboxの描画
-	if(skybox_) {
+	if (skybox_) {
 		skybox_->Draw();
 	}
 }
@@ -522,7 +525,7 @@ void GamePlayScene::SkyboxDraw() {
 void GamePlayScene::CloudDraw() {
 	//========================================
 	// 雲の描画
-	if(cloud_) {
+	if (cloud_) {
 		cloud_->Draw();
 	}
 }
@@ -535,7 +538,7 @@ void GamePlayScene::ImGuiDraw() {
 	ImGui::Text("Hello, GamePlayScene!");
 
 	// FollowCameraの制御
-	if(followCamera_) {
+	if (followCamera_) {
 		followCamera_->DrawImGui();
 	}
 	// 雲システムの制御
@@ -545,13 +548,13 @@ void GamePlayScene::ImGuiDraw() {
 
 	//========================================
 	// プレイヤー
-	if(player_) {
+	if (player_) {
 		player_->DrawImGui();
 
 		// ミサイルのImGui表示
 		const auto &missiles = player_->GetMissiles();
-		for(size_t i = 0; i < missiles.size(); ++i) {
-			if(missiles[i] && missiles[i]->IsAlive()) {
+		for (size_t i = 0; i < missiles.size(); ++i) {
+			if (missiles[i] && missiles[i]->IsAlive()) {
 				missiles[i]->DrawImGui();
 			}
 		}
@@ -559,13 +562,13 @@ void GamePlayScene::ImGuiDraw() {
 
 	//========================================
 	// 敵マネージャー
-	if(enemyManager_) {
+	if (enemyManager_) {
 		enemyManager_->DrawImGui();
 	}
 
 	//========================================
 	// 雲
-	if(cloud_) {
+	if (cloud_) {
 		cloud_->DrawImGui();
 	}
 
@@ -575,31 +578,31 @@ void GamePlayScene::ImGuiDraw() {
 
 	//========================================
 	// HUD
-	if(hud_) {
+	if (hud_) {
 		hud_->DrawImGui();
 	}
 
 	//========================================
 	// スタートアニメーション
-	if(startAnimation_) {
+	if (startAnimation_) {
 		startAnimation_->DrawImGui();
 	}
 
 	//========================================
 	// トランジション
-	if(sceneTransition_) {
+	if (sceneTransition_) {
 		sceneTransition_->DrawImGui();
 	}
 
 	//========================================
 	// ゲームオーバーUI
-	if(gameOverUI_) {
+	if (gameOverUI_) {
 		gameOverUI_->DrawImGui();
 	}
 
 	//========================================
 	// ゲームクリアアニメーション
-	if(gameClearAnimation_) {
+	if (gameClearAnimation_) {
 		gameClearAnimation_->DrawImGui();
 	}
 #endif // _DEBUG

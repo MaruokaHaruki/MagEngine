@@ -3,12 +3,11 @@
 using namespace MagMath;
 #include "BaseObject.h"
 #include "Object3d.h"
-#include <memory>
-#include <string>
+#include "Object3dSetup.h"
 #include "Particle.h"
 #include "ParticleSetup.h"
-#include "Object3dSetup.h"
-
+#include <memory>
+#include <string>
 
 namespace EnemyBulletConstants {
 	constexpr float kSpeed = 35.0f; // 25.0f から 35.0f に変更

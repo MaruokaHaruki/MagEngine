@@ -12,17 +12,22 @@
 #include <vector>
 //========================================
 // Engine
-#include "Sprite.h"
-#include "SpriteSetup.h"
+#include "Cloud.h"
+#include "CloudSetup.h"
 #include "Object3d.h"
 #include "Object3dSetup.h"
 #include "Particle.h"
 #include "ParticleSetup.h"
 #include "Skybox.h"
 #include "SkyboxSetup.h"
-#include "Cloud.h"
-#include "CloudSetup.h"
+#include "Sprite.h"
+#include "SpriteSetup.h"
 
+//========================================
+// Game
+#include "GameClearAnimation.h"
+#include "GameOverUI.h"
+#include "StartAnimation.h"
 
 //========================================
 // 前方宣言
@@ -32,10 +37,7 @@ class Skydome;
 class Player;
 class EnemyManager;
 class HUD;
-class GameOverUI;
 class SceneTransition;
-class StartAnimation;
-class GameClearAnimation;
 
 ///=============================================================================
 ///						ゲームプレイシーンクラス
@@ -45,10 +47,10 @@ class GamePlayScene : public BaseScene {
 public:
 	/// \brief 初期化
 	void Initialize(MagEngine::SpriteSetup *spriteSetup,
-		MagEngine::Object3dSetup *object3dSetup,
-		MagEngine::ParticleSetup *particleSetup,
-		MagEngine::SkyboxSetup *skyboxSetup,
-		MagEngine::CloudSetup *cloudSetup) override;
+					MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::ParticleSetup *particleSetup,
+					MagEngine::SkyboxSetup *skyboxSetup,
+					MagEngine::CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
