@@ -24,7 +24,7 @@ namespace {
 
 //=============================================================================
 // 初期化
-void PlayerCombatComponent::Initialize(Object3dSetup *object3dSetup) {
+void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup) {
 	object3dSetup_ = object3dSetup;
 	enemyManager_ = nullptr;
 

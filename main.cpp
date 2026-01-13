@@ -17,7 +17,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
     //========================================
     // フレームワークのインスタンスを生成
-    MagFramework *framework = new EngineApp();
+    MagEngine::MagFramework *framework = new MagEngine::EngineApp();
     //========================================
     // ゲームの実行
     framework->Run();

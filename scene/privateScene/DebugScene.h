@@ -18,8 +18,8 @@ class DebugScene : public BaseScene {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
-					SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) override;
+	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Object3dSetup *object3dSetup, MagEngine::ParticleSetup *particleSetup,
+		MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -56,7 +56,7 @@ public:
 private:
 	//========================================
 	// オーディオ
-	MAudioG *audio_;
+	MagEngine::MAudioG *audio_;
 
 	//========================================
 	// スプライト
@@ -64,31 +64,31 @@ private:
 	//========================================
 	// 3dオブジェクト
 	// モンスターボール
-	std::unique_ptr<Object3d> objMonsterBall_;
+	std::unique_ptr<MagEngine::Object3d> objMonsterBall_;
 	// 地面
-	std::unique_ptr<Object3d> objTerrain_;
+	std::unique_ptr<MagEngine::Object3d> objTerrain_;
 
 	//========================================
 	// レベルデータローダー
-	std::unique_ptr<LevelDataLoader> levelDataLoader_;
+	std::unique_ptr<MagEngine::LevelDataLoader> levelDataLoader_;
 	// レベルデータから作成されたObject3Dリスト
-	std::vector<std::unique_ptr<Object3d>> levelObjects_;
+	std::vector<std::unique_ptr<MagEngine::Object3d>> levelObjects_;
 	// Object3dSetupの保存（再読み込み時に使用）
-	Object3dSetup *object3dSetup_;
+	MagEngine::Object3dSetup *object3dSetup_;
 
 	//========================================
 	// パーティクル
-	std::unique_ptr<Particle> particle_;
+	std::unique_ptr<MagEngine::Particle> particle_;
 	// パーティクルエミッター
-	std::unique_ptr<ParticleEmitter> particleEmitter_;
+	std::unique_ptr<MagEngine::ParticleEmitter> particleEmitter_;
 
 	//=========================================
 	// Skybox
-	std::unique_ptr<Skybox> skybox_;
+	std::unique_ptr<MagEngine::Skybox> skybox_;
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
-	Transform transform{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	Transform transform{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
 
 	//========================================
 	// Skybox用デバッグフラグ
@@ -101,5 +101,5 @@ private:
 
 	//========================================
 	// Cloud
-	std::unique_ptr<Cloud> cloud_;
+	std::unique_ptr<MagEngine::Cloud> cloud_;
 };

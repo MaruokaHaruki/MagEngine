@@ -46,7 +46,7 @@ class SceneTransition {
 	///                        メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup);
+	void Initialize(MagEngine::SpriteSetup *spriteSetup);
 
 	/// \brief 終了処理
 	void Finalize();
@@ -167,8 +167,8 @@ private:
 	///                        メンバ変数
 private:
 	// スプライト管理
-	SpriteSetup *spriteSetup_ = nullptr;
-	std::unique_ptr<Sprite> transitionSprite_ = nullptr;
+	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
+	std::unique_ptr<MagEngine::Sprite> transitionSprite_ = nullptr;
 
 	// トランジション設定
 	TransitionType currentType_ = TransitionType::Fade;
@@ -190,5 +190,5 @@ private:
 	float screenHeight_ = 720.0f;
 
 	// おしゃれトランジション用の追加スプライト
-	std::vector<std::unique_ptr<Sprite>> additionalSprites_;
+	std::vector<std::unique_ptr<MagEngine::Sprite>> additionalSprites_;
 };

@@ -27,112 +27,117 @@ struct DebugText {
 	bool isPersistent;		// true: テキストはClearAllTextsで削除されない
 };
 
-class DebugTextManager {
-public:
-	// シングルトンインスタンスの取得
-	static DebugTextManager *GetInstance();
+///=============================================================================
+///                        namespace MagEngine
+namespace MagEngine {
 
-	// 初期化
-	void Initialize(WinApp *winApp);
+	class DebugTextManager {
+	public:
+		// シングルトンインスタンスの取得
+		static DebugTextManager *GetInstance();
 
-	// 更新処理
-	void Update();
+		// 初期化
+		void Initialize(WinApp *winApp);
 
-	// ImGui描画処理
-	void DrawImGui();
+		// 更新処理
+		void Update();
 
-	// ImGuiでデバッグテキスト一覧を表示・管理するウィンドウを描画
-	void DrawDebugTextManagerImGui();
+		// ImGui描画処理
+		void DrawImGui();
 
-	/// @brief 3D空間上にテキストを追加
-	/// @param text 追加するテキスト
-	/// @param position 3D空間上の位置
-	/// @param color テキストの色（RGBA）
-	/// @param duration 表示時間（-1で無期限）
-	/// @param scale テキストのスケール
-	/// @param fontName 使用するフォント名（空文字でデフォルトフォント）
-	/// @param isFixedToScreen スクリーンに固定するかどうか（trueでカメラ移動の影響を受けない）
-	/// @param isPersistent 永続的なテキストかどうか（trueでClearAllTextsで削除されない）
-	void AddText3D(const std::string &text, const MagMath::Vector3 &position,
-				   const MagMath::Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
-				   float duration = -1.0f, float scale = 1.0f,
-				   const std::string &fontName = "",
-				   bool isFixedToScreen = false,
-				   bool isPersistent = false);
+		// ImGuiでデバッグテキスト一覧を表示・管理するウィンドウを描画
+		void DrawDebugTextManagerImGui();
 
-	// 3D空間上に軸名やポイント名などのデバッグ用のテキストを追加する簡易関数
-	// これらは自動的に永続的なテキストになります
-	void AddAxisLabels();
-	void AddGridLabels(float gridSize = 5.0f, int gridCount = 4);
-	void AddPointLabel(const std::string &label, const MagMath::Vector3 &position,
-					   const MagMath::Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f});
+		/// @brief 3D空間上にテキストを追加
+		/// @param text 追加するテキスト
+		/// @param position 3D空間上の位置
+		/// @param color テキストの色（RGBA）
+		/// @param duration 表示時間（-1で無期限）
+		/// @param scale テキストのスケール
+		/// @param fontName 使用するフォント名（空文字でデフォルトフォント）
+		/// @param isFixedToScreen スクリーンに固定するかどうか（trueでカメラ移動の影響を受けない）
+		/// @param isPersistent 永続的なテキストかどうか（trueでClearAllTextsで削除されない）
+		void AddText3D(const std::string &text, const MagMath::Vector3 &position,
+			const MagMath::Vector4 &color = { 1.0f, 1.0f, 1.0f, 1.0f },
+			float duration = -1.0f, float scale = 1.0f,
+			const std::string &fontName = "",
+			bool isFixedToScreen = false,
+			bool isPersistent = false);
 
-	// スクリーン座標にテキスト追加
-	// isPersistent: trueの場合、ClearAllTextsでテキストが削除されない
-	void AddTextScreen(const std::string &text, const MagMath::Vector2 &position,
-					   const MagMath::Vector4 &color = {1.0f, 1.0f, 1.0f, 1.0f},
-					   float duration = -1.0f, float scale = 1.0f,
-					   const std::string &fontName = "",
-					   bool isPersistent = false);
+		// 3D空間上に軸名やポイント名などのデバッグ用のテキストを追加する簡易関数
+		// これらは自動的に永続的なテキストになります
+		void AddAxisLabels();
+		void AddGridLabels(float gridSize = 5.0f, int gridCount = 4);
+		void AddPointLabel(const std::string &label, const MagMath::Vector3 &position,
+			const MagMath::Vector4 &color = { 1.0f, 1.0f, 1.0f, 1.0f });
 
-	// 全テキストの削除（永続的なテキストを除く）
-	void ClearAllTexts();
+		// スクリーン座標にテキスト追加
+		// isPersistent: trueの場合、ClearAllTextsでテキストが削除されない
+		void AddTextScreen(const std::string &text, const MagMath::Vector2 &position,
+			const MagMath::Vector4 &color = { 1.0f, 1.0f, 1.0f, 1.0f },
+			float duration = -1.0f, float scale = 1.0f,
+			const std::string &fontName = "",
+			bool isPersistent = false);
 
-	// 全てのテキストを削除（永続的なテキストを含む）
-	void ClearAllTextsIncludingPersistent();
+		// 全テキストの削除（永続的なテキストを除く）
+		void ClearAllTexts();
 
-	// カメラの設定
-	void SetCamera(Camera *camera) {
-		camera_ = camera;
+		// 全てのテキストを削除（永続的なテキストを含む）
+		void ClearAllTextsIncludingPersistent();
+
+		// カメラの設定
+		void SetCamera(Camera *camera) {
+			camera_ = camera;
+		}
+
+		// デバッグテキスト表示切替
+		void SetDebugTextEnabled(bool enabled) {
+			isDebugTextEnabled_ = enabled;
+		}
+		bool IsDebugTextEnabled() const {
+			return isDebugTextEnabled_;
+		}
+
+		// フォントのロード
+		// fontName: 管理用のフォント名, filePath: ttf/otfファイルへのパス, size: フォントサイズ
+		bool LoadFont(const std::string &fontName, const std::string &filePath, float size);
+
+	private:
+		DebugTextManager() = default;
+		~DebugTextManager() = default;
+		DebugTextManager(const DebugTextManager &) = delete;
+		DebugTextManager &operator=(const DebugTextManager &) = delete;
+
+		// 3D空間座標からスクリーン座標への変換
+		MagMath::Vector2 WorldToScreen(const MagMath::Vector3 &worldPosition) const;
+
+		// オブジェクトから位置を取得（テンプレート特殊化で各オブジェクトタイプに対応）
+		template <typename T>
+		MagMath::Vector3 GetObjectPosition(T *object) const;
+
+		// メンバ変数
+		static DebugTextManager *instance_;
+		//========================================
+		// WindowsAPI
+		WinApp *winApp_ = nullptr;
+
+		std::vector<DebugText> debugTexts_;
+		Camera *camera_ = nullptr;
+		bool isDebugTextEnabled_ = true;
+		std::unordered_map<std::string, ImFont *> loadedFonts_; // ロード済みフォントのマップ
+
+		// ImGui管理用フラグ
+		bool showOnlyPersistent_ = false;  // 永続テキストのみ表示
+		bool showOnly3DTexts_ = false;	   // 3Dテキストのみ表示
+		bool showOnlyScreenTexts_ = false; // スクリーンテキストのみ表示
+	};
+
+	// Object3dクラス用の特殊化（GetPosition関数を持つ前提）
+	template <>
+	inline MagMath::Vector3 DebugTextManager::GetObjectPosition(Object3d *object) const {
+		if(object) {
+			return object->GetPosition();
+		}
+		return MagMath::Vector3{ 0, 0, 0 };
 	}
-
-	// デバッグテキスト表示切替
-	void SetDebugTextEnabled(bool enabled) {
-		isDebugTextEnabled_ = enabled;
-	}
-	bool IsDebugTextEnabled() const {
-		return isDebugTextEnabled_;
-	}
-
-	// フォントのロード
-	// fontName: 管理用のフォント名, filePath: ttf/otfファイルへのパス, size: フォントサイズ
-	bool LoadFont(const std::string &fontName, const std::string &filePath, float size);
-
-private:
-	DebugTextManager() = default;
-	~DebugTextManager() = default;
-	DebugTextManager(const DebugTextManager &) = delete;
-	DebugTextManager &operator=(const DebugTextManager &) = delete;
-
-	// 3D空間座標からスクリーン座標への変換
-	MagMath::Vector2 WorldToScreen(const MagMath::Vector3 &worldPosition) const;
-
-	// オブジェクトから位置を取得（テンプレート特殊化で各オブジェクトタイプに対応）
-	template <typename T>
-	MagMath::Vector3 GetObjectPosition(T *object) const;
-
-	// メンバ変数
-	static DebugTextManager *instance_;
-	//========================================
-	// WindowsAPI
-	WinApp *winApp_ = nullptr;
-
-	std::vector<DebugText> debugTexts_;
-	Camera *camera_ = nullptr;
-	bool isDebugTextEnabled_ = true;
-	std::unordered_map<std::string, ImFont *> loadedFonts_; // ロード済みフォントのマップ
-
-	// ImGui管理用フラグ
-	bool showOnlyPersistent_ = false;  // 永続テキストのみ表示
-	bool showOnly3DTexts_ = false;	   // 3Dテキストのみ表示
-	bool showOnlyScreenTexts_ = false; // スクリーンテキストのみ表示
-};
-
-// Object3dクラス用の特殊化（GetPosition関数を持つ前提）
-template <>
-inline MagMath::Vector3 DebugTextManager::GetObjectPosition(Object3d *object) const {
-	if (object) {
-		return object->GetPosition();
-	}
-	return MagMath::Vector3{0, 0, 0};
 }

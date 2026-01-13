@@ -34,22 +34,26 @@
 #include "MagFramework.h"
 
 ///=============================================================================
+///                        namespace MagEngine
+namespace MagEngine {
+
+///=============================================================================
 ///						EngineAppクラス
-class EngineApp : public MagFramework {
-	///--------------------------------------------------------------
-	///							メンバ関数
-public:
+	class EngineApp : public MagFramework {
+		///--------------------------------------------------------------
+		///							メンバ関数
+	public:
 
-	/// \brief 初期化
-	void Initialize() override;
+		/// \brief 初期化
+		void Initialize() override;
 
-	/// \brief 終了処理
-	void Finalize() override;
+		/// \brief 終了処理
+		void Finalize() override;
 
-	/// \brief 更新
-	void Update() override;
+		/// \brief 更新
+		void Update() override;
 
-	/// \brief 描画 
-	void Draw() override;
-};
-
+		/// \brief 描画 
+		void Draw() override;
+	};
+}

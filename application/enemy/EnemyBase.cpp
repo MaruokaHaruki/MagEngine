@@ -6,6 +6,8 @@
 #include "Player.h"
 #include <algorithm>
 #include <cmath>
+#include "BaseObject.h"
+using namespace MagEngine;
 
 // 定数定義
 namespace {
@@ -22,7 +24,7 @@ namespace {
 
 ///=============================================================================
 ///                        基本初期化
-void EnemyBase::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
+void EnemyBase::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
 	// 3Dオブジェクトの初期化
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
@@ -76,7 +78,8 @@ void EnemyBase::Initialize(Object3dSetup *object3dSetup, const std::string &mode
 
 ///=============================================================================
 ///                        パーティクルシステムの設定
-void EnemyBase::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
+void EnemyBase::SetParticleSystem(MagEngine::Particle *particle, 
+	MagEngine::ParticleSetup *particleSetup) {
 	particle_ = particle;
 	particleSetup_ = particleSetup;
 }

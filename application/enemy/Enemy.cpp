@@ -6,10 +6,11 @@
 #include "Player.h"
 #include <algorithm>
 #include <cmath>
+using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void Enemy::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
+void Enemy::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
 	// 基底クラスの初期化
 	EnemyBase::Initialize(object3dSetup, modelPath, position);
 

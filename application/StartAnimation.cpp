@@ -4,10 +4,11 @@
 #include "ImguiSetup.h"
 #include <algorithm>
 #include <cmath>
+using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void StartAnimation::Initialize(SpriteSetup *spriteSetup) {
+void StartAnimation::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 	spriteSetup_ = spriteSetup;
 	state_ = StartAnimationState::Idle;
 	progress_ = 0.0f;
@@ -20,12 +21,12 @@ void StartAnimation::Initialize(SpriteSetup *spriteSetup) {
 	}
 
 	// 上部バーの作成
-	topBar_ = std::make_unique<Sprite>();
+	topBar_ = std::make_unique<MagEngine::Sprite>();
 	topBar_->Initialize(spriteSetup_, "white1x1.png");
 	topBar_->SetColor(barColor_);
 
 	// 下部バーの作成
-	bottomBar_ = std::make_unique<Sprite>();
+	bottomBar_ = std::make_unique<MagEngine::Sprite>();
 	bottomBar_->Initialize(spriteSetup_, "white1x1.png");
 	bottomBar_->SetColor(barColor_);
 

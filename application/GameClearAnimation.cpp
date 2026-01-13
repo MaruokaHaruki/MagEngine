@@ -10,7 +10,7 @@
 
 ///=============================================================================
 ///                        初期化
-void GameClearAnimation::Initialize(SpriteSetup *spriteSetup) {
+void GameClearAnimation::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 	spriteSetup_ = spriteSetup;
 	state_ = GameClearAnimationState::Idle;
 	progress_ = 0.0f;
@@ -23,17 +23,17 @@ void GameClearAnimation::Initialize(SpriteSetup *spriteSetup) {
 	}
 
 	// 上部バーの作成
-	topBar_ = std::make_unique<Sprite>();
+	topBar_ = std::make_unique<MagEngine::Sprite>();
 	topBar_->Initialize(spriteSetup_, "white1x1.png");
 	topBar_->SetColor(barColor_);
 
 	// 下部バーの作成
-	bottomBar_ = std::make_unique<Sprite>();
+	bottomBar_ = std::make_unique<MagEngine::Sprite>();
 	bottomBar_->Initialize(spriteSetup_, "white1x1.png");
 	bottomBar_->SetColor(barColor_);
 
 	// テキストスプライトの作成
-	textSprite_ = std::make_unique<Sprite>();
+	textSprite_ = std::make_unique<MagEngine::Sprite>();
 	textSprite_->Initialize(spriteSetup_, "WolfOne_Comprete.png");
 	textSprite_->SetSize(textSize_);
 	textSprite_->SetAnchorPoint({0.5f, 0.5f});

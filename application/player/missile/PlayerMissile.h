@@ -32,7 +32,7 @@ public:
 	/// @param startPos 初期位置
 	/// @param initialDirection 初期進行方向
 	/// @param target ターゲット（初期値はnullptr）
-	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath,
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath,
 					const Vector3 &startPos, const Vector3 &initialDirection,
 					EnemyBase *target = nullptr); // Enemy* から EnemyBase* に変更
 	/// @brief Update 更新
@@ -54,7 +54,7 @@ public:
 	/// \brief GetPosition 位置取得
 	Vector3 GetPosition() const;
 	/// \brief GetObject3d 3Dオブジェクト取得
-	Object3d *GetObject3d() const {
+	MagEngine::Object3d *GetObject3d() const {
 		return obj_.get();
 	}
 	/// \brief IsAlive 生存フラグ取得
@@ -113,8 +113,8 @@ private:
 
 	//========================================
 	// コア
-	std::unique_ptr<Object3d> obj_; // 3Dオブジェクト
-	Object3dSetup *object3dSetup_;	// オブジェクト設定
+	std::unique_ptr<MagEngine::Object3d> obj_; // 3Dオブジェクト
+	MagEngine::Object3dSetup *object3dSetup_;	// オブジェクト設定
 
 	//========================================
 	// 物理関連

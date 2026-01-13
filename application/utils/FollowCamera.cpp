@@ -6,6 +6,7 @@
 #include "MathFunc4x4.h"
 #include "Player.h"
 #include <cmath>
+using namespace MagEngine;
 
 namespace {
 	inline float Lerp(float a, float b, float t) {
@@ -26,7 +27,7 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	cameraName_ = cameraName;
 
 	// カメラマネージャからカメラを取得
-	CameraManager *cameraManager = CameraManager::GetInstance();
+	MagEngine::CameraManager *cameraManager = MagEngine::CameraManager::GetInstance();
 	camera_ = cameraManager->GetCamera(cameraName);
 
 	// 初期パラメータの設定

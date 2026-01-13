@@ -18,8 +18,11 @@ class SceneManager {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
-					SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup);
+	void Initialize(MagEngine::SpriteSetup *spriteSetup, 
+		MagEngine::Object3dSetup *object3dSetup, 
+		MagEngine::ParticleSetup *particleSetup,
+		MagEngine::SkyboxSetup *skyboxSetup, 
+		MagEngine::CloudSetup *cloudSetup);
 
 	/// @brief 終了処理
 	void Finalize();
@@ -71,13 +74,13 @@ private:
 
 	//========================================
 	// Sprite共通部
-	SpriteSetup *spriteSetup_ = nullptr;
+	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
 	// 3Dオブジェクト共通部
-	Object3dSetup *object3dSetup_ = nullptr;
+	MagEngine::Object3dSetup *object3dSetup_ = nullptr;
 	// パーティクル共通部
-	ParticleSetup *particleSetup_ = nullptr;
+	MagEngine::ParticleSetup *particleSetup_ = nullptr;
 	// Skybox共通部
-	SkyboxSetup *skyboxSetup_ = nullptr;
+	MagEngine::SkyboxSetup *skyboxSetup_ = nullptr;
 	// Cloud共通部
-	CloudSetup *cloudSetup_ = nullptr;
+	MagEngine::CloudSetup *cloudSetup_ = nullptr;
 };

@@ -12,7 +12,7 @@ class Object3dSetup;
 class PlayerBullet : public BaseObject {
 public:
 	/// \brief 初期化
-	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
 
 	/// \brief 更新
 	void Update();
@@ -46,7 +46,7 @@ public:
 private:
 	//========================================
 	//  3Dオブジェクト
-	std::unique_ptr<Object3d> obj_;
+	std::unique_ptr<MagEngine::Object3d> obj_;
 
 	//========================================
 	//  位置情報

@@ -17,6 +17,7 @@
 #include "Object3d.h"
 #include <algorithm>
 #include <cmath>
+using namespace MagEngine;
 
 namespace {
 	inline Vector3 NormalizeVector(const Vector3 &v) {
@@ -41,7 +42,7 @@ namespace {
 //=============================================================================
 // 初期化
 void PlayerMissile::Initialize(
-	Object3dSetup *object3dSetup,
+	MagEngine::Object3dSetup *object3dSetup,
 	const std::string &modelPath,
 	const Vector3 &position,
 	const Vector3 &direction,

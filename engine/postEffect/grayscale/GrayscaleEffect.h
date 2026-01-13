@@ -16,49 +16,52 @@
 #include <wrl/client.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+///=============================================================================
+///                        namespace MagEngine
+namespace MagEngine {
+	class DirectXCore;
+	class GrayscaleEffect {
 
-class DirectXCore;
-class GrayscaleEffect {
+		///--------------------------------------------------------------
+		///							メンバ関数
+	public:
+		/// \brief 初期化
+		void Initialize(DirectXCore *dxCore);
 
-	///--------------------------------------------------------------
-	///							メンバ関数
-public:
-	/// \brief 初期化
-	void Initialize(DirectXCore *dxCore);
+		/// \brief 前描画処理
+		void PreDraw();
 
-	/// \brief 前描画処理
-	void PreDraw();
+		/// \brief 後描画処理
+		void PostDraw();
 
-	/// \brief 後描画処理
-	void PostDraw();
+		///--------------------------------------------------------------
+		///							静的メンバ関数
+	private:
+		///--------------------------------------------------------------
+		///							入出力関数
+	public:
+		void CreatePipeline();
 
-	///--------------------------------------------------------------
-	///							静的メンバ関数
-private:
-	///--------------------------------------------------------------
-	///							入出力関数
-public:
-	void CreatePipeline();
+		void CreateRootSignature();
 
-	void CreateRootSignature();
+		///--------------------------------------------------------------
+		///							メンバ変数
+	private:
+		//========================================
+		// DirectXCoreポインタ
+		DirectXCore *dxCore_ = nullptr;
 
-	///--------------------------------------------------------------
-	///							メンバ変数
-private:
-	//========================================
-	// DirectXCoreポインタ
-	DirectXCore *dxCore_ = nullptr;
+		//========================================
+		// RootSignature
+		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 
-	//========================================
-	// RootSignature
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+		//========================================
+		// グラフィックスパイプライン
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;
 
-	//========================================
-	// グラフィックスパイプライン
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;
-
-	//========================================
-	// Shaderパス
-	std::wstring vertexShaderPath_;
-	std::wstring pixelShaderPath_;
-};
+		//========================================
+		// Shaderパス
+		std::wstring vertexShaderPath_;
+		std::wstring pixelShaderPath_;
+	};
+}

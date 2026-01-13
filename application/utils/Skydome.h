@@ -7,7 +7,7 @@ using namespace MagMath;
 class Skydome {
 public:
 	/// \brief 初期化
-	void Initialize(Object3dSetup *object3dSetup, const std::string &modelName);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelName);
 
 	/// \brief 更新
 	void Update();
@@ -19,5 +19,5 @@ public:
 	void DrawImGui();
 
 private:
-	std::unique_ptr<Object3d> object3d_;
+	std::unique_ptr<MagEngine::Object3d> object3d_;
 };

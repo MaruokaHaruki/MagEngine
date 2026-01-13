@@ -29,7 +29,11 @@ class TitleScene : public BaseScene {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) override;
+	void Initialize(MagEngine::SpriteSetup *spriteSetup, 
+		MagEngine::Object3dSetup *object3dSetup, 
+		MagEngine::ParticleSetup *particleSetup, 
+		MagEngine::SkyboxSetup *skyboxSetup, 
+		MagEngine::CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -74,8 +78,8 @@ private:
 
 	//========================================
 	// スプライト
-	std::unique_ptr<Sprite> titleSprite_;
-	std::unique_ptr<Sprite> pressEnterSprite_;
+	std::unique_ptr<MagEngine::Sprite> titleSprite_;
+	std::unique_ptr<MagEngine::Sprite> pressEnterSprite_;
 
 	//========================================
 	// 演出用変数
@@ -85,7 +89,7 @@ private:
 
 	//========================================
 	// スカイボックス
-	std::unique_ptr<Skybox> skybox_;
+	std::unique_ptr<MagEngine::Skybox> skybox_;
 
 	//========================================
 	// トランジション

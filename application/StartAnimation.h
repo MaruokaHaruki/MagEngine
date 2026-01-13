@@ -24,7 +24,7 @@ class StartAnimation {
 	///                        メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup);
+	void Initialize(MagEngine::SpriteSetup *spriteSetup);
 
 	/// \brief 終了処理
 	void Finalize();
@@ -116,10 +116,10 @@ private:
 	///                        メンバ変数
 private:
 	// スプライト管理
-	SpriteSetup *spriteSetup_ = nullptr;
-	std::unique_ptr<Sprite> topBar_ = nullptr;	   // 上部バー
-	std::unique_ptr<Sprite> bottomBar_ = nullptr;  // 下部バー
-	std::unique_ptr<Sprite> textSprite_ = nullptr; // 中央テキスト
+	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
+	std::unique_ptr<MagEngine::Sprite> topBar_ = nullptr;	   // 上部バー
+	std::unique_ptr<MagEngine::Sprite> bottomBar_ = nullptr;  // 下部バー
+	std::unique_ptr<MagEngine::Sprite> textSprite_ = nullptr; // 中央テキスト
 
 	// アニメーション状態
 	StartAnimationState state_ = StartAnimationState::Idle;

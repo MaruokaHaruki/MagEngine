@@ -19,6 +19,7 @@
 #include <Xinput.h>
 #include <algorithm>
 #include <cmath> // std::abs, std::min, std::max のため
+using namespace MagEngine;
 
 namespace { // 無名名前空間でファイルスコープの定数を定義
 	constexpr float kFrameDelta = 1.0f / 60.0f;
@@ -35,7 +36,7 @@ void Player::ClearLockOn() {
 
 //=======================================================================
 // 初期化
-void Player::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath) {
+void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath) {
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);

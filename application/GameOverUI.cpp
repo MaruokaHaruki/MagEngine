@@ -7,7 +7,7 @@
 
 ///=============================================================================
 ///                        初期化
-void GameOverUI::Initialize(SpriteSetup *spriteSetup) {
+void GameOverUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 	spriteSetup_ = spriteSetup;
 	state_ = GameOverState::Idle;
 	progress_ = 0.0f;
@@ -20,14 +20,14 @@ void GameOverUI::Initialize(SpriteSetup *spriteSetup) {
 	}
 
 	// 背景スプライトの作成
-	backgroundSprite_ = std::make_unique<Sprite>();
+	backgroundSprite_ = std::make_unique<MagEngine::Sprite>();
 	backgroundSprite_->Initialize(spriteSetup_, "white1x1.png");
 	backgroundSprite_->SetSize({screenWidth_, screenHeight_});
 	backgroundSprite_->SetPosition({0.0f, 0.0f});
 	backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f}); // 初期は透明
 
 	// テキストスプライトの作成
-	textSprite_ = std::make_unique<Sprite>();
+	textSprite_ = std::make_unique<MagEngine::Sprite>();
 	textSprite_->Initialize(spriteSetup_, textTexture_);
 	textSprite_->SetAnchorPoint({0.5f, 0.5f}); // 中心を基準点に設定
 	textSprite_->SetPosition({screenWidth_ / 2.0f, screenHeight_ / 2.0f});

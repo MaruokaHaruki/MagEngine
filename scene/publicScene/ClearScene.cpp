@@ -11,7 +11,11 @@
 
 ///=============================================================================
 ///						初期化
-void ClearScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) {
+void ClearScene::Initialize(MagEngine::SpriteSetup *spriteSetup, 
+	MagEngine::Object3dSetup *object3dSetup, 
+	MagEngine::ParticleSetup *particleSetup, 
+	MagEngine::SkyboxSetup *skyboxSetup, 
+	MagEngine::CloudSetup *cloudSetup) {
 	// 適当に引数を使用
 	// 引数を使用しない場合は警告を出さないようにする
 	spriteSetup;
@@ -29,11 +33,11 @@ void ClearScene::Finalize() {
 void ClearScene::Update() {
 	//========================================
 	// シーン遷移
-	if (Input::GetInstance()->PushKey(VK_SPACE)) {
+	if (MagEngine::Input::GetInstance()->PushKey(VK_SPACE)) {
 		BaseScene::sceneNo = TITLE;
 	}
 	// コントローラ
-	if (Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
+	if (MagEngine::Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
 		BaseScene::sceneNo = TITLE;
 	}
 }

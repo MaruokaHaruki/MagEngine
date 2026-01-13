@@ -7,7 +7,6 @@
  * \note
  *********************************************************************/
 #pragma once
-
 // パーティクルの形状を定義する列挙型 (ヘッダの先頭近くに移動)
 enum class ParticleShape {
 	Board,	 // 現在のボード形状
@@ -35,320 +34,324 @@ enum class ParticleShape {
 #include <dxcapi.h>
 #pragma comment(lib, "dxcompiler.lib")
 
-// Particle構造体
-struct ParticleStr {
-	MagMath::Transform transform;
-	MagMath::Vector3 velocity;
-	MagMath::Vector4 color;
-	float lifeTime;
-	float currentTime;
-	MagMath::Vector3 initialScale;	 // 初期スケール
-	MagMath::Vector3 endScale;		 // 終了スケール
-	MagMath::Vector3 initialRotation; // 初期回転
-	MagMath::Vector3 endRotation;	 // 終了回転
-};
-
-struct ParticleForGPU {
-	MagMath::Matrix4x4 WVP;
-	MagMath::Matrix4x4 World;
-	MagMath::Vector4 color;
-};
-
-// パーティクルグループ構造体の定義
-struct ParticleGroup {
-	// マテリアルデータ
-	std::string materialFilePath;
-	int srvIndex = 0;
-	// パーティクルのリスト (std::list<ParticleStr>型)
-	std::list<ParticleStr> particleList = {};
-	// インスタンシングデータ用SRVインデックス
-	int instancingSrvIndex = 0;
-	// インスタンシングリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource = nullptr;
-	// インスタンス数
-	UINT instanceCount = 0;
-	// インスタンシングデータを書き込むためのポインタ
-	ParticleForGPU *instancingDataPtr = nullptr;
-
-	MagMath::Vector2 textureLeftTop = {0.0f, 0.0f};    // テクスチャ左上座標
-	MagMath::Vector2 textureSize = {0.0f, 0.0f};	   // テクスチャサイズを追加
-
-	ParticleShape shape;   // このグループのパーティクル形状
-	UINT vertexOffset = 0; // 頂点バッファのオフセット
-	UINT vertexCount = 0;  // この形状の頂点数
-};
-
-class Object3dSetup;
-class Camera;
-class Particle {
-	///--------------------------------------------------------------
-	///							メンバ関数
-public:
-	/// \brief 初期化
-	void Initialize(ParticleSetup *particleSetup);
-
-	/// \brief 更新
-	void Update();
-
-	/// \brief 描画
-	void Draw();
-
-	/**----------------------------------------------------------------------------
-	 * \brief  Emit
-	 * \param  name
-	 * \param  position
-	 * \param  count
-	 */
-	void Emit(const std::string name, const MagMath::Vector3 &position, uint32_t count);
-
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateParticleGroup
-	 * \param  name
-	 * \param  materialFilePath
-	 * \param  maxInstanceCount
-	 */
-	void CreateParticleGroup(const std::string &name, const std::string &textureFilePath, ParticleShape shape);
-
-	// 形状設定用の関数 (注意: CreateVertexDataが固定形状を生成するため、現状これらの動的変更は限定的)
-	void SetParticleShape(ParticleShape shape) { /* particleShape_ = shape; */
-		shape = shape;
-	} // particleShape_ は削除されたため、この関数は現状何もしません。グループ作成時に形状を指定してください。
-	void SetRingRadius(float radius) {
-		ringRadius_ = radius;
-	}
-	void SetCylinderParams(float height, float radius) {
-		cylinderHeight_ = height;
-		cylinderRadius_ = radius;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetBillboard ビルボードの使用/不使用を設定
-	 * \param  enable trueで使用、falseで不使用
-	 */
-	void SetBillboard(bool enable) {
-		isUsedBillboard = enable;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetTranslateRange 移動量のランダム範囲を設定
-	 * \param  min 最小値
-	 * \param  max 最大値
-	 */
-	void SetTranslateRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
-		translateMin_ = min;
-		translateMax_ = max;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetVelocityRange 初速度のランダム範囲を設定
-	 * \param  min 最小値
-	 * \param  max 最大値
-	 */
-	void SetVelocityRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
-		velocityMin_ = min;
-		velocityMax_ = max;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetColorRange 色のランダム範囲を設定
-	 * \param  min 最小値 (RGBA)
-	 * \param  max 最大値 (RGBA)
-	 */
-	void SetColorRange(const MagMath::Vector4 &min, const MagMath::Vector4 &max) {
-		colorMin_ = min;
-		colorMax_ = max;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetLifetimeRange 生存時間のランダム範囲を設定
-	 * \param  min 最小値
-	 * \param  max 最大値
-	 */
-	void SetLifetimeRange(float min, float max) {
-		lifetimeRange_ = {min, max};
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetInitialScaleRange 初期スケールのランダム範囲を設定
-	 * \param  min 最小値
-	 * \param  max 最大値
-	 */
-	void SetInitialScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
-		initialScaleMin_ = min;
-		initialScaleMax_ = max;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetEndScaleRange 終了スケールのランダム範囲を設定
-	 * \param  min 最小値
-	 * \param  max 最大値
-	 */
-	void SetEndScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
-		endScaleMin_ = min;
-		endScaleMax_ = max;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetInitialRotationRange 初期回転のランダム範囲を設定
-	 * \param  min 最小値 (ラジアン)
-	 * \param  max 最大値 (ラジアン)
-	 */
-	void SetInitialRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
-		initialRotationMin_ = min;
-		initialRotationMax_ = max;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetEndRotationRange 終了回転のランダム範囲を設定
-	 * \param  min 最小値 (ラジアン)
-	 * \param  max 最大値 (ラジアン)
-	 */
-	void SetEndRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
-		endRotationMin_ = min;
-		endRotationMax_ = max;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetGravity 重力の設定
-	 * \param  gravity 重力ベクトル
-	 */
-	void SetGravity(const MagMath::Vector3 &gravity) {
-		gravity_ = gravity;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetEmissionDelay エミッション遅延の設定
-	 * \param  delay 遅延時間
-	 */
-	void SetEmissionDelay(float delay) {
-		emissionDelay_ = delay;
-	}
-
-	/**----------------------------------------------------------------------------
-	 * \brief  SetFadeInOut フェードイン・アウトの設定
-	 * \param  fadeInRatio フェードイン比率 (0.0-1.0)
-	 * \param  fadeOutRatio フェードアウト比率 (0.0-1.0)
-	 */
-	void SetFadeInOut(float fadeInRatio, float fadeOutRatio) {
-		fadeInRatio_ = fadeInRatio;
-		fadeOutRatio_ = fadeOutRatio;
-	}
-
-	///--------------------------------------------------------------
-	///						 静的メンバ関数
-private:
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateVertexData 頂点データの作成
-	 */
-	void CreateVertexData();
-
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateVertexBufferView 頂点バッファビューの作成
-	 */
-	void CreateVertexBufferView();
-
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateMaterialData マテリアルデータの作成
-	 */
-	void CreateMaterialData();
-
-	/**----------------------------------------------------------------------------
-	 * \brief  CreateNewParticle 新しいパーティクルを生成
-	 * \param  randomEngine 乱数生成器
-	 * \param  position 生成位置
-	 */
-	ParticleStr CreateNewParticle(std::mt19937 &randomEngine, const MagMath::Vector3 &position);
-
-	///--------------------------------------------------------------
-	///							入出力関数
-public:
-	// 画像のサイズを設定
-	void SetCustomTextureSize(const MagMath::Vector2 &size) {
-		customTextureSize = size;
-	}
-
-	///--------------------------------------------------------------
-	///							メンバ変数
-private:
-	//---------------------------------------
-	// パーティクルセットアップポインタ
-	ParticleSetup *particleSetup_ = nullptr;
-
-	//---------------------------------------
-	// パーティクルグループ
-	std::unordered_map<std::string, ParticleGroup> particleGroups;
-
-	//---------------------------------------
-	// モデルデータ
-	MagMath::ModelData modelData_;
-
-	//---------------------------------------
-	// 頂点データ
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
-	// バッファリソースの使い道を指すポインタ
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
-	// バッファリソース内のデータを指すポインタ
-	MagMath::VertexData *vertexData_ = nullptr;
-
-	//---------------------------------------
-	// マテリアルデータ
-	Microsoft::WRL::ComPtr<ID3D12Resource> materialBuffer_;
-	// バッファリソース内のデータを指すポインタ
-	MagMath::Material *materialData_ = nullptr;
-
-	//---------------------------------------
-	// インスタンシングバッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> instancingBuffer_;
-
-	//---------------------------------------
-	// 乱数生成器の初期化
-	std::random_device seedGenerator_;
-	std::mt19937 randomEngine_;
-
-	//---------------------------------------
-	// その他
-	// カメラ目線を使用するかどうか
-	bool isUsedBillboard = false; // デフォルトを false に変更
-	// 最大インスタンス数
-	static const uint32_t kNumMaxInstance = 2048;
-	//
-	const float kDeltaTime = 1.0f / 60.0f;
-	// 乱数範囲の調整用
-	struct RangeForRandom {
-		float min;
-		float max;
+///=============================================================================
+///                        namespace MagEngine
+namespace MagEngine {
+	// Particle構造体
+	struct ParticleStr {
+		MagMath::Transform transform;
+		MagMath::Vector3 velocity;
+		MagMath::Vector4 color;
+		float lifeTime;
+		float currentTime;
+		MagMath::Vector3 initialScale;	  // 初期スケール
+		MagMath::Vector3 endScale;		  // 終了スケール
+		MagMath::Vector3 initialRotation; // 初期回転
+		MagMath::Vector3 endRotation;	  // 終了回転
 	};
 
-	// パーティクルの設定
-	MagMath::Vector3 translateMin_ = {0.0f, 0.0f, 0.0f};
-	MagMath::Vector3 translateMax_ = {0.0f, 0.0f, 0.0f};
-	MagMath::Vector3 velocityMin_ = {-0.1f, -0.1f, -0.1f};
-	MagMath::Vector3 velocityMax_ = {0.1f, 0.1f, 0.1f};
-	MagMath::Vector4 colorMin_ = {1.0f, 1.0f, 1.0f, 1.0f};
-	MagMath::Vector4 colorMax_ = {1.0f, 1.0f, 1.0f, 1.0f};
-	RangeForRandom lifetimeRange_ = {1.0f, 3.0f};
-	MagMath::Vector3 initialScaleMin_ = {1.0f, 1.0f, 1.0f};
-	MagMath::Vector3 initialScaleMax_ = {1.0f, 1.0f, 1.0f};
-	MagMath::Vector3 endScaleMin_ = {0.0f, 0.0f, 0.0f};
-	MagMath::Vector3 endScaleMax_ = {0.0f, 0.0f, 0.0f};
-	MagMath::Vector3 initialRotationMin_ = {0.0f, 0.0f, 0.0f};
-	MagMath::Vector3 initialRotationMax_ = {0.0f, 0.0f, 0.0f};
-	MagMath::Vector3 endRotationMin_ = {0.0f, 0.0f, 0.0f};
-	MagMath::Vector3 endRotationMax_ = {0.0f, 0.0f, 0.0f};
+	struct ParticleForGPU {
+		MagMath::Matrix4x4 WVP;
+		MagMath::Matrix4x4 World;
+		MagMath::Vector4 color;
+	};
 
-	// エフェクト用の追加パラメータ
-	MagMath::Vector3 gravity_ = {0.0f, -9.8f, 0.0f}; // 重力
-	float emissionDelay_ = 0.0f;			// エミッション遅延
-	float fadeInRatio_ = 0.1f;				// フェードイン比率
-	float fadeOutRatio_ = 0.7f;				// フェードアウト比率
+	// パーティクルグループ構造体の定義
+	struct ParticleGroup {
+		// マテリアルデータ
+		std::string materialFilePath;
+		int srvIndex = 0;
+		// パーティクルのリスト (std::list<ParticleStr>型)
+		std::list<ParticleStr> particleList = {};
+		// インスタンシングデータ用SRVインデックス
+		int instancingSrvIndex = 0;
+		// インスタンシングリソース
+		Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource = nullptr;
+		// インスタンス数
+		UINT instanceCount = 0;
+		// インスタンシングデータを書き込むためのポインタ
+		ParticleForGPU *instancingDataPtr = nullptr;
 
-	// TODO:設定しているテクスチャサイズを使うかどうかを変更できるようにする
-	MagMath::Vector2 customTextureSize = {100.0f, 100.0f};
+		MagMath::Vector2 textureLeftTop = {0.0f, 0.0f}; // テクスチャ左上座標
+		MagMath::Vector2 textureSize = {0.0f, 0.0f};	// テクスチャサイズを追加
 
-	// パーティクルの形状 (グループごとに設定するため、クラスメンバからは削除)
-	// ParticleShape particleShape_ = ParticleShape::Ring;
-	// 形状パラメータ (CreateVertexData内で固定値が使用されるため、現状これらの動的変更は限定的)
-	float ringRadius_ = 1.0f;	  // リングの半径
-	float cylinderHeight_ = 1.0f; // シリンダーの高さ
-	float cylinderRadius_ = 0.5f; // シリンダーの半径
-};
+		ParticleShape shape;   // このグループのパーティクル形状
+		UINT vertexOffset = 0; // 頂点バッファのオフセット
+		UINT vertexCount = 0;  // この形状の頂点数
+	};
+
+	class Object3dSetup;
+	class Camera;
+	class Particle {
+		///--------------------------------------------------------------
+		///							メンバ関数
+	public:
+		/// \brief 初期化
+		void Initialize(ParticleSetup *particleSetup);
+
+		/// \brief 更新
+		void Update();
+
+		/// \brief 描画
+		void Draw();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  Emit
+		 * \param  name
+		 * \param  position
+		 * \param  count
+		 */
+		void Emit(const std::string name, const MagMath::Vector3 &position, uint32_t count);
+
+		/**----------------------------------------------------------------------------
+		 * \brief  CreateParticleGroup
+		 * \param  name
+		 * \param  materialFilePath
+		 * \param  maxInstanceCount
+		 */
+		void CreateParticleGroup(const std::string &name, const std::string &textureFilePath, ParticleShape shape);
+
+		// 形状設定用の関数 (注意: CreateVertexDataが固定形状を生成するため、現状これらの動的変更は限定的)
+		void SetParticleShape(ParticleShape shape) { /* particleShape_ = shape; */
+			shape = shape;
+		} // particleShape_ は削除されたため、この関数は現状何もしません。グループ作成時に形状を指定してください。
+		void SetRingRadius(float radius) {
+			ringRadius_ = radius;
+		}
+		void SetCylinderParams(float height, float radius) {
+			cylinderHeight_ = height;
+			cylinderRadius_ = radius;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetBillboard ビルボードの使用/不使用を設定
+		 * \param  enable trueで使用、falseで不使用
+		 */
+		void SetBillboard(bool enable) {
+			isUsedBillboard = enable;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetTranslateRange 移動量のランダム範囲を設定
+		 * \param  min 最小値
+		 * \param  max 最大値
+		 */
+		void SetTranslateRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
+			translateMin_ = min;
+			translateMax_ = max;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetVelocityRange 初速度のランダム範囲を設定
+		 * \param  min 最小値
+		 * \param  max 最大値
+		 */
+		void SetVelocityRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
+			velocityMin_ = min;
+			velocityMax_ = max;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetColorRange 色のランダム範囲を設定
+		 * \param  min 最小値 (RGBA)
+		 * \param  max 最大値 (RGBA)
+		 */
+		void SetColorRange(const MagMath::Vector4 &min, const MagMath::Vector4 &max) {
+			colorMin_ = min;
+			colorMax_ = max;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetLifetimeRange 生存時間のランダム範囲を設定
+		 * \param  min 最小値
+		 * \param  max 最大値
+		 */
+		void SetLifetimeRange(float min, float max) {
+			lifetimeRange_ = {min, max};
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetInitialScaleRange 初期スケールのランダム範囲を設定
+		 * \param  min 最小値
+		 * \param  max 最大値
+		 */
+		void SetInitialScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
+			initialScaleMin_ = min;
+			initialScaleMax_ = max;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetEndScaleRange 終了スケールのランダム範囲を設定
+		 * \param  min 最小値
+		 * \param  max 最大値
+		 */
+		void SetEndScaleRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
+			endScaleMin_ = min;
+			endScaleMax_ = max;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetInitialRotationRange 初期回転のランダム範囲を設定
+		 * \param  min 最小値 (ラジアン)
+		 * \param  max 最大値 (ラジアン)
+		 */
+		void SetInitialRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
+			initialRotationMin_ = min;
+			initialRotationMax_ = max;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetEndRotationRange 終了回転のランダム範囲を設定
+		 * \param  min 最小値 (ラジアン)
+		 * \param  max 最大値 (ラジアン)
+		 */
+		void SetEndRotationRange(const MagMath::Vector3 &min, const MagMath::Vector3 &max) {
+			endRotationMin_ = min;
+			endRotationMax_ = max;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetGravity 重力の設定
+		 * \param  gravity 重力ベクトル
+		 */
+		void SetGravity(const MagMath::Vector3 &gravity) {
+			gravity_ = gravity;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetEmissionDelay エミッション遅延の設定
+		 * \param  delay 遅延時間
+		 */
+		void SetEmissionDelay(float delay) {
+			emissionDelay_ = delay;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  SetFadeInOut フェードイン・アウトの設定
+		 * \param  fadeInRatio フェードイン比率 (0.0-1.0)
+		 * \param  fadeOutRatio フェードアウト比率 (0.0-1.0)
+		 */
+		void SetFadeInOut(float fadeInRatio, float fadeOutRatio) {
+			fadeInRatio_ = fadeInRatio;
+			fadeOutRatio_ = fadeOutRatio;
+		}
+
+		///--------------------------------------------------------------
+		///						 静的メンバ関数
+	private:
+		/**----------------------------------------------------------------------------
+		 * \brief  CreateVertexData 頂点データの作成
+		 */
+		void CreateVertexData();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  CreateVertexBufferView 頂点バッファビューの作成
+		 */
+		void CreateVertexBufferView();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  CreateMaterialData マテリアルデータの作成
+		 */
+		void CreateMaterialData();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  CreateNewParticle 新しいパーティクルを生成
+		 * \param  randomEngine 乱数生成器
+		 * \param  position 生成位置
+		 */
+		ParticleStr CreateNewParticle(std::mt19937 &randomEngine, const MagMath::Vector3 &position);
+
+		///--------------------------------------------------------------
+		///							入出力関数
+	public:
+		// 画像のサイズを設定
+		void SetCustomTextureSize(const MagMath::Vector2 &size) {
+			customTextureSize = size;
+		}
+
+		///--------------------------------------------------------------
+		///							メンバ変数
+	private:
+		//---------------------------------------
+		// パーティクルセットアップポインタ
+		ParticleSetup *particleSetup_ = nullptr;
+
+		//---------------------------------------
+		// パーティクルグループ
+		std::unordered_map<std::string, ParticleGroup> particleGroups;
+
+		//---------------------------------------
+		// モデルデータ
+		MagMath::ModelData modelData_;
+
+		//---------------------------------------
+		// 頂点データ
+		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
+		// バッファリソースの使い道を指すポインタ
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
+		// バッファリソース内のデータを指すポインタ
+		MagMath::VertexData *vertexData_ = nullptr;
+
+		//---------------------------------------
+		// マテリアルデータ
+		Microsoft::WRL::ComPtr<ID3D12Resource> materialBuffer_;
+		// バッファリソース内のデータを指すポインタ
+		MagMath::Material *materialData_ = nullptr;
+
+		//---------------------------------------
+		// インスタンシングバッファ
+		Microsoft::WRL::ComPtr<ID3D12Resource> instancingBuffer_;
+
+		//---------------------------------------
+		// 乱数生成器の初期化
+		std::random_device seedGenerator_;
+		std::mt19937 randomEngine_;
+
+		//---------------------------------------
+		// その他
+		// カメラ目線を使用するかどうか
+		bool isUsedBillboard = false; // デフォルトを false に変更
+		// 最大インスタンス数
+		static const uint32_t kNumMaxInstance = 2048;
+		//
+		const float kDeltaTime = 1.0f / 60.0f;
+		// 乱数範囲の調整用
+		struct RangeForRandom {
+			float min;
+			float max;
+		};
+
+		// パーティクルの設定
+		MagMath::Vector3 translateMin_ = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 translateMax_ = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 velocityMin_ = {-0.1f, -0.1f, -0.1f};
+		MagMath::Vector3 velocityMax_ = {0.1f, 0.1f, 0.1f};
+		MagMath::Vector4 colorMin_ = {1.0f, 1.0f, 1.0f, 1.0f};
+		MagMath::Vector4 colorMax_ = {1.0f, 1.0f, 1.0f, 1.0f};
+		RangeForRandom lifetimeRange_ = {1.0f, 3.0f};
+		MagMath::Vector3 initialScaleMin_ = {1.0f, 1.0f, 1.0f};
+		MagMath::Vector3 initialScaleMax_ = {1.0f, 1.0f, 1.0f};
+		MagMath::Vector3 endScaleMin_ = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 endScaleMax_ = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 initialRotationMin_ = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 initialRotationMax_ = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 endRotationMin_ = {0.0f, 0.0f, 0.0f};
+		MagMath::Vector3 endRotationMax_ = {0.0f, 0.0f, 0.0f};
+
+		// エフェクト用の追加パラメータ
+		MagMath::Vector3 gravity_ = {0.0f, -9.8f, 0.0f}; // 重力
+		float emissionDelay_ = 0.0f;					 // エミッション遅延
+		float fadeInRatio_ = 0.1f;						 // フェードイン比率
+		float fadeOutRatio_ = 0.7f;						 // フェードアウト比率
+
+		// TODO:設定しているテクスチャサイズを使うかどうかを変更できるようにする
+		MagMath::Vector2 customTextureSize = {100.0f, 100.0f};
+
+		// パーティクルの形状 (グループごとに設定するため、クラスメンバからは削除)
+		// ParticleShape particleShape_ = ParticleShape::Ring;
+		// 形状パラメータ (CreateVertexData内で固定値が使用されるため、現状これらの動的変更は限定的)
+		float ringRadius_ = 1.0f;	  // リングの半径
+		float cylinderHeight_ = 1.0f; // シリンダーの高さ
+		float cylinderRadius_ = 0.5f; // シリンダーの半径
+	};
+}

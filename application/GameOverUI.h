@@ -22,7 +22,7 @@ class GameOverUI {
 	///                        メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup);
+	void Initialize(MagEngine::SpriteSetup *spriteSetup);
 
 	/// \brief 終了処理
 	void Finalize();
@@ -93,9 +93,9 @@ private:
 	///                        メンバ変数
 private:
 	// スプライト管理
-	SpriteSetup *spriteSetup_ = nullptr;
-	std::unique_ptr<Sprite> backgroundSprite_ = nullptr; // 背景
-	std::unique_ptr<Sprite> textSprite_ = nullptr;		 // テキスト
+	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
+	std::unique_ptr<MagEngine::Sprite> backgroundSprite_ = nullptr; // 背景
+	std::unique_ptr<MagEngine::Sprite> textSprite_ = nullptr;		 // テキスト
 
 	// アニメーション状態
 	GameOverState state_ = GameOverState::Idle;

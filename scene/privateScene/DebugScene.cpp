@@ -9,10 +9,15 @@
 #include "DebugScene.h"
 #include "CameraManager.h"
 #include "ParticlePreset.h"
+using namespace MagEngine;
 
 ///=============================================================================
 ///						初期化
-void DebugScene::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) {
+void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup, 
+	MagEngine::Object3dSetup *object3dSetup, 
+	MagEngine::ParticleSetup *particleSetup, 
+	MagEngine::SkyboxSetup *skyboxSetup, 
+	MagEngine::CloudSetup *cloudSetup) {
 	spriteSetup;
 	particleSetup;
 

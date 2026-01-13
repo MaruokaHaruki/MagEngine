@@ -4,10 +4,11 @@
 #include "Particle.h"
 #include "Player.h"
 #include <cmath>
+using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void EnemyBullet::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction) {
+void EnemyBullet::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction) {
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
@@ -41,7 +42,7 @@ void EnemyBullet::Initialize(Object3dSetup *object3dSetup, const std::string &mo
 
 ///=============================================================================
 ///                        パーティクルシステムの設定
-void EnemyBullet::SetParticleSystem(Particle *particle, ParticleSetup *particleSetup) {
+void EnemyBullet::SetParticleSystem(MagEngine::Particle *particle, MagEngine::ParticleSetup *particleSetup) {
 	particle_ = particle;
 	particleSetup_ = particleSetup;
 }

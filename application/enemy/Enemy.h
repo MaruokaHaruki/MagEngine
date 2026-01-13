@@ -32,7 +32,8 @@ class Enemy : public EnemyBase {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) override;
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, 
+		const std::string &modelPath, const Vector3 &position) override;
 
 	/// \brief 更新（行動ロジックを追加）
 	void Update() override;

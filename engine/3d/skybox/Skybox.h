@@ -19,130 +19,133 @@
 #include <wrl/client.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-
-// 頂点データ構造体
-struct SkyboxVertex {
-	MagMath::Vector4 position;
-};
-
-// 前方宣言
-class SkyboxSetup;
-class Camera;
 ///=============================================================================
-///								クラス
-class Skybox {
-	///--------------------------------------------------------------
-	///							メンバ関数
-public:
-	/// \brief 初期化
-	void Initialize(SkyboxSetup *skyboxSetup);
+///                        namespace MagEngine
+namespace MagEngine {
+// 頂点データ構造体
+	struct SkyboxVertex {
+		MagMath::Vector4 position;
+	};
 
-	/// \brief 更新
-	void Update();
+	// 前方宣言
+	class SkyboxSetup;
+	class Camera;
+	///=============================================================================
+	///								クラス
+	class Skybox {
+		///--------------------------------------------------------------
+		///							メンバ関数
+	public:
+		/// \brief 初期化
+		void Initialize(SkyboxSetup *skyboxSetup);
 
-	/// \brief 描画
-	void Draw();
+		/// \brief 更新
+		void Update();
 
-	///--------------------------------------------------------------
-	///						 静的メンバ関数
-private:
-	/// \brief キューブの頂点データ作成
-	void CreateCubeVertices();
+		/// \brief 描画
+		void Draw();
 
-	/// @brief トランスフォーメーションマトリックスバッファの作成
-	void CreateTransformationMatrixBuffer();
+		///--------------------------------------------------------------
+		///						 静的メンバ関数
+	private:
+		/// \brief キューブの頂点データ作成
+		void CreateCubeVertices();
 
-	///--------------------------------------------------------------
-	///							入出力関数
-public:
-	/// \brief SetCamera カメラの設定
-	void SetCamera(Camera *camera) {
-		this->camera_ = camera;
-	}
+		/// @brief トランスフォーメーションマトリックスバッファの作成
+		void CreateTransformationMatrixBuffer();
 
-	/// \brief SetTexture テクスチャの設定
-	void SetTexture(const std::string &texturePath) {
-		texturePath_ = texturePath;
-	}
+		///--------------------------------------------------------------
+		///							入出力関数
+	public:
+		/// \brief SetCamera カメラの設定
+		void SetCamera(Camera *camera) {
+			this->camera_ = camera;
+		}
 
-	/// \brief GetTransform トランスフォーメーションのポインタを取得
-	MagMath::Transform *GetTransform() {
-		return &transform_;
-	}
+		/// \brief SetTexture テクスチャの設定
+		void SetTexture(const std::string &texturePath) {
+			texturePath_ = texturePath;
+		}
 
-	/// \brief SetTransform トランスフォーメーションの設定
-	void SetTransform(const MagMath::Transform &transform) {
-		transform_ = transform;
-	}
+		/// \brief GetTransform トランスフォーメーションのポインタを取得
+		MagMath::Transform *GetTransform() {
+			return &transform_;
+		}
 
-	/// \brief SetScale スケールの設定
-	void SetScale(const MagMath::Vector3 &scale) {
-		transform_.scale = scale;
-	}
+		/// \brief SetTransform トランスフォーメーションの設定
+		void SetTransform(const MagMath::Transform &transform) {
+			transform_ = transform;
+		}
 
-	/// \brief GetScale スケールの取得
-	const MagMath::Vector3 &GetScale() const {
-		return transform_.scale;
-	}
+		/// \brief SetScale スケールの設定
+		void SetScale(const MagMath::Vector3 &scale) {
+			transform_.scale = scale;
+		}
 
-	/// \brief SetRotation 回転の設定
-	void SetRotation(const MagMath::Vector3 &rotate) {
-		transform_.rotate = rotate;
-	}
+		/// \brief GetScale スケールの取得
+		const MagMath::Vector3 &GetScale() const {
+			return transform_.scale;
+		}
 
-	/// \brief GetRotation 回転の取得
-	const MagMath::Vector3 &GetRotation() const {
-		return transform_.rotate;
-	}
+		/// \brief SetRotation 回転の設定
+		void SetRotation(const MagMath::Vector3 &rotate) {
+			transform_.rotate = rotate;
+		}
 
-	/// \brief SetPosition 位置の設定
-	void SetPosition(const MagMath::Vector3 &translate) {
-		transform_.translate = translate;
-	}
+		/// \brief GetRotation 回転の取得
+		const MagMath::Vector3 &GetRotation() const {
+			return transform_.rotate;
+		}
 
-	/// \brief GetPosition 位置の取得
-	const MagMath::Vector3 &GetPosition() const {
-		return transform_.translate;
-	}
+		/// \brief SetPosition 位置の設定
+		void SetPosition(const MagMath::Vector3 &translate) {
+			transform_.translate = translate;
+		}
 
-	///--------------------------------------------------------------
-	///							メンバ変数
-private:
-	//========================================
-	// SkyboxSetupポインタ
-	SkyboxSetup *skyboxSetup_ = nullptr;
+		/// \brief GetPosition 位置の取得
+		const MagMath::Vector3 &GetPosition() const {
+			return transform_.translate;
+		}
 
-	//========================================
-	// トランスフォーメーションマトリックス
-	Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_;
-	// 頂点バッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
-	// インデックスバッファ
-	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;
+		///--------------------------------------------------------------
+		///							メンバ変数
+	private:
+		//========================================
+		// SkyboxSetupポインタ
+		SkyboxSetup *skyboxSetup_ = nullptr;
 
-	//========================================
-	// バッファリソース内のデータを指すポインタ
-	// トランスフォーメーションマトリックス
-	MagMath::TransformationMatrix *transformationMatrixData_ = nullptr;
-	// 頂点バッファビュー
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
-	// インデックスバッファビュー
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
+		//========================================
+		// トランスフォーメーションマトリックス
+		Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_;
+		// 頂点バッファ
+		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
+		// インデックスバッファ
+		Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;
 
-	//---------------------------------------
-	// 頂点データとインデックスデータ
-	std::vector<SkyboxVertex> vertices_;
-	std::vector<uint32_t> indices_;
+		//========================================
+		// バッファリソース内のデータを指すポインタ
+		// トランスフォーメーションマトリックス
+		MagMath::TransformationMatrix *transformationMatrixData_ = nullptr;
+		// 頂点バッファビュー
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
+		// インデックスバッファビュー
+		D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
 
-	//========================================
-	// カメラ
-	Camera *camera_ = nullptr;
+		//---------------------------------------
+		// 頂点データとインデックスデータ
+		std::vector<SkyboxVertex> vertices_;
+		std::vector<uint32_t> indices_;
 
-	//========================================
-	// テクスチャパス
-	std::string texturePath_ = "";
+		//========================================
+		// カメラ
+		Camera *camera_ = nullptr;
 
-	//========================================
-	// Transform
-	MagMath::Transform transform_ = {};
-};
+		//========================================
+		// テクスチャパス
+		std::string texturePath_ = "";
+
+		//========================================
+		// Transform
+		MagMath::Transform transform_ = {};
+	};
+}

@@ -29,7 +29,7 @@ class GameClearAnimation {
 	///                        メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup);
+	void Initialize(MagEngine::SpriteSetup *spriteSetup);
 
 	/// \brief 終了処理
 	void Finalize();
@@ -145,10 +145,10 @@ private:
 	///                        メンバ変数
 private:
 	// スプライト管理
-	SpriteSetup *spriteSetup_ = nullptr;
-	std::unique_ptr<Sprite> topBar_ = nullptr;
-	std::unique_ptr<Sprite> bottomBar_ = nullptr;
-	std::unique_ptr<Sprite> textSprite_ = nullptr;
+	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
+	std::unique_ptr<MagEngine::Sprite> topBar_ = nullptr;
+	std::unique_ptr<MagEngine::Sprite> bottomBar_ = nullptr;
+	std::unique_ptr<MagEngine::Sprite> textSprite_ = nullptr;
 
 	// カメラ制御
 	FollowCamera *followCamera_ = nullptr;

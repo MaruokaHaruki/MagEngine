@@ -4,6 +4,8 @@
 #include "ImguiSetup.h"
 #include <algorithm>
 #include <cmath>
+#include "Camera.h"
+using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
@@ -142,7 +144,7 @@ void HUD::SetFollowCamera(FollowCamera *followCamera) {
 ///                        スクリーン座標変換
 Vector3 HUD::GetHUDPosition(float screenX, float screenY) {
 	// FollowCameraが設定されている場合はそれを優先使用
-	Camera *currentCamera = nullptr;
+	MagEngine::Camera *currentCamera = nullptr;
 
 	if (followCamera_) {
 		currentCamera = followCamera_->GetCamera();
@@ -348,7 +350,7 @@ void HUD::Update(const Player *player) {
 ///                        描画
 void HUD::Draw() {
 	// FollowCameraまたは現在のカメラが存在しない場合は描画しない
-	Camera *currentCamera = nullptr;
+	MagEngine::Camera *currentCamera = nullptr;
 
 	if (followCamera_) {
 		currentCamera = followCamera_->GetCamera();
@@ -1139,7 +1141,7 @@ void HUD::DrawImGui() {
 	ImGui::Text("Debug Info:");
 
 	// 使用中のカメラ情報を表示
-	Camera *currentCamera = nullptr;
+	MagEngine::Camera *currentCamera = nullptr;
 	std::string cameraSource = "None";
 
 	if (followCamera_) {

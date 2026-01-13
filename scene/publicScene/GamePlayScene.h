@@ -11,19 +11,31 @@
 #include <memory>
 #include <vector>
 //========================================
-// Game
-#include "CollisionManager.h"
-#include "DebugTextManager.h"
-#include "Enemy.h"
-#include "EnemyManager.h"
-#include "FollowCamera.h"
-#include "GameClearAnimation.h"
-#include "GameOverUI.h"
-#include "HUD.h"
-#include "Player.h"
-#include "SceneTransition.h"
-#include "Skydome.h"
-#include "StartAnimation.h"
+// Engine
+#include "Sprite.h"
+#include "SpriteSetup.h"
+#include "Object3d.h"
+#include "Object3dSetup.h"
+#include "Particle.h"
+#include "ParticleSetup.h"
+#include "Skybox.h"
+#include "SkyboxSetup.h"
+#include "Cloud.h"
+#include "CloudSetup.h"
+
+
+//========================================
+// 前方宣言
+class CollisionManager;
+class FollowCamera;
+class Skydome;
+class Player;
+class EnemyManager;
+class HUD;
+class GameOverUI;
+class SceneTransition;
+class StartAnimation;
+class GameClearAnimation;
 
 ///=============================================================================
 ///						ゲームプレイシーンクラス
@@ -32,7 +44,11 @@ class GamePlayScene : public BaseScene {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup, SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) override;
+	void Initialize(MagEngine::SpriteSetup *spriteSetup,
+		MagEngine::Object3dSetup *object3dSetup,
+		MagEngine::ParticleSetup *particleSetup,
+		MagEngine::SkyboxSetup *skyboxSetup,
+		MagEngine::CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -89,19 +105,19 @@ private:
 
 	//========================================
 	// スプライト
-	std::unique_ptr<Sprite> moveSprite_;
+	std::unique_ptr<MagEngine::Sprite> moveSprite_;
 
 	//========================================
 	// パーティクル
-	std::unique_ptr<Particle> particle_;
+	std::unique_ptr<MagEngine::Particle> particle_;
 
 	//========================================
 	// 雲
-	std::unique_ptr<Cloud> cloud_;
+	std::unique_ptr<MagEngine::Cloud> cloud_;
 
 	//=========================================
 	// Skybox
-	std::unique_ptr<Skybox> skybox_;
+	std::unique_ptr<MagEngine::Skybox> skybox_;
 
 	//========================================
 	// HUD

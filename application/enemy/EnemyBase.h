@@ -6,11 +6,11 @@ using namespace MagMath;
 #include <functional>
 #include <memory>
 #include <string>
+#include "Particle.h"
+#include "ParticleSetup.h"
 
 // 前方宣言
 class Object3dSetup;
-class Particle;
-class ParticleSetup;
 class Player;
 class PlayerBullet;
 class PlayerMissile;
@@ -24,10 +24,11 @@ public:
 	virtual ~EnemyBase() = default;
 
 	/// \brief 基本初期化（派生クラスから呼び出す）
-	virtual void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position);
+	virtual void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position);
 
 	/// \brief パーティクルシステムの設定
-	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
+	void SetParticleSystem(MagEngine::Particle *particle, 
+		MagEngine::ParticleSetup *particleSetup);
 
 	/// \brief 更新（派生クラスでオーバーライド可能）
 	virtual void Update();
@@ -112,7 +113,7 @@ protected:
 protected:
 	//========================================
 	// 3Dオブジェクト
-	std::unique_ptr<Object3d> obj_;
+	std::unique_ptr<MagEngine::Object3d> obj_;
 
 	//========================================
 	// 移動・位置関連
@@ -133,8 +134,8 @@ protected:
 
 	//========================================
 	// パーティクル関連
-	Particle *particle_;
-	ParticleSetup *particleSetup_;
+	MagEngine::Particle *particle_;
+	MagEngine::ParticleSetup *particleSetup_;
 	bool particleCreated_;
 
 	//========================================

@@ -5,10 +5,10 @@ using namespace MagMath;
 #include "Object3d.h"
 #include <memory>
 #include <string>
+#include "Particle.h"
+#include "ParticleSetup.h"
+#include "Object3dSetup.h"
 
-class Object3dSetup;
-class Particle;
-class ParticleSetup;
 
 namespace EnemyBulletConstants {
 	constexpr float kSpeed = 35.0f; // 25.0f から 35.0f に変更
@@ -23,10 +23,10 @@ class EnemyBullet : public BaseObject {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
 
 	/// \brief パーティクルシステムの設定
-	void SetParticleSystem(Particle *particle, ParticleSetup *particleSetup);
+	void SetParticleSystem(MagEngine::Particle *particle, MagEngine::ParticleSetup *particleSetup);
 
 	/// \brief 更新
 	void Update();
@@ -57,12 +57,12 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	std::unique_ptr<Object3d> obj_;
+	std::unique_ptr<MagEngine::Object3d> obj_;
 	Transform transform_;
 	Vector3 velocity_;
 	float radius_;
 	float lifeTimer_;
 	bool isAlive_;
-	Particle *particle_;
-	ParticleSetup *particleSetup_;
+	MagEngine::Particle *particle_;
+	MagEngine::ParticleSetup *particleSetup_;
 };

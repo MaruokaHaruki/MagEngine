@@ -7,7 +7,7 @@
 
 ///=============================================================================
 ///                        初期化
-void SceneTransition::Initialize(SpriteSetup *spriteSetup) {
+void SceneTransition::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 	spriteSetup_ = spriteSetup;
 	state_ = TransitionState::Idle;
 	progress_ = 0.0f;
@@ -20,7 +20,7 @@ void SceneTransition::Initialize(SpriteSetup *spriteSetup) {
 	}
 
 	// トランジション用スプライトの作成（白い1x1テクスチャを使用）
-	transitionSprite_ = std::make_unique<Sprite>();
+	transitionSprite_ = std::make_unique<MagEngine::Sprite>();
 	transitionSprite_->Initialize(spriteSetup_, "white1x1.png");
 	transitionSprite_->SetSize({screenWidth_, screenHeight_});
 	transitionSprite_->SetPosition({0.0f, 0.0f});
@@ -256,7 +256,7 @@ void SceneTransition::UpdateDiamondWipe() {
 	// ひし形を4つの三角形で表現
 	if (additionalSprites_.empty()) {
 		for (int i = 0; i < 4; ++i) {
-			auto sprite = std::make_unique<Sprite>();
+			auto sprite = std::make_unique<MagEngine::Sprite>();
 			sprite->Initialize(spriteSetup_, "white1x1.png");
 			sprite->SetColor(transitionColor_);
 			additionalSprites_.push_back(std::move(sprite));
@@ -329,7 +329,7 @@ void SceneTransition::UpdateCurtain() {
 	// 左右からカーテンが閉じる
 	if (additionalSprites_.empty()) {
 		for (int i = 0; i < 2; ++i) {
-			auto sprite = std::make_unique<Sprite>();
+			auto sprite = std::make_unique<MagEngine::Sprite>();
 			sprite->Initialize(spriteSetup_, "white1x1.png");
 			sprite->SetColor(transitionColor_);
 			additionalSprites_.push_back(std::move(sprite));
@@ -369,7 +369,7 @@ void SceneTransition::UpdateVenetianBlinds() {
 	const int blindCount = 8;
 	if (additionalSprites_.empty()) {
 		for (int i = 0; i < blindCount; ++i) {
-			auto sprite = std::make_unique<Sprite>();
+			auto sprite = std::make_unique<MagEngine::Sprite>();
 			sprite->Initialize(spriteSetup_, "white1x1.png");
 			sprite->SetColor(transitionColor_);
 			additionalSprites_.push_back(std::move(sprite));
@@ -395,7 +395,7 @@ void SceneTransition::UpdateCheckerboard() {
 
 	if (additionalSprites_.empty()) {
 		for (int i = 0; i < totalSquares; ++i) {
-			auto sprite = std::make_unique<Sprite>();
+			auto sprite = std::make_unique<MagEngine::Sprite>();
 			sprite->Initialize(spriteSetup_, "white1x1.png");
 			sprite->SetColor(transitionColor_);
 			additionalSprites_.push_back(std::move(sprite));
@@ -470,7 +470,7 @@ void SceneTransition::UpdateClock() {
 	const int segmentCount = 12;
 	if (additionalSprites_.empty()) {
 		for (int i = 0; i < segmentCount; ++i) {
-			auto sprite = std::make_unique<Sprite>();
+			auto sprite = std::make_unique<MagEngine::Sprite>();
 			sprite->Initialize(spriteSetup_, "white1x1.png");
 			sprite->SetColor(transitionColor_);
 			additionalSprites_.push_back(std::move(sprite));

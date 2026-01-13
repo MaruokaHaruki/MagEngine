@@ -33,7 +33,7 @@ public:
 	/// @brief 初期化
 	/// @param object3dSetup object3dのセットアップ情報
 	/// @param modelPath モデルパス
-	void Initialize(Object3dSetup *object3dSetup, const std::string &modelPath);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath);
 	/// @brief 更新
 	void Update();
 	/// @brief 描画
@@ -78,7 +78,7 @@ public:
 		return obj_->GetPosition();
 	}
 	/// @brief Object3dの取得
-	Object3d *GetObject3d() const {
+	MagEngine::Object3d *GetObject3d() const {
 		return obj_.get();
 	}
 	/// @brief 弾とミサイルの取得
@@ -119,17 +119,6 @@ public:
 	Transform *GetTransform() const {
 		return obj_ ? obj_->GetTransform() : nullptr;
 	}
-
-	// //========================================
-	// // 敗北演出関連（Crash から Defeat に変更）
-	// /// @brief 敗北判定
-	// bool IsDefeated() const {
-	// 	return isDefeated_;
-	// }
-	// /// @brief 敗北演出完了判定
-	// bool IsDefeatAnimationComplete() const {
-	// 	return defeatAnimationComplete_;
-	// }
 
 	//========================================
 	// HP関連
@@ -193,8 +182,8 @@ private:
 	///                        静的メンバ変数
 	//========================================
 	// コア
-	std::unique_ptr<Object3d> obj_;
-	Object3dSetup *object3dSetup_;
+	std::unique_ptr<MagEngine::Object3d> obj_;
+	MagEngine::Object3dSetup *object3dSetup_;
 
 	//========================================
 	// コンポーネント

@@ -61,11 +61,11 @@ class BaseScene {
 	// NOTE:継承先で実装される関数。抽象クラスなので純粋仮想関数とする。
 public:
 	/// \brief 初期化
-	virtual void Initialize(SpriteSetup *spriteSetup,
-							Object3dSetup *object3dSetup,
-							ParticleSetup *particleSetup,
-							SkyboxSetup *skyboxSetup,
-							CloudSetup *cloudSetup) = 0;
+	virtual void Initialize(MagEngine::SpriteSetup *spriteSetup,
+							MagEngine::Object3dSetup *object3dSetup,
+							MagEngine::ParticleSetup *particleSetup,
+							MagEngine::SkyboxSetup *skyboxSetup,
+							MagEngine::CloudSetup *cloudSetup) = 0;
 
 	/// \brief 終了処理
 	virtual void Finalize() = 0;

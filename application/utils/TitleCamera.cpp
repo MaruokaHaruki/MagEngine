@@ -6,6 +6,7 @@
 #include "ImguiSetup.h"
 #include "Player.h"
 #include <cmath>
+using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化

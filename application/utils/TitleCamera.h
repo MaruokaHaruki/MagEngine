@@ -2,10 +2,10 @@
 #include "MagMath.h"
 using namespace MagMath;
 #include <string>
+#include "Camera.h"
 
 //========================================
 // 前方宣言
-class Camera;
 class Player;
 
 //========================================
@@ -92,7 +92,7 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	Camera *camera_;		 // カメラマネージャから取得したカメラ
+	MagEngine::Camera *camera_;		 // カメラマネージャから取得したカメラ
 	Player *player_;		 // 追従対象のプレイヤー
 	std::string cameraName_; // 使用するカメラ名
 

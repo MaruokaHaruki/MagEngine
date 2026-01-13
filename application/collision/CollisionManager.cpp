@@ -3,6 +3,7 @@
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include <algorithm>
+using namespace MagEngine;
 
 ///=============================================================================
 ///						初期化

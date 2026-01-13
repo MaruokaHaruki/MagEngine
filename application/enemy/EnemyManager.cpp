@@ -14,10 +14,13 @@
 #include "LineManager.h"
 #include "Player.h"
 #include <algorithm>
+using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void EnemyManager::Initialize(Object3dSetup *object3dSetup, Particle *particle, ParticleSetup *particleSetup) {
+void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup, 
+	MagEngine::Particle *particle, 
+	MagEngine::ParticleSetup *particleSetup) {
 	//========================================
 	// システム参照の設定
 	object3dSetup_ = object3dSetup;

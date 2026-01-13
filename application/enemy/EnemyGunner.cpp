@@ -4,10 +4,11 @@
 #include "Player.h"
 #include <algorithm>
 #include <cmath>
+using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void EnemyGunner::Initialize(Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
+void EnemyGunner::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
 	EnemyBase::Initialize(object3dSetup, modelPath, position);
 
 	maxHP_ = EnemyGunnerConstants::kDefaultHP;

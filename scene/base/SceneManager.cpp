@@ -9,8 +9,11 @@
 
 ///=============================================================================
 ///						初期化
-void SceneManager::Initialize(SpriteSetup *spriteSetup, Object3dSetup *object3dSetup, ParticleSetup *particleSetup,
-							  SkyboxSetup *skyboxSetup, CloudSetup *cloudSetup) {
+void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup, 
+	MagEngine::Object3dSetup *object3dSetup, 
+	MagEngine::ParticleSetup *particleSetup,
+	MagEngine::SkyboxSetup *skyboxSetup, 
+	MagEngine::CloudSetup *cloudSetup) {
 	//========================================
 	// 2D共通部
 	spriteSetup_ = spriteSetup;
