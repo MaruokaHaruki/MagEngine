@@ -34,9 +34,9 @@ class EnemyManager {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::Object3dSetup *object3dSetup, 
-		MagEngine::Particle *particle, 
-		MagEngine::ParticleSetup *particleSetup);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::Particle *particle,
+					MagEngine::ParticleSetup *particleSetup);
 
 	/// \brief プレイヤー参照の設定
 	void SetPlayer(Player *player) {

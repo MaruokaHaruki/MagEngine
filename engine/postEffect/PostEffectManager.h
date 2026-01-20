@@ -7,10 +7,11 @@
  *********************************************************************/
 #pragma once
 #include "GrayscaleEffect.h"
+#include "Vignetting.h"
 #include <memory>
 
- ///=============================================================================
- ///                        namespace MagEngine
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
 
 	class DirectXCore;
@@ -55,10 +56,11 @@ namespace MagEngine {
 		DirectXCore *dxCore_ = nullptr;
 
 		// 各エフェクトのON/OFF状態
-		bool effectEnabled_[static_cast<size_t>( EffectType::Count )] = {};
+		bool effectEnabled_[static_cast<size_t>(EffectType::Count)] = {};
 
 		// 各エフェクトのインスタンス
 		std::unique_ptr<GrayscaleEffect> grayscaleEffect_;
+		std::unique_ptr<Vignetting> vignetting_;
 		// 今後追加する場合はここにメンバ追加
 
 		//========================================

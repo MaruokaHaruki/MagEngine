@@ -8,12 +8,12 @@
  *********************************************************************/
 #include "MagFramework.h"
 #include "WinApp.h"
- ///=============================================================================
- ///                        namespace MagEngine
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
 
-///=============================================================================
-///						実行
+	///=============================================================================
+	///						実行
 	void MagFramework::Run() {
 		//========================================
 		// 初期化
@@ -22,9 +22,9 @@ namespace MagEngine {
 		// メインループ
 		MSG msg{};
 		// メッセージがなくなるまでループ
-		while(msg.message != WM_QUIT) {
+		while (msg.message != WM_QUIT) {
 			// メッセージがあれば処理
-			if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 				// メッセージ処理
 				TranslateMessage(&msg);
 				// メッセージ処理
@@ -35,7 +35,7 @@ namespace MagEngine {
 				Update();
 				//---------------------------------------
 				// 終了リクエストがあれば終了
-				if(IsEndRequest()) {
+				if (IsEndRequest()) {
 					break;
 				}
 				//---------------------------------------
@@ -177,8 +177,8 @@ namespace MagEngine {
 		sceneManager_ = std::make_unique<SceneManager>();
 		// シーンマネージャの初期化
 		sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get(),
-			skyboxSetup_.get(), cloudSetup_.get());
-// シーンファクトリーのセット
+								  skyboxSetup_.get(), cloudSetup_.get());
+		// シーンファクトリーのセット
 		sceneFactory_ = std::make_unique<SceneFactory>();
 		sceneManager_->SetSceneFactory(sceneFactory_.get());
 
@@ -193,10 +193,10 @@ namespace MagEngine {
 	void MagFramework::Update() {
 		//========================================
 		// デバックカメラの呼び出し1,2
-		if(Input::GetInstance()->PushKey(DIK_1)) {
+		if (Input::GetInstance()->PushKey(DIK_1)) {
 			CameraManager::GetInstance()->SetCurrentCamera("DebugCamera");
 		}
-		if(Input::GetInstance()->PushKey(DIK_2)) {
+		if (Input::GetInstance()->PushKey(DIK_2)) {
 			CameraManager::GetInstance()->SetCurrentCamera("DefaultCamera");
 		}
 
@@ -304,7 +304,7 @@ namespace MagEngine {
 		// imguiの初期化
 		imguiSetup_->Begin();
 #ifdef _DEBUG
-	// シーンのImgui描画
+		// シーンのImgui描画
 		sceneManager_->ImGuiDraw();
 		// InPutのImGui描画
 		Input::GetInstance()->ImGuiDraw();
@@ -388,16 +388,14 @@ namespace MagEngine {
 		ImGui::Separator();
 
 		bool grayscaleEnabled = postEffectManager_->IsEffectEnabled(PostEffectManager::EffectType::Grayscale);
-		if(ImGui::Checkbox("Grayscale", &grayscaleEnabled)) {
+		if (ImGui::Checkbox("Grayscale", &grayscaleEnabled)) {
 			postEffectManager_->SetEffectEnabled(PostEffectManager::EffectType::Grayscale, grayscaleEnabled);
 		}
 
-		// 将来的に他のエフェクトを追加する場合はここに追加
-		// 例:
-		// bool vignetteEnabled = postEffectManager_->IsEffectEnabled(PostEffectManager::EffectType::Vignette);
-		// if (ImGui::Checkbox("Vignette", &vignetteEnabled)) {
-		//     postEffectManager_->SetEffectEnabled(PostEffectManager::EffectType::Vignette, vignetteEnabled);
-		// }
+		bool vignetteEnabled = postEffectManager_->IsEffectEnabled(PostEffectManager::EffectType::Vignette);
+		if (ImGui::Checkbox("Vignette", &vignetteEnabled)) {
+			postEffectManager_->SetEffectEnabled(PostEffectManager::EffectType::Vignette, vignetteEnabled);
+		}
 
 		ImGui::End();
 	}

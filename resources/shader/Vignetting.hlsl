@@ -15,11 +15,21 @@ PixelShaderOutput main(VertexShaderOutput input)
     // テクスチャから色情報を取得
     float4 texColor = gTexture.Sample(gSampler, input.texcoord);
 
-    // グレイスケール変換（NTSC加重平均による輝度変換）
-    float gray = dot(texColor.rgb, float3(0.299, 0.587, 0.114));
+    // 画面中心からの距離を計算（0.0 ~ 1.0の範囲）
+    float2 center = float2(0.5, 0.5);
+    float2 diff = input.texcoord - center;
+    float distance = length(diff);
 
-    // グレイスケールの色を出力（RGBを同じ値に、Aは元のまま）
-    output.color = float4(gray, gray, gray, texColor.a);
+    // ビネット効果のパラメータ
+    float vignetteStrength = 0.8;  // 効果の強さ（0.0 ~ 1.0）
+    float vignettePower = 2.0;     // 減衰の曲線（値が大きいほど急激に暗くなる）
+
+    // ビネット係数を計算
+    float vignette = 1.0 - smoothstep(0.3, 1.4, distance * vignettePower);
+    vignette = lerp(1.0, vignette, vignetteStrength);
+
+    // ビネット効果を適用
+    output.color = float4(texColor.rgb * vignette, texColor.a);
 
     return output;
 }
