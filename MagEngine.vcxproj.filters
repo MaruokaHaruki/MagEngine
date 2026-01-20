@@ -196,6 +196,7 @@
     <ClCompile Include="application\enemy\EnemyBullet.cpp" />
     <ClCompile Include="application\enemy\EnemyGunner.cpp" />
     <ClCompile Include="OperationGuideUI.cpp" />
+    <ClCompile Include="engine\postEffect\Vignetting.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -449,6 +450,7 @@
     <ClInclude Include="application\enemy\EnemyGunner.h" />
     <ClInclude Include="engine\math\MagMath.h" />
     <ClInclude Include="OperationGuideUI.h" />
+    <ClInclude Include="engine\postEffect\Vignetting.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

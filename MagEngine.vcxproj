@@ -185,6 +185,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\skybox\SkyboxSetup.cpp" />
     <ClCompile Include="application\utils\TitleCamera.cpp" />
     <ClCompile Include="application\StartAnimation.cpp" />
+    <ClCompile Include="engine\postEffect\Vignetting.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\enemy\Enemy.h" />
@@ -282,6 +283,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\skybox\SkyboxSetup.h" />
     <ClInclude Include="application\utils\TitleCamera.h" />
     <ClInclude Include="application\StartAnimation.h" />
+    <ClInclude Include="engine\postEffect\Vignetting.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
