@@ -25,10 +25,7 @@
 
 //========================================
 // Game
-#include "GameClearAnimation.h"
-#include "GameOverUI.h"
-#include "OperationGuideUI.h"
-#include "StartAnimation.h"
+#include "UIManager.h"
 
 //========================================
 // 前方宣言
@@ -37,7 +34,6 @@ class FollowCamera;
 class Skydome;
 class Player;
 class EnemyManager;
-class HUD;
 class SceneTransition;
 
 ///=============================================================================
@@ -123,28 +119,15 @@ private:
 	std::unique_ptr<MagEngine::Skybox> skybox_;
 
 	//========================================
-	// HUD
-	std::unique_ptr<HUD> hud_;
-
-	//========================================
-	// ゲームオーバー
-	std::unique_ptr<GameOverUI> gameOverUI_;
-	bool isGameOver_;
-
-	//========================================
 	// トランジション
 	std::unique_ptr<SceneTransition> sceneTransition_;
 
 	//========================================
-	// スタートアニメーション
-	std::unique_ptr<StartAnimation> startAnimation_;
+	// UI管理
+	std::unique_ptr<UIManager> uiManager_;
 
 	//========================================
-	// クリアアニメーション`
-	std::unique_ptr<GameClearAnimation> gameClearAnimation_;
+	// ゲーム状態
+	bool isGameOver_;
 	bool isGameClear_;
-
-	//========================================
-	// 操作ガイドUI
-	std::unique_ptr<OperationGuideUI> operationGuideUI_;
 };

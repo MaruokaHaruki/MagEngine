@@ -186,6 +186,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\utils\TitleCamera.cpp" />
     <ClCompile Include="application\StartAnimation.cpp" />
     <ClCompile Include="engine\postEffect\Vignetting.cpp" />
+    <ClCompile Include="application\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\enemy\Enemy.h" />
@@ -284,6 +285,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\utils\TitleCamera.h" />
     <ClInclude Include="application\StartAnimation.h" />
     <ClInclude Include="engine\postEffect\Vignetting.h" />
+    <ClInclude Include="application\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

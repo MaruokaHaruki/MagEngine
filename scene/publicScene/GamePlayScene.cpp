@@ -15,15 +15,10 @@
 #include "EnemyBullet.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
-#include "GameClearAnimation.h"
-#include "GameOverUI.h"
-#include "HUD.h"
 #include "ModelManager.h"
-#include "OperationGuideUI.h"
 #include "Player.h"
 #include "SceneTransition.h"
 #include "Skydome.h"
-#include "StartAnimation.h"
 using namespace MagEngine;
 
 ///=============================================================================
@@ -148,97 +143,80 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
 
 	//========================================
-	// HUDの初期化
-	hud_ = std::make_unique<HUD>();
-	hud_->Initialize();
+	// UI管理の初期化
+	uiManager_ = std::make_unique<UIManager>();
+	uiManager_->Initialize(spriteSetup, object3dSetup);
 
-	// HUDにFollowCameraを設定（FollowCameraが初期化された後）
-	if (followCamera_) {
-		hud_->SetFollowCamera(followCamera_.get());
+	// HUDにFollowCameraを設定
+	if (followCamera_ && uiManager_->GetHUD()) {
+		uiManager_->GetHUD()->SetFollowCamera(followCamera_.get());
 	}
 
-	//========================================
-	// ゲームオーバーUIの初期化
-	gameOverUI_ = std::make_unique<GameOverUI>();
-	gameOverUI_->Initialize(spriteSetup);
-	gameOverUI_->SetTextTexture("WolfOne_GameOver.png");
-	gameOverUI_->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
-	gameOverUI_->SetTextSize({1000.0f, 200.0f});
+	// ゲームオーバーUI の設定
+	if (auto gameOverUI = uiManager_->GetGameOverUI()) {
+		gameOverUI->SetTextTexture("WolfOne_GameOver.png");
+		gameOverUI->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
+		gameOverUI->SetTextSize({1000.0f, 200.0f});
+		gameOverUI->SetOnCompleteCallback([this]() {
+			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+				sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+				sceneTransition_->SetOnCompleteCallback([this]() {
+					sceneNo = SCENE::TITLE;
+				});
+			}
+		});
+	}
 	isGameOver_ = false;
 
-	gameOverUI_->SetOnCompleteCallback([this]() {
-		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
-			sceneTransition_->SetOnCompleteCallback([this]() {
-				sceneNo = SCENE::TITLE;
-			});
-		}
-	});
-
-	//========================================
-	// ゲームクリアアニメーションの初期化
-	gameClearAnimation_ = std::make_unique<GameClearAnimation>();
-	gameClearAnimation_->Initialize(spriteSetup);
-	gameClearAnimation_->SetFollowCamera(followCamera_.get());
-	gameClearAnimation_->SetPlayer(player_.get());				 // プレイヤー参照を追加
-	gameClearAnimation_->SetTextTexture("WolfOne_Comprete.png"); // クリア画像
-	gameClearAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
-	gameClearAnimation_->SetBarHeightRatio(0.15f);
-	gameClearAnimation_->SetTextSize({800.0f, 150.0f});
-	gameClearAnimation_->SetCameraUpParameters(20.0f, -30.0f);
-	// かっこいい飛行演出パラメータを設定
-	gameClearAnimation_->SetFlightParameters(
-		18.0f, // 前進速度（速め）
-		2.5f,  // 旋回速度（ダイナミック）
-		10.0f  // 上昇速度（力強く）
-	);
+	// ゲームクリアアニメーション の設定
+	if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
+		gameClearAnim->SetFollowCamera(followCamera_.get());
+		gameClearAnim->SetPlayer(player_.get());
+		gameClearAnim->SetTextTexture("WolfOne_Comprete.png");
+		gameClearAnim->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
+		gameClearAnim->SetBarHeightRatio(0.15f);
+		gameClearAnim->SetTextSize({800.0f, 150.0f});
+		gameClearAnim->SetCameraUpParameters(20.0f, -30.0f);
+		gameClearAnim->SetFlightParameters(18.0f, 2.5f, 10.0f);
+		gameClearAnim->SetOnCompleteCallback([this]() {
+			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+				sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
+				sceneTransition_->SetOnCompleteCallback([this]() {
+					sceneNo = SCENE::TITLE;
+				});
+			}
+		});
+	}
 	isGameClear_ = false;
-
-	// クリア演出完了後のコールバック
-	gameClearAnimation_->SetOnCompleteCallback([this]() {
-		// タイトルへ戻る（またはクリアシーンへ遷移）
-		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
-			sceneTransition_->SetOnCompleteCallback([this]() {
-				sceneNo = SCENE::TITLE; // TODO: クリアシーンに変更する場合はここを修正
-			});
-		}
-	});
 
 	//========================================
 	// トランジションの初期化
 	sceneTransition_ = std::make_unique<SceneTransition>();
 	sceneTransition_->Initialize(spriteSetup);
-	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
+	sceneTransition_->SetColor({0.0f, 0.0f, 0.0f, 1.0f});
 
-	//========================================
-	// スタートアニメーションの初期化
-	startAnimation_ = std::make_unique<StartAnimation>();
-	startAnimation_->SetTextTexture("WolfOne_Engage.png"); // 仮のテキスト画像
-	startAnimation_->Initialize(spriteSetup);
-	startAnimation_->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f}); // 黒
-	startAnimation_->SetBarHeightRatio(0.15f);				// 画面の15%
-	startAnimation_->SetTextSize({600.0f, 100.0f});
+	// スタートアニメーション の設定
+	if (auto startAnim = uiManager_->GetStartAnimation()) {
+		startAnim->SetTextTexture("WolfOne_Engage.png");
+		startAnim->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
+		startAnim->SetBarHeightRatio(0.15f);
+		startAnim->SetTextSize({600.0f, 100.0f});
+		startAnim->StartOpening(2.0f, 1.0f, 1.0f);
+		startAnim->SetOnCompleteCallback([this]() {
+			if (auto hud = uiManager_->GetHUD()) {
+				hud->StartDeployAnimation(2.0f);
+			}
+		});
+	}
 
-	// シーン開始時にスタートアニメーション（シネマスコープ演出）
-	startAnimation_->StartOpening(2.0f, 1.0f, 1.0f);
-
-	// HUDの展開はスタートアニメーション完了後に開始
-	startAnimation_->SetOnCompleteCallback([this]() {
-		if (hud_) {
-			hud_->StartDeployAnimation(2.0f);
-		}
-	});
-
-	// トランジションは使用しない（スタートアニメーションで代用）
+	// トランジション開始
 	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
 
-	//========================================
-	// 操作ガイドUIの初期化
-	operationGuideUI_ = std::make_unique<OperationGuideUI>();
-	operationGuideUI_->Initialize(spriteSetup);
-	operationGuideUI_->SetGuidePosition({50.0f, 370.0f}); // 左下に配置
-	operationGuideUI_->SetVisible(true);
+	// OperationGuideUI の設定
+	if (auto operationGuideUI = uiManager_->GetOperationGuideUI()) {
+		operationGuideUI->SetGuidePosition({50.0f, 370.0f});
+		operationGuideUI->SetVisible(true);
+	}
 }
 
 ///=============================================================================
@@ -254,16 +232,11 @@ void GamePlayScene::Update() {
 	if (cloud_) {
 		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
 	}
-	//========================================
-	// スタートアニメーションの更新
-	if (startAnimation_) {
-		startAnimation_->Update();
-	}
 
 	//========================================
-	// ゲームクリアアニメーションの更新
-	if (gameClearAnimation_) {
-		gameClearAnimation_->Update();
+	// UI系の更新
+	if (uiManager_) {
+		uiManager_->Update(player_.get());
 	}
 
 	//========================================
@@ -272,12 +245,14 @@ void GamePlayScene::Update() {
 		// プレイヤーの敗北演出が完了したらゲーム終了演出開始
 		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
-			if (gameOverUI_) {
-				gameOverUI_->StartGameOver(2.0f, 3.0f);
+			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
+				gameOverUI->StartGameOver(2.0f, 3.0f);
 			}
 			// HUDを格納
-			if (hud_ && !hud_->IsAnimating()) {
-				hud_->StartRetractAnimation(1.0f);
+			if (auto hud = uiManager_->GetHUD()) {
+				if (!hud->IsAnimating()) {
+					hud->StartRetractAnimation(1.0f);
+				}
 			}
 		}
 	}
@@ -288,12 +263,14 @@ void GamePlayScene::Update() {
 		if (enemyManager_->IsGameClear()) {
 			isGameClear_ = true;
 			// クリア演出を開始
-			if (gameClearAnimation_) {
-				gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
+			if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
+				gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
 			}
 			// HUDを格納
-			if (hud_ && !hud_->IsAnimating()) {
-				hud_->StartRetractAnimation(1.0f);
+			if (auto hud = uiManager_->GetHUD()) {
+				if (!hud->IsAnimating()) {
+					hud->StartRetractAnimation(1.0f);
+				}
 			}
 		}
 	}
@@ -303,30 +280,20 @@ void GamePlayScene::Update() {
 	if (Input::GetInstance()->TriggerKey(DIK_C)) {
 		isGameClear_ = true;
 		// HUDを格納
-		hud_->StartRetractAnimation(1.0f);
+		if (auto hud = uiManager_->GetHUD()) {
+			hud->StartRetractAnimation(1.0f);
+		}
 		// クリア演出を開始
-		if (gameClearAnimation_) {
-			gameClearAnimation_->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
+		if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
+			gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
 		}
 	}
 #endif
 
 	//========================================
-	// ゲームオーバーUI更新
-	if (gameOverUI_) {
-		gameOverUI_->Update();
-	}
-
-	//========================================
 	// トランジションの更新
 	if (sceneTransition_) {
 		sceneTransition_->Update();
-	}
-
-	//========================================
-	// 操作ガイドUIの更新
-	if (operationGuideUI_) {
-		operationGuideUI_->Update();
 	}
 
 	//========================================
@@ -355,10 +322,7 @@ void GamePlayScene::Update() {
 		}
 
 		//========================================
-		// HUDの更新
-		if (hud_ && player_) {
-			hud_->Update(player_.get());
-		}
+		// ゲームオーバー/クリア中の処理スキップ
 		return;
 	}
 
@@ -426,12 +390,6 @@ void GamePlayScene::Update() {
 	//  当たり判定の更新
 	collisionManager_->Update();
 
-	//========================================
-	// HUDの更新
-	if (hud_ && player_) {
-		hud_->Update(player_.get());
-	}
-
 #ifdef _DEBUG
 	//========================================
 	// タイトルへのシーン遷移（デバッグ用）
@@ -451,27 +409,9 @@ void GamePlayScene::Update() {
 ///                        スプライト描画
 void GamePlayScene::Object2DDraw() {
 	//========================================
-	// ゲームオーバーUI（最前面）
-	if (gameOverUI_) {
-		gameOverUI_->Draw();
-	}
-
-	//========================================
-	// 操作ガイドUI
-	if (operationGuideUI_) {
-		operationGuideUI_->Draw();
-	}
-
-	//========================================
-	// スタートアニメーションの描画（最前面）
-	if (startAnimation_) {
-		startAnimation_->Draw();
-	}
-
-	//========================================
-	// ゲームクリアアニメーション（最前面）
-	if (gameClearAnimation_) {
-		gameClearAnimation_->Draw();
+	// UI系の描画（UIManager で統一管理）
+	if (uiManager_) {
+		uiManager_->Draw();
 	}
 
 	//========================================
@@ -511,13 +451,7 @@ void GamePlayScene::Object3DDraw() {
 	collisionManager_->Draw();
 
 	//========================================
-	// HUDの描画
-	if (hud_) {
-		// トランジション完了後にHUDを表示開始
-		if (!sceneTransition_ || !sceneTransition_->IsTransitioning()) {
-			hud_->Draw();
-		}
-	}
+	// HUDはUIManager で描画管理
 }
 
 ///=============================================================================
@@ -597,39 +531,15 @@ void GamePlayScene::ImGuiDraw() {
 	collisionManager_->DrawImGui();
 
 	//========================================
-	// HUD
-	if (hud_) {
-		hud_->DrawImGui();
-	}
-
-	//========================================
-	// スタートアニメーション
-	if (startAnimation_) {
-		startAnimation_->DrawImGui();
+	// UI系（UIManager で統一管理）
+	if (uiManager_) {
+		uiManager_->DrawImGui();
 	}
 
 	//========================================
 	// トランジション
 	if (sceneTransition_) {
 		sceneTransition_->DrawImGui();
-	}
-
-	//========================================
-	// ゲームオーバーUI
-	if (gameOverUI_) {
-		gameOverUI_->DrawImGui();
-	}
-
-	//========================================
-	// ゲームクリアアニメーション
-	if (gameClearAnimation_) {
-		gameClearAnimation_->DrawImGui();
-	}
-
-	//========================================
-	// 操作ガイドUI
-	if (operationGuideUI_) {
-		operationGuideUI_->DrawImGui();
 	}
 #endif // _DEBUG
 }
