@@ -1,8 +1,8 @@
 #pragma once
 #include "MagMath.h"
 using namespace MagMath;
-#include <string>
 #include "Camera.h"
+#include <string>
 
 // Forward declarations
 class Player;
@@ -28,6 +28,9 @@ public:
 private:
 	/// \brief カメラの位置と回転を計算
 	void UpdateCameraTransform();
+
+	/// \brief カメラ操作の入力処理
+	void HandleCameraInput();
 
 	///--------------------------------------------------------------
 	///							入出力関数
@@ -70,15 +73,26 @@ public:
 		return camera_;
 	}
 
+	/// \brief カメラ操作を有効化/無効化
+	void SetCameraOperationEnabled(bool enable) {
+		isCameraOperationEnabled_ = enable;
+	}
+
+	/// \brief カメラ操作が有効かどうかを取得
+	bool IsCameraOperationEnabled() const {
+		return isCameraOperationEnabled_;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	MagEngine::Camera *camera_;		 // カメラマネージャから取得したカメラ
-	Player *target_;		 // 追従対象のプレイヤー
-	std::string cameraName_; // 使用するカメラ名
+	MagEngine::Camera *camera_; // カメラマネージャから取得したカメラ
+	Player *target_;			// 追従対象のプレイヤー
+	std::string cameraName_;	// 使用するカメラ名
 
 	// 追従パラメータ
 	Vector3 offset_;		   // プレイヤーからのオフセット
+	Vector3 baseOffset_;	   // 基本オフセット（保存用）
 	float positionSmoothness_; // 位置の滑らかさ (0.0f-1.0f)
 	float rotationSmoothness_; // 回転の滑らかさ (0.0f-1.0f)
 
@@ -98,4 +112,14 @@ private:
 	Vector3 currentRotation_; // 現在のカメラ回転
 	Vector3 targetPosition_;  // 目標カメラ位置
 	Vector3 targetRotation_;  // 目標カメラ回転
+
+	// カメラ操作パラメータ
+	float zoomMultiplier_;		// ズーム倍率（1.0f = 通常、0.7f = ズーム）
+	float pullMultiplier_;		// 引く倍率（1.0f = 通常、1.3f = 引く）
+	float tiltAmount_;			// 傾きの量（ラジアン）
+	float operationSmoothness_; // 操作の滑らかさ
+	float targetZoomMultiplier_;
+	float targetPullMultiplier_;
+	float targetTiltAmount_;
+	bool isCameraOperationEnabled_; // カメラ操作が有効かどうか
 };

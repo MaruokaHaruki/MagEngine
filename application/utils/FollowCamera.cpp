@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "CameraManager.h"
 #include "ImguiSetup.h"
+#include "Input.h"
 #include "MathFunc4x4.h"
 #include "Player.h"
 #include <cmath>
@@ -33,6 +34,7 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	// 初期パラメータの設定
 	target_ = nullptr;
 	offset_ = {0.0f, 1.0f, -16.0f}; // プレイヤーの後方上方
+	baseOffset_ = offset_;
 	positionSmoothness_ = 0.01f;
 	rotationSmoothness_ = 0.01f;
 
@@ -54,6 +56,16 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	targetPosition_ = currentPosition_;
 	targetRotation_ = currentRotation_;
 
+	// カメラ操作パラメータの初期化
+	zoomMultiplier_ = 1.0f;
+	pullMultiplier_ = 1.0f;
+	tiltAmount_ = 0.0f;
+	operationSmoothness_ = 0.15f;
+	targetZoomMultiplier_ = 1.0f;
+	targetPullMultiplier_ = 1.0f;
+	targetTiltAmount_ = 0.0f;
+	isCameraOperationEnabled_ = true; // デフォルトで有効
+
 	// カメラに初期トランスフォームを設定
 	if (camera_) {
 		Transform initialTransform;
@@ -69,6 +81,11 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 void FollowCamera::Update() {
 	if (!camera_ || !target_) {
 		return;
+	}
+
+	// カメラ操作の入力処理（有効な場合のみ）
+	if (isCameraOperationEnabled_ && !isFixedPositionMode_) {
+		HandleCameraInput();
 	}
 
 	UpdateCameraTransform();
@@ -95,6 +112,39 @@ void FollowCamera::Update() {
 	cameraTransform.translate = currentPosition_;
 	cameraTransform.rotate = currentRotation_;
 	camera_->SetTransform(cameraTransform);
+}
+
+///=============================================================================
+///						カメラ操作の入力処理
+void FollowCamera::HandleCameraInput() {
+	// R キー: ズーム（カメラを近づける）
+	if (Input::GetInstance()->PushKey(DIK_R)) {
+		targetZoomMultiplier_ = 0.7f; // 70%の距離に近づく
+	} else {
+		targetZoomMultiplier_ = 1.0f; // 通常の距離に戻す
+	}
+
+	// B キー: 引く（カメラを遠ざける）
+	if (Input::GetInstance()->PushKey(DIK_B)) {
+		targetPullMultiplier_ = 1.3f; // 130%の距離に引く
+	} else {
+		targetPullMultiplier_ = 1.0f; // 通常の距離に戻す
+	}
+
+	// A キー: 左右に傾ける
+	if (Input::GetInstance()->PushKey(DIK_A)) {
+		targetTiltAmount_ = 0.3f; // 約17度傾ける
+	} else {
+		targetTiltAmount_ = 0.0f; // 傾きをリセット
+	}
+
+	// 操作パラメータを滑らかに補間
+	zoomMultiplier_ = Lerp(zoomMultiplier_, targetZoomMultiplier_, operationSmoothness_);
+	pullMultiplier_ = Lerp(pullMultiplier_, targetPullMultiplier_, operationSmoothness_);
+	tiltAmount_ = Lerp(tiltAmount_, targetTiltAmount_, operationSmoothness_);
+
+	// オフセットにズーム・引くを適用
+	offset_ = baseOffset_ * (zoomMultiplier_ * pullMultiplier_);
 }
 
 ///=============================================================================
@@ -135,6 +185,11 @@ void FollowCamera::UpdateCameraTransform() {
 
 	// プレイヤーのZ軸回転（ロール）を取得
 	float roll = playerTransform->rotate.z;
+
+	// A キーでの傾きを追加（カメラ操作が有効な場合のみ）
+	if (isCameraOperationEnabled_ && !isFixedPositionMode_) {
+		roll += tiltAmount_;
+	}
 
 	// カメラの傾き追従が無効の場合はロールを0にする
 	if (!enableRollFollow_) {
@@ -195,7 +250,7 @@ void FollowCamera::DrawImGui() {
 		}
 	} else {
 		ImGui::Text("Mode: Full Follow (Position + Rotation)");
-		ImGui::DragFloat3("Offset", &offset_.x, 0.1f);
+		ImGui::DragFloat3("Offset", &baseOffset_.x, 0.1f);
 		ImGui::SliderFloat("Position Smoothness", &positionSmoothness_, 0.01f, 1.0f);
 	}
 
@@ -212,6 +267,14 @@ void FollowCamera::DrawImGui() {
 	ImGui::Text("Crash Settings:");
 	ImGui::Checkbox("Limit Crash Rotation", &limitCrashRotation_);
 	ImGui::SliderFloat("Crash Rotation Smoothness", &crashRotationSmoothness_, 0.0001f, 0.01f);
+
+	ImGui::Separator();
+	ImGui::Text("Camera Operations:");
+	ImGui::Checkbox("Enable Camera Operation", &isCameraOperationEnabled_);
+	ImGui::Text("R Key: Zoom (%.2f)", zoomMultiplier_);
+	ImGui::Text("B Key: Pull (%.2f)", pullMultiplier_);
+	ImGui::Text("A Key: Tilt (%.2f rad)", tiltAmount_);
+	ImGui::SliderFloat("Operation Smoothness", &operationSmoothness_, 0.01f, 0.5f);
 
 	if (target_) {
 		Vector3 playerPos = target_->GetPosition();

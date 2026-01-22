@@ -173,7 +173,7 @@
     <ClCompile Include="engine\2d\particle\ParticleEmitter.cpp">
       <Filter>engine\2d\particle</Filter>
     </ClCompile>
-    <ClCompile Include="application\utils\HUD.cpp">
+    <ClCompile Include="application\ui\HUD.cpp">
       <Filter>application</Filter>
     </ClCompile>
     <ClCompile Include="engine\base\imGui\DebugTextManager.cpp">
@@ -184,7 +184,7 @@
     </ClCompile>
     <ClCompile Include="application\SceneTransition.cpp" />
     <ClCompile Include="application\StartAnimation.cpp" />
-    <ClCompile Include="application\GameOverUI.cpp" />
+    <ClCompile Include="application\ui\GameOverUI.cpp" />
     <ClCompile Include="engine\3d\cloud\Cloud.cpp" />
     <ClCompile Include="engine\3d\cloud\CloudSetup.cpp" />
     <ClCompile Include="application\GameClearAnimation.cpp" />
@@ -195,9 +195,9 @@
     <ClCompile Include="application\enemy\EnemyBase.cpp" />
     <ClCompile Include="application\enemy\EnemyBullet.cpp" />
     <ClCompile Include="application\enemy\EnemyGunner.cpp" />
-    <ClCompile Include="OperationGuideUI.cpp" />
+    <ClCompile Include="application\ui\OperationGuideUI.cpp" />
     <ClCompile Include="engine\postEffect\Vignetting.cpp" />
-    <ClCompile Include="application\UIManager.cpp" />
+    <ClCompile Include="application\ui\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -425,7 +425,7 @@
     <ClInclude Include="engine\2d\particle\Particle.h">
       <Filter>engine\2d\particle</Filter>
     </ClInclude>
-    <ClInclude Include="application\utils\HUD.h">
+    <ClInclude Include="application\ui\HUD.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\imGui\DebugTextManager.h">
@@ -438,7 +438,7 @@
     <ClInclude Include="engine\math\structure\GraphicsStructures.h" />
     <ClInclude Include="engine\math\structure\MathStructures.h" />
     <ClInclude Include="application\StartAnimation.h" />
-    <ClInclude Include="application\GameOverUI.h" />
+    <ClInclude Include="application\ui\GameOverUI.h" />
     <ClInclude Include="engine\3d\cloud\Cloud.h" />
     <ClInclude Include="engine\3d\cloud\CloudSetup.h" />
     <ClInclude Include="application\GameClearAnimation.h" />
@@ -450,9 +450,9 @@
     <ClInclude Include="application\enemy\EnemyBullet.h" />
     <ClInclude Include="application\enemy\EnemyGunner.h" />
     <ClInclude Include="engine\math\MagMath.h" />
-    <ClInclude Include="OperationGuideUI.h" />
+    <ClInclude Include="application\ui\OperationGuideUI.h" />
     <ClInclude Include="engine\postEffect\Vignetting.h" />
-    <ClInclude Include="application\UIManager.h" />
+    <ClInclude Include="application\ui\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
