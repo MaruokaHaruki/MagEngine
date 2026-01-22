@@ -22,7 +22,7 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-// 頂点データ構造体
+	// 頂点データ構造体
 	struct SkyboxVertex {
 		MagMath::Vector4 position;
 	};
@@ -116,7 +116,7 @@ namespace MagEngine {
 
 		//========================================
 		// トランスフォーメーションマトリックス
-		Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_;
+		Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;
 		// 頂点バッファ
 		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
 		// インデックスバッファ

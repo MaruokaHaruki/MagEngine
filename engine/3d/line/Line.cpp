@@ -7,11 +7,11 @@
  * \note
  *********************************************************************/
 #include "Line.h"
-#include "LineSetup.h"
-#include "DirectXCore.h"
 #include "Camera.h"
-#include "Object3dSetup.h"
+#include "DirectXCore.h"
 #include "LineManager.h"
+#include "LineSetup.h"
+#include "Object3dSetup.h"
 //========================================
 // 数学関数のインクルード
 #define _USE_MATH_DEFINES
@@ -19,8 +19,8 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-///=============================================================================
-///						初期化
+	///=============================================================================
+	///						初期化
 	void Line::Initialize(LineSetup *lineSetup) {
 		//========================================
 		// ラインセットアップの取得
@@ -32,7 +32,7 @@ namespace MagEngine {
 		CreateTransformationMatrixBuffer();
 		//========================================
 		// ワールド行列の初期化
-		transform_ = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+		transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 		//========================================
 		// カメラの取得
 		camera_ = lineSetup_->GetDefaultCamera();
@@ -48,7 +48,7 @@ namespace MagEngine {
 		MagMath::Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate, transform_.translate);
 		MagMath::Matrix4x4 worldViewProjectionMatrix;
 
-		if(camera_) {
+		if (camera_) {
 			// ビュー行列とプロジェクション行列を取得
 			const MagMath::Matrix4x4 &viewMatrix = camera_->GetViewMatrix();
 			const MagMath::Matrix4x4 &projectionMatrix = camera_->GetProjectionMatrix();
@@ -66,14 +66,13 @@ namespace MagEngine {
 		transformationMatrixData_->WorldInvTranspose = Inverse4x4(worldMatrix);
 	}
 
-
 	///=============================================================================
 	///						ライン描画
 	void Line::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color) {
 		// 頂点データを追加
-		vertices_.push_back({ start, color });
+		vertices_.push_back({start, color});
 		// 頂点データを追加
-		vertices_.push_back({ end, color });
+		vertices_.push_back({end, color});
 	}
 
 	///=============================================================================
@@ -81,7 +80,8 @@ namespace MagEngine {
 	void Line::Draw() {
 		//========================================
 		// 描画するラインがない場合は何もしない
-		if(vertices_.empty()) return;
+		if (vertices_.empty())
+			return;
 		//========================================
 		// 描画設定
 		void *pData;
@@ -95,12 +95,12 @@ namespace MagEngine {
 		// 描画設定
 		auto commandList = lineSetup_->GetDXManager()->GetCommandList();
 		// taransformMatrixBufferのマップ
-		commandList->SetGraphicsRootConstantBufferView(0, transfomationMatrixBuffer_->GetGPUVirtualAddress()); // 修正: RootParameterIndexを0に変更
+		commandList->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress()); // 修正: RootParameterIndexを0に変更
 		// vertexBufferの設定
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 		//========================================
 		// 描画
-		commandList->DrawInstanced(static_cast<UINT>( vertices_.size() ), 1, 0, 0);
+		commandList->DrawInstanced(static_cast<UINT>(vertices_.size()), 1, 0, 0);
 		// NOTE:描画した後はラインをクリアするのを忘れるな
 	}
 
@@ -144,27 +144,26 @@ namespace MagEngine {
 			&bufferDesc,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&vertexBuffer_)
-		);
+			IID_PPV_ARGS(&vertexBuffer_));
 		//========================================
 		// バーテックスバッファビューの設定
 		vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
 		// バイトサイズ
-		vertexBufferView_.SizeInBytes = static_cast<UINT>( bufferSize );
+		vertexBufferView_.SizeInBytes = static_cast<UINT>(bufferSize);
 		// ストライド
 		vertexBufferView_.StrideInBytes = sizeof(LineVertex);
 	}
 
 	///=============================================================================
-	///						
+	///
 	void Line::CreateTransformationMatrixBuffer() {
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t bufferSize = ( sizeof(MagMath::TransformationMatrix) + 255 ) & ~255;
-		transfomationMatrixBuffer_ = lineSetup_->GetDXManager()->CreateBufferResource(bufferSize);
+		size_t bufferSize = (sizeof(MagMath::TransformationMatrix) + 255) & ~255;
+		transformationMatrixBuffer_ = lineSetup_->GetDXManager()->CreateBufferResource(bufferSize);
 		// 書き込み用変数
 		MagMath::TransformationMatrix transformationMatrix = {};
 		// 書き込むためのアドレスを取得
-		transfomationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &transformationMatrixData_ ));
+		transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
 		// 書き込み
 		transformationMatrix.WVP = MagMath::Identity4x4();
 		// 単位行列を書き込む

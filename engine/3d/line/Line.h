@@ -7,22 +7,22 @@
  * \note
  *********************************************************************/
 #pragma once
+#include "Light.h"
 #include "MagMath.h"
 #include <vector>
-#include "Light.h"
- //========================================
- // DX12include
-#include<d3d12.h>
-#include<dxgi1_6.h>
+//========================================
+// DX12include
+#include <d3d12.h>
+#include <dxgi1_6.h>
 #include <wrl/client.h>
-#pragma comment(lib,"d3d12.lib")
-#pragma comment(lib,"dxgi.lib")
- //========================================
- // DXC
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+//========================================
+// DXC
 #include <dxcapi.h>
-#pragma comment(lib,"dxcompiler.lib")
- ///=============================================================================
- ///                        namespace MagEngine
+#pragma comment(lib, "dxcompiler.lib")
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
 	struct LineVertex {
 		MagMath::Vector3 position;
@@ -35,14 +35,13 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							メンバ関数
 	public:
-
 		/// \brief 初期化
 		void Initialize(LineSetup *lineSetup);
 
 		/// \brief 更新
 		void Update();
 
-		/// \brief 描画 
+		/// \brief 描画
 		void Draw();
 
 		/**----------------------------------------------------------------------------
@@ -75,71 +74,85 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							入出力関数
 	public:
-
-
-
 		/**----------------------------------------------------------------------------
-		* \brief  SetTransform トランスフォーメーションの設定
-		* \param  transform トランスフォーメーション
-		* \note
-		*/
-		void SetTransform(const MagMath::Transform &transform) { transform_ = transform; }
+		 * \brief  SetTransform トランスフォーメーションの設定
+		 * \param  transform トランスフォーメーション
+		 * \note
+		 */
+		void SetTransform(const MagMath::Transform &transform) {
+			transform_ = transform;
+		}
 
 		/**----------------------------------------------------------------------------
 		 * \brief  GetTransform
 		 * \return
 		 */
-		MagMath::Transform GetTransform() const { return transform_; }
+		MagMath::Transform GetTransform() const {
+			return transform_;
+		}
 
 		/**----------------------------------------------------------------------------
-		* \brief  SetModel モデルの設定
-		* \param  model モデル
-		* \note
-		*/
-		void SetScale(const MagMath::Vector3 &scale) { transform_.scale = scale; }
+		 * \brief  SetModel モデルの設定
+		 * \param  model モデル
+		 * \note
+		 */
+		void SetScale(const MagMath::Vector3 &scale) {
+			transform_.scale = scale;
+		}
 		/**----------------------------------------------------------------------------
-		* \brief  GetScale スケールの取得
-		* \return MagMath::Vector3 スケール
-		* \note
-		*/
-		const MagMath::Vector3 &GetScale() const { return transform_.scale; }
+		 * \brief  GetScale スケールの取得
+		 * \return MagMath::Vector3 スケール
+		 * \note
+		 */
+		const MagMath::Vector3 &GetScale() const {
+			return transform_.scale;
+		}
 
 		/**----------------------------------------------------------------------------
-		* \brief  SetRotate 回転の設定
-		* \param  rotate 回転
-		* \note
-		*/
-		void SetRotation(const MagMath::Vector3 &rotate) { transform_.rotate = rotate; }
+		 * \brief  SetRotate 回転の設定
+		 * \param  rotate 回転
+		 * \note
+		 */
+		void SetRotation(const MagMath::Vector3 &rotate) {
+			transform_.rotate = rotate;
+		}
 		/**----------------------------------------------------------------------------
-		* \brief  GetRotate 回転の取得
-		* \return MagMath::Vector3 回転
-		* \note
-		*/
-		const MagMath::Vector3 &GetRotation() const { return transform_.rotate; }
+		 * \brief  GetRotate 回転の取得
+		 * \return MagMath::Vector3 回転
+		 * \note
+		 */
+		const MagMath::Vector3 &GetRotation() const {
+			return transform_.rotate;
+		}
 
 		/**----------------------------------------------------------------------------
-		* \brief  SetTranslate 移動の設定
-		* \param  translate 移動
-		* \note
-		*/
-		void SetPosition(const MagMath::Vector3 &translate) { transform_.translate = translate; }
+		 * \brief  SetTranslate 移動の設定
+		 * \param  translate 移動
+		 * \note
+		 */
+		void SetPosition(const MagMath::Vector3 &translate) {
+			transform_.translate = translate;
+		}
 		/**----------------------------------------------------------------------------
-		* \brief  GetTranslate 移動の取得
-		* \return MagMath::Vector3 移動
-		* \note
-		*/
-		const MagMath::Vector3 &GetPosition() const { return transform_.translate; }
+		 * \brief  GetTranslate 移動の取得
+		 * \return MagMath::Vector3 移動
+		 * \note
+		 */
+		const MagMath::Vector3 &GetPosition() const {
+			return transform_.translate;
+		}
 
 		/**----------------------------------------------------------------------------
-		* \brief  SetCamera カメラの設定
-		* \param  camera
-		*/
-		void SetCamera(Camera *camera) { this->camera_ = camera; }
+		 * \brief  SetCamera カメラの設定
+		 * \param  camera
+		 */
+		void SetCamera(Camera *camera) {
+			this->camera_ = camera;
+		}
 
 		///--------------------------------------------------------------
 		///							メンバ変数
 	private:
-
 		//---------------------------------------
 		// オブジェクト3Dセットアップポインタ
 		LineSetup *lineSetup_ = nullptr;
@@ -155,12 +168,12 @@ namespace MagEngine {
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};
 
 		//---------------------------------------
-		//トランスフォーメーションマトリックス
-		Microsoft::WRL::ComPtr <ID3D12Resource> transfomationMatrixBuffer_;
+		// トランスフォーメーションマトリックス
+		Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;
 
 		//---------------------------------------
 		// バッファリソース内のデータを指すポインタ
-		//トランスフォーメーションマトリックス
+		// トランスフォーメーションマトリックス
 		MagMath::TransformationMatrix *transformationMatrixData_ = nullptr;
 
 		//--------------------------------------

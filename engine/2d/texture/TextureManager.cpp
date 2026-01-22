@@ -8,20 +8,20 @@
  *********************************************************************/
 #include "TextureManager.h"
 #include <algorithm>
- ///=============================================================================
- ///                        namespace MagEngine
-namespace MagEngine {
 ///=============================================================================
-///						インスタンス設定
-	TextureManager *TextureManager::instance_ = nullptr;
+///                        namespace MagEngine
+namespace MagEngine {
+	///=============================================================================
+	///						インスタンス設定
+	std::unique_ptr<TextureManager> TextureManager::instance_ = nullptr;
 
 	///=============================================================================
 	///							インスタンス生成
 	TextureManager *TextureManager::GetInstance() {
-		if(instance_ == nullptr) {
-			instance_ = new TextureManager;
+		if (instance_ == nullptr) {
+			instance_ = std::make_unique<TextureManager>();
 		}
-		return instance_;
+		return instance_.get();
 	}
 
 	///=============================================================================
@@ -51,7 +51,7 @@ namespace MagEngine {
 
 		//---------------------------------------
 		// 読み込み済みテクスチャを検索
-		if(textureDatas_.contains(fullPath)) {
+		if (textureDatas_.contains(fullPath)) {
 			return;
 		}
 
@@ -70,13 +70,13 @@ namespace MagEngine {
 		std::string lowerPath = fullPath;
 		std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
 
-		if(lowerPath.find(".dds") != std::string::npos) {
+		if (lowerPath.find(".dds") != std::string::npos) {
 			// DDSファイルの読み込み
 			hr = DirectX::LoadFromDDSFile(filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
 			assert(SUCCEEDED(hr));
 
 			// DDSファイルの場合、キューブマップかどうかを確認
-			if(image.GetMetadata().IsCubemap()) {
+			if (image.GetMetadata().IsCubemap()) {
 				// キューブマップの場合はミップマップ生成をスキップ
 			}
 		} else {
@@ -89,7 +89,7 @@ namespace MagEngine {
 		// mipmapの作成
 		DirectX::ScratchImage mipImages{};
 		// 圧縮フォーマットまたはキューブマップの場合はミップマップ生成をスキップ
-		if(DirectX::IsCompressed(image.GetMetadata().format) || image.GetMetadata().IsCubemap()) {
+		if (DirectX::IsCompressed(image.GetMetadata().format) || image.GetMetadata().IsCubemap()) {
 			mipImages = std::move(image);
 		} else {
 			// mipmapの生成
@@ -124,7 +124,7 @@ namespace MagEngine {
 		srvDesc.Format = textureData.metadata.format;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		// Cubemapかどうかをチェック
-		if(textureData.metadata.IsCubemap()) {
+		if (textureData.metadata.IsCubemap()) {
 			// キューブマップテクスチャ
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			srvDesc.TextureCube.MostDetailedMip = 0;		// 最も詳細なミップレベル
@@ -142,9 +142,8 @@ namespace MagEngine {
 	///=============================================================================
 	///								終了処理
 	void TextureManager::Finalize() {
-		// インスタンスの削除
-		delete instance_;
-		instance_ = nullptr;
+		// インスタンスの削除（unique_ptrが自動で管理）
+		instance_.reset();
 	}
 
 	///=============================================================================
@@ -153,10 +152,10 @@ namespace MagEngine {
 		// ディレクトリパスを追加
 		std::string fullPath = kTextureDirectoryPath + filePath;
 
-		if(textureDatas_.contains(fullPath)) {
+		if (textureDatas_.contains(fullPath)) {
 			// 読み込み済みなら要素番号を返す
 			auto it = textureDatas_.find(fullPath);
-			uint32_t textureIndex = static_cast<uint32_t>( std::distance(textureDatas_.begin(), it) );
+			uint32_t textureIndex = static_cast<uint32_t>(std::distance(textureDatas_.begin(), it));
 			return textureIndex;
 		}
 		//---------------------------------------
@@ -171,7 +170,7 @@ namespace MagEngine {
 		// ディレクトリパスを追加
 		std::string fullPath = kTextureDirectoryPath + filePath;
 		// レンダーテクスチャの場合は特別処理
-		if(filePath == "RenderTexture0" || filePath == "RenderTexture1") {
+		if (filePath == "RenderTexture0" || filePath == "RenderTexture1") {
 			fullPath = filePath;
 		} else {
 			// 通常のテクスチャの場合はディレクトリパスを追加
@@ -190,7 +189,7 @@ namespace MagEngine {
 		// ディレクトリパスを追加
 		std::string fullPath = kTextureDirectoryPath + filePath;
 		// レンダーテクスチャの場合は特別処理
-		if(filePath == "RenderTexture0" || filePath == "RenderTexture1") {
+		if (filePath == "RenderTexture0" || filePath == "RenderTexture1") {
 			fullPath = filePath;
 		} else {
 			// 通常のテクスチャの場合はディレクトリパスを追加

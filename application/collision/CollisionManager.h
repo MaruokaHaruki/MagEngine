@@ -17,6 +17,15 @@ using namespace MagMath;
 #include <vector>
 
 //========================================
+// コリジョンシステム定数
+namespace CollisionConstants {
+	// グリッドセルのデフォルトサイズ（単位：ゲーム座標）
+	constexpr float kDefaultCellSize = 32.0f;
+	// グリッド内の最大オブジェクト数
+	constexpr int kDefaultMaxObjects = 1024;
+}
+
+//========================================
 // 最適化されたグリッドセル
 struct GridCell {
 	std::vector<BaseObject *> objects;
@@ -63,7 +72,7 @@ struct CollisionPairHash {
 class CollisionManager {
 public:
 	/// \brief 初期化
-	void Initialize(float cellSize = 32.0f, int maxObjects = 1024);
+	void Initialize(float cellSize = CollisionConstants::kDefaultCellSize, int maxObjects = CollisionConstants::kDefaultMaxObjects);
 
 	/// \brief 更新
 	void Update();

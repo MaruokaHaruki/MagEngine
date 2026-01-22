@@ -176,7 +176,7 @@ namespace MagEngine {
 		 * \param  decay 減衰の度合い（1.0が線形、2.0が二乗減衰）
 		 */
 		void SetPointLight(const MagMath::Vector4 &color, const MagMath::Vector3 &position, float intensity,
-			float radius = 10.0f, float decay = 2.0f) {
+						   float radius = 10.0f, float decay = 2.0f) {
 			pointLightData_->color = color;
 			pointLightData_->position = position;
 			pointLightData_->intensity = intensity;
@@ -202,9 +202,9 @@ namespace MagEngine {
 		 * \param  angle スポットライトの角度（ラジアン）
 		 */
 		void SetSpotLight(const MagMath::Vector4 &color, const MagMath::Vector3 &position,
-			const MagMath::Vector3 &direction, float intensity,
-			float distance = 15.0f, float decay = 2.0f,
-			float angle = 0.5f) {
+						  const MagMath::Vector3 &direction, float intensity,
+						  float distance = 15.0f, float decay = 2.0f,
+						  float angle = 0.5f) {
 			spotLightData_->color = color;
 			spotLightData_->position = position;
 			spotLightData_->direction = direction;
@@ -292,7 +292,7 @@ namespace MagEngine {
 		Model *model_ = nullptr;
 		//========================================
 		// トランスフォーメーションマトリックス
-		Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_;
+		Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;
 		// カメラ
 		Microsoft::WRL::ComPtr<ID3D12Resource> cameraBuffer_;
 		// 並行光源

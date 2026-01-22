@@ -8,21 +8,22 @@
 #pragma once
 #include "DirectXCore.h"
 #include "SrvSetup.h"
+#include <memory>
 #include <string>
 #include <unordered_map>
- ///=============================================================================
- ///                        namespace MagEngine
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
-///--------------------------------------------------------------
-///							構造体
-/**
- * \brief テクスチャデータのセット
- * \brief filePath ファイルパス
- * \brief metadata メタデータ
- * \brief resource リソース
- * \brief srvHandleCPU CPU用SRVハンドル
- * \brief srvHandleGPU GPU用SRVハンドル
- */
+	///--------------------------------------------------------------
+	///							構造体
+	/**
+	 * \brief テクスチャデータのセット
+	 * \brief filePath ファイルパス
+	 * \brief metadata メタデータ
+	 * \brief resource リソース
+	 * \brief srvHandleCPU CPU用SRVハンドル
+	 * \brief srvHandleGPU GPU用SRVハンドル
+	 */
 	struct TextureData {
 		DirectX::TexMetadata metadata{};
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
@@ -72,7 +73,7 @@ namespace MagEngine {
 
 		/// @brief GetMetadata テクスチャのメタデータを取得
 		/// @param filePath ファイルパス
-		/// @return	
+		/// @return
 		const DirectX::TexMetadata &GetMetadata(const std::string &filePath);
 
 		/// @brief CreateRenderTextureMetaData レンダーテクスチャのメタデータを生成
@@ -80,16 +81,21 @@ namespace MagEngine {
 
 		///--------------------------------------------------------------
 		///							 メンバ変数
-	private:
 		//========================================
 		// シングルトンインスタンス
-		static TextureManager *instance_;
+		static std::unique_ptr<TextureManager> instance_;
+		// std::make_unique と std::unique_ptr でのアクセスを許可
+		friend std::unique_ptr<TextureManager> std::make_unique<TextureManager>();
+		template <typename T>
+		friend struct std::default_delete;
 		//========================================
 		// 設定
 		TextureManager() = default;
 		~TextureManager() = default;
 		TextureManager(TextureManager &) = default;
 		TextureManager &operator=(TextureManager &) = default;
+
+	private:
 		//========================================
 		// DirectXCoreポインタ
 		DirectXCore *dxCore_ = nullptr;

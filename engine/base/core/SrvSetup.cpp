@@ -7,11 +7,11 @@
  * \note
  *********************************************************************/
 #include "SrvSetup.h"
- ///=============================================================================
- ///                        namespace MagEngine
-namespace MagEngine {
 ///=============================================================================
-///						初期化
+///                        namespace MagEngine
+namespace MagEngine {
+	///=============================================================================
+	///						初期化
 	void SrvSetup::Initialize(DirectXCore *dxCore) {
 		//========================================
 		// DXCoreの設定
@@ -26,7 +26,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						ループ前処理
 	void SrvSetup::PreDraw() {
-		ID3D12DescriptorHeap *descriptorHeaps[] = { descriptorHeap_.Get() };
+		ID3D12DescriptorHeap *descriptorHeaps[] = {descriptorHeap_.Get()};
 		dxCore_->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 	}
 
@@ -47,7 +47,7 @@ namespace MagEngine {
 		//========================================
 		// ディスクリプタハンドルの取得
 		D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-		handleCPU.ptr += ( descriptorSizeSRV_ * srvIndex );
+		handleCPU.ptr += (descriptorSizeSRV_ * srvIndex);
 		//========================================
 		// テクスチャ用のSRVを生成
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -62,7 +62,7 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						SRV生成(構造化バッファ用)
-	void SrvSetup::CreateSRVStructuredBuffer(uint32_t srvIndex, ID3D12Resource *pResource, UINT enelemtQuantity, UINT structureByteStride) {
+	void SrvSetup::CreateSRVStructuredBuffer(uint32_t srvIndex, ID3D12Resource *pResource, UINT elementQuantity, UINT structureByteStride) {
 		//========================================
 		// 構造化バッファ用のSRVを生成
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -71,7 +71,7 @@ namespace MagEngine {
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srvDesc.Buffer.StructureByteStride = structureByteStride;
 		srvDesc.Buffer.FirstElement = 0;
-		srvDesc.Buffer.NumElements = enelemtQuantity;
+		srvDesc.Buffer.NumElements = elementQuantity;
 		srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 		dxCore_->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, GetSRVCPUDescriptorHandle(srvIndex));
 	}
@@ -80,7 +80,7 @@ namespace MagEngine {
 		//========================================
 		// ディスクリプタハンドルの取得
 		D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-		handleCPU.ptr += ( descriptorSizeSRV_ * 0 );
+		handleCPU.ptr += (descriptorSizeSRV_ * 0);
 		//========================================
 		// テクスチャ用のSRVを生成
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -99,7 +99,7 @@ namespace MagEngine {
 	///						 CPU
 	D3D12_CPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVCPUDescriptorHandle(uint32_t index) {
 		D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-		handleCPU.ptr += ( descriptorSizeSRV_ * index );
+		handleCPU.ptr += (descriptorSizeSRV_ * index);
 		return handleCPU;
 	}
 
@@ -107,7 +107,7 @@ namespace MagEngine {
 	///						 GPU
 	D3D12_GPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVGPUDescriptorHandle(uint32_t index) {
 		D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
-		handleGPU.ptr += ( descriptorSizeSRV_ * index );
+		handleGPU.ptr += (descriptorSizeSRV_ * index);
 		return handleGPU;
 	}
 

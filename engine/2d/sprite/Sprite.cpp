@@ -7,38 +7,37 @@
  * \note
  *********************************************************************/
 #include "Sprite.h"
-#include "SpriteSetup.h"	
+#include "SpriteSetup.h"
 #include "TextureManager.h"
- ///=============================================================================
- ///                        namespace MagEngine
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
- ///=============================================================================
- ///								初期化
+	///=============================================================================
+	///								初期化
 	void Sprite::Initialize(SpriteSetup *SpriteSetup, std::string textureFilePath) {
-		//引数で受け取ってメンバ変数に記録する
+		// 引数で受け取ってメンバ変数に記録する
 		this->spriteSetup_ = SpriteSetup;
 
-		//頂点バッファの作成
+		// 頂点バッファの作成
 		CreateVertexBuffer();
-		//インデックスバッファの作成
+		// インデックスバッファの作成
 		CreateIndexBuffer();
-		//マテリアルバッファの作成
+		// マテリアルバッファの作成
 		CreateMaterialBuffer();
-		//トランスフォーメーションマトリックスバッファの作成
+		// トランスフォーメーションマトリックスバッファの作成
 		CreateTransformationMatrixBuffer();
 
-		//ファイルパスの記録
+		// ファイルパスの記録
 		textureFilePath_ = textureFilePath;
-		//textureIndex = TextureManager::GetInstance()->GetTextureIndex(textureFilePath);
+		// textureIndex = TextureManager::GetInstance()->GetTextureIndex(textureFilePath);
 
-
-		//テクスチャのサイズを取得
+		// テクスチャのサイズを取得
 		AdjustTextureSize();
 	}
 
 	///=============================================================================
 	///									更新
-	//NOTE:引数としてローカル行列とビュー行列を持ってくること
+	// NOTE:引数としてローカル行列とビュー行列を持ってくること
 	void Sprite::Update(MagMath::Matrix4x4 viewMatrix) {
 
 		//---------------------------------------
@@ -75,11 +74,11 @@ namespace MagEngine {
 	///=============================================================================
 	///									描画
 	void Sprite::Draw() {
-		///2D描画
-		//NOTE:Material用のCBuffer(色)とSRV(Texture)は3Dの三角形と同じものを使用。無駄を省け。
-		//NOTE:同じものを使用したな？気をつけろ、別々の描画をしたいときは個別のオブジェクトとして宣言し直せ。
-		// まず、描画時に使うバッファが有効か確認する
-		if(!vertexBuffer_ || !indexBuffer_ || !materialBuffer_ || !transfomationMatrixBuffer_) {
+		/// 2D描画
+		// NOTE:Material用のCBuffer(色)とSRV(Texture)は3Dの三角形と同じものを使用。無駄を省け。
+		// NOTE:同じものを使用したな？気をつけろ、別々の描画をしたいときは個別のオブジェクトとして宣言し直せ。
+		//  まず、描画時に使うバッファが有効か確認する
+		if (!vertexBuffer_ || !indexBuffer_ || !materialBuffer_ || !transformationMatrixBuffer_) {
 			throw std::runtime_error("One or more buffers are not initialized.");
 		}
 
@@ -97,7 +96,7 @@ namespace MagEngine {
 
 		// Material と TransformationMatrix の設定
 		commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
-		commandList->SetGraphicsRootConstantBufferView(1, transfomationMatrixBuffer_->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
 		// テクスチャの設定
 		commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(textureFilePath_));
@@ -105,7 +104,6 @@ namespace MagEngine {
 		// 描画コール
 		commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 	}
-
 
 	///=============================================================================
 	///									ローカル関数
@@ -115,7 +113,7 @@ namespace MagEngine {
 		// 頂点データ用のバッファリソースを作成
 		vertexBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::VertexData) * 4);
 
-		if(!vertexBuffer_) {
+		if (!vertexBuffer_) {
 			throw std::runtime_error("Failed to Create Vertex Buffer");
 			return;
 		}
@@ -126,31 +124,31 @@ namespace MagEngine {
 		vertexBufferView_.StrideInBytes = sizeof(MagMath::VertexData);
 
 		// リソースにデータを書き込む
-		vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &vertexData_ ));
+		vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData_));
 
 		// 2つの三角形の頂点データを設定
-		vertexData_[0].position = { 0.0f, 1.0f, 0.0f, 1.0f };
-		vertexData_[0].texCoord = { 0.0f, 1.0f };
-		vertexData_[0].normal = { 0.0f, 0.0f, -1.0f };
+		vertexData_[0].position = {0.0f, 1.0f, 0.0f, 1.0f};
+		vertexData_[0].texCoord = {0.0f, 1.0f};
+		vertexData_[0].normal = {0.0f, 0.0f, -1.0f};
 
-		vertexData_[1].position = { 0.0f, 0.0f, 0.0f, 1.0f };
-		vertexData_[1].texCoord = { 0.0f, 0.0f };
-		vertexData_[1].normal = { 0.0f, 0.0f, -1.0f };
+		vertexData_[1].position = {0.0f, 0.0f, 0.0f, 1.0f};
+		vertexData_[1].texCoord = {0.0f, 0.0f};
+		vertexData_[1].normal = {0.0f, 0.0f, -1.0f};
 
-		vertexData_[2].position = { 1.0f, 1.0f, 0.0f, 1.0f };
-		vertexData_[2].texCoord = { 1.0f, 1.0f };
-		vertexData_[2].normal = { 0.0f, 0.0f, -1.0f };
+		vertexData_[2].position = {1.0f, 1.0f, 0.0f, 1.0f};
+		vertexData_[2].texCoord = {1.0f, 1.0f};
+		vertexData_[2].normal = {0.0f, 0.0f, -1.0f};
 
-		vertexData_[3].position = { 1.0f, 0.0f, 0.0f, 1.0f };
-		vertexData_[3].texCoord = { 1.0f, 0.0f };
-		vertexData_[3].normal = { 0.0f, 0.0f, -1.0f };
+		vertexData_[3].position = {1.0f, 0.0f, 0.0f, 1.0f};
+		vertexData_[3].texCoord = {1.0f, 0.0f};
+		vertexData_[3].normal = {0.0f, 0.0f, -1.0f};
 	}
 
 	void Sprite::CreateIndexBuffer() {
 		// インデックスデータ用のバッファリソースを作成
 		indexBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(uint32_t) * 6);
 
-		if(!indexBuffer_) {
+		if (!indexBuffer_) {
 			throw std::runtime_error("Failed to Create Index Buffer");
 			return;
 		}
@@ -161,7 +159,7 @@ namespace MagEngine {
 		indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 
 		// リソースにデータを書き込む
-		indexBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &indexData_ ));
+		indexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&indexData_));
 
 		// インデックスデータを設定
 		indexData_[0] = 0;
@@ -177,43 +175,42 @@ namespace MagEngine {
 	void Sprite::CreateMaterialBuffer() {
 		// マテリアルデータ用のバッファリソースを作成
 		materialBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::Material));
-		//書き込むためのアドレス取得
-		materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &materialData_ ));
-		//マテリアルデータ書き込み用変数(赤色を書き込み)
-		MagMath::Material materialSprite = { {1.0f, 1.0f, 1.0f, 1.0f},false };
-		//UVトランスフォーム用の単位行列の書き込み
+		// 書き込むためのアドレス取得
+		materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&materialData_));
+		// マテリアルデータ書き込み用変数(赤色を書き込み)
+		MagMath::Material materialSprite = {{1.0f, 1.0f, 1.0f, 1.0f}, false};
+		// UVトランスフォーム用の単位行列の書き込み
 		materialSprite.uvTransform = MagMath::Identity4x4();
-		//マテリアルデータの書き込み
+		// マテリアルデータの書き込み
 		*materialData_ = materialSprite;
 	}
 
 	///--------------------------------------------------------------
 	///			トランスフォーメーションマトリックスバッファの作成
 	void Sprite::CreateTransformationMatrixBuffer() {
-		//wvp用のリソースを作る
-		transfomationMatrixBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::TransformationMatrix));
-		//書き込むためのアドレスを取得
-		transfomationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &transformationMatrixData_ ));
-		//書き込み用変数
+		// wvp用のリソースを作る
+		transformationMatrixBuffer_ = spriteSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::TransformationMatrix));
+		// 書き込むためのアドレスを取得
+		transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
+		// 書き込み用変数
 		MagMath::TransformationMatrix transformationMatrix;
-		//単位行列の書き込み
+		// 単位行列の書き込み
 		transformationMatrix.WVP = MagMath::Identity4x4();
-		//トランスフォーメーションマトリックスの書き込み
+		// トランスフォーメーションマトリックスの書き込み
 		*transformationMatrixData_ = transformationMatrix;
 	}
-
 
 	///=============================================================================
 	///								反映処理
 	///--------------------------------------------------------------
 	///						 SRTの反映
 	void Sprite::ReflectSRT() {
-		//サイズの反映
-		transform_.scale = { size_.x,size_.y,0 };
-		//回転の反映
-		transform_.rotate = { 0.0f,0.0f,rotation_ };
-		//座標の反映
-		transform_.translate = { position_.x,position_.y,0.0f };
+		// サイズの反映
+		transform_.scale = {size_.x, size_.y, 0};
+		// 回転の反映
+		transform_.rotate = {0.0f, 0.0f, rotation_};
+		// 座標の反映
+		transform_.translate = {position_.x, position_.y, 0.0f};
 	}
 
 	///--------------------------------------------------------------
@@ -228,43 +225,43 @@ namespace MagEngine {
 
 		//---------------------------------------
 		// フリップの反映
-		//左右フリップの反映
-		if(isFlipX_) {
+		// 左右フリップの反映
+		if (isFlipX_) {
 			left = -left;
 			right = -right;
 		}
-		//上下フリップの反映
-		if(isFlipY_) {
+		// 上下フリップの反映
+		if (isFlipY_) {
 			top = -top;
 			bottom = -bottom;
 		}
 
-		//vertexDataにアンカーポイントを反映
-		vertexData_[0].position = { left, bottom, 0.0f, 1.0f };	//左下
-		vertexData_[1].position = { left, top, 0.0f, 1.0f };	//左上
-		vertexData_[2].position = { right, bottom, 0.0f, 1.0f };//右下
-		vertexData_[3].position = { right, top, 0.0f, 1.0f };	//左上
+		// vertexDataにアンカーポイントを反映
+		vertexData_[0].position = {left, bottom, 0.0f, 1.0f};  // 左下
+		vertexData_[1].position = {left, top, 0.0f, 1.0f};	   // 左上
+		vertexData_[2].position = {right, bottom, 0.0f, 1.0f}; // 右下
+		vertexData_[3].position = {right, top, 0.0f, 1.0f};	   // 左上
 	}
 
 	///--------------------------------------------------------------
 	///						 テクスチャ範囲の反映
 	void Sprite::ReflectTextureRange() {
 		const DirectX::TexMetadata &metadata = TextureManager::GetInstance()->GetMetadata(textureFilePath_);
-		//テクスチャの幅と高さを取得
-		float textureWidth = static_cast<float>( metadata.width );
-		float textureHeight = static_cast<float>( metadata.height );
+		// テクスチャの幅と高さを取得
+		float textureWidth = static_cast<float>(metadata.width);
+		float textureHeight = static_cast<float>(metadata.height);
 
-		//テクスチャの左上座標を取得
+		// テクスチャの左上座標を取得
 		float textureLeft = textureLeftTop_.x / textureWidth;
-		float textureRight = ( textureLeftTop_.x + textureSize_.x ) / textureWidth;
+		float textureRight = (textureLeftTop_.x + textureSize_.x) / textureWidth;
 		float textureTop = textureLeftTop_.y / textureHeight;
-		float textureBottom = ( textureLeftTop_.y + textureSize_.y ) / textureHeight;
+		float textureBottom = (textureLeftTop_.y + textureSize_.y) / textureHeight;
 
-		//頂点リソースにデータを書き込む
-		vertexData_[0].texCoord = { textureLeft, textureBottom };
-		vertexData_[1].texCoord = { textureLeft, textureTop };
-		vertexData_[2].texCoord = { textureRight, textureBottom };
-		vertexData_[3].texCoord = { textureRight, textureTop };
+		// 頂点リソースにデータを書き込む
+		vertexData_[0].texCoord = {textureLeft, textureBottom};
+		vertexData_[1].texCoord = {textureLeft, textureTop};
+		vertexData_[2].texCoord = {textureRight, textureBottom};
+		vertexData_[3].texCoord = {textureRight, textureTop};
 	}
 
 	///--------------------------------------------------------------
@@ -274,14 +271,14 @@ namespace MagEngine {
 		const DirectX::TexMetadata &metadata = TextureManager::GetInstance()->GetMetadata(textureFilePath_);
 
 		// テクスチャの幅と高さを取得
-		float textureWidth = static_cast<float>( metadata.width );
-		float textureHeight = static_cast<float>( metadata.height );
+		float textureWidth = static_cast<float>(metadata.width);
+		float textureHeight = static_cast<float>(metadata.height);
 
 		// スプライトのサイズをテクスチャのサイズに設定
-		size_ = { textureWidth, textureHeight };
+		size_ = {textureWidth, textureHeight};
 
 		// テクスチャの切り取り範囲をテクスチャ全体に設定
-		textureLeftTop_ = { 0.0f, 0.0f };
-		textureSize_ = { textureWidth, textureHeight };
+		textureLeftTop_ = {0.0f, 0.0f};
+		textureSize_ = {textureWidth, textureHeight};
 	}
 }

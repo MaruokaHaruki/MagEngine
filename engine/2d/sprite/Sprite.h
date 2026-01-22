@@ -27,8 +27,8 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-///=============================================================================
-///								クラス
+	///=============================================================================
+	///								クラス
 	class SpriteSetup;
 	class Sprite {
 		///--------------------------------------------------------------
@@ -288,7 +288,7 @@ namespace MagEngine {
 		// マテリアル
 		Microsoft::WRL::ComPtr<ID3D12Resource> materialBuffer_ = nullptr;
 		// トランスフォーメーションマトリックス
-		Microsoft::WRL::ComPtr<ID3D12Resource> transfomationMatrixBuffer_ = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_ = nullptr;
 
 		///---------------------------------------
 		/// バッファリソース内のデータを指すポインタ
@@ -311,13 +311,13 @@ namespace MagEngine {
 		///---------------------------------------
 		/// SRT設定
 		// トランスフォーム
-		MagMath::Transform transform_ = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
+		MagMath::Transform transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 		// 座標
-		MagMath::Vector2 position_ = { 0.0f, 0.0f };
+		MagMath::Vector2 position_ = {0.0f, 0.0f};
 		// 回転
 		float rotation_ = 0.0f;
 		// サイズ
-		MagMath::Vector2 size_ = { 1.0f, 1.0f };
+		MagMath::Vector2 size_ = {1.0f, 1.0f};
 
 		///---------------------------------------
 		/// テクスチャ番号
@@ -327,7 +327,7 @@ namespace MagEngine {
 
 		///---------------------------------------
 		/// アンカーポイント
-		MagMath::Vector2 anchorPoint_ = { 0.0f, 0.0f };
+		MagMath::Vector2 anchorPoint_ = {0.0f, 0.0f};
 
 		///---------------------------------------
 		/// フリップ
@@ -339,8 +339,8 @@ namespace MagEngine {
 		///---------------------------------------
 		/// テクスチャ範囲指定
 		// テクスチャ左上座標
-		MagMath::Vector2 textureLeftTop_ = { 0.0f, 0.0f };
+		MagMath::Vector2 textureLeftTop_ = {0.0f, 0.0f};
 		// テクスチャ切り出しサイズ
-		MagMath::Vector2 textureSize_ = { 0.0f, 0.0f };
+		MagMath::Vector2 textureSize_ = {0.0f, 0.0f};
 	};
 }

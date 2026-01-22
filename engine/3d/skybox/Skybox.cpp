@@ -12,11 +12,11 @@
 #include "MathFunc4x4.h"
 #include "SkyboxSetup.h"
 #include "TextureManager.h"
- ///=============================================================================
- ///                        namespace MagEngine
-namespace MagEngine {
 ///=============================================================================
-///						初期化
+///                        namespace MagEngine
+namespace MagEngine {
+	///=============================================================================
+	///						初期化
 	void Skybox::Initialize(SkyboxSetup *skyboxSetup) {
 		//========================================
 		// 引数からSetupを受け取る
@@ -32,7 +32,7 @@ namespace MagEngine {
 
 		//========================================
 		// ワールド行列の初期化（スカイボックスは大きくする）
-		transform_ = { {100.0f, 100.0f, 100.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
+		transform_ = {{100.0f, 100.0f, 100.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
 		//========================================
 		// カメラの取得
@@ -53,7 +53,7 @@ namespace MagEngine {
 
 		//========================================
 		// カメラがセットされている場合はビュー行列を作成
-		if(camera_) {
+		if (camera_) {
 			// カメラのビュー行列を取得
 			const MagMath::Matrix4x4 &viewProjectionMatrix = camera_->GetViewProjectionMatrix();
 			// ワールドビュープロジェクション行列を計算
@@ -74,13 +74,13 @@ namespace MagEngine {
 	void Skybox::Draw() {
 		//========================================
 		// バッファが存在しない場合は描画しない
-		if(!vertexBuffer_ || !indexBuffer_) {
+		if (!vertexBuffer_ || !indexBuffer_) {
 			throw std::runtime_error("Skybox buffers are not initialized.");
 		}
 
 		//========================================
 		// テクスチャが設定されていない場合は描画しない
-		if(texturePath_.empty()) {
+		if (texturePath_.empty()) {
 			return;
 		}
 
@@ -96,13 +96,13 @@ namespace MagEngine {
 		//========================================
 		// ルートパラメータの設定
 		// トランスフォーメーションマトリックスバッファの設定
-		commandList->SetGraphicsRootConstantBufferView(0, transfomationMatrixBuffer_->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 		// テクスチャの設定
 		commandList->SetGraphicsRootDescriptorTable(1, TextureManager::GetInstance()->GetSrvHandleGPU(texturePath_));
 
 		//========================================
 		// 描画コール
-		commandList->DrawIndexedInstanced(static_cast<UINT>( indices_.size() ), 1, 0, 0, 0);
+		commandList->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
 	}
 
 	///=============================================================================
@@ -200,13 +200,13 @@ namespace MagEngine {
 
 		// 頂点データをバッファに書き込み
 		SkyboxVertex *vertexData = nullptr;
-		vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &vertexData ));
+		vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
 		std::memcpy(vertexData, vertices_.data(), vertexBufferSize);
 		vertexBuffer_->Unmap(0, nullptr);
 
 		// 頂点バッファビューの設定
 		vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
-		vertexBufferView_.SizeInBytes = static_cast<UINT>( vertexBufferSize );
+		vertexBufferView_.SizeInBytes = static_cast<UINT>(vertexBufferSize);
 		vertexBufferView_.StrideInBytes = sizeof(SkyboxVertex);
 
 		//========================================
@@ -224,24 +224,24 @@ namespace MagEngine {
 
 		// インデックスデータをバッファに書き込み
 		uint32_t *indexData = nullptr;
-		indexBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &indexData ));
+		indexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&indexData));
 		std::memcpy(indexData, indices_.data(), indexBufferSize);
 		indexBuffer_->Unmap(0, nullptr);
 
 		// インデックスバッファビューの設定
 		indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
-		indexBufferView_.SizeInBytes = static_cast<UINT>( indexBufferSize );
+		indexBufferView_.SizeInBytes = static_cast<UINT>(indexBufferSize);
 		indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 	}
 
 	void Skybox::CreateTransformationMatrixBuffer() {
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t bufferSize = ( sizeof(MagMath::TransformationMatrix) + 255 ) & ~255;
-		transfomationMatrixBuffer_ = skyboxSetup_->GetDXManager()->CreateBufferResource(bufferSize);
+		size_t bufferSize = (sizeof(MagMath::TransformationMatrix) + 255) & ~255;
+		transformationMatrixBuffer_ = skyboxSetup_->GetDXManager()->CreateBufferResource(bufferSize);
 		// 書き込み用変数
 		MagMath::TransformationMatrix transformationMatrix = {};
 		// 書き込むためのアドレスを取得
-		transfomationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &transformationMatrixData_ ));
+		transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
 		// 書き込み
 		transformationMatrix.WVP = MagMath::Identity4x4();
 		// 単位行列を書き込む

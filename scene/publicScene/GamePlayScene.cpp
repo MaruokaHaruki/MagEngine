@@ -21,7 +21,6 @@
 #include "Skydome.h"
 using namespace MagEngine;
 
-
 ///=============================================================================
 ///						初期化
 void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,

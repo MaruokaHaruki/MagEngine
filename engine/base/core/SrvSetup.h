@@ -11,8 +11,8 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-///=============================================================================
-///                        SrvSetup
+	///=============================================================================
+	///                        SrvSetup
 	class SrvSetup {
 
 		///--------------------------------------------------------------
@@ -43,9 +43,9 @@ namespace MagEngine {
 		/// @brief CreateSRVStructuredBuffer SRV生成(構造化バッファ用)
 		/// @param srvIndex インデックス
 		/// @param pResource リソース
-		/// @param enelemtQuantity 要素数
+		/// @param elementQuantity 要素数
 		/// @param structureByteStride 構造体バイトストライド
-		void CreateSRVStructuredBuffer(uint32_t srvIndex, ID3D12Resource *pResource, UINT enelemtQuantity, UINT structureByteStride);
+		void CreateSRVStructuredBuffer(uint32_t srvIndex, ID3D12Resource *pResource, UINT elementQuantity, UINT structureByteStride);
 
 		/// @brief CreateDepthStencilTextureResource 深度ステンシルテクスチャリソースの生成
 		void CreateRenderTextureSRV();

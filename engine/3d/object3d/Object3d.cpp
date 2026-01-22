@@ -23,8 +23,8 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-///=============================================================================
-///						初期化
+	///=============================================================================
+	///						初期化
 	void Object3d::Initialize(Object3dSetup *object3dSetup) {
 		//========================================
 		// 引数からSetupを受け取る
@@ -44,7 +44,7 @@ namespace MagEngine {
 
 		//========================================
 		// ワールド行列の初期化
-		transform_ = { {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
+		transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
 		//========================================
 		// カメラの取得
@@ -76,7 +76,7 @@ namespace MagEngine {
 
 		//========================================
 		// カメラがセットされている場合はビュー行列を作成
-		if(camera_) {
+		if (camera_) {
 			// カメラのビュー行列を取得
 			const MagMath::Matrix4x4 &viewProjectionMatrix = camera_->GetViewProjectionMatrix();
 			// ワールドビュープロジェクション行列を計算
@@ -99,7 +99,7 @@ namespace MagEngine {
 	void Object3d::Draw() {
 		//========================================
 		// モデルが存在しない場合は描画しない
-		if(!transfomationMatrixBuffer_) {
+		if (!transformationMatrixBuffer_) {
 			throw std::runtime_error("One or more buffers are not initialized.");
 		}
 
@@ -107,7 +107,7 @@ namespace MagEngine {
 		// コマンドリスト取得
 		auto commandList = object3dSetup_->GetDXManager()->GetCommandList();
 		// トランスフォーメーションマトリックスバッファの設定
-		commandList->SetGraphicsRootConstantBufferView(1, transfomationMatrixBuffer_->GetGPUVirtualAddress());
+		commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
 		// 並行光源の設定
 		commandList->SetGraphicsRootConstantBufferView(3, directionalLightBuffer_->GetGPUVirtualAddress());
 		// カメラバッファの設定
@@ -119,7 +119,7 @@ namespace MagEngine {
 
 		//========================================
 		// 描画コール
-		if(model_) {
+		if (model_) {
 			model_->Draw();
 		}
 	}
@@ -135,12 +135,12 @@ namespace MagEngine {
 	///						 座標変換行列
 	void Object3d::CreateTransformationMatrixBuffer() {
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t bufferSize = ( sizeof(MagMath::TransformationMatrix) + 255 ) & ~255;
-		transfomationMatrixBuffer_ = object3dSetup_->GetDXManager()->CreateBufferResource(bufferSize);
+		size_t bufferSize = (sizeof(MagMath::TransformationMatrix) + 255) & ~255;
+		transformationMatrixBuffer_ = object3dSetup_->GetDXManager()->CreateBufferResource(bufferSize);
 		// 書き込み用変数
 		MagMath::TransformationMatrix transformationMatrix = {};
 		// 書き込むためのアドレスを取得
-		transfomationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &transformationMatrixData_ ));
+		transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
 		// 書き込み
 		transformationMatrix.WVP = MagMath::Identity4x4();
 		// 単位行列を書き込む
@@ -151,12 +151,12 @@ namespace MagEngine {
 	///						 カメラバッファの作成
 	void Object3d::CreateCameraBuffer() {
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t bufferSize = ( sizeof(CameraForGpu) + 255 ) & ~255;
+		size_t bufferSize = (sizeof(CameraForGpu) + 255) & ~255;
 		cameraBuffer_ = object3dSetup_->GetDXManager()->CreateBufferResource(bufferSize);
-		cameraBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &cameraData_ ));
+		cameraBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&cameraData_));
 		// カメラの位置を書き込む
 		CameraForGpu cameraForGpu = {};
-		cameraForGpu.worldPosition = { 1.0f, 1.0f, 1.0f };
+		cameraForGpu.worldPosition = {1.0f, 1.0f, 1.0f};
 		*cameraData_ = cameraForGpu;
 	}
 
@@ -164,15 +164,15 @@ namespace MagEngine {
 	///						 並行光源の作成
 	void Object3d::CreateDirectionalLight() {
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t bufferSize = ( sizeof(MagMath::DirectionalLight) + 255 ) & ~255;
+		size_t bufferSize = (sizeof(MagMath::DirectionalLight) + 255) & ~255;
 		directionalLightBuffer_ = object3dSetup_->GetDXManager()->CreateBufferResource(bufferSize);
 		// 並行光源書き込み用データ
 		MagMath::DirectionalLight directionalLight{};
 		// 書き込むためのアドレス取得
-		directionalLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &directionalLightData_ ));
+		directionalLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&directionalLightData_));
 		// 書き込み
-		directionalLight.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		directionalLight.direction = { 0.0f, -1.0f, 0.0f };
+		directionalLight.color = {1.0f, 1.0f, 1.0f, 1.0f};
+		directionalLight.direction = {0.0f, -1.0f, 0.0f};
 		directionalLight.intensity = 0.16f;
 		*directionalLightData_ = directionalLight;
 	}
@@ -181,15 +181,15 @@ namespace MagEngine {
 	///						 ポイントライトの作成
 	void Object3d::CreatePointLight() {
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t bufferSize = ( sizeof(MagMath::PointLight) + 255 ) & ~255;
+		size_t bufferSize = (sizeof(MagMath::PointLight) + 255) & ~255;
 		pointLightBuffer_ = object3dSetup_->GetDXManager()->CreateBufferResource(bufferSize);
 		// ポイントライト書き込み用データ
 		MagMath::PointLight pointLight{};
 		// 書き込むためのアドレス取得
-		pointLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &pointLightData_ ));
+		pointLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&pointLightData_));
 		// 書き込み
-		pointLight.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		pointLight.position = { 0.0f, 2.0f, 0.0f }; // デフォルト位置
+		pointLight.color = {1.0f, 1.0f, 1.0f, 1.0f};
+		pointLight.position = {0.0f, 2.0f, 0.0f}; // デフォルト位置
 		pointLight.intensity = 1.0f;
 		pointLight.radius = 10.0f;
 		pointLight.decay = 1.0f;
@@ -200,16 +200,16 @@ namespace MagEngine {
 	///						 スポットライトの作成
 	void Object3d::CreateSpotLight() {
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t bufferSize = ( sizeof(MagMath::SpotLight) + 255 ) & ~255;
+		size_t bufferSize = (sizeof(MagMath::SpotLight) + 255) & ~255;
 		spotLightBuffer_ = object3dSetup_->GetDXManager()->CreateBufferResource(bufferSize);
 		// スポットライト書き込み用データ
 		MagMath::SpotLight spotLight = {};
 		// 書き込むためのアドレスを取得
-		spotLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &spotLightData_ ));
+		spotLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&spotLightData_));
 		// 初期値設定
-		spotLight.color = { 1.0f, 1.0f, 1.0f, 1.0f };
-		spotLight.position = { 0.0f, 5.0f, 0.0f };
-		spotLight.direction = { 0.0f, -1.0f, 0.0f }; // 真下方向
+		spotLight.color = {1.0f, 1.0f, 1.0f, 1.0f};
+		spotLight.position = {0.0f, 5.0f, 0.0f};
+		spotLight.direction = {0.0f, -1.0f, 0.0f}; // 真下方向
 		spotLight.intensity = 1.0f;
 		spotLight.distance = 15.0f;		 // 影響範囲
 		spotLight.decay = 1.5f;			 // 減衰率
