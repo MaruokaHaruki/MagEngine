@@ -19,6 +19,19 @@
 
 # Build results
 generated/
+[Dd]ebug/
+[Rr]elease/
+[Bb]uild/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+
+# Object files and build output
+*.obj
+*.exe
+*.lib
+*.dll
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
