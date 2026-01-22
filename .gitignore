@@ -319,3 +319,6 @@ DirectXGame/imgui.ini
 
 # DirectXTex Compiled Shaders
 **/DirectXTex/Shaders/Compiled/
+
+# Debug symbols (PDB files)
+*.pdb
