@@ -236,7 +236,8 @@ void GamePlayScene::Update() {
 
 	//========================================
 	// メニュー処理（ゲーム停止中でも処理）
-	if (uiManager_ && uiManager_->GetMenuUI()) {
+	// メニューが開いている時だけボタン処理を行う
+	if (uiManager_ && uiManager_->GetMenuUI() && uiManager_->GetMenuUI()->IsOpen()) {
 		MenuUI *menuUI = uiManager_->GetMenuUI();
 		if (menuUI->IsButtonPressed()) {
 			MenuButton selectedButton = menuUI->GetSelectedButton();
@@ -250,6 +251,8 @@ void GamePlayScene::Update() {
 				// 操作説明を表示（将来実装）
 				// TODO: 操作説明を表示する処理を実装
 			} else if (selectedButton == MenuButton::ReturnToTitle) {
+				// メニューを閉じてからタイトルへ戻る
+				menuUI->Close();
 				// タイトルに戻る
 				if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 					sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
