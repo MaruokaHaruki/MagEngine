@@ -159,8 +159,8 @@ void MenuUI::Update() {
 
 	Input *input = Input::GetInstance();
 
-	// ESCキーまたはパッドのメニューボタンでメニューを開く・閉じる
-	if (input->PushKey(DIK_ESCAPE) || input->PushButton(XINPUT_GAMEPAD_START)) {
+	// ESCキーまたはパッドのメニューボタンでメニューを開く・閉じる（トリガーで一回だけ）
+	if (input->TriggerKey(DIK_ESCAPE) || input->TriggerButton(XINPUT_GAMEPAD_START)) {
 		if (isOpen_) {
 			Close();
 		} else {
@@ -245,8 +245,8 @@ void MenuUI::UpdateButtonSelection() {
 		buttons_[static_cast<MenuButton>(i)].isSelected = (i == selectedIndex_);
 	}
 
-	// Aボタンで決定
-	if (input->PushButton(XINPUT_GAMEPAD_A)) {
+	// Aボタンで決定（トリガーで一回だけ）
+	if (input->TriggerButton(XINPUT_GAMEPAD_A)) {
 		isButtonPressed_ = true;
 	}
 }

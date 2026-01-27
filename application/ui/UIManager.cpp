@@ -78,6 +78,13 @@ void UIManager::Update(const Player *player) {
 ///=============================================================================
 ///                        描画
 void UIManager::Draw() {
+	// メニューが開いている場合、メニューのみ描画
+	if (menuUI_ && menuUI_->IsOpen()) {
+		menuUI_->Draw();
+		return;
+	}
+
+	// メニューが閉じている場合、通常のUI描画
 	if (gameOverUI_) {
 		gameOverUI_->Draw();
 	}

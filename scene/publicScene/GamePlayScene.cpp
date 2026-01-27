@@ -15,6 +15,7 @@
 #include "EnemyBullet.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
+#include "MenuUI.h"
 #include "ModelManager.h"
 #include "Player.h"
 #include "SceneTransition.h"
@@ -228,15 +229,48 @@ void GamePlayScene::Finalize() {
 ///							更新
 void GamePlayScene::Update() {
 	//========================================
-	// 雲の更新
-	if (cloud_) {
-		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
+	// UI系の更新（メニュー状態確認用）
+	if (uiManager_) {
+		uiManager_->Update(player_.get());
 	}
 
 	//========================================
-	// UI系の更新
-	if (uiManager_) {
-		uiManager_->Update(player_.get());
+	// メニュー処理（ゲーム停止中でも処理）
+	if (uiManager_ && uiManager_->GetMenuUI()) {
+		MenuUI *menuUI = uiManager_->GetMenuUI();
+		if (menuUI->IsButtonPressed()) {
+			MenuButton selectedButton = menuUI->GetSelectedButton();
+			menuUI->ResetButtonPressedFlag();
+
+			// ボタンに応じた処理
+			if (selectedButton == MenuButton::ResumeGame) {
+				// ゲームに戻る
+				menuUI->Close();
+			} else if (selectedButton == MenuButton::OperationGuide) {
+				// 操作説明を表示（将来実装）
+				// TODO: 操作説明を表示する処理を実装
+			} else if (selectedButton == MenuButton::ReturnToTitle) {
+				// タイトルに戻る
+				if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
+					sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
+					sceneTransition_->SetOnCompleteCallback([this]() {
+						sceneNo = SCENE::TITLE;
+					});
+				}
+			}
+		}
+	}
+
+	//========================================
+	// メニュー中はゲーム更新をスキップ
+	if (uiManager_ && uiManager_->GetMenuUI() && uiManager_->GetMenuUI()->IsOpen()) {
+		return;
+	}
+
+	//========================================
+	// 雲の更新
+	if (cloud_) {
+		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
 	}
 
 	//========================================
