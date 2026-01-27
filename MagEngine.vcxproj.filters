@@ -198,6 +198,7 @@
     <ClCompile Include="application\ui\OperationGuideUI.cpp" />
     <ClCompile Include="engine\postEffect\Vignetting.cpp" />
     <ClCompile Include="application\ui\UIManager.cpp" />
+    <ClCompile Include="application\ui\MenuUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -453,6 +454,7 @@
     <ClInclude Include="application\ui\OperationGuideUI.h" />
     <ClInclude Include="engine\postEffect\Vignetting.h" />
     <ClInclude Include="application\ui\UIManager.h" />
+    <ClInclude Include="application\ui\MenuUI.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

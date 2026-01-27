@@ -26,6 +26,10 @@ void UIManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// HUD の初期化
 	hud_ = std::make_unique<HUD>();
 	hud_->Initialize();
+
+	// MenuUI の初期化
+	menuUI_ = std::make_unique<MenuUI>();
+	menuUI_->Initialize(spriteSetup_);
 }
 
 ///=============================================================================
@@ -42,6 +46,9 @@ void UIManager::Finalize() {
 	}
 	if (startAnimation_) {
 		startAnimation_->Finalize();
+	}
+	if (menuUI_) {
+		menuUI_->Finalize();
 	}
 }
 
@@ -63,6 +70,9 @@ void UIManager::Update(const Player *player) {
 	if (hud_ && player) {
 		hud_->Update(player);
 	}
+	if (menuUI_) {
+		menuUI_->Update();
+	}
 }
 
 ///=============================================================================
@@ -82,6 +92,9 @@ void UIManager::Draw() {
 	}
 	if (hud_) {
 		hud_->Draw();
+	}
+	if (menuUI_) {
+		menuUI_->Draw();
 	}
 }
 
@@ -103,6 +116,9 @@ void UIManager::DrawImGui() {
 	}
 	if (hud_) {
 		hud_->DrawImGui();
+	}
+	if (menuUI_) {
+		menuUI_->DrawImGui();
 	}
 #endif
 }

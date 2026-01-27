@@ -2,6 +2,7 @@
 #include "GameClearAnimation.h"
 #include "GameOverUI.h"
 #include "HUD.h"
+#include "MenuUI.h"
 #include "Object3dSetup.h"
 #include "OperationGuideUI.h"
 #include "Sprite.h"
@@ -56,6 +57,11 @@ public:
 		return hud_.get();
 	}
 
+	/// \brief MenuUI を取得
+	MenuUI *GetMenuUI() {
+		return menuUI_.get();
+	}
+
 	///--------------------------------------------------------------
 	///                        メンバ変数
 private:
@@ -68,4 +74,5 @@ private:
 	std::unique_ptr<OperationGuideUI> operationGuideUI_;
 	std::unique_ptr<StartAnimation> startAnimation_;
 	std::unique_ptr<HUD> hud_;
+	std::unique_ptr<MenuUI> menuUI_;
 };
