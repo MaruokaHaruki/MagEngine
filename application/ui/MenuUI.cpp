@@ -29,7 +29,7 @@ void MenuUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 
 	// タイトルスプライトの作成
 	titleSprite_ = std::make_unique<MagEngine::Sprite>();
-	titleSprite_->Initialize(spriteSetup_, "white1x1.png");
+	titleSprite_->Initialize(spriteSetup_, "WolfOne_Pause.png");
 	titleSprite_->SetSize({600.0f, 80.0f});
 	titleSprite_->SetPosition({screenWidth_ * 0.5f, screenHeight_ * 0.15f});
 	titleSprite_->SetAnchorPoint({0.5f, 0.5f});
@@ -73,7 +73,7 @@ void MenuUI::InitializeButtons() {
 	//========================================
 	// テキストスプライトの初期化
 	resumeButton.textSprite = std::make_unique<MagEngine::Sprite>();
-	resumeButton.textSprite->Initialize(spriteSetup_, "white1x1.png");
+	resumeButton.textSprite->Initialize(spriteSetup_, "WolfOne_Resume.png");
 	resumeButton.textPosition = resumeButton.basePosition;
 	resumeButton.textSize = {200.0f, 30.0f};
 	resumeButton.textAlpha = 0.0f;
@@ -104,7 +104,7 @@ void MenuUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	operationButton.textSprite = std::make_unique<MagEngine::Sprite>();
-	operationButton.textSprite->Initialize(spriteSetup_, "white1x1.png");
+	operationButton.textSprite->Initialize(spriteSetup_, "WolfOne_Controls.png");
 	operationButton.textPosition = operationButton.basePosition;
 	operationButton.textSize = {200.0f, 30.0f};
 	operationButton.textAlpha = 0.0f;
@@ -134,7 +134,7 @@ void MenuUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	returnButton.textSprite = std::make_unique<MagEngine::Sprite>();
-	returnButton.textSprite->Initialize(spriteSetup_, "white1x1.png");
+	returnButton.textSprite->Initialize(spriteSetup_, "WolfOne_ReturntoTitle.png");
 	returnButton.textPosition = returnButton.basePosition;
 	returnButton.textSize = {200.0f, 30.0f};
 	returnButton.textAlpha = 0.0f;

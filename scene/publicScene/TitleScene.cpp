@@ -33,6 +33,7 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_PressA.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Engage.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_GameOver.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Comprete.png");
@@ -50,6 +51,11 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	TextureManager::GetInstance()->LoadTexture("WolfOne_ControlStick.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Missile.png");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Test.png");
+	//メニューテキスト
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Resume.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Controls.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_ReturntoTitle.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Pause.png");
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("Bullet.obj");	// 弾のモデル
@@ -80,7 +86,7 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	titleSprite_->SetAnchorPoint({0.5f, 0.5f});	 // 中心を基準点に
 
 	pressEnterSprite_ = std::make_unique<Sprite>();
-	pressEnterSprite_->Initialize(spriteSetup, "WolfOne_PressEnter.png");
+	pressEnterSprite_->Initialize(spriteSetup, "WolfOne_PressA.png");
 	pressEnterSprite_->SetPosition({640.0f, 550.0f}); // 画面下部中央
 	pressEnterSprite_->SetAnchorPoint({0.5f, 0.5f});  // 中心を基準点に
 
