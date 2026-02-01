@@ -42,9 +42,13 @@ namespace MagEngine {
 	 */
 	struct alignas(16) BulletHoleGPU {
 		MagMath::Vector3 origin{0.0f, 0.0f, 0.0f};	  ///< 弾の開始位置
-		float radius = 0.5f;						  ///< 弾痕の半径
+		float startRadius = 0.5f;					  ///< 弾痕の開始半径（入口）
 		MagMath::Vector3 direction{0.0f, 1.0f, 0.0f}; ///< 弾の正規化方向ベクトル
+		float endRadius = 0.2f;						  ///< 弾痕の終了半径（出口）
 		float lifeTime = 1.0f;						  ///< 残存時間（0.0～1.0、1.0=完全、0.0=消滅）
+		float coneLength = 10.0f;					  ///< 円錐の長さ
+		float padding1 = 0.0f;						  ///< パディング
+		float padding2 = 0.0f;						  ///< パディング
 	};
 
 	/**----------------------------------------------------------------------------	 * \brief  CloudRenderParams 雲レンダリングパラメータ（GPU用）
@@ -98,10 +102,10 @@ namespace MagEngine {
 
 	/**----------------------------------------------------------------------------
 	 * \brief  BulletHoleBuffer 弾痕配列定数バッファ(GPU用)
-	 * \note   最大12個の弾痕を管理（パフォーマンス最適化）
+	 * \note   最大8個の弾痕を管理（高速化優先）
 	 */
 	struct alignas(16) BulletHoleBuffer {
-		static constexpr int kMaxBulletHoles = 12;	// 最大弾痕数（60FPS維持のため削減）
+		static constexpr int kMaxBulletHoles = 8;	// 最大弾痕数（高速化のため削減）
 		BulletHoleGPU bulletHoles[kMaxBulletHoles]; // 弾痕配列
 	};
 
@@ -126,17 +130,21 @@ namespace MagEngine {
 		/// @brief ImGui描画
 		void DrawImGui();
 		/**----------------------------------------------------------------------------
-		 * \brief  弾痕を追加する
+		 * \brief  弾痕を追加する（円錐形状）
 		 * \param  origin 弾の開始位置
 		 * \param  direction 弾の方向（正規化済み）
-		 * \param  radius 弾痕の半径
+		 * \param  startRadius 弾痕の開始半径（入口）
+		 * \param  endRadius 弾痕の終了半径（出口）
+		 * \param  coneLength 円錐の長さ
 		 * \param  lifeTime 残存時間（秒単位）
 		 * \note   Counter-Strike風の動的スモークで、弾が通過した軌跡を作成する
 		 */
 		void AddBulletHole(const MagMath::Vector3 &origin,
 						   const MagMath::Vector3 &direction,
-						   float radius = 0.5f,
-						   float lifeTime = 10.0f);
+						   float startRadius = 1.5f,
+						   float endRadius = 0.3f,
+						   float coneLength = 10.0f,
+						   float lifeTime = 15.0f);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  すべての弾痕をクリアする
@@ -263,8 +271,10 @@ namespace MagEngine {
 		struct BulletHole {
 			MagMath::Vector3 origin;	// 弾の開始位置
 			MagMath::Vector3 direction; // 弾の正規化方向ベクトル
-			float radius;				// 弾痕の半径
-			float lifeTime;				// 残存時間（秒单位）
+			float startRadius;			// 弾痕の開始半径（入口）
+			float endRadius;			// 弾痕の終了半径（出口）
+			float coneLength;			// 円錐の長さ
+			float lifeTime;				// 残存時間（秒単位）
 			float maxLifeTime;			// 最大残存時間（秒単位）
 		};
 

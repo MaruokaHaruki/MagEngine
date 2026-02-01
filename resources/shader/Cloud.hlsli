@@ -85,10 +85,14 @@ cbuffer CloudParamsCB : register(b1)
 /// @brief GPU側で使用する弾痕情報
 /// @note Counter-Strike風の動的スモークで、弾が通過した軌跡をSDFで表現
 struct BulletHoleGPU {
-    float3 origin;      // 弾の開始位置
-    float radius;       // 弾痕の半径
-    float3 direction;   // 弾の正規化方向ベクトル
-    float lifeTime;     // 残存時間(0.0～1.0、1.0=完全、0.0=消滅)
+    float3 origin;       // 弾の開始位置
+    float startRadius;   // 弾痕の開始半径（入口）
+    float3 direction;    // 弾の正規化方向ベクトル
+    float endRadius;     // 弾痕の終了半径（出口）
+    float lifeTime;      // 残存時間(0.0～1.0、1.0=完全、0.0=消滅)
+    float coneLength;    // 円錐の長さ
+    float padding1;      // パディング
+    float padding2;      // パディング
 };
 
 // 弾痕配列定数バッファ（b2）
@@ -101,7 +105,7 @@ Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクス
 SamplerState gLinearSampler : register(s0);    // 線形補間サンプラー
 
 static const float PI = 3.14159265f;           // 円周率
-static const int MAX_STEPS = 24;               // レイマーチングの最大ステップ数（60FPS維持のため削減）
+static const int MAX_STEPS = 16;               // レイマーチングの最大ステップ数（高速化優先）
 static const int MAX_LIGHT_STEPS = 2;          // ライトマーチングの最大ステップ数（パフォーマンス優先）
 
 ///=============================================================================
@@ -237,11 +241,12 @@ float CylinderSDF(float3 p, float3 origin, float3 direction, float radius)
 }
 
 ///=============================================================================
-///                      弾痕マスク計算
+///                      弾痕マスク計算（円錐形状対応）
 /// @brief すべての弾痕からの影響を計算し、雲密度へのマスク値を返す
 /// @param position 評価点（ワールド座標）
 /// @return マスク値（0.0=完全に空洞、1.0=影響なし）
 /// @note FinalDensity(p) = BaseDensity(p) * BulletMask(p) という形で合成する
+/// @note 円錐形状により入口から徐々に狭まる自然な弾痕を表現
 float CalculateBulletHoleMask(float3 position)
 {
     float mask = 1.0f;  // 初期値：影響なし
@@ -252,19 +257,60 @@ float CalculateBulletHoleMask(float3 position)
         // 弾痕データを取得
         BulletHoleGPU hole = gBulletHoles[i];
         
-        // 円柱SDFで距離を計算
-        float sdfDist = CylinderSDF(position, hole.origin, hole.direction, hole.radius);
+        // 評価点から弾痕原点へのベクトル
+        float3 offset = position - hole.origin;
         
-        // smoothstepで滑らかなマスクを作成
-        // なぜ：急激な変化ではなく、自然なフェードアウトを実現するため
-        // edge0: フェード開始距離（この距離より近いと完全に空洞）
-        // edge1: フェード終了距離（この距離より遠いと影響なし）
-        float holeMask = smoothstep(gBulletHoleFadeStart, gBulletHoleFadeEnd, sdfDist);
+        // 弾の進行方向への投影（縦軸方向の距離）
+        float axialDist = dot(offset, hole.direction);
         
+        // 円錐の範囲内かどうかをチェック
+        if (axialDist < 0.0f || axialDist > hole.coneLength) {
+            continue; // 円錐の範囲外
+        }
+        
+        // 半径方向の距離（横軸方向の距離）
+        float3 perpendicular = offset - axialDist * hole.direction;
+        float radialDist = length(perpendicular);
+        
+        //========================================
+        // 円錐形状：軸方向の位置に応じて半径が変化
+        // なぜ：入口（startRadius）から出口（endRadius）に向かって狭まるため
+        float t = axialDist / hole.coneLength; // 0.0（入口）～1.0（出口）
+        float currentRadius = lerp(hole.startRadius, hole.endRadius, t);
+        
+        //========================================
+        // 半径方向のフォールオフ（ガウス分布ベース）
+        // なぜ：中心から離れるほど滑らかに密度が回復するため
+        float radialFalloff = radialDist / (currentRadius + 0.001f); // 0除算回避
+        // ガウス関数に似た減衰カーブ（exp(-x^2)）
+        float radialMask = exp(-radialFalloff * radialFalloff * 2.5f); // 2.5でより急峻な減衰
+        // 半径の1.5倍以上離れたら影響なし（パフォーマンス最適化）
+        radialMask = (radialDist > currentRadius * 1.5f) ? 1.0f : (1.0f - radialMask);
+        
+        //========================================
+        // 軸方向のフォールオフ（入口と出口で滑らかに）
+        // なぜ：弾痕が弾の進行方向に沿って徐々に薄くなるため
+        float entryFade = smoothstep(0.0f, hole.coneLength * 0.2f, axialDist); // 入口側のフェード
+        float exitFade = smoothstep(hole.coneLength, hole.coneLength * 0.8f, axialDist); // 出口側のフェード
+        float axialMask = entryFade * exitFade;
+        
+        //========================================
+        // 半径方向と軸方向を組み合わせた3Dフォールオフ
+        // なぜ：より自然な3次元的な空洞を表現するため
+        float holeMask = max(radialMask, 1.0f - axialMask);
+        
+        //========================================
+        // エッジのさらなるソフト化（二重smoothstep）
+        // なぜ：より滑らかな境界を実現するため
+        holeMask = smoothstep(0.0f, 1.0f, holeMask);
+        holeMask = smoothstep(0.0f, 1.0f, holeMask); // 二重適用でさらに滑らかに
+        
+        //========================================
         // 残存時間によるフェードアウト
         // なぜ：時間経過で弾痕が徐々に消えていく様子を表現するため
         holeMask = lerp(1.0f, holeMask, hole.lifeTime);
         
+        //========================================
         // 複数の弾痕の影響を乗算で合成
         // なぜ：複数の弾痕が重なると、より強く空洞が開くため
         mask *= holeMask;

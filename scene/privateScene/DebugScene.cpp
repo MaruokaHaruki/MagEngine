@@ -110,7 +110,7 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	// 雲の初期設定 - より確実に見える設定
 	cloud_->SetPosition(Vector3{0.0f, 0.0f, 0.0f});
-	cloud_->SetSize(Vector3{100.0f, 100.0f, 100.0f}); 
+	cloud_->SetSize(Vector3{100.0f, 100.0f, 100.0f});
 
 	// 確実に見えるパラメータ
 	cloud_->GetMutableParams().density = 3.0f;	 // 高密度
@@ -197,7 +197,9 @@ void DebugScene::Update() {
 		cloud_->AddBulletHole(
 			cameraPos,
 			forward,
-			bulletHoleRadius_,
+			bulletHoleStartRadius_,
+			bulletHoleEndRadius_,
+			bulletHoleConeLength_,
 			bulletHoleLifeTime_);
 		Logger::Log("Added bullet hole at camera position", Logger::LogLevel::Info);
 	}
@@ -219,7 +221,9 @@ void DebugScene::Update() {
 		cloud_->AddBulletHole(
 			Vector3{randomX, randomY, randomZ},
 			randomDir,
-			bulletHoleRadius_,
+			bulletHoleStartRadius_,
+			bulletHoleEndRadius_,
+			bulletHoleConeLength_,
 			bulletHoleLifeTime_);
 		Logger::Log("Added random bullet hole", Logger::LogLevel::Info);
 	}
@@ -265,7 +269,7 @@ void DebugScene::ParticleDraw() {
 void DebugScene::SkyboxDraw() {
 	// Skyboxの描画
 	if (skybox_) {
-		//skybox_->Draw();
+		// skybox_->Draw();
 	}
 }
 
@@ -297,8 +301,10 @@ void DebugScene::ImGuiDraw() {
 		ImGui::BulletText("M Key: Clear all bullet holes");
 		ImGui::Separator();
 
-		ImGui::Text("Bullet Hole Parameters:");
-		ImGui::SliderFloat("Radius", &bulletHoleRadius_, 0.1f, 5.0f);
+		ImGui::Text("Bullet Hole Parameters (Cone Shape):");
+		ImGui::SliderFloat("Start Radius (Entry)", &bulletHoleStartRadius_, 0.1f, 5.0f);
+		ImGui::SliderFloat("End Radius (Exit)", &bulletHoleEndRadius_, 0.05f, 2.0f);
+		ImGui::SliderFloat("Cone Length", &bulletHoleConeLength_, 1.0f, 30.0f);
 		ImGui::SliderFloat("Life Time", &bulletHoleLifeTime_, 1.0f, 30.0f);
 		ImGui::Separator();
 
@@ -316,7 +322,9 @@ void DebugScene::ImGuiDraw() {
 				manualBulletDirection_.y /= length;
 				manualBulletDirection_.z /= length;
 			}
-			cloud_->AddBulletHole(manualBulletOrigin_, manualBulletDirection_, bulletHoleRadius_, bulletHoleLifeTime_);
+			cloud_->AddBulletHole(manualBulletOrigin_, manualBulletDirection_,
+								  bulletHoleStartRadius_, bulletHoleEndRadius_,
+								  bulletHoleConeLength_, bulletHoleLifeTime_);
 			Logger::Log("Added manual bullet hole", Logger::LogLevel::Info);
 		}
 		ImGui::SameLine();

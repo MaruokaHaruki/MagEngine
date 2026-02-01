@@ -56,8 +56,8 @@ namespace MagEngine {
 		paramsCPU_.coverage = 0.1f;
 
 		// レイマーチングのステップサイズ（大きいほど処理が軽いが粗くなる）
-		// 60FPS維持のため大きめに設定
-		paramsCPU_.stepSize = 10.0f;
+		// 高速化優先で大きめに設定
+		paramsCPU_.stepSize = 15.0f;
 
 		// ベースノイズスケール : 雲の大きな形状を決定
 		// 値が小さいほど大きな雲の塊ができる
@@ -271,7 +271,9 @@ namespace MagEngine {
 	///						弾痕を追加
 	void Cloud::AddBulletHole(const MagMath::Vector3 &origin,
 							  const MagMath::Vector3 &direction,
-							  float radius,
+							  float startRadius,
+							  float endRadius,
+							  float coneLength,
 							  float lifeTime) {
 		//========================================
 		// 最大数を超える場合は最も古い弾痕を削除
@@ -281,11 +283,13 @@ namespace MagEngine {
 		}
 
 		//========================================
-		// 新しい弾痕を追加
+		// 新しい弾痕を追加（円錐形状）
 		BulletHole hole;
 		hole.origin = origin;
 		hole.direction = MagMath::Normalize(direction); // 方向を正規化
-		hole.radius = radius;
+		hole.startRadius = startRadius;					// 入口の半径
+		hole.endRadius = endRadius;						// 出口の半径
+		hole.coneLength = coneLength;					// 円錐の長さ
 		hole.lifeTime = lifeTime;
 		hole.maxLifeTime = lifeTime;
 		bulletHoles_.push_back(hole);
@@ -339,16 +343,18 @@ namespace MagEngine {
 		paramsCPU_.bulletHoleCount = validCount;
 
 		//========================================
-		// CPU側の弾痕データをGPUフォーマットに変換
+		// CPU側の弾痕データをGPUフォーマットに変換（円錐対応）
 		// NOTE : CPUとGPUでデータ構造が異なるため変換が必要
 		for (int i = 0; i < validCount; ++i) {
 			const auto &hole = bulletHoles_[i];
 			auto &gpuHole = bulletHoleBufferCPU_.bulletHoles[i];
 
-			// 位置、方向、半径をコピー
+			// 位置、方向、円錐パラメータをコピー
 			gpuHole.origin = hole.origin;
 			gpuHole.direction = hole.direction;
-			gpuHole.radius = hole.radius;
+			gpuHole.startRadius = hole.startRadius; // 入口の半径
+			gpuHole.endRadius = hole.endRadius;		// 出口の半径
+			gpuHole.coneLength = hole.coneLength;	// 円錐の長さ
 
 			// 残存時間を0.0～1.0に正規化
 			// NOTE : シェーダーでフィードアウト処理をしやすくするため
