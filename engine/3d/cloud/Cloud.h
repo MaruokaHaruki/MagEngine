@@ -105,7 +105,7 @@ namespace MagEngine {
 	 * \note   最大8個の弾痕を管理（高速化優先）
 	 */
 	struct alignas(16) BulletHoleBuffer {
-		static constexpr int kMaxBulletHoles = 8;	// 最大弾痕数（高速化のため削減）
+		static constexpr int kMaxBulletHoles = 16;	// 最大弾痕数（高速化のため削減）
 		BulletHoleGPU bulletHoles[kMaxBulletHoles]; // 弾痕配列
 	};
 
