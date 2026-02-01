@@ -19,7 +19,7 @@ class DebugScene : public BaseScene {
 public:
 	/// \brief 初期化
 	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Object3dSetup *object3dSetup, MagEngine::ParticleSetup *particleSetup,
-		MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup) override;
+					MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -88,7 +88,7 @@ private:
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
-	Transform transform{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
+	Transform transform{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
 	//========================================
 	// Skybox用デバッグフラグ
@@ -97,9 +97,16 @@ private:
 
 	//========================================
 	// ボールテスト
-	//Ball ball_;
+	// Ball ball_;
 
 	//========================================
 	// Cloud
 	std::unique_ptr<MagEngine::Cloud> cloud_;
+
+	//========================================
+	// 雲の穴開けテスト用パラメータ
+	float bulletHoleRadius_ = 1.5f;					   // 弾痕の半径
+	float bulletHoleLifeTime_ = 15.0f;				   // 弾痕の持続時間
+	Vector3 manualBulletOrigin_{0.0f, 180.0f, 300.0f}; // マニュアル追加用の原点
+	Vector3 manualBulletDirection_{0.0f, 0.0f, 1.0f};  // マニュアル追加用の方向
 };

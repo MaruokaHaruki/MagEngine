@@ -13,11 +13,11 @@ using namespace MagEngine;
 
 ///=============================================================================
 ///						初期化
-void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup, 
-	MagEngine::Object3dSetup *object3dSetup, 
-	MagEngine::ParticleSetup *particleSetup, 
-	MagEngine::SkyboxSetup *skyboxSetup, 
-	MagEngine::CloudSetup *cloudSetup) {
+void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
+							MagEngine::Object3dSetup *object3dSetup,
+							MagEngine::ParticleSetup *particleSetup,
+							MagEngine::SkyboxSetup *skyboxSetup,
+							MagEngine::CloudSetup *cloudSetup) {
 	spriteSetup;
 	particleSetup;
 
@@ -109,8 +109,8 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	cloud_->Initialize(cloudSetup);
 
 	// 雲の初期設定 - より確実に見える設定
-	cloud_->SetPosition(Vector3{0.0f, 180.0f, 300.0f});
-	cloud_->SetSize(Vector3{500.0f, 200.0f, 500.0f}); // より大きなサイズ
+	cloud_->SetPosition(Vector3{0.0f, 0.0f, 0.0f});
+	cloud_->SetSize(Vector3{100.0f, 100.0f, 100.0f}); 
 
 	// 確実に見えるパラメータ
 	cloud_->GetMutableParams().density = 3.0f;	 // 高密度
@@ -181,6 +181,54 @@ void DebugScene::Update() {
 	//========================================
 	// Cloudの更新
 	cloud_->Update(*CameraManager::GetInstance()->GetCamera("DebugCamera"), 1.0f / 60.0f);
+
+	//========================================
+	// 雲の穴開けテスト（デバッグ用）
+	auto input = Input::GetInstance();
+	auto camera = CameraManager::GetInstance()->GetCamera("DebugCamera");
+
+	// Bキー: カメラ位置から前方に弾痕を作成
+	if (input->PushKey(DIK_B)) {
+		Vector3 cameraPos = camera->GetTransform().translate;
+		// カメラの前方ベクトルを計算
+		float yaw = camera->GetTransform().rotate.y;
+		Vector3 forward = {sin(yaw), 0.0f, cos(yaw)};
+
+		cloud_->AddBulletHole(
+			cameraPos,
+			forward,
+			bulletHoleRadius_,
+			bulletHoleLifeTime_);
+		Logger::Log("Added bullet hole at camera position", Logger::LogLevel::Info);
+	}
+
+	// Nキー: ランダムな位置に弾痕を作成
+	if (input->PushKey(DIK_N)) {
+		// 雲の範囲内でランダムな位置を生成
+		Vector3 cloudPos = cloud_->GetMutableParams().cloudCenter;
+		Vector3 cloudSize = cloud_->GetMutableParams().cloudSize;
+
+		float randomX = cloudPos.x + (static_cast<float>(rand()) / RAND_MAX - 0.5f) * cloudSize.x;
+		float randomY = cloudPos.y + (static_cast<float>(rand()) / RAND_MAX - 0.5f) * cloudSize.y;
+		float randomZ = cloudPos.z + (static_cast<float>(rand()) / RAND_MAX - 0.5f) * cloudSize.z;
+
+		// ランダムな方向
+		float randomYaw = static_cast<float>(rand()) / RAND_MAX * 3.14159f * 2.0f;
+		Vector3 randomDir = {sin(randomYaw), 0.0f, cos(randomYaw)};
+
+		cloud_->AddBulletHole(
+			Vector3{randomX, randomY, randomZ},
+			randomDir,
+			bulletHoleRadius_,
+			bulletHoleLifeTime_);
+		Logger::Log("Added random bullet hole", Logger::LogLevel::Info);
+	}
+
+	// Mキー: すべての弾痕をクリア
+	if (input->PushKey(DIK_M)) {
+		cloud_->ClearBulletHoles();
+		Logger::Log("Cleared all bullet holes", Logger::LogLevel::Info);
+	}
 }
 
 ///=============================================================================
@@ -209,7 +257,7 @@ void DebugScene::Object3DDraw() {
 ///						パーティクル描画
 void DebugScene::ParticleDraw() {
 	// パーティクルの描画
-	//particleEmitter_->Draw();
+	// particleEmitter_->Draw();
 }
 
 ///=============================================================================
@@ -217,7 +265,7 @@ void DebugScene::ParticleDraw() {
 void DebugScene::SkyboxDraw() {
 	// Skyboxの描画
 	if (skybox_) {
-		skybox_->Draw();
+		//skybox_->Draw();
 	}
 }
 
@@ -240,6 +288,42 @@ void DebugScene::ImGuiDraw() {
 	// Cloudのデバッグ表示
 	if (cloud_) {
 		cloud_->DrawImGui();
+
+		// 雲の穴開けテスト用UI
+		ImGui::Begin("Cloud Bullet Hole Test");
+		ImGui::Text("Controls:");
+		ImGui::BulletText("B Key: Add bullet hole at camera position");
+		ImGui::BulletText("N Key: Add random bullet hole");
+		ImGui::BulletText("M Key: Clear all bullet holes");
+		ImGui::Separator();
+
+		ImGui::Text("Bullet Hole Parameters:");
+		ImGui::SliderFloat("Radius", &bulletHoleRadius_, 0.1f, 5.0f);
+		ImGui::SliderFloat("Life Time", &bulletHoleLifeTime_, 1.0f, 30.0f);
+		ImGui::Separator();
+
+		// マニュアル追加ボタン
+		ImGui::Text("Manual Add:");
+		ImGui::DragFloat3("Origin", &manualBulletOrigin_.x, 1.0f, -1000.0f, 1000.0f);
+		ImGui::DragFloat3("Direction", &manualBulletDirection_.x, 0.01f, -1.0f, 1.0f);
+		if (ImGui::Button("Add Manual Bullet Hole")) {
+			// 方向ベクトルを正規化
+			float length = sqrt(manualBulletDirection_.x * manualBulletDirection_.x +
+								manualBulletDirection_.y * manualBulletDirection_.y +
+								manualBulletDirection_.z * manualBulletDirection_.z);
+			if (length > 0.0f) {
+				manualBulletDirection_.x /= length;
+				manualBulletDirection_.y /= length;
+				manualBulletDirection_.z /= length;
+			}
+			cloud_->AddBulletHole(manualBulletOrigin_, manualBulletDirection_, bulletHoleRadius_, bulletHoleLifeTime_);
+			Logger::Log("Added manual bullet hole", Logger::LogLevel::Info);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Clear All")) {
+			cloud_->ClearBulletHoles();
+		}
+		ImGui::End();
 	}
 
 	//========================================
