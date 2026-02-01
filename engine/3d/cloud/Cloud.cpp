@@ -195,6 +195,26 @@ namespace MagEngine {
 		impactPoints_ = activeImpacts;
 
 		//========================================
+		// GPU用の影響ポイント配列にデータをコピー
+		// NOTE: 影響ポイント配列は最大16個まで
+		for (int i = 0; i < static_cast<int>(impactPoints_.size()) && i < MAX_IMPACT_POINTS; ++i) {
+			const ImpactPoint &cpuImpact = impactPoints_[i];
+			ImpactPointGPU &gpuImpact = paramsCPU_.impactPoints[i];
+
+			gpuImpact.position = cpuImpact.position;
+			gpuImpact.radius = cpuImpact.radius;
+			gpuImpact.strength = cpuImpact.strength;
+			gpuImpact.elapsedTime = cpuImpact.elapsedTime;
+			gpuImpact.lifeTime = cpuImpact.lifeTime;
+		}
+
+		// 残りのスロットはクリア（無効化）
+		for (int i = static_cast<int>(impactPoints_.size()); i < MAX_IMPACT_POINTS; ++i) {
+			paramsCPU_.impactPoints[i] = {};
+			paramsCPU_.impactPoints[i].lifeTime = 0.0f; // 無効フラグ
+		}
+
+		//========================================
 		// カメラ行列の設定
 		// ビュープロジェクション行列を取得
 		const MagMath::Matrix4x4 viewProj = camera.GetViewProjectionMatrix();
@@ -367,6 +387,44 @@ namespace MagEngine {
 			ImGui::SliderFloat("Step Size", &paramsCPU_.stepSize, 0.5f, 20.0f);
 			ImGui::SliderFloat("Light Step Size", &paramsCPU_.lightStepSize, 5.0f, 50.0f);
 			ImGui::SliderFloat("Max Distance", &paramsCPU_.maxDistance, 100.0f, 5000.0f);
+		}
+
+		//========================================
+		// 影響ポイント設定（弾丸/爆風エフェクト）
+		if (ImGui::CollapsingHeader("Impact Points", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::Text("Active Impact Points: %u / %d", paramsCPU_.impactPointCount, MAX_IMPACT_POINTS);
+
+			ImGui::Separator();
+			ImGui::Text("Impact Parameters:");
+			ImGui::SliderFloat("Impact Influence##influence", &paramsCPU_.impactInfluence, 0.0f, 2.0f);
+			ImGui::SliderFloat("Density Multiplier##density", &paramsCPU_.impactDensityMultiplier, 0.5f, 5.0f,
+							   "%.2f");
+			ImGui::SliderFloat("Clear Radius##clearRadius", &paramsCPU_.impactClearRadius, 0.0f, 2.0f);
+
+			ImGui::TextWrapped("Tips:\n- Density Multiplier: 高いほど雲が吹き飛ぶ\n- Clear Radius: 高いほど中心が晴れる");
+
+			// テスト用：ランダムな位置に影響ポイントを追加
+			ImGui::Separator();
+			if (ImGui::Button("Add Test Impact##test")) {
+				float x = static_cast<float>(rand() % 200 - 100) + paramsCPU_.cloudCenter.x;
+				float y = static_cast<float>(rand() % 50 - 25) + paramsCPU_.cloudCenter.y;
+				float z = static_cast<float>(rand() % 200 - 100) + paramsCPU_.cloudCenter.z;
+				AddImpact({x, y, z}, 50.0f, 0.8f, 1.5f);
+			}
+
+			// 影響ポイント一覧表示
+			if (!impactPoints_.empty()) {
+				ImGui::Separator();
+				ImGui::Text("Active Impacts:");
+				for (size_t i = 0; i < impactPoints_.size(); ++i) {
+					const ImpactPoint &impact = impactPoints_[i];
+					ImGui::Text(
+						"[%zu] Pos:(%.1f, %.1f, %.1f) | Radius:%.1f | "
+						"Strength:%.2f | Life:%.2f/%.2f",
+						i, impact.position.x, impact.position.y, impact.position.z, impact.radius,
+						impact.strength, impact.elapsedTime, impact.lifeTime);
+				}
+			}
 		}
 
 		//========================================

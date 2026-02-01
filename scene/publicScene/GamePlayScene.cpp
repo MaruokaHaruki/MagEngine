@@ -129,6 +129,12 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	cloudParams.detailWeight = 0.2f; // なめらかな雲の表面
 
 	//========================================
+	// 影響ポイント関連パラメータの設定（弾丸/爆風による雲の変形）
+	cloudParams.impactInfluence = 1.0f;			// 影響ポイント全体の強度（1.0 = 標準）
+	cloudParams.impactDensityMultiplier = 2.5f; // 密度への倍率（高いほど雲が吹き飛ぶ）
+	cloudParams.impactClearRadius = 0.8f;		// 中心の晴れ具合（0.8 = 中心が結構晴れる）
+
+	//========================================
 	// 敵マネージャー
 	enemyManager_ = std::make_unique<EnemyManager>();
 	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup);

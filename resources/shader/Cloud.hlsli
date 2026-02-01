@@ -73,11 +73,11 @@ cbuffer CloudParamsCB : register(b1)
     float gAnisotropy;            // 異方性散乱パラメータ（-1.0～1.0、光の散乱方向を制御）
     
     //========================================
-    // 影響ポイント用パラメータ
-    uint gImpactPointCount;       // アクティブな影響ポイント数
-    float gImpactInfluence;       // 影響ポイント全体の強度倍率
-    float gParamsPadding4;        // パディング
-    float gParamsPadding5;        // パディング
+    // 影響ポイント設定
+    uint gImpactPointCount;         // アクティブな影響ポイント数
+    float gImpactInfluence;         // 影響ポイント全体の強度倍率
+    float gImpactDensityMultiplier; // 影響ポイントが密度に与える倍率
+    float gImpactClearRadius;       // 影響ポイント中心の晴れ具合
 
     //========================================
     // デバッグ用パラメータ
@@ -85,6 +85,21 @@ cbuffer CloudParamsCB : register(b1)
     float gParamsPadding1;        // パディング
     float gParamsPadding2;        // パディング
     float gParamsPadding3;        // パディング
+
+    //========================================
+    // 影響ポイント構造体（GPU用）
+    struct ImpactPointData {
+        float3 position;
+        float radius;
+        float strength;
+        float elapsedTime;
+        float lifeTime;
+        float padding;
+    };
+
+    //========================================
+    // 影響ポイント配列（最大16個）
+    ImpactPointData gImpactPoints[16];
 };
 
 Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクスチャ（雲の分布制御用）
@@ -241,8 +256,36 @@ float SampleCloudDensity(float3 position) {
     // smoothstepで滑らかにフェードアウト（0.0～0.1の範囲で）
     edgeFade = smoothstep(0.0f, 0.1f, edgeFade);
     
-    // 密度 × エッジフェード × 全体密度倍率
-    return density * edgeFade * gDensity;
+    //========================================
+    // 影響ポイントの処理（弾丸や爆風による雲の変形）
+    float impactEffect = 0.0f;
+    for (int i = 0; i < gImpactPointCount && i < 16; ++i) {
+        float3 toImpact = position - gImpactPoints[i].position;
+        float distToImpact = length(toImpact);
+        float impactRadius = gImpactPoints[i].radius;
+        
+        // 影響ポイント内の位置計算（0.0～1.0、中心が1.0）
+        float distRatio = 1.0f - saturate(distToImpact / impactRadius);
+        
+        // 影響ポイントの経過時間から減衰率を計算（放物線で滑らかに減衰）
+        float lifeRatio = gImpactPoints[i].elapsedTime / max(gImpactPoints[i].lifeTime, 0.001f);
+        float falloff = 1.0f - (lifeRatio * lifeRatio);  // 二次関数で減衰
+        
+        // 影響の大きさ：半径内での距離と強度、時間減衰を考慮
+        float impact = distRatio * distRatio * gImpactPoints[i].strength * falloff;
+        
+        // 複数の影響ポイントを加算（最大値でクリップ）
+        impactEffect = max(impactEffect, impact);
+    }
+    
+    // 影響ポイントによる密度変化
+    // gImpactDensityMultiplier が高いほど雲が吹き飛びやすい
+    // gImpactClearRadius が高いほど中心が完全に晴れて見える
+    float impactModulation = 1.0f - impactEffect * gImpactDensityMultiplier;
+    impactModulation = saturate(impactModulation - impactEffect * gImpactClearRadius);
+    
+    // 密度 × エッジフェード × 全体密度倍率 × 影響ポイント修正値
+    return density * edgeFade * gDensity * impactModulation * gImpactInfluence;
 }
 
 ///=============================================================================

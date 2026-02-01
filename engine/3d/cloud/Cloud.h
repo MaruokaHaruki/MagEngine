@@ -63,6 +63,20 @@ namespace MagEngine {
 	};
 
 	/**----------------------------------------------------------------------------
+	 * \brief  ImpactPointGPU GPU用の影響ポイント構造体
+	 * \note   GPU内で効率的に処理するために最適化されたレイアウト
+	 */
+	struct alignas(16) ImpactPointGPU {
+		MagMath::Vector3 position; // 衝撃の位置（ワールド座標）
+		float radius = 50.0f;	   // 影響半径
+
+		float strength = 1.0f;	  // 影響強度（0.0～1.0）
+		float elapsedTime = 0.0f; // 経過時間（秒）
+		float lifeTime = 1.0f;	  // 存在時間（秒）
+		float padding = 0.0f;	  // パディング
+	};
+
+	/**----------------------------------------------------------------------------
 	 * \brief  CloudRenderParams 雲レンダリングパラメータ（GPU用）
 	 * \note   雲の見た目を制御するパラメータ群
 	 */
@@ -105,11 +119,11 @@ namespace MagEngine {
 		float anisotropy = 0.6f;   // 異方性パラメータ
 
 		//========================================
-		// 影響ポイント数
-		uint32_t impactPointCount = 0; // アクティブな影響ポイント数
-		float impactInfluence = 1.0f;  // 影響ポイント全体の強度倍率
-		float padding1 = 0.0f;		   // パディング
-		float padding2 = 0.0f;		   // パディング
+		// 影響ポイント設定
+		uint32_t impactPointCount = 0;		  // アクティブな影響ポイント数
+		float impactInfluence = 1.0f;		  // 影響ポイント全体の強度倍率（デフォルト: 1.0）
+		float impactDensityMultiplier = 2.0f; // 影響ポイントが密度に与える倍率（高いほど効果大）
+		float impactClearRadius = 1.0f;		  // 影響ポイント中心の晴れ具合（0.0=完全に晴れ、1.0=晴れない）
 
 		//========================================
 		// デバッグ
@@ -117,6 +131,11 @@ namespace MagEngine {
 		float padding3 = 0.0f;	// パディング
 		float padding4 = 0.0f;	// パディング
 		float padding5 = 0.0f;	// パディング
+
+		//========================================
+		// 影響ポイント配列（最大16個）
+		// NOTE: ImpactPointGPUは16バイトアライン済みなので、効率的に配置される
+		ImpactPointGPU impactPoints[16];
 	};
 
 	///=============================================================================
