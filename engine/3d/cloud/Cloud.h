@@ -11,8 +11,8 @@
 #include <cstdint>
 #include <d3d12.h>
 #include <wrl/client.h>
- ///=============================================================================
- ///                        namespace MagEngine
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
 	///=============================================================================
 	///						前方宣言
@@ -23,40 +23,65 @@ namespace MagEngine {
 	///						構造体
 
 	/**----------------------------------------------------------------------------
+	 * \brief  ImpactPoint 影響ポイント（雲への衝撃情報）
+	 * \note   弾丸や爆風による雲への一時的な変形を管理
+	 */
+	struct ImpactPoint {
+		MagMath::Vector3 position; // ワールド座標
+		float radius = 50.0f;	   // 影響半径
+		float strength = 1.0f;	   // 影響強度（0.0～1.0）
+		float elapsedTime = 0.0f;  // 経過時間
+		float lifeTime = 1.0f;	   // 存在時間（秒）
+
+		// アクティブかどうかを判定
+		bool IsActive() const {
+			return elapsedTime < lifeTime;
+		}
+
+		// 現在の強度を計算（時間経過で減衰）
+		float GetCurrentStrength() const {
+			if (lifeTime <= 0.0f)
+				return 0.0f;
+			float falloff = 1.0f - (elapsedTime / lifeTime);
+			return strength * falloff * falloff; // 二次関数で減衰
+		}
+	};
+
+	/**----------------------------------------------------------------------------
 	 * \brief  CloudCameraConstant カメラ定数バッファ（GPU用）
 	 * \note   シェーダーに渡すカメラ情報
 	 */
-	struct alignas( 16 ) CloudCameraConstant {
-		MagMath::Matrix4x4 invViewProj;	   // 逆ビュープロジェクション行列（レイ方向計算用）
-		MagMath::Vector3 cameraPosition;	   // カメラのワールド座標
-		float padding = 0.0f;	   // パディング
-		float nearPlane = 0.1f;	   // ニアプレーン
-		float farPlane = 10000.0f; // ファープレーン
-		float padding2 = 0.0f;	   // パディング
-		float padding3 = 0.0f;	   // パディング
-		MagMath::Matrix4x4 viewProj;		   // ビュープロジェクション行列（深度値計算用）
+	struct alignas(16) CloudCameraConstant {
+		MagMath::Matrix4x4 invViewProj;	 // 逆ビュープロジェクション行列（レイ方向計算用）
+		MagMath::Vector3 cameraPosition; // カメラのワールド座標
+		float padding = 0.0f;			 // パディング
+		float nearPlane = 0.1f;			 // ニアプレーン
+		float farPlane = 10000.0f;		 // ファープレーン
+		float padding2 = 0.0f;			 // パディング
+		float padding3 = 0.0f;			 // パディング
+		MagMath::Matrix4x4 viewProj;	 // ビュープロジェクション行列（深度値計算用）
 	};
 
 	/**----------------------------------------------------------------------------
 	 * \brief  CloudRenderParams 雲レンダリングパラメータ（GPU用）
 	 * \note   雲の見た目を制御するパラメータ群
 	 */
-	struct alignas( 16 ) CloudRenderParams {
+	struct alignas(16) CloudRenderParams {
 		//========================================
 		// 雲の位置とサイズ
-		MagMath::Vector3 cloudCenter{ 0.0f, 150.0f, 0.0f }; // 雲の中心座標
-		float cloudSizeX = 300.0f;				 // 未使用（構造体パディング用）
+		MagMath::Vector3 cloudCenter{0.0f, 150.0f, 0.0f}; // 雲の中心座標
+		float cloudSizeX = 300.0f;						  // 未使用（構造体パディング用）
 
-		MagMath::Vector3 cloudSize{ 300.0f, 100.0f, 300.0f }; // 雲のXYZサイズ
-		float padding0 = 0.0f;					   // パディング
+		MagMath::Vector3 cloudSize{300.0f, 100.0f, 300.0f}; // 雲のXYZサイズ
+		float padding0 = 0.0f;								// パディング
 
 		//========================================
 		// ライティング
-		MagMath::Vector3 sunDirection{ 0.3f, 0.8f, 0.5f }; // 太陽光の方向
-		float sunIntensity = 1.2f;				// 太陽光の強度
+		MagMath::Vector3 sunDirection{0.3f, 0.8f, 0.5f}; // 太陽光の方向
+		float sunIntensity = 1.2f;						 // 太陽光の強度
 
-		MagMath::Vector3 sunColor{ 1.0f, 0.96f, 0.88f }; // 太陽光の色
-		float ambient = 0.3f;				  // 環境光の強度
+		MagMath::Vector3 sunColor{1.0f, 0.96f, 0.88f}; // 太陽光の色
+		float ambient = 0.3f;						   // 環境光の強度
 
 		//========================================
 		// 雲の密度とノイズ
@@ -80,11 +105,18 @@ namespace MagEngine {
 		float anisotropy = 0.6f;   // 異方性パラメータ
 
 		//========================================
+		// 影響ポイント数
+		uint32_t impactPointCount = 0; // アクティブな影響ポイント数
+		float impactInfluence = 1.0f;  // 影響ポイント全体の強度倍率
+		float padding1 = 0.0f;		   // パディング
+		float padding2 = 0.0f;		   // パディング
+
+		//========================================
 		// デバッグ
 		float debugFlag = 0.0f; // デバッグフラグ
-		float padding1 = 0.0f;	// パディング
-		float padding2 = 0.0f;	// パディング
 		float padding3 = 0.0f;	// パディング
+		float padding4 = 0.0f;	// パディング
+		float padding5 = 0.0f;	// パディング
 	};
 
 	///=============================================================================
@@ -191,6 +223,15 @@ namespace MagEngine {
 		void SetWeatherMap(D3D12_GPU_DESCRIPTOR_HANDLE srv);
 
 		/**----------------------------------------------------------------------------
+		 * \brief  AddImpact 影響ポイントを追加（弾丸や爆風による衝撃）
+		 * \param  position 衝撃の位置（ワールド座標）
+		 * \param  radius 影響半径
+		 * \param  strength 影響強度（0.0～1.0）
+		 * \param  lifeTime 存在時間（秒、デフォルト1.0秒）
+		 */
+		void AddImpact(const MagMath::Vector3 &position, float radius, float strength, float lifeTime = 1.0f);
+
+		/**----------------------------------------------------------------------------
 		 * \brief  SetEnabled 有効/無効の設定
 		 * \param  enabled 有効フラグ
 		 */
@@ -224,7 +265,7 @@ namespace MagEngine {
 
 		//========================================
 		// Transform（雲の位置・回転・スケール）
-		MagMath::Transform transform_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 150.0f, 0.0f} };
+		MagMath::Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 150.0f, 0.0f}};
 
 		//========================================
 		// 頂点バッファ
@@ -246,6 +287,11 @@ namespace MagEngine {
 		// ウェザーマップ
 		D3D12_GPU_DESCRIPTOR_HANDLE weatherMapSrv_{}; // ウェザーマップSRV
 		bool hasWeatherMapSrv_ = false;				  // ウェザーマップ有効フラグ
+
+		//========================================
+		// 影響ポイント管理
+		static constexpr int MAX_IMPACT_POINTS = 16; // 最大同時影響ポイント数
+		std::vector<ImpactPoint> impactPoints_;		 // アクティブな影響ポイント
 
 		//========================================
 		// その他

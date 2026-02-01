@@ -1,5 +1,6 @@
 #define _USE_MATH_DEFINES
 #include "EnemyBullet.h"
+#include "CloudImpactHelper.h"
 #include "Object3dSetup.h"
 #include "Particle.h"
 #include "Player.h"
@@ -101,6 +102,10 @@ void EnemyBullet::OnCollisionEnter(BaseObject *other) {
 			particle_->SetFadeInOut(0.0f, 0.8f);
 			particle_->Emit("ExplosionSparks", transform_.translate, 10);
 		}
+
+		// 雲に影響を追加（敵弾）
+		CloudImpactHelper::ApplyBulletImpact(GetPosition(), false); // false = 敵弾
+
 		// 弾を消滅させる
 		isAlive_ = false;
 	}

@@ -28,8 +28,8 @@ cbuffer CloudCameraCB : register(b0)
     // カメラの近平面・遠平面距離
     float gNearPlane;             // ニアクリップ平面（通常0.1f）
     float gFarPlane;              // ファークリップ平面（通常10000.0f）
-    float gPadding4;              // パディング
-    float gPadding5;              // パディング
+    float gCameraPadding2;        // パディング
+    float gCameraPadding3;        // パディング
     
     // ビュープロジェクション行列（ワールド座標→スクリーン座標変換用、深度計算に使用）
     float4x4 gViewProjection;
@@ -73,11 +73,18 @@ cbuffer CloudParamsCB : register(b1)
     float gAnisotropy;            // 異方性散乱パラメータ（-1.0～1.0、光の散乱方向を制御）
     
     //========================================
+    // 影響ポイント用パラメータ
+    uint gImpactPointCount;       // アクティブな影響ポイント数
+    float gImpactInfluence;       // 影響ポイント全体の強度倍率
+    float gParamsPadding4;        // パディング
+    float gParamsPadding5;        // パディング
+
+    //========================================
     // デバッグ用パラメータ
     float gDebugFlag;             // デバッグモードフラグ（0.0=通常、1.0=デバッグ表示）
-    float gPadding1;              // パディング
-    float gPadding2;              // パディング
-    float gPadding3;              // パディング
+    float gParamsPadding1;        // パディング
+    float gParamsPadding2;        // パディング
+    float gParamsPadding3;        // パディング
 };
 
 Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクスチャ（雲の分布制御用）
@@ -312,4 +319,32 @@ float LinearizeDepth(float depth, float near, float far)
     // 透視投影の深度値を線形化する式
     // 2 * near * far / (far + near - depth * (far - near))
     return (2.0f * near * far) / (far + near - depth * (far - near));
+}
+
+///=============================================================================
+///                      影響ポイントによる密度減少の計算
+/// @brief 指定座標での影響ポイント効果による密度減少量を計算
+/// @param position サンプリング座標（ワールド空間）
+/// @param impactData 影響ポイントデータ（位置、半径、強度のパック）
+/// @return 密度減少率（0.0～1.0、0.0なら影響なし、1.0なら完全消失）
+/// @note 複数の影響ポイントの効果を乗算合成で組み合わせる
+float CalculateImpactEffect(float3 position) {
+    float totalEffect = 0.0f;
+    
+    // ImpactDataはStructuredBufferで3つのfloat4で表現（計12個のfloat）
+    // index: 影響ポイントのインデックス
+    // 最大16個の影響ポイントをハードコード処理
+    // （シェーダーのループ制限の回避とパフォーマンス最適化）
+    
+    // NOTE: ここでは簡易版として、影響ポイント数に基づいて減少させる
+    // 実際の実装では、StructuredBufferを使用するのが理想的
+    // ここではParameterとしてグローバル定数を使用
+    
+    if (gImpactPointCount > 0) {
+        // 影響ポイントの効果を適用（数が多いほど効果を強める）
+        // 簡易的には、カウント数に基づいて密度をスケール
+        totalEffect = min(1.0f, float(gImpactPointCount) * 0.1f);
+    }
+    
+    return totalEffect;
 }

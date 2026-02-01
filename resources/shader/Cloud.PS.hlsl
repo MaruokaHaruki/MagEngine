@@ -100,6 +100,12 @@ PixelOutput main(VertexShaderOutput input) {
         
         float density = SampleCloudDensity(position);
         
+        // 影響ポイント効果を適用：密度を減少させる
+        if (gImpactPointCount > 0) {
+            float impactEffect = CalculateImpactEffect(position);
+            density *= (1.0f - impactEffect * gImpactInfluence);
+        }
+        
         // 適応的ステップサイズ: 密度が低い場合は大きくスキップ
         float adaptiveStep = (density < 0.001f) ? actualStepSize * 2.0f : actualStepSize;
         

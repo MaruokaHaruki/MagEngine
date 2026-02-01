@@ -15,15 +15,15 @@
 #include "externals/imgui/imgui.h"
 #include <array>
 #include <stdexcept>
- ///=============================================================================
- ///                        namespace MagEngine
-namespace MagEngine {
 ///=============================================================================
-///						初期化
+///                        namespace MagEngine
+namespace MagEngine {
+	///=============================================================================
+	///						初期化
 	void Cloud::Initialize(CloudSetup *setup) {
 		//========================================
 		// 引数チェック
-		if(!setup) {
+		if (!setup) {
 			throw std::invalid_argument("Cloud::Initialize requires CloudSetup.");
 		}
 
@@ -41,10 +41,10 @@ namespace MagEngine {
 		// 雲をまばらにし、自然な配置にする
 
 		// 雲のサイズ（X, Y, Z方向の広がり）
-		paramsCPU_.cloudSize = { 300.0f, 100.0f, 300.0f };
+		paramsCPU_.cloudSize = {300.0f, 100.0f, 300.0f};
 
 		// 雲の中心座標（ワールド空間）
-		paramsCPU_.cloudCenter = { 0.0f, 150.0f, 0.0f };
+		paramsCPU_.cloudCenter = {0.0f, 150.0f, 0.0f};
 
 		// 密度：雲の濃さを制御（値が小さいほど薄くなる）
 		// 1.5 = かなり薄い雲（以前: 2.0f）
@@ -87,11 +87,11 @@ namespace MagEngine {
 		// フルスクリーン三角形の頂点データを定義
 		// NOTE: 画面全体を覆う大きな三角形を1つ描画することで、
 		//       全ピクセルをレイマーチングで処理する
-		const std::array<FullscreenVertex, 3> vertices{ {
+		const std::array<FullscreenVertex, 3> vertices{{
 			{{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f}}, // 左下
 			{{-1.0f, 3.0f, 0.0f}, {0.0f, -1.0f}}, // 左上（画面外）
 			{{3.0f, -1.0f, 0.0f}, {2.0f, 1.0f}},  // 右下（画面外）
-		} };
+		}};
 
 		//========================================
 		// 頂点バッファの作成
@@ -102,7 +102,7 @@ namespace MagEngine {
 		//========================================
 		// 頂点データをバッファに書き込み
 		void *mapped = nullptr;
-		D3D12_RANGE readRange{ 0, 0 };
+		D3D12_RANGE readRange{0, 0};
 		vertexBuffer_->Map(0, &readRange, &mapped);
 		std::memcpy(mapped, vertices.data(), bufferSize);
 		vertexBuffer_->Unmap(0, nullptr);
@@ -110,7 +110,7 @@ namespace MagEngine {
 		//========================================
 		// 頂点バッファビューの設定
 		vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
-		vertexBufferView_.SizeInBytes = static_cast<UINT>( bufferSize );
+		vertexBufferView_.SizeInBytes = static_cast<UINT>(bufferSize);
 		vertexBufferView_.StrideInBytes = sizeof(FullscreenVertex);
 	}
 
@@ -122,20 +122,20 @@ namespace MagEngine {
 		//========================================
 		// カメラ用定数バッファの作成
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t cameraSize = ( sizeof(CloudCameraConstant) + 255 ) & ~255;
+		size_t cameraSize = (sizeof(CloudCameraConstant) + 255) & ~255;
 		cameraCB_ = dxCore->CreateBufferResource(cameraSize);
 		// 書き込むためのアドレスを取得
-		cameraCB_->Map(0, nullptr, reinterpret_cast<void **>( &cameraData_ ));
+		cameraCB_->Map(0, nullptr, reinterpret_cast<void **>(&cameraData_));
 		// 初期化
 		*cameraData_ = {};
 
 		//========================================
 		// パラメータ用定数バッファの作成
 		// 定数バッファのサイズを 256 バイトの倍数に設定
-		size_t paramsSize = ( sizeof(CloudRenderParams) + 255 ) & ~255;
+		size_t paramsSize = (sizeof(CloudRenderParams) + 255) & ~255;
 		paramsCB_ = dxCore->CreateBufferResource(paramsSize);
 		// 書き込むためのアドレスを取得
-		paramsCB_->Map(0, nullptr, reinterpret_cast<void **>( &paramsData_ ));
+		paramsCB_->Map(0, nullptr, reinterpret_cast<void **>(&paramsData_));
 		// 初期化
 		*paramsData_ = paramsCPU_;
 	}
@@ -168,7 +168,7 @@ namespace MagEngine {
 	void Cloud::Update(const Camera &camera, float deltaTime) {
 		//========================================
 		// 無効化されている場合は更新をスキップ
-		if(!enabled_)
+		if (!enabled_)
 			return;
 
 		//========================================
@@ -179,6 +179,20 @@ namespace MagEngine {
 		//========================================
 		// Transformから雲の中心位置を更新
 		paramsCPU_.cloudCenter = transform_.translate;
+
+		//========================================
+		// 影響ポイントの更新と期限切れの除去
+		paramsCPU_.impactPointCount = 0;
+		std::vector<ImpactPoint> activeImpacts;
+
+		for (auto &impact : impactPoints_) {
+			impact.elapsedTime += deltaTime;
+			if (impact.IsActive() && activeImpacts.size() < MAX_IMPACT_POINTS) {
+				activeImpacts.push_back(impact);
+				paramsCPU_.impactPointCount++;
+			}
+		}
+		impactPoints_ = activeImpacts;
 
 		//========================================
 		// カメラ行列の設定
@@ -208,7 +222,7 @@ namespace MagEngine {
 	void Cloud::Draw() {
 		//========================================
 		// 描画可能かチェック
-		if(!enabled_ || !setup_ || !vertexBuffer_ || !cameraCB_ || !paramsCB_) {
+		if (!enabled_ || !setup_ || !vertexBuffer_ || !cameraCB_ || !paramsCB_) {
 			return;
 		}
 
@@ -230,7 +244,7 @@ namespace MagEngine {
 
 		//========================================
 		// ウェザーマップテクスチャの設定
-		if(hasWeatherMapSrv_) {
+		if (hasWeatherMapSrv_) {
 			commandList->SetGraphicsRootDescriptorTable(2, weatherMapSrv_);
 		}
 
@@ -247,6 +261,33 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
+	///						影響ポイント追加
+	void Cloud::AddImpact(const MagMath::Vector3 &position, float radius, float strength, float lifeTime) {
+		// 最大数に達していなければ追加
+		if (impactPoints_.size() < MAX_IMPACT_POINTS) {
+			ImpactPoint impact;
+			impact.position = position;
+			impact.radius = radius;
+			impact.strength = MagMath::Clamp(strength, 0.0f, 1.0f);
+			impact.lifeTime = lifeTime;
+			impact.elapsedTime = 0.0f;
+
+			impactPoints_.push_back(impact);
+		} else {
+			// 最大数に達している場合は、最も古い影響ポイントを置き換え
+			if (!impactPoints_.empty()) {
+				impactPoints_[0] = ImpactPoint();
+				impactPoints_[0].position = position;
+				impactPoints_[0].radius = radius;
+				impactPoints_[0].strength = MagMath::Clamp(strength, 0.0f, 1.0f);
+				impactPoints_[0].lifeTime = lifeTime;
+				impactPoints_[0].elapsedTime = 0.0f;
+				std::rotate(impactPoints_.begin(), impactPoints_.begin() + 1, impactPoints_.end());
+			}
+		}
+	}
+
+	///=============================================================================
 	///						ImGui描画
 	void Cloud::DrawImGui() {
 		ImGui::Begin("Cloud Settings");
@@ -259,29 +300,29 @@ namespace MagEngine {
 
 		//========================================
 		// Transform設定
-		if(ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
 			// 位置設定
-			if(ImGui::DragFloat3("Position", &transform_.translate.x, 5.0f, -2000.0f, 2000.0f)) {
+			if (ImGui::DragFloat3("Position", &transform_.translate.x, 5.0f, -2000.0f, 2000.0f)) {
 				paramsCPU_.cloudCenter = transform_.translate;
 			}
 			// サイズ設定
 			ImGui::DragFloat3("Size", &paramsCPU_.cloudSize.x, 5.0f, 10.0f, 1000.0f);
 
 			// 便利ボタン
-			if(ImGui::Button("Reset Position")) {
-				transform_.translate = { 0.0f, 150.0f, 0.0f };
+			if (ImGui::Button("Reset Position")) {
+				transform_.translate = {0.0f, 150.0f, 0.0f};
 				paramsCPU_.cloudCenter = transform_.translate;
 			}
-			if(ImGui::Button("Move to Camera Front")) {
-				if(cameraData_) {
-					MagMath::Vector3 forward = { 0.0f, 0.0f, 1.0f };
+			if (ImGui::Button("Move to Camera Front")) {
+				if (cameraData_) {
+					MagMath::Vector3 forward = {0.0f, 0.0f, 1.0f};
 					transform_.translate.x = cameraData_->cameraPosition.x + forward.x * 200.0f;
 					transform_.translate.y = cameraData_->cameraPosition.y + 50.0f;
 					transform_.translate.z = cameraData_->cameraPosition.z + forward.z * 200.0f;
 					paramsCPU_.cloudCenter = transform_.translate;
 				}
 			}
-			if(ImGui::Button("Set Default Visible Params")) {
+			if (ImGui::Button("Set Default Visible Params")) {
 				paramsCPU_.density = 3.0f;
 				paramsCPU_.coverage = 0.3f;
 				paramsCPU_.baseNoiseScale = 0.01f;
@@ -293,7 +334,7 @@ namespace MagEngine {
 
 		//========================================
 		// 密度とカバレッジ設定
-		if(ImGui::CollapsingHeader("Density & Coverage")) {
+		if (ImGui::CollapsingHeader("Density & Coverage")) {
 			ImGui::SliderFloat("Density", &paramsCPU_.density, 0.0f, 10.0f);
 			ImGui::SliderFloat("Coverage", &paramsCPU_.coverage, 0.0f, 1.0f);
 			ImGui::SliderFloat("Detail Weight", &paramsCPU_.detailWeight, 0.0f, 1.0f);
@@ -302,7 +343,7 @@ namespace MagEngine {
 
 		//========================================
 		// ノイズ設定
-		if(ImGui::CollapsingHeader("Noise Settings")) {
+		if (ImGui::CollapsingHeader("Noise Settings")) {
 			ImGui::SliderFloat("Base Noise Scale", &paramsCPU_.baseNoiseScale, 0.0001f, 0.05f, "%.5f");
 			ImGui::SliderFloat("Detail Noise Scale", &paramsCPU_.detailNoiseScale, 0.001f, 0.1f, "%.4f");
 			ImGui::SliderFloat("Noise Speed", &paramsCPU_.noiseSpeed, 0.0f, 0.2f);
@@ -311,7 +352,7 @@ namespace MagEngine {
 
 		//========================================
 		// ライティング設定
-		if(ImGui::CollapsingHeader("Lighting")) {
+		if (ImGui::CollapsingHeader("Lighting")) {
 			ImGui::DragFloat3("Sun Direction", &paramsCPU_.sunDirection.x, 0.01f, -1.0f, 1.0f);
 			ImGui::ColorEdit3("Sun Color", &paramsCPU_.sunColor.x);
 			ImGui::SliderFloat("Sun Intensity", &paramsCPU_.sunIntensity, 0.0f, 5.0f);
@@ -322,7 +363,7 @@ namespace MagEngine {
 
 		//========================================
 		// レイマーチング設定
-		if(ImGui::CollapsingHeader("Raymarching")) {
+		if (ImGui::CollapsingHeader("Raymarching")) {
 			ImGui::SliderFloat("Step Size", &paramsCPU_.stepSize, 0.5f, 20.0f);
 			ImGui::SliderFloat("Light Step Size", &paramsCPU_.lightStepSize, 5.0f, 50.0f);
 			ImGui::SliderFloat("Max Distance", &paramsCPU_.maxDistance, 100.0f, 5000.0f);
@@ -335,13 +376,13 @@ namespace MagEngine {
 		ImGui::Text("Time: %.2f", paramsCPU_.time);
 
 		// カメラ情報
-		if(cameraData_) {
+		if (cameraData_) {
 			ImGui::Text("Camera: (%.1f, %.1f, %.1f)",
-				cameraData_->cameraPosition.x,
-				cameraData_->cameraPosition.y,
-				cameraData_->cameraPosition.z);
+						cameraData_->cameraPosition.x,
+						cameraData_->cameraPosition.y,
+						cameraData_->cameraPosition.z);
 
-	// カメラから雲までの距離
+			// カメラから雲までの距離
 			float dx = paramsCPU_.cloudCenter.x - cameraData_->cameraPosition.x;
 			float dy = paramsCPU_.cloudCenter.y - cameraData_->cameraPosition.y;
 			float dz = paramsCPU_.cloudCenter.z - cameraData_->cameraPosition.z;
@@ -351,25 +392,25 @@ namespace MagEngine {
 
 		// 雲の情報
 		ImGui::Text("Center: (%.1f, %.1f, %.1f)",
-			paramsCPU_.cloudCenter.x, paramsCPU_.cloudCenter.y, paramsCPU_.cloudCenter.z);
+					paramsCPU_.cloudCenter.x, paramsCPU_.cloudCenter.y, paramsCPU_.cloudCenter.z);
 		ImGui::Text("Size: (%.1f, %.1f, %.1f)",
-			paramsCPU_.cloudSize.x, paramsCPU_.cloudSize.y, paramsCPU_.cloudSize.z);
+					paramsCPU_.cloudSize.x, paramsCPU_.cloudSize.y, paramsCPU_.cloudSize.z);
 
-// AABB（軸平行境界ボックス）表示
+		// AABB（軸平行境界ボックス）表示
 		MagMath::Vector3 boxMin = {
 			paramsCPU_.cloudCenter.x - paramsCPU_.cloudSize.x * 0.5f,
 			paramsCPU_.cloudCenter.y - paramsCPU_.cloudSize.y * 0.5f,
-			paramsCPU_.cloudCenter.z - paramsCPU_.cloudSize.z * 0.5f };
+			paramsCPU_.cloudCenter.z - paramsCPU_.cloudSize.z * 0.5f};
 		MagMath::Vector3 boxMax = {
 			paramsCPU_.cloudCenter.x + paramsCPU_.cloudSize.x * 0.5f,
 			paramsCPU_.cloudCenter.y + paramsCPU_.cloudSize.y * 0.5f,
-			paramsCPU_.cloudCenter.z + paramsCPU_.cloudSize.z * 0.5f };
+			paramsCPU_.cloudCenter.z + paramsCPU_.cloudSize.z * 0.5f};
 		ImGui::Text("AABB Min: (%.1f, %.1f, %.1f)", boxMin.x, boxMin.y, boxMin.z);
 		ImGui::Text("AABB Max: (%.1f, %.1f, %.1f)", boxMax.x, boxMax.y, boxMax.z);
 
 		//========================================
 		// 深度デバッグ情報
-		if(ImGui::CollapsingHeader("Depth Debug")) {
+		if (ImGui::CollapsingHeader("Depth Debug")) {
 			ImGui::Text("Near Plane: %.2f", cameraData_->nearPlane);
 			ImGui::Text("Far Plane: %.2f", cameraData_->farPlane);
 		}

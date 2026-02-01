@@ -10,6 +10,7 @@
 //========================================
 // Game
 #include "CameraManager.h"
+#include "CloudImpactHelper.h"
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
 #include "EnemyBullet.h"
@@ -103,6 +104,9 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// 雲のサイズ設定（広い範囲に配置）
 	cloud_->SetSize({500.0f, 100.0f, 500.0f});
 	cloud_->SetEnabled(true);
+
+	// CloudImpactHelper に雲をセット（弾丸衝突時の影響適用用）
+	CloudImpactHelper::SetGlobalCloud(cloud_.get());
 
 	// 雲のTransform設定
 	cloud_->GetTransform().translate = {0.0f, -50.0f, 250.0f};

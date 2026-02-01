@@ -113,6 +113,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\Collider.cpp" />
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
+    <ClCompile Include="application\CloudImpactHelper.cpp" />
     <ClCompile Include="application\enemy\Enemy.cpp" />
     <ClCompile Include="application\enemy\EnemyManager.cpp" />
     <ClCompile Include="application\enemy\EnemyBase.cpp" />
@@ -239,6 +240,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
     <ClInclude Include="application\collision\BaseObject.h" />
+    <ClInclude Include="application\CloudImpactHelper.h" />
     <ClInclude Include="scene\base\SceneFactory.h" />
     <ClInclude Include="scene\publicScene\ClearScene.h" />
     <ClInclude Include="scene\privateScene\DebugScene.h" />

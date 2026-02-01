@@ -1,0 +1,13 @@
+In file included from resources/shader/Cloud.VS.hlsl:1:
+./resources/shader/Cloud.hlsli:79:11: error: redefinition of 'gPadding4'
+    float gPadding4;              // パディング
+          ^
+./resources/shader/Cloud.hlsli:31:11: note: previous definition is here
+    float gPadding4;              // パディング
+          ^
+./resources/shader/Cloud.hlsli:80:11: error: redefinition of 'gPadding5'
+    float gPadding5;              // パディング
+          ^
+./resources/shader/Cloud.hlsli:32:11: note: previous definition is here
+    float gPadding5;              // パディング
+          ^
