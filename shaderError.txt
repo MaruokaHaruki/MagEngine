@@ -1,0 +1,4 @@
+In file included from resources/shader/Cloud.VS.hlsl:1:
+./resources/shader/Cloud.hlsli:261:24: error: use of undeclared identifier 'CalculateBulletHoleMask'
+    float bulletMask = CalculateBulletHoleMask(position);
+                       ^

@@ -325,6 +325,62 @@ void GamePlayScene::Update() {
 			gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
 		}
 	}
+
+	//========================================
+	// 弾痕テスト用のデバッグコード
+	// Bキーで雲に弾痕を追加
+	if (Input::GetInstance()->TriggerKey(DIK_B) && cloud_) {
+		if (player_) {
+			// プレイヤーの位置から前方向に弾痕を作成
+			Vector3 origin = player_->GetPosition();
+
+			// プレイヤーのRotationから前方ベクトルを計算
+			// Y軸回転（ヨー）から前方向を計算
+			float yaw = player_->GetTransform()->rotate.y;
+			Vector3 forward = {
+				std::sin(yaw),
+				0.0f,
+				std::cos(yaw)};
+			forward = MagMath::Normalize(forward);
+
+			// 弾痕を追加（原点、方向、半径、残存時間）
+			cloud_->AddBulletHole(origin, forward, 2.0f, 15.0f);
+
+			// ログ出力
+			Logger::Log("BulletHole added at player position", Logger::LogLevel::Info);
+		}
+	}
+
+	// Nキーでランダムな位置に弾痕を追加
+	if (Input::GetInstance()->TriggerKey(DIK_N) && cloud_) {
+		// 雲の中心付近にランダムな弾痕を作成
+		Vector3 cloudCenter = cloud_->GetTransform().translate;
+		Vector3 randomOffset = {
+			static_cast<float>((rand() % 200) - 100), // -100 ~ 100
+			static_cast<float>((rand() % 40) - 20),	  // -20 ~ 20
+			static_cast<float>((rand() % 200) - 100)  // -100 ~ 100
+		};
+
+		Vector3 origin = cloudCenter + randomOffset;
+
+		// ランダムな方向
+		Vector3 direction = {
+			static_cast<float>((rand() % 200) - 100) / 100.0f, // -1.0 ~ 1.0
+			static_cast<float>((rand() % 200) - 100) / 100.0f,
+			static_cast<float>((rand() % 200) - 100) / 100.0f};
+		direction = MagMath::Normalize(direction);
+
+		// 弾痕を追加
+		cloud_->AddBulletHole(origin, direction, 3.0f, 20.0f);
+
+		Logger::Log("Random BulletHole added", Logger::LogLevel::Info);
+	}
+
+	// Mキーで全ての弾痕をクリア
+	if (Input::GetInstance()->TriggerKey(DIK_M) && cloud_) {
+		cloud_->ClearBulletHoles();
+		Logger::Log("All bullet holes cleared", Logger::LogLevel::Info);
+	}
 #endif
 
 	//========================================
@@ -561,6 +617,25 @@ void GamePlayScene::ImGuiDraw() {
 	// 雲
 	if (cloud_) {
 		cloud_->DrawImGui();
+
+		// 弾痕テスト用のImGui
+		ImGui::Begin("BulletHole Test");
+		ImGui::Text("Bullet Hole System Test");
+		ImGui::Separator();
+		ImGui::Text("Press B: Add bullet hole at player position");
+		ImGui::Text("Press N: Add random bullet hole");
+		ImGui::Text("Press M: Clear all bullet holes");
+		ImGui::Separator();
+
+		// 現在の弾痕数を表示
+		auto &cloudParams = cloud_->GetMutableParams();
+		ImGui::Text("Active Bullet Holes: %d", cloudParams.bulletHoleCount);
+
+		// 弾痕パラメータの調整
+		ImGui::SliderFloat("Fade Start", &cloudParams.bulletHoleFadeStart, -2.0f, 2.0f);
+		ImGui::SliderFloat("Fade End", &cloudParams.bulletHoleFadeEnd, 0.0f, 5.0f);
+
+		ImGui::End();
 	}
 
 	//========================================

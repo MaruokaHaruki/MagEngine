@@ -14,8 +14,8 @@ using namespace Logger;
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-///=============================================================================
-///						初期化
+	///=============================================================================
+	///						初期化
 	void CloudSetup::Initialize(DirectXCore *dxCore) {
 		/// ===引数でdxCoreを受取=== ///
 		dxCore_ = dxCore;
@@ -51,8 +51,8 @@ namespace MagEngine {
 		descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 		//========================================
-		// RootParameterの設定（3つのパラメータ）
-		D3D12_ROOT_PARAMETER rootParameters[3] = {};
+		// RootParameterの設定（4つのパラメータ）
+		D3D12_ROOT_PARAMETER rootParameters[4] = {};
 		// カメラ定数バッファ（b0）
 		rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
@@ -63,11 +63,16 @@ namespace MagEngine {
 		rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		rootParameters[1].Descriptor.ShaderRegister = 1;
 
-		// ウェザーマップテクスチャ（t0）
-		rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		// 弾痕バッファ定数バッファ（b2）
+		rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-		rootParameters[2].DescriptorTable.pDescriptorRanges = &descriptorRange;
-		rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
+		rootParameters[2].Descriptor.ShaderRegister = 2;
+
+		// ウェザーマップテクスチャ（t0）
+		rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[3].DescriptorTable.pDescriptorRanges = &descriptorRange;
+		rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
 
 		//========================================
 		// StaticSamplerの設定
@@ -96,16 +101,16 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob;
 		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
 		HRESULT hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-		if(FAILED(hr)) {
-			throw std::runtime_error(errorBlob ? reinterpret_cast<const char *>( errorBlob->GetBufferPointer() )
-				: "CloudSetup root signature serialization failed.");
+		if (FAILED(hr)) {
+			throw std::runtime_error(errorBlob ? reinterpret_cast<const char *>(errorBlob->GetBufferPointer())
+											   : "CloudSetup root signature serialization failed.");
 		}
 
 		//========================================
 		// ルートシグネチャの実際の生成
 		hr = dxCore_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
-			IID_PPV_ARGS(&rootSignature_));
-		if(FAILED(hr)) {
+													   IID_PPV_ARGS(&rootSignature_));
+		if (FAILED(hr)) {
 			throw std::runtime_error("CloudSetup root signature creation failed.");
 		}
 		Log("Cloud root signature created.", LogLevel::Success);
@@ -139,13 +144,13 @@ namespace MagEngine {
 		//========================================
 		// Shaderをcompileする
 		Microsoft::WRL::ComPtr<IDxcBlob> vs = dxCore_->CompileShader(L"resources/shader/Cloud.VS.hlsl", L"vs_6_0");
-		if(!vs) {
+		if (!vs) {
 			throw std::runtime_error("Cloud vertex shader compile failed.");
 		}
 		Log("Cloud Vertex shader created successfully :)", LogLevel::Success);
 
 		Microsoft::WRL::ComPtr<IDxcBlob> ps = dxCore_->CompileShader(L"resources/shader/Cloud.PS.hlsl", L"ps_6_0");
-		if(!ps) {
+		if (!ps) {
 			throw std::runtime_error("Cloud pixel shader compile failed.");
 		}
 		Log("Cloud Pixel shader created successfully :)", LogLevel::Success);
@@ -177,8 +182,8 @@ namespace MagEngine {
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
 		desc.pRootSignature = rootSignature_.Get();
 		desc.InputLayout = inputLayout;
-		desc.VS = { vs->GetBufferPointer(), vs->GetBufferSize() };
-		desc.PS = { ps->GetBufferPointer(), ps->GetBufferSize() };
+		desc.VS = {vs->GetBufferPointer(), vs->GetBufferSize()};
+		desc.PS = {ps->GetBufferPointer(), ps->GetBufferSize()};
 		desc.BlendState = blend;
 		desc.RasterizerState = raster;
 		desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
@@ -199,7 +204,7 @@ namespace MagEngine {
 		//========================================
 		// 実際に生成
 		HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState_));
-		if(FAILED(hr)) {
+		if (FAILED(hr)) {
 			throw std::runtime_error("Cloud graphics pipeline creation failed.");
 		}
 		Log("Cloud graphics pipeline created.", LogLevel::Success);

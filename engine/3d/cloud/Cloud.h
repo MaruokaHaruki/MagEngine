@@ -11,8 +11,8 @@
 #include <cstdint>
 #include <d3d12.h>
 #include <wrl/client.h>
- ///=============================================================================
- ///                        namespace MagEngine
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
 	///=============================================================================
 	///						前方宣言
@@ -26,37 +26,46 @@ namespace MagEngine {
 	 * \brief  CloudCameraConstant カメラ定数バッファ（GPU用）
 	 * \note   シェーダーに渡すカメラ情報
 	 */
-	struct alignas( 16 ) CloudCameraConstant {
-		MagMath::Matrix4x4 invViewProj;	   // 逆ビュープロジェクション行列（レイ方向計算用）
-		MagMath::Vector3 cameraPosition;	   // カメラのワールド座標
-		float padding = 0.0f;	   // パディング
-		float nearPlane = 0.1f;	   // ニアプレーン
-		float farPlane = 10000.0f; // ファープレーン
-		float padding2 = 0.0f;	   // パディング
-		float padding3 = 0.0f;	   // パディング
-		MagMath::Matrix4x4 viewProj;		   // ビュープロジェクション行列（深度値計算用）
+	struct alignas(16) CloudCameraConstant {
+		MagMath::Matrix4x4 invViewProj;	 // 逆ビュープロジェクション行列（レイ方向計算用）
+		MagMath::Vector3 cameraPosition; // カメラのワールド座標
+		float padding = 0.0f;			 // パディング
+		float nearPlane = 0.1f;			 // ニアプレーン
+		float farPlane = 10000.0f;		 // ファープレーン
+		float padding2 = 0.0f;			 // パディング
+		float padding3 = 0.0f;			 // パディング
+		MagMath::Matrix4x4 viewProj;	 // ビュープロジェクション行列（深度値計算用）
 	};
 
-	/**----------------------------------------------------------------------------
-	 * \brief  CloudRenderParams 雲レンダリングパラメータ（GPU用）
+	/**----------------------------------------------------------------------------	 * \brief  BulletHoleGPU 弾痕データ(GPU用)
+	 * \note   レイマーチング時にSDFで弾痕を表現するためのデータ
+	 */
+	struct alignas(16) BulletHoleGPU {
+		MagMath::Vector3 origin{0.0f, 0.0f, 0.0f};	  ///< 弾の開始位置
+		float radius = 0.5f;						  ///< 弾痕の半径
+		MagMath::Vector3 direction{0.0f, 1.0f, 0.0f}; ///< 弾の正規化方向ベクトル
+		float lifeTime = 1.0f;						  ///< 残存時間（0.0～1.0、1.0=完全、0.0=消滅）
+	};
+
+	/**----------------------------------------------------------------------------	 * \brief  CloudRenderParams 雲レンダリングパラメータ（GPU用）
 	 * \note   雲の見た目を制御するパラメータ群
 	 */
-	struct alignas( 16 ) CloudRenderParams {
+	struct alignas(16) CloudRenderParams {
 		//========================================
 		// 雲の位置とサイズ
-		MagMath::Vector3 cloudCenter{ 0.0f, 150.0f, 0.0f }; // 雲の中心座標
-		float cloudSizeX = 300.0f;				 // 未使用（構造体パディング用）
+		MagMath::Vector3 cloudCenter{0.0f, 150.0f, 0.0f}; // 雲の中心座標
+		float cloudSizeX = 300.0f;						  // 未使用（構造体パディング用）
 
-		MagMath::Vector3 cloudSize{ 300.0f, 100.0f, 300.0f }; // 雲のXYZサイズ
-		float padding0 = 0.0f;					   // パディング
+		MagMath::Vector3 cloudSize{300.0f, 100.0f, 300.0f}; // 雲のXYZサイズ
+		float padding0 = 0.0f;								// パディング
 
 		//========================================
 		// ライティング
-		MagMath::Vector3 sunDirection{ 0.3f, 0.8f, 0.5f }; // 太陽光の方向
-		float sunIntensity = 1.2f;				// 太陽光の強度
+		MagMath::Vector3 sunDirection{0.3f, 0.8f, 0.5f}; // 太陽光の方向
+		float sunIntensity = 1.2f;						 // 太陽光の強度
 
-		MagMath::Vector3 sunColor{ 1.0f, 0.96f, 0.88f }; // 太陽光の色
-		float ambient = 0.3f;				  // 環境光の強度
+		MagMath::Vector3 sunColor{1.0f, 0.96f, 0.88f}; // 太陽光の色
+		float ambient = 0.3f;						   // 環境光の強度
 
 		//========================================
 		// 雲の密度とノイズ
@@ -81,10 +90,19 @@ namespace MagEngine {
 
 		//========================================
 		// デバッグ
-		float debugFlag = 0.0f; // デバッグフラグ
-		float padding1 = 0.0f;	// パディング
-		float padding2 = 0.0f;	// パディング
-		float padding3 = 0.0f;	// パディング
+		float debugFlag = 0.0f;			  // デバッグフラグ
+		int bulletHoleCount = 0;		  // 有効な弾痕の数
+		float bulletHoleFadeStart = 0.0f; // 弾痕フェード開始距離
+		float bulletHoleFadeEnd = 2.0f;	  // 弾痕フェード終了距離
+	};
+
+	/**----------------------------------------------------------------------------
+	 * \brief  BulletHoleBuffer 弾痕配列定数バッファ(GPU用)
+	 * \note   最大32個の弾痕を管理
+	 */
+	struct alignas(16) BulletHoleBuffer {
+		static constexpr int kMaxBulletHoles = 32;	// 最大弾痕数
+		BulletHoleGPU bulletHoles[kMaxBulletHoles]; // 弾痕配列
 	};
 
 	///=============================================================================
@@ -107,7 +125,24 @@ namespace MagEngine {
 
 		/// @brief ImGui描画
 		void DrawImGui();
+		/**----------------------------------------------------------------------------
+		 * \brief  弾痕を追加する
+		 * \param  origin 弾の開始位置
+		 * \param  direction 弾の方向（正規化済み）
+		 * \param  radius 弾痕の半径
+		 * \param  lifeTime 残存時間（秒単位）
+		 * \note   Counter-Strike風の動的スモークで、弾が通過した軌跡を作成する
+		 */
+		void AddBulletHole(const MagMath::Vector3 &origin,
+						   const MagMath::Vector3 &direction,
+						   float radius = 0.5f,
+						   float lifeTime = 10.0f);
 
+		/**----------------------------------------------------------------------------
+		 * \brief  すべての弾痕をクリアする
+		 * \note   シーン切り替え時などに使用
+		 */
+		void ClearBulletHoles();
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
 	private:
@@ -119,7 +154,7 @@ namespace MagEngine {
 
 		/**----------------------------------------------------------------------------
 		 * \brief  定数バッファの作成
-		 * \note   カメラとパラメータ用の定数バッファを作成
+		 * \note   カメラ、パラメータ、弾痕用の定数バッファを作成
 		 */
 		void CreateConstantBuffers();
 
@@ -128,6 +163,19 @@ namespace MagEngine {
 		 * \note   Transformから雲の位置情報を更新
 		 */
 		void UpdateCloudParams();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  弾痕の更新処理
+		 * \param  deltaTime 前フレームからの経過時間（秒）
+		 * \note   lifeTimeを減少させ、0以下になった弾痕を削除する
+		 */
+		void UpdateBulletHoles(float deltaTime);
+
+		/**----------------------------------------------------------------------------
+		 * \brief  弾痕データをGPUバッファに転送する
+		 * \note   CPU側の弾痕配列をGPU用フォーマットに変換して定数バッファに書き込む
+		 */
+		void TransferBulletHolesToGPU();
 
 		///--------------------------------------------------------------
 		///							入出力関数
@@ -209,8 +257,18 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							メンバ変数
 	private:
-		/**----------------------------------------------------------------------------
-		 * \brief  FullscreenVertex フルスクリーン頂点構造体
+		/**----------------------------------------------------------------------------		 * \brief  BulletHole 弾痕データ(CPU側)
+		 * \note   CPU側で管理する弾痕情報
+		 */
+		struct BulletHole {
+			MagMath::Vector3 origin;	// 弾の開始位置
+			MagMath::Vector3 direction; // 弾の正規化方向ベクトル
+			float radius;				// 弾痕の半径
+			float lifeTime;				// 残存時間（秒单位）
+			float maxLifeTime;			// 最大残存時間（秒単位）
+		};
+
+		/**----------------------------------------------------------------------------		 * \brief  FullscreenVertex フルスクリーン頂点構造体
 		 * \note   画面全体を覆う三角形用の頂点データ
 		 */
 		struct FullscreenVertex {
@@ -224,7 +282,7 @@ namespace MagEngine {
 
 		//========================================
 		// Transform（雲の位置・回転・スケール）
-		MagMath::Transform transform_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 150.0f, 0.0f} };
+		MagMath::Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 150.0f, 0.0f}};
 
 		//========================================
 		// 頂点バッファ
@@ -233,14 +291,21 @@ namespace MagEngine {
 
 		//========================================
 		// 定数バッファ
-		Microsoft::WRL::ComPtr<ID3D12Resource> cameraCB_; // カメラ用
-		Microsoft::WRL::ComPtr<ID3D12Resource> paramsCB_; // パラメータ用
+		Microsoft::WRL::ComPtr<ID3D12Resource> cameraCB_;	  // カメラ用
+		Microsoft::WRL::ComPtr<ID3D12Resource> paramsCB_;	  // パラメータ用
+		Microsoft::WRL::ComPtr<ID3D12Resource> bulletHoleCB_; // 弾痕用
 
 		//========================================
 		// バッファリソース内のデータを指すポインタ
-		CloudCameraConstant *cameraData_ = nullptr; // カメラデータ
-		CloudRenderParams *paramsData_ = nullptr;	// パラメータデータ
-		CloudRenderParams paramsCPU_;				// CPU側パラメータ
+		CloudCameraConstant *cameraData_ = nullptr;	 // カメラデータ
+		CloudRenderParams *paramsData_ = nullptr;	 // パラメータデータ
+		CloudRenderParams paramsCPU_;				 // CPU側パラメータ
+		BulletHoleBuffer *bulletHoleData_ = nullptr; // 弾痕データ
+
+		//========================================
+		// 弾痕管理
+		std::vector<BulletHole> bulletHoles_;	 // 弾痕配列(CPU側)
+		BulletHoleBuffer bulletHoleBufferCPU_{}; // 弾痕バッファ(CPU側)
 
 		//========================================
 		// ウェザーマップ
