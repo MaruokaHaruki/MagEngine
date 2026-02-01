@@ -46,31 +46,32 @@ namespace MagEngine {
 		// 雲の中心座標（ワールド空間）
 		paramsCPU_.cloudCenter = {0.0f, 150.0f, 0.0f};
 
-		// 密度：雲の濃さを制御（値が小さいほど薄くなる）
-		// 1.5 = かなり薄い雲（以前: 2.0f）
-		paramsCPU_.density = 1.5f;
+		// 密度 : 雲の濃さを制御（値が小さいほど薄くなる）
+		// 2.0 = 適度な濃さの雲（品質重視）
+		paramsCPU_.density = 2.0f;
 
-		// カバレッジ：雲の分布範囲（0.0～1.0）
-		// 値が小さいほど雲がまばらになる
-		// 0.3 = 30%の領域に雲が存在（以前: 0.4f）
-		paramsCPU_.coverage = 0.3f;
+		// カバレッジ : 雲の分布範囲（0.0～1.0）
+		// 値が小さいほど雲が連続的になる
+		// 0.2 = 雲の途切れを減らす（以前: 0.3f）
+		paramsCPU_.coverage = 0.1f;
 
 		// レイマーチングのステップサイズ（大きいほど処理が軽いが粗くなる）
-		paramsCPU_.stepSize = 5.0f;
+		// 60FPS維持のため大きめに設定
+		paramsCPU_.stepSize = 10.0f;
 
-		// ベースノイズスケール：雲の大きな形状を決定
+		// ベースノイズスケール : 雲の大きな形状を決定
 		// 値が小さいほど大きな雲の塊ができる
 		paramsCPU_.baseNoiseScale = 0.008f; // より大きな雲の形状（以前: 0.01f）
 
-		// ディテールノイズスケール：雲の細かいディテールを追加
+		// ディテールノイズスケール : 雲の細かいディテールを追加
 		// 値が大きいほど細かい模様が現れる
 		paramsCPU_.detailNoiseScale = 0.025f; // 細かいディテールを少し抑える（以前: 0.03f）
 
 		// ディテールノイズの影響度（0.0～1.0）
 		// 値が小さいほどなめらかな雲になる
-		paramsCPU_.detailWeight = 0.25f; // よりなめらかに（以前: 0.3f）
+		paramsCPU_.detailWeight = 0.25f; // 適度なディテール（品質とパフォーマンスのバランス）
 
-		// ノイズアニメーション速度：雲が流れる速さ
+		// ノイズアニメーション速度 : 雲が流れる速さ
 		// 値が小さいほどゆっくり動く
 		paramsCPU_.noiseSpeed = 0.015f; // ゆっくりとした流れ（以前: 0.02f）
 
@@ -274,7 +275,7 @@ namespace MagEngine {
 							  float lifeTime) {
 		//========================================
 		// 最大数を超える場合は最も古い弾痕を削除
-		// なぜ：メモリ使用量を制限し、GPUバッファサイズを固定するため
+		// NOTE : メモリ使用量を制限し、GPUバッファサイズを固定するため
 		if (bulletHoles_.size() >= BulletHoleBuffer::kMaxBulletHoles) {
 			bulletHoles_.erase(bulletHoles_.begin());
 		}
@@ -308,14 +309,14 @@ namespace MagEngine {
 	void Cloud::UpdateBulletHoles(float deltaTime) {
 		//========================================
 		// 各弾痕の残存時間を減少させる
-		// なぜ：時間経過で弾痕を自然に消えさせるため
+		// NOTE : 時間経過で弾痕を自然に消えさせるため
 		for (auto &hole : bulletHoles_) {
 			hole.lifeTime -= deltaTime;
 		}
 
 		//========================================
 		// 残存時間が0以下の弾痕を削除
-		// なぜ：不要なデータを削除し、メモリとGPU負荷を削減するため
+		// NOTE : 不要なデータを削除し、メモリとGPU負荷を削減するため
 		bulletHoles_.erase(
 			std::remove_if(bulletHoles_.begin(), bulletHoles_.end(),
 						   [](const BulletHole &hole) { return hole.lifeTime <= 0.0f; }),
@@ -339,7 +340,7 @@ namespace MagEngine {
 
 		//========================================
 		// CPU側の弾痕データをGPUフォーマットに変換
-		// なぜ：CPUとGPUでデータ構造が異なるため変換が必要
+		// NOTE : CPUとGPUでデータ構造が異なるため変換が必要
 		for (int i = 0; i < validCount; ++i) {
 			const auto &hole = bulletHoles_[i];
 			auto &gpuHole = bulletHoleBufferCPU_.bulletHoles[i];
@@ -350,7 +351,7 @@ namespace MagEngine {
 			gpuHole.radius = hole.radius;
 
 			// 残存時間を0.0～1.0に正規化
-			// なぜ：シェーダーでフィードアウト処理をしやすくするため
+			// NOTE : シェーダーでフィードアウト処理をしやすくするため
 			gpuHole.lifeTime = (hole.maxLifeTime > 0.0f) ? (hole.lifeTime / hole.maxLifeTime) : 0.0f;
 		}
 

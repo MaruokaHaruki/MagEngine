@@ -95,13 +95,14 @@ PixelOutput main(VertexShaderOutput input) {
     
     //========================================
     // レイマーチングループ
-    for (int i = 0; i < numSteps && transmittance > 0.01f; i++) {
+    // 透過率が0.05より高い間のみ処理（パフォーマンス最適化）
+    for (int i = 0; i < numSteps && transmittance > 0.05f; i++) {
         float3 position = rayOrigin + rayDir * (t + actualStepSize * 0.5f);
         
         float density = SampleCloudDensity(position);
         
-        // 適応的ステップサイズ: 密度が低い場合は大きくスキップ
-        float adaptiveStep = (density < 0.001f) ? actualStepSize * 2.0f : actualStepSize;
+        // 適応的ステップサイズ: 密度が低い場合は大きくスキップ（品質とパフォーマンスのバランス）
+        float adaptiveStep = (density < 0.001f) ? actualStepSize * 2.5f : actualStepSize;
         
         if (density > 0.001f) {
             if (!hasHit) {

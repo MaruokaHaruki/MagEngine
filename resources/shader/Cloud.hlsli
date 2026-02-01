@@ -101,8 +101,8 @@ Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクス
 SamplerState gLinearSampler : register(s0);    // 線形補間サンプラー
 
 static const float PI = 3.14159265f;           // 円周率
-static const int MAX_STEPS = 64;               // レイマーチングの最大ステップ数（パフォーマンスと品質のバランス）
-static const int MAX_LIGHT_STEPS = 4;          // ライトマーチングの最大ステップ数（影計算の精度）
+static const int MAX_STEPS = 24;               // レイマーチングの最大ステップ数（60FPS維持のため削減）
+static const int MAX_LIGHT_STEPS = 2;          // ライトマーチングの最大ステップ数（パフォーマンス優先）
 
 ///=============================================================================
 ///                      ハッシュ関数
@@ -153,13 +153,17 @@ float Noise3D(float3 p) {
 /// @param octaves オクターブ数（重ね合わせる層の数）
 /// @return 0.0～1.0のノイズ値
 /// @note 高周波成分（細かい模様）と低周波成分（大きな形状）を組み合わせる
+/// @note パフォーマンス最適化：最大2オクターブに制限
 float FBM(float3 p, int octaves) {
     float value = 0.0f;       // 累積ノイズ値
     float amplitude = 0.5f;   // 各オクターブの振幅（初期値0.5）
     float frequency = 1.0f;   // 各オクターブの周波数（初期値1.0）
     
+    // パフォーマンスのため最大2オクターブに制限
+    int maxOctaves = min(octaves, 2);
+    
     // オクターブ数だけループ
-    for (int i = 0; i < octaves; i++) {
+    for (int i = 0; i < maxOctaves; i++) {
         // 現在の周波数でノイズをサンプリングし、振幅をかけて加算
         value += amplitude * Noise3D(p * frequency);
         
@@ -288,13 +292,13 @@ float SampleCloudDensity(float3 position) {
     // ベースノイズ（大きな雲の形状を決定）
     // 時間経過でZ軸方向にオフセットを加えてアニメーション
     float3 baseCoord = position * gBaseNoiseScale + float3(0.0f, 0.0f, gTime * gNoiseSpeed);
-    float baseNoise = FBM(baseCoord, 3);  // 3オクターブで計算（パフォーマンス重視）
+    float baseNoise = FBM(baseCoord, 2);  // 2オクターブで計算（パフォーマンス最適化）
     
     //========================================
     // ディテールノイズ（細かい模様を追加）
     // ベースより少し遅めにアニメーション（0.7倍速）
     float3 detailCoord = position * gDetailNoiseScale + float3(0.0f, 0.0f, gTime * gNoiseSpeed * 0.7f);
-    float detailNoise = FBM(detailCoord, 2);  // 2オクターブで計算
+    float detailNoise = FBM(detailCoord, 2);  // 2オクターブで計算（滑らかさ重視）
     
     //========================================
     // ベースとディテールを混合
