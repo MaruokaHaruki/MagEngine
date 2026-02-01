@@ -112,9 +112,9 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// 密度：雲の濃さ（値を下げてより透明に）
 	cloudParams.density = 1.2f; // かなり薄い雲（以前: 1.8f）
 	// カバレッジ：雲の分布（値を下げてよりまばらに）
-	cloudParams.coverage = 0.11f; // 25%の領域に雲が存在（以前: 0.45f）
+	cloudParams.coverage = 0.20f; // 25%の領域に雲が存在（以前: 0.45f）
 	// ノイズ速度：雲の流れる速さ（ゆっくりとした動き）
-	cloudParams.noiseSpeed = 4.5f; // 少し遅めの流れ（以前: 0.4f）
+	cloudParams.noiseSpeed = 5.5f; // 少し遅めの流れ（以前: 0.4f）
 	// 環境光：雲の明るさ（値を上げて明るく）
 	cloudParams.ambient = 0.6f; // 明るめの雲（以前: 0.5f）
 	// 太陽光強度：太陽光による照明の強さ
@@ -344,7 +344,7 @@ void GamePlayScene::Update() {
 			forward = MagMath::Normalize(forward);
 
 			// 弾痕を追加（原点、方向、半径、残存時間）
-			cloud_->AddBulletHole(origin - Vector3(0, 0, 100.0f), forward, 6.0f, 1.0f, 1000.0f, 2.0f);
+			cloud_->AddBulletHole(origin - Vector3(0, 0, 100.0f), forward, 8.0f, 2.0f, 600.0f, 2.0f);
 
 			// ログ出力
 			Logger::Log("BulletHole added at player position", Logger::LogLevel::Info);
@@ -371,7 +371,7 @@ void GamePlayScene::Update() {
 		direction = MagMath::Normalize(direction);
 
 		// 弾痕を追加
-		cloud_->AddBulletHole(origin, direction, 3.0f, 1.0f, 1000.0f, 20.0f);
+		cloud_->AddBulletHole(origin, direction, 2.0f, 0.2f, 300.0f, 20.0f);
 
 		Logger::Log("Random BulletHole added", Logger::LogLevel::Info);
 	}
