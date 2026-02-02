@@ -312,7 +312,7 @@ void GamePlayScene::Update() {
 		}
 	}
 
-#ifdef _DEBUG
+
 	// デバック用にキーボードでゲームクリアを強制発動
 	if (Input::GetInstance()->TriggerKey(DIK_C)) {
 		isGameClear_ = true;
@@ -381,7 +381,6 @@ void GamePlayScene::Update() {
 		cloud_->ClearBulletHoles();
 		Logger::Log("All bullet holes cleared", Logger::LogLevel::Info);
 	}
-#endif
 
 	//========================================
 	// トランジションの更新
