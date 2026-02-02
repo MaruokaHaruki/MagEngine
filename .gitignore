@@ -30,8 +30,11 @@ x86/
 # Object files and build output
 *.obj
 *.exe
-#*.lib
 *.dll
+
+# Ignore .lib files except in externals folder
+*.lib
+!externals/**/*.lib
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
