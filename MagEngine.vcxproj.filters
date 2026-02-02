@@ -190,7 +190,7 @@
     <ClCompile Include="application\GameClearAnimation.cpp" />
     <ClCompile Include="application\player\component\PlayerCombatComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
-    <ClCompile Include="application\player\component\PlayerHelthComponent.cpp" />
+    <ClCompile Include="application\player\component\PlayerHealthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
     <ClCompile Include="application\enemy\EnemyBase.cpp" />
     <ClCompile Include="application\enemy\EnemyBullet.cpp" />
@@ -445,7 +445,7 @@
     <ClInclude Include="application\GameClearAnimation.h" />
     <ClInclude Include="application\player\component\PlayerCombatComponent.h" />
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
-    <ClInclude Include="application\player\component\PlayerHelthComponent.h" />
+    <ClInclude Include="application\player\component\PlayerHealthComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
     <ClInclude Include="application\enemy\EnemyBase.h" />
     <ClInclude Include="application\enemy\EnemyBullet.h" />

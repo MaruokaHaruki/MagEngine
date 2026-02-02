@@ -150,7 +150,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\GameClearAnimation.cpp" />
     <ClCompile Include="application\player\component\PlayerCombatComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
-    <ClCompile Include="application\player\component\PlayerHelthComponent.cpp" />
+    <ClCompile Include="application\player\component\PlayerHealthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
     <ClCompile Include="application\ui\OperationGuideUI.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
@@ -231,7 +231,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\ui\GameOverUI.h" />
     <ClInclude Include="application\GameClearAnimation.h" />
     <ClInclude Include="application\player\component\PlayerCombatComponent.h" />
-    <ClInclude Include="application\player\component\PlayerHelthComponent.h" />
+    <ClInclude Include="application\player\component\PlayerHealthComponent.h" />
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
     <ClInclude Include="application\ui\OperationGuideUI.h" />

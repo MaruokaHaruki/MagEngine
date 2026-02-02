@@ -27,13 +27,21 @@ namespace EnemyConstants {
 
 ///=============================================================================
 ///						Enemyクラス（具体的な敵実装）
+/**
+ * @brief 近接戦闘を行う敵キャラクター
+ *
+ * 責務：
+ * - 接近、戦闘、退却の3ステート行動パターン
+ * - プレイヤーを中心に円周軌道上を移動
+ * - スムーズな移動と位置追尾
+ */
 class Enemy : public EnemyBase {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::Object3dSetup *object3dSetup, 
-		const std::string &modelPath, const Vector3 &position) override;
+	void Initialize(MagEngine::Object3dSetup *object3dSetup,
+					const std::string &modelPath, const Vector3 &position) override;
 
 	/// \brief 更新（行動ロジックを追加）
 	void Update() override;
@@ -61,18 +69,4 @@ private:
 	float moveTimer_; // 移動タイマー
 	Vector3 currentVelocity_;
 	Vector3 targetPosition_;
-
-	// //========================================
-	// // 未使用（飛行機モード用）
-	// enum class CombatPattern {
-	// 	Hover,
-	// 	Move
-	// };
-	// CombatPattern combatPattern_;
-	// float patternTimer_;
-	// Vector3 hoverPosition_;
-	// float moveProgress_;
-	// Vector3 moveStartPosition_;
-	// float currentBankAngle_;
-	// float targetBankAngle_;
 };

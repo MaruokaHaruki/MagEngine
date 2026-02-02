@@ -3,11 +3,11 @@
 using namespace MagMath;
 #include "BaseObject.h"
 #include "Object3d.h"
+#include "Particle.h"
+#include "ParticleSetup.h"
 #include <functional>
 #include <memory>
 #include <string>
-#include "Particle.h"
-#include "ParticleSetup.h"
 
 // 前方宣言
 class Object3dSetup;
@@ -17,6 +17,16 @@ class PlayerMissile;
 
 ///=============================================================================
 ///						EnemyBase クラス（敵の基底クラス）
+/**
+ * @brief すべての敵キャラクターの基底クラス
+ *
+ * 責務：
+ * - 敵の基本情報（HP、位置、速度等）の管理
+ * - プレイヤーおよび弾丸との衝突判定処理
+ * - パーティクル爆発エフェクトの管理
+ * - 敵の消滅処理と状態管理
+ * - 敵固有の行動パターンは派生クラスで実装
+ */
 class EnemyBase : public BaseObject {
 	///--------------------------------------------------------------
 	///							メンバ関数
@@ -27,8 +37,8 @@ public:
 	virtual void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position);
 
 	/// \brief パーティクルシステムの設定
-	void SetParticleSystem(MagEngine::Particle *particle, 
-		MagEngine::ParticleSetup *particleSetup);
+	void SetParticleSystem(MagEngine::Particle *particle,
+						   MagEngine::ParticleSetup *particleSetup);
 
 	/// \brief 更新（派生クラスでオーバーライド可能）
 	virtual void Update();

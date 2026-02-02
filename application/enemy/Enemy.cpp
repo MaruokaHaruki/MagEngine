@@ -139,7 +139,9 @@ void Enemy::Update() {
 			direction.y * direction.y +
 			direction.z * direction.z);
 
-		if (distance > 0.1f) {
+		// 接近完了判定
+		constexpr float kApproachCompleteDistance = 20.0f;
+		if (distance < kApproachCompleteDistance) {
 			direction.x /= distance;
 			direction.y /= distance;
 			direction.z /= distance;

@@ -1,9 +1,9 @@
-#include "PlayerHelthComponent.h"
+#include "PlayerHealthComponent.h"
 #include <algorithm>
 
 //=============================================================================
 // 初期化
-void PlayerHelthComponent::Initialize(int maxHP) {
+void PlayerHealthComponent::Initialize(int maxHP) {
 	maxHP_ = maxHP;
 	currentHP_ = maxHP_;
 	isInvincible_ = false;
@@ -13,7 +13,7 @@ void PlayerHelthComponent::Initialize(int maxHP) {
 
 //=============================================================================
 // 更新
-void PlayerHelthComponent::Update(float deltaTime) {
+void PlayerHealthComponent::Update(float deltaTime) {
 	// 無敵時間の更新
 	if (isInvincible_) {
 		invincibleTime_ -= deltaTime;
@@ -26,7 +26,7 @@ void PlayerHelthComponent::Update(float deltaTime) {
 
 //=============================================================================
 // ダメージ処理
-void PlayerHelthComponent::TakeDamage(int damage) {
+void PlayerHealthComponent::TakeDamage(int damage) {
 	// 無敵状態または既に死亡している場合はダメージを受けない
 	if (isInvincible_ || !IsAlive()) {
 		return;
@@ -44,7 +44,7 @@ void PlayerHelthComponent::TakeDamage(int damage) {
 
 //=============================================================================
 // 回復処理
-void PlayerHelthComponent::Heal(int healAmount) {
+void PlayerHealthComponent::Heal(int healAmount) {
 	if (!IsAlive()) {
 		return;
 	}
@@ -54,7 +54,7 @@ void PlayerHelthComponent::Heal(int healAmount) {
 
 //=============================================================================
 // HP初期化
-void PlayerHelthComponent::ResetHP() {
+void PlayerHealthComponent::ResetHP() {
 	currentHP_ = maxHP_;
 	isInvincible_ = false;
 	invincibleTime_ = 0.0f;
@@ -62,14 +62,14 @@ void PlayerHelthComponent::ResetHP() {
 
 //=============================================================================
 // 最大HP設定
-void PlayerHelthComponent::SetMaxHP(int maxHP) {
+void PlayerHealthComponent::SetMaxHP(int maxHP) {
 	maxHP_ = maxHP;
 	currentHP_ = std::min(currentHP_, maxHP_);
 }
 
 //=============================================================================
 // バレルロール無敵設定
-void PlayerHelthComponent::SetBarrelRollInvincible(bool invincible) {
+void PlayerHealthComponent::SetBarrelRollInvincible(bool invincible) {
 	isInvincible_ = invincible;
 	if (invincible) {
 		invincibleTime_ = maxInvincibleTime_;

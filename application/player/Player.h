@@ -3,7 +3,14 @@
  *
  * \author Harukichimaru
  * \date   May 2025
- * \note   プレイヤークラス - 移動、射撃、パーティクル、HP管理
+ * \brief  プレイヤーキャラクターの総合管理クラス
+ *
+ * 責務：
+ * - プレイヤーの移動、ブースト、バレルロールの管理（PlayerMovementComponent）
+ * - 弾丸・ミサイルの発射と管理（PlayerCombatComponent）
+ * - HP・ダメージ・無敵時間の管理（PlayerHealthComponent）
+ * - 敵のロックオン機能と追尾
+ * - 敗北演出の制御
  *********************************************************************/
 #pragma once
 #include "BaseObject.h"
@@ -11,7 +18,7 @@
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include "component/PlayerCombatComponent.h"
-#include "component/PlayerHelthComponent.h"
+#include "component/PlayerHealthComponent.h"
 #include "component/PlayerMovementComponent.h"
 #include <memory>
 #include <string>
@@ -124,19 +131,19 @@ public:
 	// HP関連
 	/// @brief 現在のHPの取得
 	int GetCurrentHP() const {
-		return helthComponent_.GetCurrentHP();
+		return healthComponent_.GetCurrentHP();
 	}
 	/// @brief 最大HPの取得
 	int GetMaxHP() const {
-		return helthComponent_.GetMaxHP();
+		return healthComponent_.GetMaxHP();
 	}
 	/// @brief HP割合の取得
 	float GetHPRatio() const {
-		return helthComponent_.GetHPRatio();
+		return healthComponent_.GetHPRatio();
 	}
 	/// @brief 生存判定
 	bool IsAlive() const {
-		return helthComponent_.IsAlive();
+		return healthComponent_.IsAlive();
 	}
 	/// @brief ダメージ処理
 	void TakeDamage(int damage);
@@ -187,7 +194,7 @@ private:
 
 	//========================================
 	// コンポーネント
-	PlayerHelthComponent helthComponent_;
+	PlayerHealthComponent healthComponent_;
 	PlayerCombatComponent combatComponent_;
 	PlayerMovementComponent movementComponent_;
 
