@@ -35,6 +35,7 @@ void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup) 
 	maxShootCoolTime_ = 0.1f;
 	missileCoolTime_ = 0.0f;
 	maxMissileCoolTime_ = 1.0f;
+	bulletFireDirection_ = {0.0f, 0.0f, 1.0f};
 }
 
 //=============================================================================
@@ -51,6 +52,9 @@ void PlayerCombatComponent::ShootBullet(const Vector3 &position, const Vector3 &
 	if (!CanShootBullet()) {
 		return;
 	}
+
+	// 発射方向を記録（HUD用）
+	bulletFireDirection_ = direction;
 
 	auto bullet = std::make_unique<PlayerBullet>();
 	bullet->Initialize(object3dSetup_, "Bullet.obj", position, direction);

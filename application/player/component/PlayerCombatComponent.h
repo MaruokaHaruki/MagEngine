@@ -51,6 +51,9 @@ public:
 	bool CanShootMissile() const {
 		return missileCoolTime_ <= 0.0f;
 	}
+	Vector3 GetBulletFireDirection() const {
+		return bulletFireDirection_;
+	}
 
 	///--------------------------------------------------------------
 	///                        セッター
@@ -68,7 +71,7 @@ private:
 	///--------------------------------------------------------------
 	///                        メンバ変数
 	MagEngine::Object3dSetup *object3dSetup_; // オブジェクト設定（弾生成用）
-	EnemyManager *enemyManager_;   // 敵管理への参照（ミサイルターゲット用）
+	EnemyManager *enemyManager_;			  // 敵管理への参照（ミサイルターゲット用）
 
 	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト
 	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // ミサイルリスト
@@ -77,4 +80,6 @@ private:
 	float maxShootCoolTime_;   // 最大クールタイム
 	float missileCoolTime_;	   // ミサイルクールタイム
 	float maxMissileCoolTime_; // 最大ミサイルクールタイム
+
+	Vector3 bulletFireDirection_; // 弾の発射方向（HUD用）
 };

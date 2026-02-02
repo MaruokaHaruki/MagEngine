@@ -10,9 +10,9 @@
 #include "Input.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
-#include "PlayerCombatComponent.h"
-#include "PlayerHelthComponent.h"
-#include "PlayerMovementComponent.h"
+#include "component/PlayerCombatComponent.h"
+#include "component/PlayerHelthComponent.h"
+#include "component/PlayerMovementComponent.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -223,12 +223,12 @@ public:
 	}
 	/// @brief 実際の前方ベクトルを取得
 	Vector3 GetForwardVector() const {
-		if(auto *transform = GetTransformSafe()) {
+		if (auto *transform = GetTransformSafe()) {
 			return Vector3{
 				sinf(transform->rotate.y) * cosf(transform->rotate.x),
 				-sinf(transform->rotate.x),
-				cosf(transform->rotate.y) * cosf(transform->rotate.x) };
+				cosf(transform->rotate.y) * cosf(transform->rotate.x)};
 		}
-		return { 0.0f, 0.0f, 1.0f };
+		return {0.0f, 0.0f, 1.0f};
 	}
 };
