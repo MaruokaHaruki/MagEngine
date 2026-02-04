@@ -62,6 +62,10 @@ public:
 		enemyManager_ = enemyManager;
 		combatComponent_.SetEnemyManager(enemyManager);
 	}
+	/// @brief 敵マネージャーの取得（HUD用）
+	EnemyManager *GetEnemyManager() const {
+		return enemyManager_;
+	}
 
 	//========================================
 	// ロックオン機能
@@ -76,6 +80,18 @@ public:
 	/// @brief ロックオン対象の取得
 	EnemyBase *GetLockOnTarget() const { // Enemy* から EnemyBase* に変更
 		return lockOnTarget_;
+	}
+	/// @brief ロックオン範囲のセッター
+	void SetLockOnRange(float range) {
+		lockOnRange_ = range;
+	}
+	/// @brief ロックオン範囲のゲッター
+	float GetLockOnRange() const {
+		return lockOnRange_;
+	}
+	/// @brief ロックオンFOVのゲッター
+	float GetLockOnFOV() const {
+		return lockOnFOV_;
 	}
 
 	///--------------------------------------------------------------
@@ -207,6 +223,7 @@ private:
 	EnemyBase *lockOnTarget_; // Enemy* から EnemyBase* に変更
 	float lockOnRange_;
 	bool lockOnMode_;
+	float lockOnFOV_; // ロックオン視野角（度数法）
 
 	//========================================
 	// 敗北演出関連

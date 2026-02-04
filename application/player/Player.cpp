@@ -59,7 +59,8 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 	}
 
 	enemyManager_ = nullptr;
-	lockOnRange_ = 30.0f;
+	lockOnRange_ = 100.0f;
+	lockOnFOV_ = 30.0f; // 視野角60度（左右30度ずつ）
 	ClearLockOn();
 
 	isDefeated_ = false;
@@ -136,8 +137,9 @@ EnemyBase *Player::GetNearestEnemy() const { // Enemy* から EnemyBase* に変�
 	}
 
 	const Vector3 playerPos = GetPosition();
+	const Vector3 playerForward = GetForwardVector();
 	EnemyBase *nearestEnemy = nullptr; // Enemy* から EnemyBase* に変更
-	float nearestDistance = lockOnRange_;
+	float bestScore = -1.0f;
 
 	const auto &enemies = enemyManager_->GetEnemies();
 	for (const auto &enemy : enemies) {
@@ -145,9 +147,41 @@ EnemyBase *Player::GetNearestEnemy() const { // Enemy* から EnemyBase* に変�
 			continue;
 		}
 
-		const float distance = Distance(enemy->GetPosition(), playerPos);
-		if (distance < nearestDistance) {
-			nearestDistance = distance;
+		const Vector3 enemyPos = enemy->GetPosition();
+		const Vector3 toEnemy = {
+			enemyPos.x - playerPos.x,
+			enemyPos.y - playerPos.y,
+			enemyPos.z - playerPos.z};
+
+		float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+
+		// ロックオン範囲外はスキップ
+		if (distance > lockOnRange_) {
+			continue;
+		}
+
+		// 進行方向スコア（前方ほど高い）
+		float normalizedX = toEnemy.x / (distance + 0.001f);
+		float normalizedY = toEnemy.y / (distance + 0.001f);
+		float normalizedZ = toEnemy.z / (distance + 0.001f);
+
+		float dotProduct = normalizedX * playerForward.x +
+						   normalizedY * playerForward.y +
+						   normalizedZ * playerForward.z;
+
+		// 視野角チェック（コーン形範囲内か）
+		float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f;
+		float angleRadians = std::acos(std::max(-1.0f, std::min(1.0f, dotProduct)));
+		if (angleRadians > fovRadians) {
+			// 視野外の敵はスキップ
+			continue;
+		}
+
+		// スコア = 前方への角度（高いほど前方）- 距離ペナルティ
+		float score = dotProduct - (distance / lockOnRange_) * 0.3f;
+
+		if (score > bestScore) {
+			bestScore = score;
 			nearestEnemy = enemy.get();
 		}
 	}
@@ -318,10 +352,14 @@ void Player::ProcessShooting() {
 		combatComponent_.ShootBullet(playerPos, forward);
 	}
 
-	// ミサイル発射（キーボード：M または コントローラー：Lトリガー）
-	bool shootMissile = input->PushKey(DIK_M) || input->GetLeftTrigger() > kTriggerThreshold;
-	if (shootMissile && combatComponent_.CanShootMissile() || input->TriggerButton(XINPUT_GAMEPAD_B) && combatComponent_.CanShootMissile()) {
-		combatComponent_.ShootMissile(playerPos, forward, lockOnTarget_);
+	// ミサイル発射（キーボード：M または コントローラー：Lトリガー/Bボタン）
+	bool shootMissile = input->PushKey(DIK_M) || input->GetLeftTrigger() > kTriggerThreshold ||
+						input->TriggerButton(XINPUT_GAMEPAD_B);
+
+	if (shootMissile && combatComponent_.CanShootMissile()) {
+		// ロックオン対象がある場合はそれをターゲット、ない場合は最寄りの敵を探す
+		EnemyBase *targetEnemy = lockOnTarget_ ? lockOnTarget_ : GetNearestEnemy();
+		combatComponent_.ShootMissile(playerPos, forward, targetEnemy);
 	}
 }
 
@@ -331,6 +369,65 @@ void Player::Draw() {
 	if (obj_) {
 		obj_->Draw();
 	}
+
+#ifdef _DEBUG
+	// ロックオン範囲の描画（コーン形）
+	LineManager *lineManager = LineManager::GetInstance();
+	Vector3 playerPos = GetPosition();
+	Vector3 playerForward = GetForwardVector();
+
+	// コーン形のロックオン範囲を描画
+	Vector4 rangeColor = lockOnMode_ && lockOnTarget_ ? Vector4{1.0f, 0.0f, 0.0f, 0.4f} : // ロックオン中は赤
+							 Vector4{0.0f, 1.0f, 1.0f, 0.2f};							  // 待機中はシアン
+
+	// コーン形を描画：正面に向かう円錐
+	float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f; // 視野角をラジアンに
+	int circleSegments = 16;
+
+	// コーン底面の円を描画
+	for (int i = 0; i < circleSegments; ++i) {
+		float angle1 = (2.0f * MagMath::PI / circleSegments) * i;
+		float angle2 = (2.0f * MagMath::PI / circleSegments) * (i + 1);
+
+		// 円の半径を計算（視野角とロックオン距離から）
+		float coneRadius = lockOnRange_ * std::tan(fovRadians);
+
+		// 右ベクトルと上ベクトルを計算
+		Vector3 right = {playerForward.z, 0.0f, -playerForward.x};
+		float rightLen = std::sqrt(right.x * right.x + right.z * right.z);
+		if (rightLen > 0.001f) {
+			right.x /= rightLen;
+			right.z /= rightLen;
+		} else {
+			right = {1.0f, 0.0f, 0.0f};
+		}
+
+		Vector3 up = {0.0f, 1.0f, 0.0f};
+
+		// 円周上の2点
+		Vector3 p1 = playerPos + playerForward * lockOnRange_ +
+					 right * std::cos(angle1) * coneRadius +
+					 up * std::sin(angle1) * coneRadius;
+		Vector3 p2 = playerPos + playerForward * lockOnRange_ +
+					 right * std::cos(angle2) * coneRadius +
+					 up * std::sin(angle2) * coneRadius;
+
+		// 底面の円の辺
+		lineManager->DrawLine(p1, p2, rangeColor, 1.0f);
+
+		// コーンの側面
+		lineManager->DrawLine(playerPos, p1, rangeColor, 0.5f);
+	}
+
+	// ロックオン中のターゲットマーカー
+	if (lockOnTarget_ && lockOnTarget_->IsAlive()) {
+		Vector3 targetPos = lockOnTarget_->GetPosition();
+		lineManager->DrawSphere(targetPos, 2.0f, {1.0f, 0.0f, 0.0f, 0.8f}, 16, 2.0f); // 赤い円
+
+		// プレイヤーからターゲットへのライン
+		lineManager->DrawLine(playerPos, targetPos, {1.0f, 0.5f, 0.0f, 0.8f}, 2.0f);
+	}
+#endif
 }
 
 //=============================================================================
@@ -494,6 +591,29 @@ void Player::DrawImGui() {
 		ImGui::Text("  Keyboard: Arrow(hold) + Shift = Roll, Shift Hold = Boost");
 		ImGui::Text("  Controller: L-Stick(hold) + A = Roll/Boost");
 		ImGui::Text("  Note: Direction key/stick can be pressed before Roll button");
+
+		ImGui::Separator();
+
+		// === ロックオン情報 ===
+		ImGui::Text("=== Lock-On System ===");
+		ImGui::Text("Lock-On Mode: %s", lockOnMode_ ? "ACTIVE" : "INACTIVE");
+		ImGui::Text("Lock-On Range: %.1f", lockOnRange_);
+		if (ImGui::SliderFloat("Lock-On Range (Slider)", &lockOnRange_, 10.0f, 100.0f)) {
+			// ロックオン範囲を動的に変更可能
+		}
+		ImGui::Text("Lock-On FOV: %.1f degrees", lockOnFOV_);
+		if (ImGui::SliderFloat("Lock-On FOV (Slider)", &lockOnFOV_, 30.0f, 180.0f)) {
+			// ロックオン視野角を動的に変更可能
+		}
+		if (lockOnTarget_ && lockOnTarget_->IsAlive()) {
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Target Locked!");
+			Vector3 targetPos = lockOnTarget_->GetPosition();
+			ImGui::Text("Target Position: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
+			float distToTarget = Distance(GetPosition(), targetPos);
+			ImGui::Text("Distance to Target: %.2f", distToTarget);
+		} else {
+			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No Target");
+		}
 
 		ImGui::Separator();
 

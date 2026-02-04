@@ -70,9 +70,10 @@ void PlayerMissile::Initialize(
 	// 追尾パラメータ初期化（段階的な追尾）
 	target_ = nullptr;
 	lockedTarget_ = nullptr;
-	trackingStrength_ = 0.0f; // 初期は追尾なし
-	lockOnRange_ = 30.0f;
-	trackingStartTime_ = 0.5f; // 0.5秒後から追尾開始
+	trackingStrength_ = 0.0f;	// 初期は追尾なし
+	lockOnRange_ = 50.0f;		// ロックオン範囲を広げる
+	lockOnFOV_ = 90.0f;			// 視野角90度（左右45度ずつ）
+	trackingStartTime_ = 0.05f; // 即座に追尾開始（0.05秒後）
 	isTracking_ = false;
 	isLockedOn_ = false;
 	lockOnTime_ = 0.0f;
@@ -83,6 +84,18 @@ void PlayerMissile::Initialize(
 	targetRotation_ = {0.0f, 0.0f, 0.0f};
 	currentRotation_ = {0.0f, 0.0f, 0.0f};
 	rotationSpeed_ = 8.0f;
+
+	//========================================
+	// 発射初速・揺らぎ関連初期化
+	launchVelocityOffset_ = {0.0f, 0.0f, 0.0f};
+	launchVelocityDuration_ = 0.3f;
+	launchVelocityElapsed_ = 0.0f;
+	launchWobbleStrength_ = 0.0f; // 揺らぎを無効化
+	launchWobbleDuration_ = 0.0f;
+	launchWobbleElapsed_ = 0.0f;
+	wobbleFrequency_ = 8.0f;
+	wobbleOffset_ = {0.0f, 0.0f, 0.0f};
+	desiredHitTime_ = 5.0f; // デフォルト着弾時間を長めに
 
 	//========================================
 	// 寿命関連初期化
@@ -168,11 +181,23 @@ void PlayerMissile::UpdateMovement() {
 		return;
 
 	//========================================
-	// 一定速度を維持
+	// 発射初速オフセットを徐々に減衰
+	if (launchVelocityElapsed_ < launchVelocityDuration_) {
+		launchVelocityElapsed_ += deltaTime;
+	}
+
+	//========================================
+	// 一定速度を維持（初速オフセットを加算）
+	float decayFactor =
+		(launchVelocityElapsed_ < launchVelocityDuration_)
+			? (1.0f - std::min(launchVelocityElapsed_ / launchVelocityDuration_, 1.0f))
+			: 0.0f;
+	decayFactor = decayFactor * decayFactor; // 加速度的に減衰
+
 	velocity_ = {
-		forward_.x * speed_,
-		forward_.y * speed_,
-		forward_.z * speed_};
+		forward_.x * speed_ + launchVelocityOffset_.x * decayFactor,
+		forward_.y * speed_ + launchVelocityOffset_.y * decayFactor,
+		forward_.z * speed_ + launchVelocityOffset_.z * decayFactor};
 
 	//========================================
 	// 位置更新
@@ -185,33 +210,28 @@ void PlayerMissile::UpdateTracking() {
 	const float deltaTime = 1.0f / 60.0f;
 
 	//========================================
-	// 追尾強度の段階的上昇
-	if (lifetime_ < trackingStartTime_) {
-		// 発射直後は追尾なし（初期方向を維持）
-		trackingStrength_ = 0.0f;
-		return;
-	}
-
-	// 追尾強度を時間経過で徐々に上げる（3秒かけて最大に）
-	float trackingBuildupTime = 3.0f;
-	float timeSinceTrackingStart = lifetime_ - trackingStartTime_;
-	trackingStrength_ = std::min(timeSinceTrackingStart / trackingBuildupTime, 1.0f);
-
-	// ロックオン時は追尾強度を強化
-	if (isLockedOn_) {
-		trackingStrength_ = std::min(trackingStrength_ * 1.5f, 1.0f);
+	// ロックオン時は即座にターゲット設定
+	if (isLockedOn_ && lockedTarget_ && lockedTarget_->IsAlive()) {
+		target_ = lockedTarget_;
+		// ロックオン時は追尾強度を即座に最大にする
+		trackingStrength_ = 1.0f;
 	}
 
 	//========================================
-	// ターゲット選択
-	if (isLockedOn_ && lockedTarget_ && lockedTarget_->IsAlive()) {
-		target_ = lockedTarget_;
-	} else if (!target_ || !target_->IsAlive()) {
+	// ターゲット選択（ロックオンがない場合）
+	if (!target_ || !target_->IsAlive()) {
+		// 時間経過で追尾強度を上げる
+		if (lifetime_ >= trackingStartTime_) {
+			float timeSinceStart = lifetime_ - trackingStartTime_;
+			trackingStrength_ = std::min(timeSinceStart * 2.0f, 1.0f); // 0.5秒で最大に到達
+		}
+
+		// ターゲット探索
 		target_ = FindNearestTarget();
 	}
 
 	//========================================
-	// ターゲット追尾処理（角度制限付き）
+	// ターゲット追尾処理
 	if (target_ && target_->IsAlive() && trackingStrength_ > 0.01f) {
 		Vector3 missilePos = obj_->GetPosition();
 		Vector3 targetPos = target_->GetPosition();
@@ -224,34 +244,33 @@ void PlayerMissile::UpdateTracking() {
 
 		float distance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
 
-		if (distance < lockOnRange_ * 2.0f && distance > 0.001f) {
+		if (distance > 0.1f) {
 			isTracking_ = true;
 			Vector3 targetDirection = NormalizeVector(toTarget);
 
-			//========================================
-			// 現在の前方向とターゲット方向の角度差を計算
-			float dotProduct = DotProduct(forward_, targetDirection); // 関数名を変更
-			dotProduct = std::max(-1.0f, std::min(1.0f, dotProduct)); // クランプ
-			float angleToTarget = std::acos(dotProduct) * 180.0f / MagMath::PI;
+			// ロックオン時または後半は強制的に向きを変える
+			if (isLockedOn_ || lifetime_ > desiredHitTime_ * 0.7f) {
+				// 強制的にターゲット方向へ向く
+				forward_ = targetDirection;
+			} else {
+				// 通常は滑らかに向きを変える
+				float dotProduct = DotProduct(forward_, targetDirection);
+				dotProduct = std::max(-1.0f, std::min(1.0f, dotProduct));
+				float angleToTarget = std::acos(dotProduct) * 180.0f / MagMath::PI;
 
-			//========================================
-			// 最大旋回速度による角度制限
-			float maxAngleChange = maxTurnRate_ * deltaTime;
+				// 最大旋回速度による制限
+				float maxAngleChange = maxTurnRate_ * deltaTime;
+				float turnRatio = 1.0f;
+				if (angleToTarget > maxAngleChange && angleToTarget > 0.001f) {
+					turnRatio = maxAngleChange / angleToTarget;
+				}
 
-			// 角度差が大きすぎる場合は制限
-			float turnRatio = 1.0f;
-			if (angleToTarget > maxAngleChange) {
-				turnRatio = maxAngleChange / angleToTarget;
+				float effectiveStrength = trackingStrength_ * turnRatio;
+				forward_.x = MagMath::Lerp(forward_.x, targetDirection.x, effectiveStrength);
+				forward_.y = MagMath::Lerp(forward_.y, targetDirection.y, effectiveStrength);
+				forward_.z = MagMath::Lerp(forward_.z, targetDirection.z, effectiveStrength);
+				forward_ = NormalizeVector(forward_);
 			}
-
-			// 追尾強度と角度制限を組み合わせる
-			float effectiveStrength = trackingStrength_ * turnRatio;
-
-			// 滑らかに前方向を更新
-			forward_.x = MagMath::Lerp(forward_.x, targetDirection.x, effectiveStrength);
-			forward_.y = MagMath::Lerp(forward_.y, targetDirection.y, effectiveStrength);
-			forward_.z = MagMath::Lerp(forward_.z, targetDirection.z, effectiveStrength);
-			forward_ = NormalizeVector(forward_);
 		}
 	}
 }
@@ -260,11 +279,13 @@ void PlayerMissile::StartLockOn() {
 	if (!enemyManager_)
 		return;
 
-	EnemyBase *nearestEnemy = FindNearestTarget(); // Enemy* から EnemyBase* に変更
+	EnemyBase *nearestEnemy = FindNearestTarget();
 	if (nearestEnemy) {
 		lockedTarget_ = nearestEnemy;
+		target_ = nearestEnemy; // 直ちにターゲット設定
 		isLockedOn_ = true;
 		lockOnTime_ = 0.0f;
+		trackingStrength_ = 1.0f; // 即座に追尾を開始
 	}
 }
 
@@ -315,10 +336,12 @@ EnemyBase *PlayerMissile::FindNearestTarget() { // Enemy* から EnemyBase* に�
 
 	Vector3 missilePos = obj_->GetPosition();
 	EnemyBase *nearestEnemy = nullptr; // Enemy* から EnemyBase* に変更
-	float nearestDistance = lockOnRange_;
+	float bestScore = -1.0f;
 
 	// EnemyManagerから敵リストを取得
 	const auto &enemies = enemyManager_->GetEnemies();
+
+	float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f; // 視野角をラジアンに
 
 	for (const auto &enemy : enemies) {
 		if (!enemy || !enemy->IsAlive()) {
@@ -333,8 +356,26 @@ EnemyBase *PlayerMissile::FindNearestTarget() { // Enemy* から EnemyBase* に�
 
 		float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
 
-		if (distance < nearestDistance) {
-			nearestDistance = distance;
+		// ロックオン範囲外はスキップ
+		if (distance > lockOnRange_) {
+			continue;
+		}
+
+		// 進行方向への角度で優先度を付ける
+		float dotProduct = DotProduct(forward_, NormalizeVector(toEnemy));
+
+		// 視野角チェック（コーン形範囲内か）
+		float angleRadians = std::acos(std::max(-1.0f, std::min(1.0f, dotProduct)));
+		if (angleRadians > fovRadians) {
+			// 視野外の敵はスキップ
+			continue;
+		}
+
+		// スコア = 前方への角度（高いほど前方）- 距離ペナルティ
+		float score = dotProduct - (distance / lockOnRange_) * 0.3f;
+
+		if (score > bestScore) {
+			bestScore = score;
 			nearestEnemy = enemy.get();
 		}
 	}
@@ -376,13 +417,51 @@ void PlayerMissile::DrawDebugInfo() {
 	}
 
 	//========================================
-	// 検知範囲の描画
+	// 検知範囲の描画（コーン形）
 	if (showTargetLine_) {
-		// 検知範囲の球体を表示
+		// 検知範囲をコーン形で表示
 		Vector4 detectionColor = isTracking_ ? Vector4{1.0f, 0.5f, 0.0f, 0.3f} : // 追尾中はオレンジ
 									 Vector4{0.5f, 0.5f, 1.0f, 0.2f};			 // 待機中は青
 
-		lineManager->DrawSphere(missilePos, lockOnRange_, detectionColor, 16, 1.0f);
+		float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f;
+		int circleSegments = 16;
+
+		// コーン底面の円を描画
+		for (int i = 0; i < circleSegments; ++i) {
+			float angle1 = (2.0f * MagMath::PI / circleSegments) * i;
+			float angle2 = (2.0f * MagMath::PI / circleSegments) * (i + 1);
+
+			// 円の半径を計算（視野角とロックオン距離から）
+			float coneRadius = lockOnRange_ * std::tan(fovRadians);
+
+			// 右ベクトルと上ベクトルを計算
+			Vector3 right = {forward_.z, 0.0f, -forward_.x};
+			float rightLen = std::sqrt(right.x * right.x + right.z * right.z);
+			if (rightLen > 0.001f) {
+				right.x /= rightLen;
+				right.z /= rightLen;
+			} else {
+				right = {1.0f, 0.0f, 0.0f};
+			}
+
+			Vector3 up = {0.0f, 1.0f, 0.0f};
+
+			// 円周上の2点
+			Vector3 p1 = missilePos + forward_ * lockOnRange_ +
+						 right * std::cos(angle1) * coneRadius +
+						 up * std::sin(angle1) * coneRadius;
+			Vector3 p2 = missilePos + forward_ * lockOnRange_ +
+						 right * std::cos(angle2) * coneRadius +
+						 up * std::sin(angle2) * coneRadius;
+
+			// 底面の円の辺
+			lineManager->DrawLine(p1, p2, detectionColor, 1.0f);
+
+			// コーンの側面（各5本目の線のみ描画）
+			if (i % 5 == 0) {
+				lineManager->DrawLine(missilePos, p1, detectionColor, 0.5f);
+			}
+		}
 	}
 
 	//========================================
@@ -533,6 +612,42 @@ void PlayerMissile::DrawImGui() {
 	ImGui::Text("Current Target: %s", HasTarget() ? "YES" : "NO");
 	ImGui::Text("Locked Target: %s", isLockedOn_ ? "YES" : "NO");
 
+	// === 敵スコアリング情報 ===
+	if (enemyManager_) {
+		ImGui::Separator();
+		ImGui::Text("=== Enemy Targeting Scores ===");
+		Vector3 missilePos = GetPosition();
+		const auto &enemies = enemyManager_->GetEnemies();
+
+		for (const auto &enemy : enemies) {
+			if (!enemy || !enemy->IsAlive())
+				continue;
+
+			Vector3 enemyPos = enemy->GetPosition();
+			Vector3 toEnemy = {
+				enemyPos.x - missilePos.x,
+				enemyPos.y - missilePos.y,
+				enemyPos.z - missilePos.z};
+
+			float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+
+			if (distance <= lockOnRange_) {
+				// 進行方向への角度で優先度を付ける
+				float dotProduct = DotProduct(forward_, NormalizeVector(toEnemy));
+				float score = distance - dotProduct * 10.0f;
+
+				bool isTarget = (target_ == enemy.get());
+				ImGui::TextColored(
+					isTarget ? ImVec4(1.0f, 1.0f, 0.0f, 1.0f) : ImVec4(0.7f, 0.7f, 0.7f, 1.0f),
+					"%s - Dist: %.1f, Score: %.1f, DotProd: %.2f",
+					isTarget ? ">>> TARGET <<<" : "Enemy",
+					distance,
+					score,
+					dotProduct);
+			}
+		}
+	}
+
 	ImGui::Separator();
 
 	//========================================
@@ -630,6 +745,10 @@ Vector3 PlayerMissile::GetPosition() const {
 
 void PlayerMissile::SetTarget(EnemyBase *target) {
 	target_ = target;
+	if (target) {
+		// ターゲットが設定されたら即座に追尾を強化
+		trackingStrength_ = 1.0f;
+	}
 }
 
 //=============================================================================

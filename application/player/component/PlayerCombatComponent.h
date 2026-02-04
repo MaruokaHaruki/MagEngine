@@ -67,6 +67,19 @@ public:
 		maxMissileCoolTime_ = coolTime;
 	}
 
+	/// @brief マルチロックオンで複数敵に同時発射（予約済み）
+	/// @note 将来的に複数ターゲットへの同時発射に対応予定
+	void ShootMultipleMissiles(const Vector3 &position, const Vector3 &direction,
+							   const std::vector<EnemyBase *> &targets) {
+		if (targets.empty()) {
+			return;
+		}
+		// 複数ターゲットごとに個別のミサイルを発射
+		for (EnemyBase *target : targets) {
+			ShootMissile(position, direction, target);
+		}
+	}
+
 private:
 	///--------------------------------------------------------------
 	///                        メンバ変数
