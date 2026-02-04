@@ -186,6 +186,24 @@ namespace MagEngine {
 		///						 各種設定
 		// ライトマネージャへラインマネージャポインタの受け渡し
 		lightManager_->SetLineManager(LineManager::GetInstance());
+
+		///--------------------------------------------------------------
+		///						 エディターレイアウトの初期化
+		editorLayout_ = std::make_unique<EditorLayout>();
+		editorLayout_->Initialize(dxCore_.get(), postEffectManager_.get());
+
+		///--------------------------------------------------------------
+		///					 Game Viewport にレンダーテクスチャを設定
+		// レンダーテクスチャリソースを取得
+		auto renderTextureResource = dxCore_->GetRenderTextureResource(dxCore_->GetRenderResourceIndex());
+		if (renderTextureResource.Get()) {
+			// ImGui用のテクスチャハンドルを取得
+			ImTextureID textureHandle = imguiSetup_->RegisterTextureForImGui(renderTextureResource.Get());
+			// GameViewportPanelに設定
+			if (editorLayout_->GetViewportPanel()) {
+				editorLayout_->GetViewportPanel()->SetRenderTextureHandle((void *)textureHandle);
+			}
+		}
 	}
 
 	///=============================================================================
@@ -239,6 +257,11 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void MagFramework::Finalize() {
+		//========================================
+		// エディターレイアウトの終了処理
+		if (editorLayout_) {
+			editorLayout_->Finalize();
+		}
 		//========================================
 		// ImGuiの終了処理
 		imguiSetup_->Finalize();
@@ -304,6 +327,13 @@ namespace MagEngine {
 		// imguiの初期化
 		imguiSetup_->Begin();
 #ifdef _DEBUG
+		//========================================
+		// エディターレイアウトの更新と描画
+		if (editorLayout_) {
+			editorLayout_->Update();
+			editorLayout_->Draw();
+		}
+
 		// シーンのImgui描画
 		sceneManager_->ImGuiDraw();
 		// InPutのImGui描画

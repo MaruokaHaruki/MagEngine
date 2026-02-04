@@ -32,13 +32,16 @@
 #include "ParticleSetup.h"
 #include "SkyboxSetup.h"
 #include "SpriteSetup.h"
+// Editor
+#include "EditorLayout.h"
+#include "GameViewportPanel.h"
 
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
 
-///=============================================================================
-///						FrameWorkクラス
+	///=============================================================================
+	///						FrameWorkクラス
 	class MagFramework {
 		///--------------------------------------------------------------
 		///							メンバ関数
@@ -134,6 +137,9 @@ namespace MagEngine {
 		std::unique_ptr<SceneFactory> sceneFactory_;
 		// ライトマネージャ
 		std::unique_ptr<LightManager> lightManager_;
+		//========================================
+		// エディター
+		std::unique_ptr<EditorLayout> editorLayout_;
 	};
 
 }

@@ -21,8 +21,8 @@
 ///                        namespace MagEngine
 namespace MagEngine {
 
-//---------------------------------------
-// imguiStyle
+	//---------------------------------------
+	// imguiStyle
 	enum Style {
 		DARK,
 		LIGHT,
@@ -78,6 +78,21 @@ namespace MagEngine {
 		 */
 		void ShowPerformanceMonitor();
 
+		/**----------------------------------------------------------------------------
+		 * \brief  RegisterTextureForImGui ImGui用にテクスチャハンドルを登録
+		 * \param  resource D3D12リソース
+		 * \return ImGui用テクスチャハンドル
+		 */
+		ImTextureID RegisterTextureForImGui(ID3D12Resource *resource);
+
+		/**----------------------------------------------------------------------------
+		 * \brief  GetSrvDescriptorHeap ImGui用SRVディスクリプタヒープ取得
+		 * \return ディスクリプタヒープポインタ
+		 */
+		ID3D12DescriptorHeap *GetSrvDescriptorHeap() const {
+			return srvDescriptorHeap_.Get();
+		}
+
 		///--------------------------------------------------------------
 		///							静的メンバ関数
 	private:
@@ -96,6 +111,11 @@ namespace MagEngine {
 		//========================================
 		// SRV用ディスクリプタヒープ
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap_ = nullptr;
+
+		// ディスクリプタサイズ
+		uint32_t descriptorSize_ = 0;
+		// 次のディスクリプタインデックス
+		uint32_t nextDescriptorIndex_ = 0;
 
 		// 描画コール数などのカウンタ（例: 自身のエンジンやゲームループで管理）
 		int drawCallCount = 0;
