@@ -344,7 +344,7 @@ void GamePlayScene::Update() {
 			forward = MagMath::Normalize(forward);
 
 			// 弾痕を追加（原点、方向、半径、残存時間）
-			cloud_->AddBulletHole(origin - Vector3(0, 0, 100.0f), forward, 16.0f, 8.0f, 700.0f, 2.0f);s
+			cloud_->AddBulletHole(origin - Vector3(0, 0, 100.0f), forward, 16.0f, 8.0f, 700.0f, 2.0f);
 
 			// ログ出力
 			Logger::Log("BulletHole added at player position", Logger::LogLevel::Info);
