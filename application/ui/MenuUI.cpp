@@ -21,7 +21,7 @@ void MenuUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 
 	// 背景パネルの作成（半透明の暗い背景）
 	backgroundSprite_ = std::make_unique<MagEngine::Sprite>();
-	backgroundSprite_->Initialize(spriteSetup_, "white1x1.png");
+	backgroundSprite_->Initialize(spriteSetup_, "white1x1.dds");
 	backgroundSprite_->SetSize({screenWidth_, screenHeight_});
 	backgroundSprite_->SetPosition({screenWidth_ * 0.5f, screenHeight_ * 0.5f});
 	backgroundSprite_->SetAnchorPoint({0.5f, 0.5f});
@@ -29,7 +29,7 @@ void MenuUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 
 	// タイトルスプライトの作成
 	titleSprite_ = std::make_unique<MagEngine::Sprite>();
-	titleSprite_->Initialize(spriteSetup_, "WolfOne_Pause.png");
+	titleSprite_->Initialize(spriteSetup_, "WolfOne_Pause.dds");
 	titleSprite_->SetSize({600.0f, 80.0f});
 	titleSprite_->SetPosition({screenWidth_ * 0.5f, screenHeight_ * 0.15f});
 	titleSprite_->SetAnchorPoint({0.5f, 0.5f});
@@ -54,7 +54,7 @@ void MenuUI::InitializeButtons() {
 	// ゲームに戻る（最上部）
 	auto &resumeButton = buttons_[MenuButton::ResumeGame];
 	resumeButton.sprite = std::make_unique<MagEngine::Sprite>();
-	resumeButton.sprite->Initialize(spriteSetup_, "white1x1.png");
+	resumeButton.sprite->Initialize(spriteSetup_, "white1x1.dds");
 	resumeButton.basePosition = {centerX, centerY - spacing};
 	resumeButton.baseSize = {buttonWidth, buttonHeight};
 	resumeButton.normalColor = {0.2f, 0.5f, 0.9f, 0.0f};
@@ -73,7 +73,7 @@ void MenuUI::InitializeButtons() {
 	//========================================
 	// テキストスプライトの初期化
 	resumeButton.textSprite = std::make_unique<MagEngine::Sprite>();
-	resumeButton.textSprite->Initialize(spriteSetup_, "WolfOne_Resume.png");
+	resumeButton.textSprite->Initialize(spriteSetup_, "WolfOne_Resume.dds");
 	resumeButton.textPosition = resumeButton.basePosition;
 	resumeButton.textSize = {200.0f, 30.0f};
 	resumeButton.textAlpha = 0.0f;
@@ -86,7 +86,7 @@ void MenuUI::InitializeButtons() {
 	// === 操作説明（中央）===
 	auto &operationButton = buttons_[MenuButton::OperationGuide];
 	operationButton.sprite = std::make_unique<MagEngine::Sprite>();
-	operationButton.sprite->Initialize(spriteSetup_, "white1x1.png");
+	operationButton.sprite->Initialize(spriteSetup_, "white1x1.dds");
 	operationButton.basePosition = {centerX, centerY};
 	operationButton.baseSize = {buttonWidth, buttonHeight};
 	operationButton.normalColor = {0.3f, 0.6f, 0.9f, 0.0f};
@@ -104,7 +104,7 @@ void MenuUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	operationButton.textSprite = std::make_unique<MagEngine::Sprite>();
-	operationButton.textSprite->Initialize(spriteSetup_, "WolfOne_Controls.png");
+	operationButton.textSprite->Initialize(spriteSetup_, "WolfOne_Controls.dds");
 	operationButton.textPosition = operationButton.basePosition;
 	operationButton.textSize = {200.0f, 30.0f};
 	operationButton.textAlpha = 0.0f;
@@ -116,7 +116,7 @@ void MenuUI::InitializeButtons() {
 	// === タイトルに戻る（最下部）===
 	auto &returnButton = buttons_[MenuButton::ReturnToTitle];
 	returnButton.sprite = std::make_unique<MagEngine::Sprite>();
-	returnButton.sprite->Initialize(spriteSetup_, "white1x1.png");
+	returnButton.sprite->Initialize(spriteSetup_, "white1x1.dds");
 	returnButton.basePosition = {centerX, centerY + spacing};
 	returnButton.baseSize = {buttonWidth, buttonHeight};
 	returnButton.normalColor = {0.8f, 0.2f, 0.2f, 0.0f};
@@ -134,7 +134,7 @@ void MenuUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	returnButton.textSprite = std::make_unique<MagEngine::Sprite>();
-	returnButton.textSprite->Initialize(spriteSetup_, "WolfOne_ReturntoTitle.png");
+	returnButton.textSprite->Initialize(spriteSetup_, "WolfOne_ReturntoTitle.dds");
 	returnButton.textPosition = returnButton.basePosition;
 	returnButton.textSize = {200.0f, 30.0f};
 	returnButton.textAlpha = 0.0f;

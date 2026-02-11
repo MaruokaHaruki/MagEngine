@@ -21,7 +21,7 @@ void GameOverUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 
 	// 背景スプライトの作成
 	backgroundSprite_ = std::make_unique<MagEngine::Sprite>();
-	backgroundSprite_->Initialize(spriteSetup_, "white1x1.png");
+	backgroundSprite_->Initialize(spriteSetup_, "white1x1.dds");
 	backgroundSprite_->SetSize({screenWidth_, screenHeight_});
 	backgroundSprite_->SetPosition({0.0f, 0.0f});
 	backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f}); // 初期は透明

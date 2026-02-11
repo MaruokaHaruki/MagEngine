@@ -24,7 +24,7 @@ void OperationGuideUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 
 	// 背景パネルの作成（ミリタリー風の濃い背景）
 	backgroundSprite_ = std::make_unique<MagEngine::Sprite>();
-	backgroundSprite_->Initialize(spriteSetup_, "white1x1.png");
+	backgroundSprite_->Initialize(spriteSetup_, "white1x1.dds");
 	backgroundSprite_->SetSize({ 256.0f, 420.0f }); // 縦長のパネル
 	backgroundSprite_->SetPosition(guideBasePosition_);
 	backgroundSprite_->SetColor({ 0.05f, 0.08f, 0.12f, opacity_ * 0.85f }); // ダークブルー系
@@ -49,7 +49,7 @@ void OperationGuideUI::InitializeButtons() {
 	// === 左スティック（最上部、大きめ） ===
 	auto &leftStick = buttons_[ControllerButton::LeftStick];
 	leftStick.sprite = std::make_unique<MagEngine::Sprite>();
-	leftStick.sprite->Initialize(spriteSetup_, "xbox_ls.png");
+	leftStick.sprite->Initialize(spriteSetup_, "xbox_ls.dds");
 	leftStick.basePosition = { baseX, baseY };
 	leftStick.baseSize = { 60.0f, 60.0f }; // 大きめ
 	leftStick.normalColor = { 0.15f, 0.4f, 0.7f, opacity_ * 0.8f };
@@ -67,7 +67,7 @@ void OperationGuideUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	leftStick.textSprite = std::make_unique<MagEngine::Sprite>();
-	leftStick.textSprite->Initialize(spriteSetup_, "WolfOne_ControlStick.png");
+	leftStick.textSprite->Initialize(spriteSetup_, "WolfOne_ControlStick.dds");
 	leftStick.textBasePosition = { baseX + 60.0f, baseY };
 	leftStick.textSize = { 80.0f, 20.0f };
 	leftStick.textAlpha = 0.0f;
@@ -81,7 +81,7 @@ void OperationGuideUI::InitializeButtons() {
 	// === RTボタン（射撃）- 2番目 ===
 	auto &buttonRT = buttons_[ControllerButton::RT];
 	buttonRT.sprite = std::make_unique<MagEngine::Sprite>();
-	buttonRT.sprite->Initialize(spriteSetup_, "xbox_rt.png");
+	buttonRT.sprite->Initialize(spriteSetup_, "xbox_rt.dds");
 	buttonRT.basePosition = { baseX, baseY + spacing };
 	buttonRT.baseSize = { buttonSize, buttonSize };
 	buttonRT.normalColor = { 0.9f, 0.3f, 0.1f, opacity_ * 0.8f }; // 攻撃的な赤
@@ -99,7 +99,7 @@ void OperationGuideUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	buttonRT.textSprite = std::make_unique<MagEngine::Sprite>();
-	buttonRT.textSprite->Initialize(spriteSetup_, "WolfOne_MachineGun.png");
+	buttonRT.textSprite->Initialize(spriteSetup_, "WolfOne_MachineGun.dds");
 	buttonRT.textBasePosition = { baseX + 55.0f, baseY + spacing };
 	buttonRT.textSize = { 80.0f, 20.0f };
 	buttonRT.textAlpha = 0.0f;
@@ -113,7 +113,7 @@ void OperationGuideUI::InitializeButtons() {
 	// === Bボタン（ミサイル）- 3番目 ===
 	auto &buttonB = buttons_[ControllerButton::ButtonB];
 	buttonB.sprite = std::make_unique<MagEngine::Sprite>();
-	buttonB.sprite->Initialize(spriteSetup_, "xbox_button_color_b.png");
+	buttonB.sprite->Initialize(spriteSetup_, "xbox_button_color_b.dds");
 	buttonB.basePosition = { baseX, baseY + spacing * 2 };
 	buttonB.baseSize = { buttonSize, buttonSize };
 	buttonB.normalColor = { 0.8f, 0.1f, 0.1f, opacity_ * 0.8f }; // 深紅
@@ -131,7 +131,7 @@ void OperationGuideUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	buttonB.textSprite = std::make_unique<MagEngine::Sprite>();
-	buttonB.textSprite->Initialize(spriteSetup_, "WolfOne_Missile.png");
+	buttonB.textSprite->Initialize(spriteSetup_, "WolfOne_Missile.dds");
 	buttonB.textBasePosition = { baseX + 55.0f, baseY + spacing * 2 };
 	buttonB.textSize = { 80.0f, 20.0f };
 	buttonB.textAlpha = 0.0f;
@@ -145,7 +145,7 @@ void OperationGuideUI::InitializeButtons() {
 	// === Aボタン（ブースト/バレルロール）- 4番目 ===
 	auto &buttonA = buttons_[ControllerButton::ButtonA];
 	buttonA.sprite = std::make_unique<MagEngine::Sprite>();
-	buttonA.sprite->Initialize(spriteSetup_, "xbox_button_color_a.png");
+	buttonA.sprite->Initialize(spriteSetup_, "xbox_button_color_a.dds");
 	buttonA.basePosition = { baseX, baseY + spacing * 3 };
 	buttonA.baseSize = { buttonSize, buttonSize };
 	buttonA.normalColor = { 0.1f, 0.8f, 0.3f, opacity_ * 0.8f }; // 緑
@@ -163,7 +163,7 @@ void OperationGuideUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	buttonA.textSprite = std::make_unique<MagEngine::Sprite>();
-	buttonA.textSprite->Initialize(spriteSetup_, "WolfOne_Dodge.png");
+	buttonA.textSprite->Initialize(spriteSetup_, "WolfOne_Dodge.dds");
 	buttonA.textBasePosition = { baseX + 55.0f, baseY + spacing * 3 };
 	buttonA.textSize = { 80.0f, 20.0f };
 	buttonA.textAlpha = 0.0f;
@@ -177,7 +177,7 @@ void OperationGuideUI::InitializeButtons() {
 	// === Yボタン（ロックオン）- 5番目 ===
 	auto &buttonY = buttons_[ControllerButton::ButtonY];
 	buttonY.sprite = std::make_unique<MagEngine::Sprite>();
-	buttonY.sprite->Initialize(spriteSetup_, "xbox_button_color_y.png");
+	buttonY.sprite->Initialize(spriteSetup_, "xbox_button_color_y.dds");
 	buttonY.basePosition = { baseX, baseY + spacing * 4 };
 	buttonY.baseSize = { buttonSize, buttonSize };
 	buttonY.normalColor = { 0.9f, 0.8f, 0.1f, opacity_ * 0.8f }; // ゴールド
@@ -195,7 +195,7 @@ void OperationGuideUI::InitializeButtons() {
 
 	// テキストスプライトの初期化
 	buttonY.textSprite = std::make_unique<MagEngine::Sprite>();
-	buttonY.textSprite->Initialize(spriteSetup_, "WolfOne_Test.png");
+	buttonY.textSprite->Initialize(spriteSetup_, "WolfOne_Test.dds");
 	buttonY.textBasePosition = { baseX + 55.0f, baseY + spacing * 4 };
 	buttonY.textSize = { 80.0f, 20.0f };
 	buttonY.textAlpha = 0.0f;

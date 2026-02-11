@@ -22,12 +22,12 @@ void StartAnimation::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 
 	// 上部バーの作成
 	topBar_ = std::make_unique<MagEngine::Sprite>();
-	topBar_->Initialize(spriteSetup_, "white1x1.png");
+	topBar_->Initialize(spriteSetup_, "white1x1.dds");
 	topBar_->SetColor(barColor_);
 
 	// 下部バーの作成
 	bottomBar_ = std::make_unique<MagEngine::Sprite>();
-	bottomBar_->Initialize(spriteSetup_, "white1x1.png");
+	bottomBar_->Initialize(spriteSetup_, "white1x1.dds");
 	bottomBar_->SetColor(barColor_);
 
 	// テキストスプライトの作成

@@ -26,36 +26,36 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	//========================================
 	// 読み込み関係
-	//TextureManager::GetInstance()->LoadTexture(".png");
+	//TextureManager::GetInstance()->LoadTexture(".dds");
 	// スプライト
-	TextureManager::GetInstance()->LoadTexture("uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("uvChecker.dds");
 	//演出系
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_PressA.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Engage.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_GameOver.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Comprete.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_PressA.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Engage.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_GameOver.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Comprete.dds");
 	//操作ガイドUI
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_a.png");
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_b.png");
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_x.png");
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_y.png");
-	TextureManager::GetInstance()->LoadTexture("xbox_rt.png");
-	TextureManager::GetInstance()->LoadTexture("xbox_ls.png");
-	TextureManager::GetInstance()->LoadTexture("white1x1.png"); // トランジション用
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_a.dds");
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_b.dds");
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_x.dds");
+	TextureManager::GetInstance()->LoadTexture("xbox_button_color_y.dds");
+	TextureManager::GetInstance()->LoadTexture("xbox_rt.dds");
+	TextureManager::GetInstance()->LoadTexture("xbox_ls.dds");
+	TextureManager::GetInstance()->LoadTexture("white1x1.dds"); // トランジション用
 	// 操作テキスト
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Dodge.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_MachineGun.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_ControlStick.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Missile.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Test.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Dodge.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_MachineGun.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_ControlStick.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Missile.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Test.dds");
 	//メニューテキスト
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Resume.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Controls.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_ReturntoTitle.png");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Pause.png");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Resume.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Controls.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_ReturntoTitle.dds");
+	TextureManager::GetInstance()->LoadTexture("WolfOne_Pause.dds");
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("Bullet.obj");	// 弾のモデル
@@ -81,12 +81,12 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	//========================================
 	// スプライト
 	titleSprite_ = std::make_unique<Sprite>();
-	titleSprite_->Initialize(spriteSetup, "WolfOne_Title.png");
+	titleSprite_->Initialize(spriteSetup, "WolfOne_Title.dds");
 	titleSprite_->SetPosition({640.0f, 130.0f}); // 画面上部中央
 	titleSprite_->SetAnchorPoint({0.5f, 0.5f});	 // 中心を基準点に
 
 	pressEnterSprite_ = std::make_unique<Sprite>();
-	pressEnterSprite_->Initialize(spriteSetup, "WolfOne_PressA.png");
+	pressEnterSprite_->Initialize(spriteSetup, "WolfOne_PressA.dds");
 	pressEnterSprite_->SetPosition({640.0f, 550.0f}); // 画面下部中央
 	pressEnterSprite_->SetAnchorPoint({0.5f, 0.5f});  // 中心を基準点に
 
