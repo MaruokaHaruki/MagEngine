@@ -77,14 +77,14 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	particle_->SetCustomTextureSize({10.0f, 10.0f});
 	particle_->SetBillboard(true); // ビルボードを有効化
 	// 雲パーティクルグループの作成（Board形状、白っぽいテクスチャ）
-	particle_->CreateParticleGroup("CloudParticles", "circle2.png", ParticleShape::Board);
+	particle_->CreateParticleGroup("CloudParticles", "circle2.dds", ParticleShape::Board);
 	// 爆発エフェクト用の複数の形状を作成
 	// 1. メインの爆発エフェクト（Board形状 - 火花）
-	particle_->CreateParticleGroup("ExplosionSparks", "circle2.png", ParticleShape::Board);
+	particle_->CreateParticleGroup("ExplosionSparks", "circle2.dds", ParticleShape::Board);
 	// 2. リング形状の衝撃波（ヒットリアクション用にも使用）
-	particle_->CreateParticleGroup("ExplosionRing", "circle2.png", ParticleShape::Ring);
+	particle_->CreateParticleGroup("ExplosionRing", "circle2.dds", ParticleShape::Ring);
 	// 3. シリンダー形状の煙柱
-	particle_->CreateParticleGroup("ExplosionSmoke", "circle2.png", ParticleShape::Cylinder);
+	particle_->CreateParticleGroup("ExplosionSmoke", "circle2.dds", ParticleShape::Cylinder);
 
 	//========================================
 	// プレイヤー
@@ -173,7 +173,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
 		gameClearAnim->SetFollowCamera(followCamera_.get());
 		gameClearAnim->SetPlayer(player_.get());
-		gameClearAnim->SetTextTexture("WolfOne_Comprete.png");
+		gameClearAnim->SetTextTexture("WolfOne_Comprete.dds");
 		gameClearAnim->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
 		gameClearAnim->SetBarHeightRatio(0.15f);
 		gameClearAnim->SetTextSize({800.0f, 150.0f});

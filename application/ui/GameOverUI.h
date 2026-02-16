@@ -108,7 +108,7 @@ private:
 
 	// 表示設定
 	Vector4 backgroundColor_ = {0.0f, 0.0f, 0.0f, 1.0f}; // デフォルトは黒
-	std::string textTexture_ = "WolfOne_GameOver.png";
+	std::string textTexture_ = "WolfOne_GameOver.dds";
 	Vector2 textSize_ = {512.0f, 64.0f};
 
 	// 画面サイズ
