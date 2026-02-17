@@ -30,12 +30,18 @@ Transform *Player::GetTransformSafe() const {
 }
 
 void Player::ClearLockOn() {
-	lockOnTarget_ = nullptr;
+	lockOnTargets_.clear();
+	primaryLockOnTarget_ = nullptr;
 	lockOnMode_ = false;
 }
 
 //=======================================================================
 // 初期化
+//=======================================================================
+/// 責務:
+/// - 3Dオブジェクト（ビジュアル）の生成と初期化
+/// - 全コンポーネント（移動・HP・射撃）の初期化
+/// - ロックオン・敗北演出などの状態をリセット
 void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath) {
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
@@ -61,6 +67,7 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 	enemyManager_ = nullptr;
 	lockOnRange_ = 100.0f;
 	lockOnFOV_ = 30.0f; // 視野角60度（左右30度ずつ）
+	maxLockOnTargets_ = 3;  // 最大3つまでロックオン可能
 	ClearLockOn();
 
 	isDefeated_ = false;
@@ -72,7 +79,12 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 }
 
 //=============================================================================
-// 更新
+// 毎フレーム更新
+//=============================================================================
+/// 責勑:
+/// - 蓮北機能を除く各コンポーネントを更新
+/// - 入力処理、移動、回転を处理
+/// - 発射、粗探探を実蘳
 void Player::Update() {
 	Transform *objTransform = GetTransformSafe();
 	if (!objTransform) {
@@ -104,28 +116,61 @@ void Player::Update() {
 }
 
 //=============================================================================
-// ロックオン機能の更新
+// ロックオン機能の更新（マルチロックオン対応）
 void Player::UpdateLockOn() {
 	Input *input = Input::GetInstance();
 	static bool prevLockKey = false;
 	const bool currentLockKey = input->PushKey(DIK_L);
 	const bool controllerLock = input->TriggerButton(XINPUT_GAMEPAD_Y);
 
+	// ロックオンキー入力トリガー
 	if ((currentLockKey && !prevLockKey) || controllerLock) {
 		if (lockOnMode_) {
-			ClearLockOn();
+			// ロックオン中：新しい敵をロックオン開始
+			EnemyBase *nextTarget = GetNearestEnemy();
+			if (nextTarget) {
+				// 既にロックオンしている敵の場合はスキップ
+				bool alreadyLocked = false;
+				for (const auto *target : lockOnTargets_) {
+					if (target == nextTarget) {
+						alreadyLocked = true;
+						break;
+					}
+				}
+				
+				if (!alreadyLocked && (int)lockOnTargets_.size() < maxLockOnTargets_) {
+					lockOnTargets_.push_back(nextTarget);
+				}
+			}
 		} else {
-			lockOnTarget_ = GetNearestEnemy();
-			lockOnMode_ = lockOnTarget_ != nullptr;
+			// 非ロックオン状態：最初のロックオンを開始
+			EnemyBase *startTarget = GetNearestEnemy();
+			if (startTarget) {
+				lockOnTargets_.clear();
+				lockOnTargets_.push_back(startTarget);
+				primaryLockOnTarget_ = startTarget;
+				lockOnMode_ = true;
+			}
 		}
 	}
 	prevLockKey = currentLockKey;
 
-	if (!lockOnTarget_) {
-		return;
-	}
-	if (!lockOnTarget_->IsAlive() || Distance(GetPosition(), lockOnTarget_->GetPosition()) > lockOnRange_) {
-		ClearLockOn();
+	// ロックオン中の敵をクリーンアップ（死亡・範囲外の敵を削除）
+	auto newEnd = std::remove_if(
+		lockOnTargets_.begin(),
+		lockOnTargets_.end(),
+		[this](EnemyBase *target) {
+			return !target || !target->IsAlive() || 
+				   Distance(GetPosition(), target->GetPosition()) > lockOnRange_;
+		});
+	lockOnTargets_.erase(newEnd, lockOnTargets_.end());
+
+	// プライマリターゲットの更新
+	if (!lockOnTargets_.empty()) {
+		primaryLockOnTarget_ = lockOnTargets_[0];
+	} else {
+		primaryLockOnTarget_ = nullptr;
+		lockOnMode_ = false;
 	}
 }
 
@@ -357,9 +402,17 @@ void Player::ProcessShooting() {
 						input->TriggerButton(XINPUT_GAMEPAD_B);
 
 	if (shootMissile && combatComponent_.CanShootMissile()) {
-		// ロックオン対象がある場合はそれをターゲット、ない場合は最寄りの敵を探す
-		EnemyBase *targetEnemy = lockOnTarget_ ? lockOnTarget_ : GetNearestEnemy();
-		combatComponent_.ShootMissile(playerPos, forward, targetEnemy);
+		// マルチロックオン対応
+		if (!lockOnTargets_.empty()) {
+			// ロックオン中：すべてのロックオン対象にミサイルを発射
+			combatComponent_.ShootMultipleMissiles(playerPos, forward, lockOnTargets_);
+		} else {
+			// ロックオン外：最寄りの敵に発射（互換性保持）
+			EnemyBase *targetEnemy = GetNearestEnemy();
+			if (targetEnemy) {
+				combatComponent_.ShootMissile(playerPos, forward, targetEnemy);
+			}
+		}
 	}
 }
 
@@ -377,7 +430,7 @@ void Player::Draw() {
 	Vector3 playerForward = GetForwardVector();
 
 	// コーン形のロックオン範囲を描画
-	Vector4 rangeColor = lockOnMode_ && lockOnTarget_ ? Vector4{1.0f, 0.0f, 0.0f, 0.4f} : // ロックオン中は赤
+	Vector4 rangeColor = lockOnMode_ && primaryLockOnTarget_ ? Vector4{1.0f, 0.0f, 0.0f, 0.4f} : // ロックオン中は赤
 							 Vector4{0.0f, 1.0f, 1.0f, 0.2f};							  // 待機中はシアン
 
 	// コーン形を描画：正面に向かう円錐
@@ -420,8 +473,8 @@ void Player::Draw() {
 	}
 
 	// ロックオン中のターゲットマーカー
-	if (lockOnTarget_ && lockOnTarget_->IsAlive()) {
-		Vector3 targetPos = lockOnTarget_->GetPosition();
+		if (primaryLockOnTarget_ && primaryLockOnTarget_->IsAlive()) {
+			Vector3 targetPos = primaryLockOnTarget_->GetPosition();
 		lineManager->DrawSphere(targetPos, 2.0f, {1.0f, 0.0f, 0.0f, 0.8f}, 16, 2.0f); // 赤い円
 
 		// プレイヤーからターゲットへのライン
@@ -439,10 +492,10 @@ void Player::DrawBullets() {
 void Player::DrawMissiles() {
 	combatComponent_.DrawMissiles();
 
-	if (lockOnMode_ && lockOnTarget_) {
+	if (lockOnMode_ && primaryLockOnTarget_) {
 		LineManager *lineManager = LineManager::GetInstance();
 		const Vector3 playerPos = GetPosition();
-		const Vector3 targetPos = lockOnTarget_->GetPosition();
+		const Vector3 targetPos = primaryLockOnTarget_->GetPosition();
 		lineManager->DrawLine(playerPos, targetPos, {0.0f, 1.0f, 0.0f, 1.0f}, 2.0f);
 		lineManager->DrawCircle(playerPos, lockOnRange_, {0.0f, 1.0f, 0.0f, 0.3f}, 1.0f);
 		lineManager->DrawCoordinateAxes(targetPos, 2.0f, 3.0f);
@@ -605,9 +658,9 @@ void Player::DrawImGui() {
 		if (ImGui::SliderFloat("Lock-On FOV (Slider)", &lockOnFOV_, 30.0f, 180.0f)) {
 			// ロックオン視野角を動的に変更可能
 		}
-		if (lockOnTarget_ && lockOnTarget_->IsAlive()) {
+		if (primaryLockOnTarget_ && primaryLockOnTarget_->IsAlive()) {
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Target Locked!");
-			Vector3 targetPos = lockOnTarget_->GetPosition();
+			Vector3 targetPos = primaryLockOnTarget_->GetPosition();
 			ImGui::Text("Target Position: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
 			float distToTarget = Distance(GetPosition(), targetPos);
 			ImGui::Text("Distance to Target: %.2f", distToTarget);
@@ -638,7 +691,7 @@ void Player::DrawImGui() {
 		ImGui::Text("Lock-On Mode: %s", lockOnMode_ ? "ON" : "OFF");
 		ImGui::Text("Has Target: %s", HasLockOnTarget() ? "YES" : "NO");
 		if (HasLockOnTarget()) {
-			Vector3 targetPos = lockOnTarget_->GetPosition();
+			Vector3 targetPos = primaryLockOnTarget_->GetPosition();
 			ImGui::Text("Target Pos: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
 
 			Vector3 playerPos = GetPosition();
@@ -648,8 +701,13 @@ void Player::DrawImGui() {
 		ImGui::SliderFloat("Lock-On Range", &lockOnRange_, 10.0f, 100.0f);
 
 		if (ImGui::Button("Manual Lock-On")) {
-			lockOnTarget_ = GetNearestEnemy();
-			lockOnMode_ = lockOnTarget_ != nullptr;
+			EnemyBase *target = GetNearestEnemy();
+			if (target) {
+				lockOnTargets_.clear();
+				lockOnTargets_.push_back(target);
+				primaryLockOnTarget_ = target;
+				lockOnMode_ = true;
+			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Clear Lock-On")) {

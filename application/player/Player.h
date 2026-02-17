@@ -72,14 +72,21 @@ public:
 	/// @brief ロックオンモード切替
 	void UpdateLockOn();
 	/// @brief 最寄りの敵を取得
-	EnemyBase *GetNearestEnemy() const; // Enemy* から EnemyBase* に変更
-	/// @brief ロックオン状態クリア
+	/// @brief ロックオン状態確認
 	bool HasLockOnTarget() const {
-		return lockOnTarget_ != nullptr;
+		return !lockOnTargets_.empty() && primaryLockOnTarget_ != nullptr;
 	}
 	/// @brief ロックオン対象の取得
 	EnemyBase *GetLockOnTarget() const { // Enemy* から EnemyBase* に変更
-		return lockOnTarget_;
+		return primaryLockOnTarget_;
+	}
+	/// @brief 全ロックオン対象を取得
+	const std::vector<EnemyBase *> &GetAllLockOnTargets() const {
+		return lockOnTargets_;
+	}
+	/// @brief ロックオン対象の数を取得
+	size_t GetLockOnTargetCount() const {
+		return lockOnTargets_.size();
 	}
 	/// @brief ロックオン範囲のセッター
 	void SetLockOnRange(float range) {
@@ -200,6 +207,8 @@ private:
 	Transform *GetTransformSafe() const;
 	/// @brief ロックオン解除
 	void ClearLockOn();
+	/// @brief 最寄りの敵を取得
+	EnemyBase *GetNearestEnemy() const;
 
 	///--------------------------------------------------------------
 	///                        静的メンバ変数
@@ -219,11 +228,13 @@ private:
 	EnemyManager *enemyManager_;
 
 	//========================================
-	// ロックオン関連
-	EnemyBase *lockOnTarget_; // Enemy* から EnemyBase* に変更
+	// ロックオン関連（マルチロックオン対応）
+	std::vector<EnemyBase *> lockOnTargets_; // 複数のロックオン対象
+	EnemyBase *primaryLockOnTarget_;		   // メインロックオン対象（シングルロック互換性用）
 	float lockOnRange_;
 	bool lockOnMode_;
 	float lockOnFOV_; // ロックオン視野角（度数法）
+	int maxLockOnTargets_; // 最大ロックオン数
 
 	//========================================
 	// 敗北演出関連
