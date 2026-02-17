@@ -279,13 +279,25 @@ void PlayerMissile::StartLockOn() {
 	if (!enemyManager_)
 		return;
 
+	// SetTarget()で既にターゲットが設定されている場合は、それを尊重する
+	if (target_) {
+		lockedTarget_ = target_;
+		isLockedOn_ = true;
+		lockOnTime_ = 0.0f;
+		trackingStrength_ = 1.0f;
+		isTracking_ = true;
+		return;
+	}
+
+	// ターゲットが設定されていない場合は、最寄りの敵を探す
 	EnemyBase *nearestEnemy = FindNearestTarget();
 	if (nearestEnemy) {
 		lockedTarget_ = nearestEnemy;
 		target_ = nearestEnemy; // 直ちにターゲット設定
 		isLockedOn_ = true;
 		lockOnTime_ = 0.0f;
-		trackingStrength_ = 1.0f; // 即座に追尾を開始
+		trackingStrength_ = 1.0f;
+		isTracking_ = true;
 	}
 }
 

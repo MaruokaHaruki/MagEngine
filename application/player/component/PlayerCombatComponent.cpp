@@ -110,27 +110,25 @@ void PlayerCombatComponent::DrawMissiles() {
 }
 
 //=============================================================================
-// マルチロックオンで複数敵に同時発射
+// マルチロックオンで複数敵に同時発射（1体につき1ミサイル）
 void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const Vector3 &direction,
 												  const std::vector<EnemyBase *> &targets) {
 	if (targets.empty() || !CanShootMissile()) {
 		return;
 	}
 
-	// 複数ターゲットごとに個別のミサイルを発射
-	// （ただしクールタイムは全体で一度だけ消費）
-	int missileCount = 0;
-	const float staggerDelay = 0.1f; // ミサイル発射の時差（秒）
+	// DEBUG: 発射ミサイル情報をログ出力
+	// printf("ShootMultipleMissiles: Firing %zu missiles\n", targets.size());
 
+	// ロック対象の敵の数分だけミサイルを発射（1体=1ミサイル）
 	for (size_t i = 0; i < targets.size(); ++i) {
 		if (!targets[i]) {
 			continue;
 		}
 
-		if (missileCount > 0) {
-			// クールタイムをリセット（複数同時発射対応）
-			missileCoolTime_ = 0.0f;
-		}
+		// DEBUG: 各ミサイルのターゲット情報をログ出力
+		// printf("  Missile %zu -> Target %p at (%.2f, %.2f, %.2f)\n", i, (void*)targets[i],
+		//        targets[i]->GetPosition().x, targets[i]->GetPosition().y, targets[i]->GetPosition().z);
 
 		auto missile = std::make_unique<PlayerMissile>();
 		missile->Initialize(object3dSetup_, "Bullet.obj", position, direction);
@@ -138,13 +136,13 @@ void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const
 		missile->SetTarget(targets[i]);
 		missile->StartLockOn();
 
-		// 着弾時間を調整して、ターゲット敵での着弾を分散させる
-		float adjustedHitTime = 3.0f + (i * 0.5f);
+		// 着弾時間を調整して、ターゲット敵での到着をずらす
+		float adjustedHitTime = 3.0f + (i * 0.3f);
 		missile->SetDesiredHitTime(adjustedHitTime);
 
-		// 発射時の速度オフセットを設定（複数ミサイルが同じ方向になるのを防ぐ）
+		// 発射時の速度オフセットを設定（複数ミサイルが異なる軌道を描くようにする）
 		if (i > 0) {
-			float angleOffset = (i - 0) * 15.0f; // ミサイル間の角度オフセット
+			float angleOffset = i * 12.0f; // ミサイル間の角度オフセット
 			float rad = angleOffset * MagMath::PI / 180.0f;
 			Vector3 offsetDir = {
 				direction.x * std::cos(rad) - direction.z * std::sin(rad),
@@ -153,16 +151,15 @@ void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const
 
 			// 発射初速オフセットを設定
 			Vector3 velocityOffset = {
-				offsetDir.x * 10.0f - direction.x * 10.0f,
-				offsetDir.y * 5.0f,
-				offsetDir.z * 10.0f - direction.z * 10.0f};
+				offsetDir.x * 8.0f - direction.x * 8.0f,
+				offsetDir.y * 3.0f,
+				offsetDir.z * 8.0f - direction.z * 8.0f};
 			missile->SetLaunchVelocityOffset(velocityOffset, 0.2f);
 		}
 
 		missiles_.push_back(std::move(missile));
-		missileCount++;
 	}
 
-	// クールタイムを設定（最後のミサイル発射後）
+	// クールタイムを設定（複数敵発射でもクールタイムは1回分）
 	missileCoolTime_ = maxMissileCoolTime_;
 }

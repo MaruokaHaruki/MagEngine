@@ -116,58 +116,90 @@ void Player::Update() {
 }
 
 //=============================================================================
-// ロックオン機能の更新（マルチロックオン対応）
+// ロックオン機能の更新（自動マルチロックオン対応）
 void Player::UpdateLockOn() {
-	Input *input = Input::GetInstance();
-	static bool prevLockKey = false;
-	const bool currentLockKey = input->PushKey(DIK_L);
-	const bool controllerLock = input->TriggerButton(XINPUT_GAMEPAD_Y);
+	// 範囲内の敵を自動的にロック対象に追加/更新
+	if (!enemyManager_) {
+		lockOnTargets_.clear();
+		primaryLockOnTarget_ = nullptr;
+		lockOnMode_ = false;
+		return;
+	}
 
-	// ロックオンキー入力トリガー
-	if ((currentLockKey && !prevLockKey) || controllerLock) {
-		if (lockOnMode_) {
-			// ロックオン中：新しい敵をロックオン開始
-			EnemyBase *nextTarget = GetNearestEnemy();
-			if (nextTarget) {
-				// 既にロックオンしている敵の場合はスキップ
-				bool alreadyLocked = false;
-				for (const auto *target : lockOnTargets_) {
-					if (target == nextTarget) {
-						alreadyLocked = true;
-						break;
-					}
-				}
-				
-				if (!alreadyLocked && (int)lockOnTargets_.size() < maxLockOnTargets_) {
-					lockOnTargets_.push_back(nextTarget);
-				}
-			}
-		} else {
-			// 非ロックオン状態：最初のロックオンを開始
-			EnemyBase *startTarget = GetNearestEnemy();
-			if (startTarget) {
-				lockOnTargets_.clear();
-				lockOnTargets_.push_back(startTarget);
-				primaryLockOnTarget_ = startTarget;
-				lockOnMode_ = true;
+	const Vector3 playerPos = GetPosition();
+	const Vector3 playerForward = GetForwardVector();
+	std::vector<EnemyBase *> enemiesInRange;
+
+	// 範囲内の全敵を取得
+	const auto &enemies = enemyManager_->GetEnemies();
+	for (const auto &enemy : enemies) {
+		if (!enemy || !enemy->IsAlive()) {
+			continue;
+		}
+
+		const Vector3 enemyPos = enemy->GetPosition();
+		const Vector3 toEnemy = {
+			enemyPos.x - playerPos.x,
+			enemyPos.y - playerPos.y,
+			enemyPos.z - playerPos.z};
+
+		float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+
+		// ロックオン範囲外はスキップ
+		if (distance > lockOnRange_) {
+			continue;
+		}
+
+		// 視野角チェック（コーン形範囲内か）
+		// NOTE: 複数敵ロックのデバッグ用に視野角チェックを無効化
+		// 視野角チェックを有効にする場合は、以下の「#define ENABLE_FOV_CHECK」をコメント解除
+		#define ENABLE_FOV_CHECK 0  // 0=無効, 1=有効
+		
+		#if ENABLE_FOV_CHECK
+		float normalizedX = toEnemy.x / (distance + 0.001f);
+		float normalizedY = toEnemy.y / (distance + 0.001f);
+		float normalizedZ = toEnemy.z / (distance + 0.001f);
+
+		float dotProduct = normalizedX * playerForward.x +
+						  normalizedY * playerForward.y +
+						  normalizedZ * playerForward.z;
+
+		float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f;
+		float angleRadians = std::acos(std::max(-1.0f, std::min(1.0f, dotProduct)));
+		if (angleRadians > fovRadians) {
+			// 視野外の敵はスキップ
+			continue;
+		}
+		#endif
+
+		// 敵リストに追加（重複チェック）
+		bool alreadyInList = false;
+		for (const auto *target : enemiesInRange) {
+			if (target == enemy.get()) {
+				alreadyInList = true;
+				break;
 			}
 		}
+		if (!alreadyInList) {
+			enemiesInRange.push_back(enemy.get());
+		}
 	}
-	prevLockKey = currentLockKey;
 
-	// ロックオン中の敵をクリーンアップ（死亡・範囲外の敵を削除）
-	auto newEnd = std::remove_if(
-		lockOnTargets_.begin(),
-		lockOnTargets_.end(),
-		[this](EnemyBase *target) {
-			return !target || !target->IsAlive() || 
-				   Distance(GetPosition(), target->GetPosition()) > lockOnRange_;
-		});
-	lockOnTargets_.erase(newEnd, lockOnTargets_.end());
+	// ロック対象を範囲内の敵で更新（最大数まで、強制更新）
+	lockOnTargets_.clear();
+	int lockCount = std::min((int)enemiesInRange.size(), maxLockOnTargets_);
+	for (int i = 0; i < lockCount; ++i) {
+		lockOnTargets_.push_back(enemiesInRange[i]);
+	}
+
+	// DEBUG: ロック敵の数をデバッグ出力
+	// WARNING: 本番環境ではコメントアウト
+	// printf("DEBUG: Enemies in range: %zd, Locked targets: %zu\n", enemiesInRange.size(), lockOnTargets_.size());
 
 	// プライマリターゲットの更新
 	if (!lockOnTargets_.empty()) {
 		primaryLockOnTarget_ = lockOnTargets_[0];
+		lockOnMode_ = true;
 	} else {
 		primaryLockOnTarget_ = nullptr;
 		lockOnMode_ = false;
@@ -405,6 +437,8 @@ void Player::ProcessShooting() {
 		// マルチロックオン対応
 		if (!lockOnTargets_.empty()) {
 			// ロックオン中：すべてのロックオン対象にミサイルを発射
+			// DEBUG: ShootMultipleMissiles呼び出しログ
+			// printf("DEBUG: Shooting %zu missiles to %zu targets\n", lockOnTargets_.size(), lockOnTargets_.size());
 			combatComponent_.ShootMultipleMissiles(playerPos, forward, lockOnTargets_);
 		} else {
 			// ロックオン外：最寄りの敵に発射（互換性保持）
@@ -683,36 +717,50 @@ void Player::DrawImGui() {
 			combatComponent_.SetMaxMissileCoolTime(maxMissileCoolTime);
 		}
 		ImGui::Text("Controls:");
-		ImGui::Text("  Keyboard: SPACE = Gun, M = Missile, L = Lock-On");
-		ImGui::Text("  Controller: R-Trigger = Gun, L-Trigger = Missile, Y = Lock-On");
+		ImGui::Text("  Keyboard: SPACE = Gun, M = Missile");
+		ImGui::Text("  Controller: R-Trigger = Gun, L-Trigger/B = Missile");
 
-		// === ロックオン情報 ===
-		ImGui::Text("=== Lock-On Status ===");
-		ImGui::Text("Lock-On Mode: %s", lockOnMode_ ? "ON" : "OFF");
-		ImGui::Text("Has Target: %s", HasLockOnTarget() ? "YES" : "NO");
+		// === ロックオン情報（自動モード） ===
+		ImGui::Text("=== Auto Lock-On Status ===");
+		ImGui::Text("Lock-On Mode: %s", lockOnMode_ ? "ACTIVE" : "INACTIVE");
+		ImGui::Text("Locked Enemies: %zu / %d", lockOnTargets_.size(), maxLockOnTargets_);
+		
+		// ロック敵の詳細情報
+		if (!lockOnTargets_.empty()) {
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Locked Targets:");
+			Vector3 playerPos = GetPosition();
+			for (size_t i = 0; i < lockOnTargets_.size(); ++i) {
+				if (lockOnTargets_[i]) {
+					Vector3 targetPos = lockOnTargets_[i]->GetPosition();
+					float dist = Distance(playerPos, targetPos);
+					ImGui::Text("  [%zu] Addr: %p, Dist: %.2f", i, (void*)lockOnTargets_[i], dist);
+				}
+			}
+		}
+		
 		if (HasLockOnTarget()) {
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Primary Target: Locked");
 			Vector3 targetPos = primaryLockOnTarget_->GetPosition();
 			ImGui::Text("Target Pos: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
 
 			Vector3 playerPos = GetPosition();
 			const float distance = Distance(targetPos, playerPos);
 			ImGui::Text("Distance: %.2f", distance);
-		}
-		ImGui::SliderFloat("Lock-On Range", &lockOnRange_, 10.0f, 100.0f);
-
-		if (ImGui::Button("Manual Lock-On")) {
-			EnemyBase *target = GetNearestEnemy();
-			if (target) {
-				lockOnTargets_.clear();
-				lockOnTargets_.push_back(target);
-				primaryLockOnTarget_ = target;
-				lockOnMode_ = true;
+			
+			// ロック敵一覧
+			if (lockOnTargets_.size() > 1) {
+				ImGui::Text("Other Locked Targets:");
+				for (size_t i = 1; i < lockOnTargets_.size(); ++i) {
+					Vector3 pos = lockOnTargets_[i]->GetPosition();
+					float dist = Distance(playerPos, pos);
+					ImGui::Text("  Enemy %zu: Dist=%.2f", i, dist);
+				}
 			}
+		} else {
+			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No targets in range");
 		}
-		ImGui::SameLine();
-		if (ImGui::Button("Clear Lock-On")) {
-			ClearLockOn();
-		}
+		ImGui::SliderFloat("Lock-On Range", &lockOnRange_, 10.0f, 200.0f);
+		ImGui::SliderFloat("Lock-On FOV (Degrees)", &lockOnFOV_, 10.0f, 180.0f);
 
 		// ミサイル個別情報
 		ImGui::Separator();
@@ -720,10 +768,12 @@ void Player::DrawImGui() {
 		const auto &missiles = combatComponent_.GetMissiles();
 		for (size_t i = 0; i < missiles.size(); ++i) {
 			if (missiles[i] && missiles[i]->IsAlive()) {
-				ImGui::Text("Missile %zu: Locked=%s, Target=%s",
+				EnemyBase *targetEnemy = missiles[i]->GetLockedTarget();
+				ImGui::Text("Missile %zu: Locked=%s, Target=%s, TargetAddr=%p",
 							i,
 							missiles[i]->IsLockedOn() ? "Yes" : "No",
-							missiles[i]->HasTarget() ? "Yes" : "No");
+							missiles[i]->HasTarget() ? "Yes" : "No",
+							(void*)targetEnemy);
 			}
 		}
 
