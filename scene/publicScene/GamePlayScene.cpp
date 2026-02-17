@@ -158,7 +158,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 		gameOverUI->SetTextTexture("WolfOne_GameOver.png");
 		gameOverUI->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
 		gameOverUI->SetTextSize({1000.0f, 200.0f});
-		gameOverUI->SetOnCompleteCallback([this]() {
+		gameOverUI->SetOnComplete([this]() {
 			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 				sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 				sceneTransition_->SetOnCompleteCallback([this]() {
@@ -283,7 +283,7 @@ void GamePlayScene::Update() {
 		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
 			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
-				gameOverUI->StartGameOver(2.0f, 3.0f);
+				gameOverUI->Play(2.0f, 3.0f);
 			}
 			// HUDを格納
 			if (auto hud = uiManager_->GetHUD()) {
@@ -311,7 +311,6 @@ void GamePlayScene::Update() {
 			}
 		}
 	}
-
 
 	// デバック用にキーボードでゲームクリアを強制発動
 	if (Input::GetInstance()->TriggerKey(DIK_C)) {
