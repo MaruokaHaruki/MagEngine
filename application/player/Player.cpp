@@ -506,14 +506,8 @@ void Player::Draw() {
 		lineManager->DrawLine(playerPos, p1, rangeColor, 0.5f);
 	}
 
-	// ロックオン中のターゲットマーカー
-		if (primaryLockOnTarget_ && primaryLockOnTarget_->IsAlive()) {
-			Vector3 targetPos = primaryLockOnTarget_->GetPosition();
-		lineManager->DrawSphere(targetPos, 2.0f, {1.0f, 0.0f, 0.0f, 0.8f}, 16, 2.0f); // 赤い円
-
-		// プレイヤーからターゲットへのライン
-		lineManager->DrawLine(playerPos, targetPos, {1.0f, 0.5f, 0.0f, 0.8f}, 2.0f);
-	}
+	// ロックオン中のターゲットマーカー（削除）
+	// NOTE: デバッグ線描の簡潔化により削除
 #endif
 }
 
@@ -525,15 +519,6 @@ void Player::DrawBullets() {
 
 void Player::DrawMissiles() {
 	combatComponent_.DrawMissiles();
-
-	if (lockOnMode_ && primaryLockOnTarget_) {
-		LineManager *lineManager = LineManager::GetInstance();
-		const Vector3 playerPos = GetPosition();
-		const Vector3 targetPos = primaryLockOnTarget_->GetPosition();
-		lineManager->DrawLine(playerPos, targetPos, {0.0f, 1.0f, 0.0f, 1.0f}, 2.0f);
-		lineManager->DrawCircle(playerPos, lockOnRange_, {0.0f, 1.0f, 0.0f, 0.3f}, 1.0f);
-		lineManager->DrawCoordinateAxes(targetPos, 2.0f, 3.0f);
-	}
 }
 
 //=============================================================================
