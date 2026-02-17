@@ -12,7 +12,7 @@ using namespace MagMath;
 enum class GameOverState {
 	Idle,	 // アイドル状態
 	Showing, // テキスト表示中
-	Done,	 // 完了（Completed から Done に変更）
+	Done,	 // 完了
 };
 
 ///=============================================================================
@@ -46,9 +46,6 @@ public:
 	/// \brief アニメーションのキャンセル
 	void Cancel();
 
-	/// \brief アニメーションのリセット
-	void Reset();
-
 	///--------------------------------------------------------------
 	///                        状態取得
 	/// \brief アニメーション中かどうか
@@ -57,7 +54,7 @@ public:
 	}
 
 	/// \brief 完了したかどうか
-	bool IsDone() const { // IsCompleted から IsDone に変更
+	bool IsDone() const {
 		return state_ == GameOverState::Done;
 	}
 
@@ -95,7 +92,7 @@ private:
 	// スプライト管理
 	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
 	std::unique_ptr<MagEngine::Sprite> backgroundSprite_ = nullptr; // 背景
-	std::unique_ptr<MagEngine::Sprite> textSprite_ = nullptr;		 // テキスト
+	std::unique_ptr<MagEngine::Sprite> textSprite_ = nullptr;		// テキスト
 
 	// アニメーション状態
 	GameOverState state_ = GameOverState::Idle;
