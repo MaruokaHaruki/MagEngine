@@ -1,4 +1,5 @@
 #include "UIManager.h"
+#include "CameraManager.h"
 #include "Player.h"
 
 ///=============================================================================
@@ -30,6 +31,9 @@ void UIManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// MenuUI の初期化
 	menuUI_ = std::make_unique<MenuUI>();
 	menuUI_->Initialize(spriteSetup_);
+
+	// LockOnHUD の初期化
+	lockOnHUD_ = std::make_unique<LockOnHUD>();
 }
 
 ///=============================================================================
@@ -49,6 +53,9 @@ void UIManager::Finalize() {
 	}
 	if (menuUI_) {
 		menuUI_->Finalize();
+	}
+	if (lockOnHUD_) {
+		lockOnHUD_->Finalize();
 	}
 }
 
@@ -72,6 +79,12 @@ void UIManager::Update(const Player *player) {
 	}
 	if (menuUI_) {
 		menuUI_->Update();
+	}
+	if (lockOnHUD_ && player) {
+		MagEngine::Camera *camera = MagEngine::CameraManager::GetInstance()->GetCamera("FollowCamera");
+		if (camera) {
+			lockOnHUD_->Update(camera);
+		}
 	}
 }
 
@@ -100,6 +113,9 @@ void UIManager::Draw() {
 	if (hud_) {
 		hud_->Draw();
 	}
+	if (lockOnHUD_) {
+		lockOnHUD_->Draw();
+	}
 	if (menuUI_) {
 		menuUI_->Draw();
 	}
@@ -126,6 +142,9 @@ void UIManager::DrawImGui() {
 	}
 	if (menuUI_) {
 		menuUI_->DrawImGui();
+	}
+	if (lockOnHUD_) {
+		lockOnHUD_->DrawImGui();
 	}
 #endif
 }

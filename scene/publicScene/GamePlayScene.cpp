@@ -218,6 +218,12 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 		operationGuideUI->SetGuidePosition({50.0f, 370.0f});
 		operationGuideUI->SetVisible(true);
 	}
+
+	// LockOnHUD の設定
+	if (auto lockOnHUD = uiManager_->GetLockOnHUD()) {
+		lockOnHUD->Initialize(player_.get(), enemyManager_.get());
+		lockOnHUD->SetVisible(true);
+	}
 }
 
 ///=============================================================================
