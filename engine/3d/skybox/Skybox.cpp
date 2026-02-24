@@ -9,6 +9,7 @@
 #include "Skybox.h"
 #include "AffineTransformations.h"
 #include "Camera.h"
+#include "LightManager.h"
 #include "MathFunc4x4.h"
 #include "SkyboxSetup.h"
 #include "TextureManager.h"
@@ -29,6 +30,12 @@ namespace MagEngine {
 		//========================================
 		// ViewProjection行列バッファの作成
 		CreateTransformationMatrixBuffer();
+
+		//========================================
+		// ライトバッファの作成
+		CreateDirectionalLight();
+		CreatePointLight();
+		CreateSpotLight();
 
 		//========================================
 		// ワールド行列の初期化（スカイボックスは大きくする）
@@ -67,6 +74,17 @@ namespace MagEngine {
 		transformationMatrixData_->WVP = worldViewProjectionMatrix;
 		transformationMatrixData_->World = worldMatrix;
 		transformationMatrixData_->WorldInvTranspose = Inverse4x4(worldMatrix);
+
+		//========================================
+		// ライト情報の更新
+		if (skyboxSetup_->GetLightManager()) {
+			// 並行光源
+			*directionalLightData_ = skyboxSetup_->GetLightManager()->GetDirectionalLight();
+			// 点光源
+			*pointLightData_ = skyboxSetup_->GetLightManager()->GetPointLight();
+			// スポットライト
+			*spotLightData_ = skyboxSetup_->GetLightManager()->GetSpotLight();
+		}
 	}
 
 	///=============================================================================
@@ -99,6 +117,18 @@ namespace MagEngine {
 		commandList->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 		// テクスチャの設定
 		commandList->SetGraphicsRootDescriptorTable(1, TextureManager::GetInstance()->GetSrvHandleGPU(texturePath_));
+
+		//========================================
+		// ライト定数バッファの設定
+		if (directionalLightBuffer_) {
+			commandList->SetGraphicsRootConstantBufferView(2, directionalLightBuffer_->GetGPUVirtualAddress());
+		}
+		if (pointLightBuffer_) {
+			commandList->SetGraphicsRootConstantBufferView(3, pointLightBuffer_->GetGPUVirtualAddress());
+		}
+		if (spotLightBuffer_) {
+			commandList->SetGraphicsRootConstantBufferView(4, spotLightBuffer_->GetGPUVirtualAddress());
+		}
 
 		//========================================
 		// 描画コール
@@ -246,5 +276,41 @@ namespace MagEngine {
 		transformationMatrix.WVP = MagMath::Identity4x4();
 		// 単位行列を書き込む
 		*transformationMatrixData_ = transformationMatrix;
+	}
+
+	void Skybox::CreateDirectionalLight() {
+		auto dxCore = skyboxSetup_->GetDXManager();
+
+		// 定数バッファのサイズを 256 バイトの倍数に設定
+		size_t size = (sizeof(MagMath::DirectionalLight) + 255) & ~255;
+		directionalLightBuffer_ = dxCore->CreateBufferResource(size);
+		// 書き込むためのアドレスを取得
+		directionalLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&directionalLightData_));
+		// 初期化
+		*directionalLightData_ = MagMath::DirectionalLight{};
+	}
+
+	void Skybox::CreatePointLight() {
+		auto dxCore = skyboxSetup_->GetDXManager();
+
+		// 定数バッファのサイズを 256 バイトの倍数に設定
+		size_t size = (sizeof(MagMath::PointLight) + 255) & ~255;
+		pointLightBuffer_ = dxCore->CreateBufferResource(size);
+		// 書き込むためのアドレスを取得
+		pointLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&pointLightData_));
+		// 初期化
+		*pointLightData_ = MagMath::PointLight{};
+	}
+
+	void Skybox::CreateSpotLight() {
+		auto dxCore = skyboxSetup_->GetDXManager();
+
+		// 定数バッファのサイズを 256 バイトの倍数に設定
+		size_t size = (sizeof(MagMath::SpotLight) + 255) & ~255;
+		spotLightBuffer_ = dxCore->CreateBufferResource(size);
+		// 書き込むためのアドレスを取得
+		spotLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&spotLightData_));
+		// 初期化
+		*spotLightData_ = MagMath::SpotLight{};
 	}
 }

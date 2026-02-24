@@ -18,6 +18,7 @@ namespace MagEngine {
 	///						前方宣言
 	class Camera;
 	class CloudSetup;
+	class LightManager;
 
 	///=============================================================================
 	///						構造体
@@ -167,6 +168,21 @@ namespace MagEngine {
 		void CreateConstantBuffers();
 
 		/**----------------------------------------------------------------------------
+		 * \brief  並行光源の作成
+		 */
+		void CreateDirectionalLight();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  ポイントライトの作成
+		 */
+		void CreatePointLight();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  スポットライトの作成
+		 */
+		void CreateSpotLight();
+
+		/**----------------------------------------------------------------------------
 		 * \brief  雲パラメータの更新
 		 * \note   Transformから雲の位置情報を更新
 		 */
@@ -301,16 +317,22 @@ namespace MagEngine {
 
 		//========================================
 		// 定数バッファ
-		Microsoft::WRL::ComPtr<ID3D12Resource> cameraCB_;	  // カメラ用
-		Microsoft::WRL::ComPtr<ID3D12Resource> paramsCB_;	  // パラメータ用
-		Microsoft::WRL::ComPtr<ID3D12Resource> bulletHoleCB_; // 弾痕用
+		Microsoft::WRL::ComPtr<ID3D12Resource> cameraCB_;				// カメラ用
+		Microsoft::WRL::ComPtr<ID3D12Resource> paramsCB_;				// パラメータ用
+		Microsoft::WRL::ComPtr<ID3D12Resource> bulletHoleCB_;			// 弾痕用
+		Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightBuffer_; // 並行光源用
+		Microsoft::WRL::ComPtr<ID3D12Resource> pointLightBuffer_;		// ポイントライト用
+		Microsoft::WRL::ComPtr<ID3D12Resource> spotLightBuffer_;		// スポットライト用
 
 		//========================================
 		// バッファリソース内のデータを指すポインタ
-		CloudCameraConstant *cameraData_ = nullptr;	 // カメラデータ
-		CloudRenderParams *paramsData_ = nullptr;	 // パラメータデータ
-		CloudRenderParams paramsCPU_;				 // CPU側パラメータ
-		BulletHoleBuffer *bulletHoleData_ = nullptr; // 弾痕データ
+		CloudCameraConstant *cameraData_ = nullptr;					// カメラデータ
+		CloudRenderParams *paramsData_ = nullptr;					// パラメータデータ
+		CloudRenderParams paramsCPU_;								// CPU側パラメータ
+		BulletHoleBuffer *bulletHoleData_ = nullptr;				// 弾痕データ
+		MagMath::DirectionalLight *directionalLightData_ = nullptr; // 並行光源データ
+		MagMath::PointLight *pointLightData_ = nullptr;				// ポイントライトデータ
+		MagMath::SpotLight *spotLightData_ = nullptr;				// スポットライトデータ
 
 		//========================================
 		// 弾痕管理

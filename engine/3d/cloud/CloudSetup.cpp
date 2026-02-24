@@ -51,8 +51,8 @@ namespace MagEngine {
 		descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 		//========================================
-		// RootParameterの設定（4つのパラメータ）
-		D3D12_ROOT_PARAMETER rootParameters[4] = {};
+		// RootParameterの設定（7つのパラメータ）
+		D3D12_ROOT_PARAMETER rootParameters[7] = {};
 		// カメラ定数バッファ（b0）
 		rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
@@ -73,6 +73,21 @@ namespace MagEngine {
 		rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		rootParameters[3].DescriptorTable.pDescriptorRanges = &descriptorRange;
 		rootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
+
+		// 並行光源定数バッファ（b3）
+		rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[4].Descriptor.ShaderRegister = 3;
+
+		// ポイントライト定数バッファ（b4）
+		rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[5].Descriptor.ShaderRegister = 4;
+
+		// スポットライト定数バッファ（b5）
+		rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[6].Descriptor.ShaderRegister = 5;
 
 		//========================================
 		// StaticSamplerの設定

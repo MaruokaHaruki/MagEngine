@@ -76,7 +76,7 @@ PixelOutput main(VertexShaderOutput input) {
     
     //========================================
     // レイマーチングの初期化
-    float3 sunDir = normalize(gSunDirection);  // 太陽光の方向
+    float3 sunDir = normalize(gDirectionalLight.direction);  // 並行光源の方向を使用
     float3 accumulatedLight = 0.0f;            // 累積光量
     float transmittance = 1.0f;                // 透過率（初期値は完全透過）
     
@@ -112,9 +112,55 @@ PixelOutput main(VertexShaderOutput input) {
             
             denseSampleCount++;
             
+            float3 lighting = float3(0.0f, 0.0f, 0.0f);
+            
+            //========================================
+            // ディレクショナルライト
             float lightEnergy = LightMarch(position);
             float phase = PhaseHG(dot(rayDir, sunDir), gAnisotropy);
-            float3 lighting = gAmbient + gSunColor * gSunIntensity * lightEnergy * phase;
+            // DirectionalLight: グロー的効果として強く表現
+            lighting += gDirectionalLight.color.rgb * lightEnergy * phase * gDirectionalLight.intensity * 1.5f;
+            
+            //========================================
+            // アンビエントライト（フォールバック）：最低限の明るさを確保
+            float3 ambientLight = float3(0.2f, 0.2f, 0.25f) * 0.5f;  // 軽い青色の環境光
+            lighting += ambientLight;
+            
+            //========================================
+            // ポイントライト：距離減衰で局所的な光を表現
+            float3 posToLight = gPointLight.position - position;
+            float distToLight = length(posToLight);
+            if (distToLight < gPointLight.radius && gPointLight.intensity > 0.0f) {
+                float3 lightDir = normalize(posToLight);
+                // より物理的な減衰を適用（距離の二乗則）
+                float attenuation = 1.0f / (1.0f + gPointLight.decay * distToLight * distToLight);
+                float phasePoint = PhaseHG(dot(rayDir, lightDir), gAnisotropy);
+                // ポイントライトの寄与を明確に（やや強め）
+                lighting += gPointLight.color.rgb * phasePoint * gPointLight.intensity * attenuation * 1.2f;
+            }
+            
+            //========================================
+            // スポットライト：角度フォールオフで指向性のある光を表現
+            if (gSpotLight.intensity > 0.0f) {
+                float3 posToSpot = gSpotLight.position - position;
+                float distToSpot = length(posToSpot);
+                if (distToSpot < gSpotLight.distance) {
+                    float3 spotDir = normalize(posToSpot);
+                    float angleCos = dot(spotDir, normalize(gSpotLight.direction));
+                    
+                    // フォールオフ計算：コーン状の光を明確に表現
+                    float falloff = smoothstep(gSpotLight.cosFalloffEnd, gSpotLight.cosFalloffStart, angleCos);
+                    // フォールオフを二乗して、光の角度フォールオフをより目立たせる
+                    falloff = falloff * falloff;
+                    
+                    if (falloff > 0.0f) {
+                        float attenuation = 1.0f / (1.0f + gSpotLight.decay * distToSpot * distToSpot);
+                        float phaseSpot = PhaseHG(dot(rayDir, spotDir), gAnisotropy);
+                        // スポットライトのコーン型効果を強調
+                        lighting += gSpotLight.color.rgb * phaseSpot * gSpotLight.intensity * attenuation * falloff * 1.3f;
+                    }
+                }
+            }
             
             float scatterAmount = density * actualStepSize;
             accumulatedLight += lighting * scatterAmount * transmittance;

@@ -12,8 +12,9 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-// 前方宣言
+	// 前方宣言
 	class DirectXCore;
+	class LightManager;
 	///=============================================================================
 	///						クラス
 	class CloudSetup {
@@ -36,6 +37,18 @@ namespace MagEngine {
 			return dxCore_;
 		}
 
+		/// @brief SetLightManager ライトマネージャの設定
+		/// @param lightManager ライトマネージャポインタ
+		void SetLightManager(LightManager *lightManager) {
+			this->lightManager_ = lightManager;
+		}
+
+		/// @brief GetLightManager ライトマネージャの取得
+		/// @return ライトマネージャポインタ
+		LightManager *GetLightManager() {
+			return lightManager_;
+		}
+
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
 	private:
@@ -51,6 +64,10 @@ namespace MagEngine {
 		//========================================
 		// DirectXCoreポインタ
 		DirectXCore *dxCore_ = nullptr;
+
+		//========================================
+		// LightManagerポインタ
+		LightManager *lightManager_ = nullptr;
 
 		//========================================
 		// RootSignature

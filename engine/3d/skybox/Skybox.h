@@ -30,6 +30,7 @@ namespace MagEngine {
 	// 前方宣言
 	class SkyboxSetup;
 	class Camera;
+	class LightManager;
 	///=============================================================================
 	///								クラス
 	class Skybox {
@@ -53,6 +54,15 @@ namespace MagEngine {
 
 		/// @brief トランスフォーメーションマトリックスバッファの作成
 		void CreateTransformationMatrixBuffer();
+
+		/// \brief 並行光源の作成
+		void CreateDirectionalLight();
+
+		/// \brief ポイントライトの作成
+		void CreatePointLight();
+
+		/// \brief スポットライトの作成
+		void CreateSpotLight();
 
 		///--------------------------------------------------------------
 		///							入出力関数
@@ -117,6 +127,12 @@ namespace MagEngine {
 		//========================================
 		// トランスフォーメーションマトリックス
 		Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixBuffer_;
+		// 並行光源バッファ
+		Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightBuffer_;
+		// ポイントライトバッファ
+		Microsoft::WRL::ComPtr<ID3D12Resource> pointLightBuffer_;
+		// スポットライトバッファ
+		Microsoft::WRL::ComPtr<ID3D12Resource> spotLightBuffer_;
 		// 頂点バッファ
 		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
 		// インデックスバッファ
@@ -126,6 +142,12 @@ namespace MagEngine {
 		// バッファリソース内のデータを指すポインタ
 		// トランスフォーメーションマトリックス
 		MagMath::TransformationMatrix *transformationMatrixData_ = nullptr;
+		// 並行光源データ
+		MagMath::DirectionalLight *directionalLightData_ = nullptr;
+		// ポイントライトデータ
+		MagMath::PointLight *pointLightData_ = nullptr;
+		// スポットライトデータ
+		MagMath::SpotLight *spotLightData_ = nullptr;
 		// 頂点バッファビュー
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
 		// インデックスバッファビュー

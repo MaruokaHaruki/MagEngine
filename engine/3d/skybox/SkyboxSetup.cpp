@@ -13,8 +13,8 @@ using namespace Logger;
 ///                        namespace MagEngine
 namespace MagEngine {
 
-///=============================================================================
-///						初期化
+	///=============================================================================
+	///						初期化
 	void SkyboxSetup::Initialize(DirectXCore *dxCore) {
 		/// ===引数でdxManagerを受取=== ///
 		dxCore_ = dxCore;
@@ -48,18 +48,33 @@ namespace MagEngine {
 		descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 		descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		// スカイボックス用のルートパラメータ（変換行列とテクスチャ）
-		D3D12_ROOT_PARAMETER rootParameters[2] = {};
-		// 変換行列用
+		// スカイボックス用のルートパラメータ（変換行列、ライト、テクスチャ）
+		D3D12_ROOT_PARAMETER rootParameters[5] = {};
+		// 変換行列用（b0）
 		rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 		rootParameters[0].Descriptor.ShaderRegister = 0;
 
-		// テクスチャ用（キューブマップ）
+		// テクスチャ用（キューブマップ、t0）
 		rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		rootParameters[1].DescriptorTable.pDescriptorRanges = descriptorRange;
 		rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+
+		// 並行光源定数バッファ（b1）
+		rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[2].Descriptor.ShaderRegister = 1;
+
+		// ポイントライト定数バッファ（b2）
+		rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[3].Descriptor.ShaderRegister = 2;
+
+		// スポットライト定数バッファ（b3）
+		rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[4].Descriptor.ShaderRegister = 3;
 
 		descriptionRootSignature.pParameters = rootParameters;
 		descriptionRootSignature.NumParameters = _countof(rootParameters);
@@ -79,12 +94,12 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
 		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 		HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-		if(FAILED(hr)) {
-			throw std::runtime_error(reinterpret_cast<char *>( errorBlob->GetBufferPointer() ));
+		if (FAILED(hr)) {
+			throw std::runtime_error(reinterpret_cast<char *>(errorBlob->GetBufferPointer()));
 		}
 
 		hr = dxCore_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature_));
-		if(FAILED(hr)) {
+		if (FAILED(hr)) {
 			throw std::runtime_error("Failed to create skybox root signature");
 		}
 		Log("Skybox Root signature created successfully :)", LogLevel::Success);
@@ -130,13 +145,13 @@ namespace MagEngine {
 		//========================================
 		// Shaderをcompileする
 		Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(L"resources/shader/Skybox.VS.hlsl", L"vs_6_0");
-		if(!vertexShaderBlob) {
+		if (!vertexShaderBlob) {
 			throw std::runtime_error("ENGINE MESSAGE: Skybox Failed to compile vertex shader :(");
 		}
 		Log("Skybox Vertex shader created successfully :)", LogLevel::Success);
 
 		Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Skybox.PS.hlsl", L"ps_6_0");
-		if(!pixelShaderBlob) {
+		if (!pixelShaderBlob) {
 			throw std::runtime_error("ENGINE MESSAGE: Skybox Failed to compile pixel shader :(");
 		}
 		Log("Skybox Pixel shader created successfully :)", LogLevel::Success);
@@ -146,8 +161,8 @@ namespace MagEngine {
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 		graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
 		graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-		graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-		graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+		graphicsPipelineStateDesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+		graphicsPipelineStateDesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
 		graphicsPipelineStateDesc.BlendState = blendDesc;
 		graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 		graphicsPipelineStateDesc.NumRenderTargets = 1;
@@ -168,8 +183,8 @@ namespace MagEngine {
 		//========================================
 		// 実際に生成
 		HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-			IID_PPV_ARGS(&graphicsPipelineState_));
-		if(FAILED(hr)) {
+																	   IID_PPV_ARGS(&graphicsPipelineState_));
+		if (FAILED(hr)) {
 			throw std::runtime_error("ENGINE MESSAGE: Skybox Failed to create graphics pipeline state :(");
 		}
 		Log("Skybox Graphics pipeline state created successfully :)", LogLevel::Success);

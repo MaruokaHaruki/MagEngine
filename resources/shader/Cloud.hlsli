@@ -101,6 +101,53 @@ cbuffer BulletHoleBufferCB : register(b2)
     BulletHoleGPU gBulletHoles[32];  // 最大32個の弾痕
 };
 
+///=============================================================================
+///                      ライト構造体（Object3dと同じ）
+// 並行光源
+struct DirectionalLight {
+    float4 color;      // ライトの色
+    float3 direction;  // ライトの向き
+    float intensity;   // ライトの強度
+};
+
+// ポイントライト
+struct PointLight {
+    float4 color;      // ライトの色(16 bytes)
+    float3 position;   // ライトの位置(12 bytes) + padding(4 bytes) = 16 bytes
+    float intensity;   // ライトの強度(4 bytes)
+    float radius;      // ライトの範囲(4 bytes)
+    float decay;       // ライトの減衰(4 bytes)
+    float padding;     // パディング(4 bytes)
+};
+
+// スポットライト
+struct SpotLight {
+    float4 color;           // ライトの色(16 bytes)
+    float3 position;        // ライトの位置(12 bytes) + padding(4 bytes) = 16 bytes
+    float intensity;        // ライトの強度(4 bytes)
+    float3 direction;       // ライトの向き(12 bytes) + padding(4 bytes) = 16 bytes
+    float distance;         // ライトの距離(4 bytes)
+    float decay;            // ライトの減衰(4 bytes)
+    float cosFalloffStart;  // フォールオフ開始(4 bytes)
+    float cosFalloffEnd;    // フォールオフ終了(4 bytes)
+};
+
+// ライト定数バッファ
+cbuffer DirectionalLightCB : register(b3)
+{
+    DirectionalLight gDirectionalLight;
+};
+
+cbuffer PointLightCB : register(b4)
+{
+    PointLight gPointLight;
+};
+
+cbuffer SpotLightCB : register(b5)
+{
+    SpotLight gSpotLight;
+};
+
 Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクスチャ（雲の分布制御用）
 SamplerState gLinearSampler : register(s0);    // 線形補間サンプラー
 
@@ -385,8 +432,8 @@ float SampleCloudDensity(float3 position) {
 /// @return 光の透過率（0.0=完全に影、1.0=影なし）
 /// @note 雲の中を通過する光がどれだけ減衰するかを計算
 float LightMarch(float3 position) {
-    // 太陽方向ベクトル（正規化）
-    float3 lightDir = normalize(gSunDirection);
+    // 太陽方向ベクトル（正規化） - DirectionalLight から取得
+    float3 lightDir = normalize(gDirectionalLight.direction);
     
     // 雲のバウンディングボックス
     float3 boxMin = gCloudCenter - gCloudSize * 0.5f;

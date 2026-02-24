@@ -71,11 +71,13 @@ struct PointLight
 // SpotLight
 struct SpotLight
 {
-    float4 color;       // ライトの色
-    float3 position;    // ライトの位置
-    float intensity;    // ライトの強度
-    float3 direction;   // ライトの方向
-    float distance;     // ライトの影響範囲
-    float decay;        // ライトの減衰率
-    float cosAngle;     // スポットライトの角度
+    float4 color;           // ライトの色 (16 bytes)
+    float3 position;        // ライトの位置 (12 bytes)
+    float intensity;        // ライトの強度 (4 bytes) = 16 bytes
+    float3 direction;       // ライトの方向 (12 bytes)
+    float distance;         // ライトの影響範囲 (4 bytes) = 16 bytes
+    float decay;            // ライトの減衰率 (4 bytes)
+    float cosFalloffStart;  // フォールオフ開始（内側） (4 bytes)
+    float cosFalloffEnd;    // フォールオフ終了（外側） (4 bytes)
+    float padding;          // パディング (4 bytes) = 16 bytes
 };
