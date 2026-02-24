@@ -110,7 +110,7 @@ void PlayerMissile::Initialize(
 		if (objTransform) {
 			objTransform->translate = position;
 			objTransform->rotate = {0.0f, 0.0f, 0.0f};
-			objTransform->scale = {0.5f, 0.5f, 0.5f};
+			objTransform->scale = {1.0f, 1.0f, 1.0f};
 
 			Vector3 pos = position;
 			BaseObject::Initialize(pos, 1.0f);

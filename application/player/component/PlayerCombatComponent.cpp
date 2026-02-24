@@ -131,7 +131,7 @@ void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const
 		//        targets[i]->GetPosition().x, targets[i]->GetPosition().y, targets[i]->GetPosition().z);
 
 		auto missile = std::make_unique<PlayerMissile>();
-		missile->Initialize(object3dSetup_, "Bullet.obj", position, direction);
+		missile->Initialize(object3dSetup_, "Missile.obj", position, direction);
 		missile->SetEnemyManager(enemyManager_);
 		missile->SetTarget(targets[i]);
 		missile->StartLockOn();

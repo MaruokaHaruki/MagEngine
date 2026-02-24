@@ -58,6 +58,7 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Pause.dds");
 	// モデル
 	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadModel("Missile.obj");
 	ModelManager::GetInstance()->LoadModel("Bullet.obj");	// 弾のモデル
 	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
 	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
