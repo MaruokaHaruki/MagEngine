@@ -332,7 +332,6 @@ void TitleCamera::UpdateTitleDisplay(float deltaTime) {
 ///                【4】ループ演出
 void TitleCamera::UpdateLoop(float deltaTime) {
 	loopTime_ += deltaTime;
-	loopRotationAngle_ += deltaTime * 0.1f; // 旋回速度
 
 	if (!player_)
 		return;
@@ -342,17 +341,34 @@ void TitleCamera::UpdateLoop(float deltaTime) {
 	// プレイヤーの中心を正確にターゲット
 	cameraTarget_ = SmoothDamp(cameraTarget_, playerPos, targetVelocity_, cameraSmoothTime_ * 0.3f, deltaTime);
 
-	// カメラはプレイヤーを中心に円を描く（より近距離、プレイヤー追従）
-	float radius = 10.0f;									  // 距離をさらに近めに
-	float height = 5.0f + 1.5f * std::sin(loopTime_ * 0.25f); // 高度変化
+	// より複雑で興味深いカメラワーク
+	// 時間に応じて複数の動きを組み合わせる
+	float phase1Time = 10.0f;											  // 最初の10秒間
+	float normalizedTime = std::fmod(loopTime_, phase1Time) / phase1Time; // 0-1の周期
+
+	// 横方向の大きな円運動
+	float horizontalRotation = normalizedTime * 6.28318f; // 2π
+	float horizontalRadius = 10.0f;
+
+	// 高さの波動運動（より複雑）
+	float verticalWave = 5.0f + 2.0f * std::sin(normalizedTime * 6.28318f);
+	float verticalSubwave = 0.5f * std::sin(normalizedTime * 12.56636f); // より高い周波数
+
+	// ズームイン・アウトの効果
+	float zoomDistance = 10.0f + 2.0f * std::cos(normalizedTime * 4.0f);
 
 	Vector3 desiredPos = {
-		playerPos.x + radius * std::cos(loopRotationAngle_),
-		playerPos.y + height,
-		playerPos.z + radius * std::sin(loopRotationAngle_)};
+		playerPos.x + horizontalRadius * std::cos(horizontalRotation),
+		playerPos.y + verticalWave + verticalSubwave,
+		playerPos.z + zoomDistance * std::sin(horizontalRotation)};
 
 	cameraPosition_ = SmoothDamp(cameraPosition_, desiredPos, cameraVelocity_, cameraSmoothTime_ * 0.5f, deltaTime);
-	cameraExposure_ = 1.0f + 0.1f * std::sin(loopTime_ * 0.15f);
+
+	// 露出値の動的変化（ドラマティックな効果）
+	cameraExposure_ = 0.9f + 0.2f * std::sin(loopTime_ * 0.5f);
+
+	// FOVの微かな変化（映画的効果）
+	cameraFOV_ = 0.45f + 0.05f * std::sin(loopTime_ * 0.3f);
 }
 
 ///=============================================================================

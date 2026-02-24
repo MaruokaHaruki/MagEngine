@@ -12,24 +12,18 @@ using namespace MagEngine;
 
 ///=============================================================================
 ///						初期化
-void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup, 
-	MagEngine::Object3dSetup *object3dSetup, 
-	MagEngine::ParticleSetup *particleSetup, 
-	MagEngine::SkyboxSetup *skyboxSetup, 
-	MagEngine::CloudSetup *cloudSetup) {
-	// 適当に引数を使用
-	// 引数を使用しない場合は警告を出さないようにする
-	spriteSetup;
-	object3dSetup;
-	particleSetup;
-	skyboxSetup;
+void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
+							MagEngine::Object3dSetup *object3dSetup,
+							MagEngine::ParticleSetup *particleSetup,
+							MagEngine::SkyboxSetup *skyboxSetup,
+							MagEngine::CloudSetup *cloudSetup) {
 
 	//========================================
 	// 読み込み関係
-	//TextureManager::GetInstance()->LoadTexture(".dds");
+	// TextureManager::GetInstance()->LoadTexture(".dds");
 	// スプライト
 	TextureManager::GetInstance()->LoadTexture("uvChecker.dds");
-	//演出系
+	// 演出系
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.dds");
@@ -37,7 +31,7 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Engage.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_GameOver.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Comprete.dds");
-	//操作ガイドUI
+	// 操作ガイドUI
 	TextureManager::GetInstance()->LoadTexture("xbox_button_color_a.dds");
 	TextureManager::GetInstance()->LoadTexture("xbox_button_color_b.dds");
 	TextureManager::GetInstance()->LoadTexture("xbox_button_color_x.dds");
@@ -51,17 +45,17 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	TextureManager::GetInstance()->LoadTexture("WolfOne_ControlStick.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Missile.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Test.dds");
-	//メニューテキスト
+	// メニューテキスト
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Resume.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Controls.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_ReturntoTitle.dds");
 	TextureManager::GetInstance()->LoadTexture("WolfOne_Pause.dds");
 	// モデル
-	ModelManager::GetInstance()->LoadModel("jet.obj");		// モデルは事前にロードしておく
+	ModelManager::GetInstance()->LoadModel("jet.obj"); // モデルは事前にロードしておく
 	ModelManager::GetInstance()->LoadModel("Missile.obj");
-	ModelManager::GetInstance()->LoadModel("Bullet.obj");	// 弾のモデル
-	ModelManager::GetInstance()->LoadModel("ground.obj");	// 地形のモデル
-	ModelManager::GetInstance()->LoadModel("skydome.obj");	// 地面のモデルもロード
+	ModelManager::GetInstance()->LoadModel("Bullet.obj");  // 弾のモデル
+	ModelManager::GetInstance()->LoadModel("ground.obj");  // 地形のモデル
+	ModelManager::GetInstance()->LoadModel("skydome.obj"); // 地面のモデルもロード
 	// スカイボックス
 	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
 	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
@@ -88,8 +82,9 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	pressEnterSprite_ = std::make_unique<Sprite>();
 	pressEnterSprite_->Initialize(spriteSetup, "WolfOne_PressA.dds");
-	pressEnterSprite_->SetPosition({640.0f, 550.0f}); // 画面下部中央
-	pressEnterSprite_->SetAnchorPoint({0.5f, 0.5f});  // 中心を基準点に
+	pressEnterSprite_->SetPosition({640.0f, 550.0f});	// 画面下部中央
+	pressEnterSprite_->SetAnchorPoint({0.5f, 0.5f});	// 中心を基準点に
+	pressEnterBaseSize_ = pressEnterSprite_->GetSize(); // Press Enterの基本サイズを保存
 
 	//========================================
 	// プレイヤーの初期化（演出用）
@@ -110,7 +105,34 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	skybox_->SetTexture("overcast_soil_puresky_4k.dds");
 	// SkyboxのTransformを設定
 	skybox_->SetTransform({{1000.0f, 1000.0f, 1000.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}});
+	//========================================
+	// 雲
+	cloud_ = std::make_unique<Cloud>();
+	cloud_->Initialize(cloudSetup);
 
+	// 雲のサイズ設定（広い範囲に配置）
+	cloud_->SetSize({500.0f, 100.0f, 500.0f});
+	cloud_->SetEnabled(true);
+
+	// 雲のTransform設定
+	cloud_->GetTransform().translate = {0.0f, -50.0f, 0.0f};
+
+	// 雲の密度と速度を調整（まばらな雲に）
+	auto &cloudParams = cloud_->GetMutableParams();
+	// 密度：雲の濃さ（値を下げてより透明に）
+	cloudParams.density = 1.2f;
+	// カバレッジ：雲の分布（値を下げてよりまばらに）
+	cloudParams.coverage = 0.20f;
+	// ノイズ速度：雲の流れる速さ（ゆっくりとした動き）
+	cloudParams.noiseSpeed = 5.5f;
+	// 環境光：雲の明るさ（値を上げて明るく）
+	cloudParams.ambient = 0.6f;
+	// 太陽光強度：太陽光による照明の強さ
+	cloudParams.sunIntensity = 1.2f;
+	// ベースノイズスケール：大きな雲の形状
+	cloudParams.baseNoiseScale = 0.007f;
+	// ディテールウェイト：細かいディテールの影響度
+	cloudParams.detailWeight = 0.2f;
 	//========================================
 	// トランジション
 	sceneTransition_ = std::make_unique<SceneTransition>();
@@ -133,7 +155,8 @@ void TitleScene::Finalize() {
 ///						更新
 void TitleScene::Update() {
 	//========================================
-	// 曲を再生
+	// 経過時間の更新
+	totalElapsedTime_ += 1.0f / 60.0f;
 
 	//========================================
 	// Object3D
@@ -164,9 +187,14 @@ void TitleScene::Update() {
 		}
 	}
 
-	// Press Enterスプライトの透過度を設定
+	// Press Enterスプライトの透過度とスケールを設定
 	if (pressEnterSprite_) {
 		pressEnterSprite_->SetColor({1.0f, 1.0f, 1.0f, pressEnterAlpha_});
+
+		// スケール変動（点滅に合わせて）
+		float pulseScale = 0.95f + pressEnterAlpha_ * 0.1f;
+		pressEnterSprite_->SetSize({pressEnterBaseSize_.x * pulseScale,
+									pressEnterBaseSize_.y * pulseScale});
 		pressEnterSprite_->Update();
 	}
 
@@ -174,6 +202,17 @@ void TitleScene::Update() {
 	// Skybox
 	if (skybox_) {
 		skybox_->Update();
+
+		// スカイボックスの露出値を時間で変化させ、雰囲気を演出
+		// 明るい時間帯から始まり、ゆっくり暗くなる
+		float exposureVariation = std::sin(totalElapsedTime_ * 0.3f) * 0.2f;
+		// TODO: Skyboxに露出度設定メソッドがあれば使用
+	}
+
+	//=========================================
+	// 雲の更新
+	if (cloud_) {
+		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
 	}
 
 	//========================================
@@ -269,6 +308,11 @@ void TitleScene::SkyboxDraw() {
 ///=============================================================================
 ///						Cloud描画
 void TitleScene::CloudDraw() {
+	//========================================
+	// 雲の描画
+	if (cloud_) {
+		cloud_->Draw();
+	}
 }
 
 ///=============================================================================
@@ -279,12 +323,15 @@ void TitleScene::ImGuiDraw() {
 	ImGui::Begin("TitleScene");
 	ImGui::Text("Hello, TitleScene!");
 	ImGui::End();
-#endif if (titleCamera_) {
-	titleCamera_->DrawImGui();
+
+	if (titleCamera_) {
+		titleCamera_->DrawImGui();
+	}
 
 	//========================================
 	// シーン遷移
 	if (sceneTransition_) {
 		sceneTransition_->DrawImGui();
 	}
+#endif
 }
