@@ -117,22 +117,22 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// 雲のTransform設定
 	cloud_->GetTransform().translate = {0.0f, -50.0f, 0.0f};
 
-	// 雲の密度と速度を調整（まばらな雲に）
+	// 雲の密度と速度を調整（美しい表現）
 	auto &cloudParams = cloud_->GetMutableParams();
-	// 密度：雲の濃さ（値を下げてより透明に）
-	cloudParams.density = 1.2f;
-	// カバレッジ：雲の分布（値を下げてよりまばらに）
-	cloudParams.coverage = 0.20f;
-	// ノイズ速度：雲の流れる速さ（ゆっくりとした動き）
-	cloudParams.noiseSpeed = 5.5f;
-	// 環境光：雲の明るさ（値を上げて明るく）
-	cloudParams.ambient = 0.6f;
-	// 太陽光強度：太陽光による照明の強さ
-	cloudParams.sunIntensity = 1.2f;
-	// ベースノイズスケール：大きな雲の形状
-	cloudParams.baseNoiseScale = 0.007f;
-	// ディテールウェイト：細かいディテールの影響度
-	cloudParams.detailWeight = 0.2f;
+	// 密度：雲の濃さ（自然な透け感）
+	cloudParams.density = 1.5f;
+	// カバレッジ：雲の分布（豊かな分布）
+	cloudParams.coverage = 0.35f;
+	// ノイズ速度：雲の流れる速さ（自然な流れ）
+	cloudParams.noiseSpeed = 1.5f;
+	// 環境光：雲の明るさ（明るく映える）
+	cloudParams.ambient = 0.75f;
+	// 太陽光強度：太陽光による照明の強さ（影がはっきり）
+	cloudParams.sunIntensity = 1.6f;
+	// ベースノイズスケール：大きな雲の形状（自然なサイズ）
+	cloudParams.baseNoiseScale = 0.0085f;
+	// ディテールウェイト：細かいディテールの影響度（より詳細に）
+	cloudParams.detailWeight = 0.35f;
 	//========================================
 	// トランジション
 	sceneTransition_ = std::make_unique<SceneTransition>();
