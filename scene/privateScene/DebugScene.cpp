@@ -32,11 +32,7 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	///						 2D系クラス
 	//========================================
 	//// テクスチャマネージャ
-	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
+
 	//========================================
 	// スプライトクラス(Game)
 
@@ -77,31 +73,9 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	///						 パーティクル系
 	//========================================
 	// パーティクルの作成
-	particle_ = std::make_unique<Particle>();
-	particle_->Initialize(particleSetup);
-
-	// パーティクルのグループを作成
-	particle_->CreateParticleGroup("Test", "gradationLine_top.png", ParticleShape::Board);
-
-	//========================================
-	// エミッターの作成（プリセットを使用）
-	particleEmitter_ = std::make_unique<ParticleEmitter>(
-		particle_.get(),
-		"Test",
-		Transform{{0.2f, 0.2f, 0.2f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-		1024,
-		0.01f,
-		true);
-
-	// プリセットを適用（炎エフェクト）
-	particleEmitter_->ApplyConfig(ParticlePresets::Fire());
 
 	///--------------------------------------------------------------
 	///						 Skybox系
-	skybox_ = std::make_unique<Skybox>();
-	skybox_->Initialize(skyboxSetup);
-	// Skyboxのモデルを設定
-	skybox_->SetTexture("moonless_golf_4k.dds");
 
 	///--------------------------------------------------------------
 	///						 Cloud系
@@ -163,20 +137,12 @@ void DebugScene::Update() {
 
 	//========================================
 	// パーティクル系
-	particleEmitter_->Update();
 
 	//========================================
 	// 音声の再生
-	if (audio_->IsWavPlaying("Duke_Ellington.wav") == false) {
-		// audio_->PlayWavReverse("Duke_Ellington.wav", true, 1.0f, 1.0f);
-		// audio_->PlayWav("Duke_Ellington.wav", true, 1.0f, 1.0f);
-	}
 
 	//=========================================
 	// Skyboxの更新
-	if (skybox_) {
-		skybox_->Update();
-	}
 
 	//========================================
 	// Cloudの更新
@@ -243,16 +209,11 @@ void DebugScene::Object2DDraw() {
 ///=============================================================================
 ///						3D描画
 void DebugScene::Object3DDraw() {
-	// モンスターボール
-	// objMonsterBall_->Draw();
-	// 地面
-	// objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
 	for (auto &levelObj : levelObjects_) {
 		if (levelObj) {
-			// levelObj->Draw();
 		}
 	}
 }
@@ -268,9 +229,6 @@ void DebugScene::ParticleDraw() {
 ///						Skybox描画
 void DebugScene::SkyboxDraw() {
 	// Skyboxの描画
-	if (skybox_) {
-		// skybox_->Draw();
-	}
 }
 
 ///=============================================================================
@@ -373,15 +331,6 @@ void DebugScene::ImGuiDraw() {
 
 	//========================================
 	// SkyBoxの移動
-	ImGui::Separator();
-	// 移動
-	ImGui::SliderFloat3("Skybox Position", &skybox_->GetTransform()->translate.x, -10.0f, 10.0f);
-	// 回転
-	ImGui::SliderFloat3("Skybox Rotation", &skybox_->GetTransform()->rotate.x, -180.0f, 180.0f);
-	// スケール
-	ImGui::SliderFloat3("Skybox Scale", &skybox_->GetTransform()->scale.x, 0.1f, 10.0f);
-
-	ImGui::End();
 
 	DebugTextManager::GetInstance()->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
 }
