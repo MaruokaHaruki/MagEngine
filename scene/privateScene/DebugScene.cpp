@@ -8,7 +8,14 @@
  *********************************************************************/
 #include "DebugScene.h"
 #include "CameraManager.h"
+#include "DebugTextManager.h"
+#include "Input.h"
+#include "LevelDataLoader.h"
+#include "Logger.h"
+#include "MAudioG.h"
+#include "ModelManager.h"
 #include "ParticlePreset.h"
+#include "imgui.h"
 using namespace MagEngine;
 
 ///=============================================================================
@@ -328,6 +335,8 @@ void DebugScene::ImGuiDraw() {
 		ImGui::Text("Level Object Controls");
 		levelDataLoader_->ImGuiDraw(levelObjects_);
 	}
+
+	ImGui::End();
 
 	//========================================
 	// SkyBoxの移動
