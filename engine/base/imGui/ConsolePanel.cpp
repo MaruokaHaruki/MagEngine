@@ -22,21 +22,21 @@ namespace MagEngine {
 		if (!isVisible_)
 			return;
 
-		ImGui::SetNextWindowSizeConstraints(ImVec2(400, 200), ImVec2(FLT_MAX, FLT_MAX));
-		if (ImGui::Begin(panelName_.c_str(), &isVisible_)) {
+		BeginPanel(400, 200);
+		if (BeginPanelWindow()) {
 
-			// フィルターオプション
-			ImGui::Checkbox("Info", &showInfo_);
-			ImGui::SameLine();
-			ImGui::Checkbox("Warning", &showWarning_);
-			ImGui::SameLine();
-			ImGui::Checkbox("Error", &showError_);
-			ImGui::SameLine();
+			// ツールバー
 			if (ImGui::Button("Clear")) {
 				ClearLogs();
 			}
 			ImGui::SameLine();
 			ImGui::Checkbox("Auto-scroll", &autoScroll_);
+			ImGui::SameLine();
+			ImGui::Checkbox("Info", &showInfo_);
+			ImGui::SameLine();
+			ImGui::Checkbox("Warning", &showWarning_);
+			ImGui::SameLine();
+			ImGui::Checkbox("Error", &showError_);
 
 			ImGui::Separator();
 
@@ -51,17 +51,16 @@ namespace MagEngine {
 					}
 
 					// 重要度に応じた色分け
+					ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 					switch (log.severity) {
-					case 0: // Info
-						ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "%s", log.text.c_str());
-						break;
 					case 1: // Warning
-						ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", log.text.c_str());
+						color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
 						break;
 					case 2: // Error
-						ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s", log.text.c_str());
+						color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
 						break;
 					}
+					ImGui::TextColored(color, "%s", log.text.c_str());
 				}
 
 				// オートスクロール
@@ -71,11 +70,10 @@ namespace MagEngine {
 			}
 			ImGui::EndChild();
 		}
-		ImGui::End();
+		EndPanel();
 	}
 
 	void ConsolePanel::Update() {
-		// コンソール関連の更新処理
 	}
 
 	void ConsolePanel::AddLog(const std::string &message, int severity) {
@@ -85,7 +83,7 @@ namespace MagEngine {
 		LogMessage log{};
 		log.text = message;
 		log.severity = severity;
-		log.timestamp = 0.0f; // TODO: 実際の時刻を取得
+		log.timestamp = 0.0f;
 		logs_.push_back(log);
 	}
 

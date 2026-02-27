@@ -4,7 +4,7 @@
  *
  * \author Harukichimaru
  * \date   February 2025
- * \note   ポストエフェクトやゲーム設定を調整
+ * \note   ゲーム設定とエディター設定を調整
  *********************************************************************/
 #pragma once
 #include "BasePanel.h"
@@ -27,20 +27,10 @@ namespace MagEngine {
 		void Draw() override;
 		void Update() override;
 
-		void SetPostEffectManager(PostEffectManager *postEffectManager) {
-			postEffectManager_ = postEffectManager;
-		}
+		void SetPostEffectManager(PostEffectManager *postEffectManager);
 
 	private:
 		PostEffectManager *postEffectManager_ = nullptr;
-		bool showPostEffects_ = true;
-		bool showGameSettings_ = true;
-		bool showDebugSettings_ = true;
-
-		// ヘルパー関数
-		void DrawPostEffectControls();
-		void DrawGameSettings();
-		void DrawDebugSettings();
 	};
 
 }

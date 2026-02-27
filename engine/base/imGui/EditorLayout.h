@@ -17,8 +17,6 @@ namespace MagEngine {
 	// Forward declarations
 	class BasePanel;
 	class GameViewportPanel;
-	class HierarchyPanel;
-	class InspectorPanel;
 	class ConsolePanel;
 	class ToolsPanel;
 	class DirectXCore;
@@ -66,12 +64,6 @@ namespace MagEngine {
 		GameViewportPanel *GetViewportPanel() {
 			return viewportPanel_.get();
 		}
-		HierarchyPanel *GetHierarchyPanel() {
-			return hierarchyPanel_.get();
-		}
-		InspectorPanel *GetInspectorPanel() {
-			return inspectorPanel_.get();
-		}
 		ConsolePanel *GetConsolePanel() {
 			return consolePanel_.get();
 		}
@@ -87,8 +79,6 @@ namespace MagEngine {
 		//========================================
 		// パネルインスタンス
 		std::unique_ptr<GameViewportPanel> viewportPanel_;
-		std::unique_ptr<HierarchyPanel> hierarchyPanel_;
-		std::unique_ptr<InspectorPanel> inspectorPanel_;
 		std::unique_ptr<ConsolePanel> consolePanel_;
 		std::unique_ptr<ToolsPanel> toolsPanel_;
 
