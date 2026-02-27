@@ -642,7 +642,7 @@ void GamePlayScene::ImGuiDraw() {
 			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
 			ImGui::Begin("Player Debug");
 			player_->DrawImGui();
-	
+
 			// ミサイルのImGui表示
 			if (ImGui::CollapsingHeader("Missiles")) {
 				const auto &missiles = player_->GetMissiles();
@@ -676,22 +676,22 @@ void GamePlayScene::ImGuiDraw() {
 			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
 			ImGui::Begin("Cloud Debug");
 			cloud_->DrawImGui();
-	
+
 			// 弾痕テスト用のImGui
 			ImGui::Separator();
 			ImGui::Text("Bullet Hole System Test");
 			ImGui::Text("Press SPACE: Add bullet hole at player");
 			ImGui::Text("Press N: Add random bullet hole");
 			ImGui::Text("Press M: Clear all bullet holes");
-	
+
 			// 現在の弾痕数を表示
 			auto &cloudParams = cloud_->GetMutableParams();
 			ImGui::Text("Active Bullet Holes: %d", cloudParams.bulletHoleCount);
-	
+
 			// 弾痕パラメータの調整
 			ImGui::SliderFloat("Fade Start", &cloudParams.bulletHoleFadeStart, -2.0f, 2.0f);
 			ImGui::SliderFloat("Fade End", &cloudParams.bulletHoleFadeEnd, 0.0f, 5.0f);
-	
+
 			ImGui::End();
 		}
 	}

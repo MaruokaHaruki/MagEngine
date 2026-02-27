@@ -125,26 +125,26 @@ void UIManager::Draw() {
 ///                        ImGui描画
 void UIManager::DrawImGui() {
 #ifdef _DEBUG
-	if (gameOverUI_) {
-		gameOverUI_->DrawImGui();
-	}
-	if (gameClearAnimation_) {
-		gameClearAnimation_->DrawImGui();
-	}
-	if (operationGuideUI_) {
-		operationGuideUI_->DrawImGui();
-	}
-	if (startAnimation_) {
-		startAnimation_->DrawImGui();
-	}
+	// if (gameOverUI_) {
+	//	gameOverUI_->DrawImGui();
+	// }
+	// if (gameClearAnimation_) {
+	//	gameClearAnimation_->DrawImGui();
+	// }
+	// if (operationGuideUI_) {
+	//	operationGuideUI_->DrawImGui();
+	// }
+	// if (startAnimation_) {
+	//	startAnimation_->DrawImGui();
+	// }
 	if (hud_) {
 		hud_->DrawImGui();
 	}
-	if (menuUI_) {
-		menuUI_->DrawImGui();
-	}
-	if (lockOnHUD_) {
-		lockOnHUD_->DrawImGui();
-	}
+	// if (menuUI_) {
+	//	menuUI_->DrawImGui();
+	// }
+	// if (lockOnHUD_) {
+	//	lockOnHUD_->DrawImGui();
+	// }
 #endif
 }
