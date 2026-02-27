@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "CloudSetup.h"
 #include "DirectXCore.h"
+#include "LightManager.h"
 #include "Logger.h"
 #include "TextureManager.h"
 #include "externals/imgui/imgui.h"
@@ -35,6 +36,12 @@ namespace MagEngine {
 		// 各種バッファの作成
 		CreateFullscreenVertexBuffer();
 		CreateConstantBuffers();
+		// 並行光源の作成
+		CreateDirectionalLight();
+		// ポイントライトの作成
+		CreatePointLight();
+		// スポットライトの作成
+		CreateSpotLight();
 
 		//========================================
 		// デフォルト値の設定
@@ -220,6 +227,17 @@ namespace MagEngine {
 		//========================================
 		// GPUバッファへパラメータをコピー
 		*paramsData_ = paramsCPU_;
+
+		//========================================
+		// ライト情報の更新
+		if (setup_->GetLightManager()) {
+			// 並行光源
+			*directionalLightData_ = setup_->GetLightManager()->GetDirectionalLight();
+			// 点光源
+			*pointLightData_ = setup_->GetLightManager()->GetPointLight();
+			// スポットライト
+			*spotLightData_ = setup_->GetLightManager()->GetSpotLight();
+		}
 	}
 
 	///=============================================================================
@@ -253,6 +271,18 @@ namespace MagEngine {
 		// ウェザーマップテクスチャの設定
 		if (hasWeatherMapSrv_) {
 			commandList->SetGraphicsRootDescriptorTable(3, weatherMapSrv_);
+		}
+
+		//========================================
+		// ライト定数バッファの設定
+		if (directionalLightBuffer_) {
+			commandList->SetGraphicsRootConstantBufferView(4, directionalLightBuffer_->GetGPUVirtualAddress());
+		}
+		if (pointLightBuffer_) {
+			commandList->SetGraphicsRootConstantBufferView(5, pointLightBuffer_->GetGPUVirtualAddress());
+		}
+		if (spotLightBuffer_) {
+			commandList->SetGraphicsRootConstantBufferView(6, spotLightBuffer_->GetGPUVirtualAddress());
 		}
 
 		//========================================
@@ -495,5 +525,47 @@ namespace MagEngine {
 		}
 
 		ImGui::End();
+	}
+
+	///--------------------------------------------------------------
+	///						 並行光源の作成
+	void Cloud::CreateDirectionalLight() {
+		auto dxCore = setup_->GetDXCore();
+
+		// 定数バッファのサイズを 256 バイトの倍数に設定
+		size_t size = (sizeof(MagMath::DirectionalLight) + 255) & ~255;
+		directionalLightBuffer_ = dxCore->CreateBufferResource(size);
+		// 書き込むためのアドレスを取得
+		directionalLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&directionalLightData_));
+		// 初期化
+		*directionalLightData_ = MagMath::DirectionalLight{};
+	}
+
+	///--------------------------------------------------------------
+	///						 ポイントライトの作成
+	void Cloud::CreatePointLight() {
+		auto dxCore = setup_->GetDXCore();
+
+		// 定数バッファのサイズを 256 バイトの倍数に設定
+		size_t size = (sizeof(MagMath::PointLight) + 255) & ~255;
+		pointLightBuffer_ = dxCore->CreateBufferResource(size);
+		// 書き込むためのアドレスを取得
+		pointLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&pointLightData_));
+		// 初期化
+		*pointLightData_ = MagMath::PointLight{};
+	}
+
+	///--------------------------------------------------------------
+	///						 スポットライトの作成
+	void Cloud::CreateSpotLight() {
+		auto dxCore = setup_->GetDXCore();
+
+		// 定数バッファのサイズを 256 バイトの倍数に設定
+		size_t size = (sizeof(MagMath::SpotLight) + 255) & ~255;
+		spotLightBuffer_ = dxCore->CreateBufferResource(size);
+		// 書き込むためのアドレスを取得
+		spotLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&spotLightData_));
+		// 初期化
+		*spotLightData_ = MagMath::SpotLight{};
 	}
 }

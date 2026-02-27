@@ -205,6 +205,8 @@
     <ClCompile Include="engine\base\imGui\HierarchyPanel.cpp" />
     <ClCompile Include="engine\base\imGui\InspectorPanel.cpp" />
     <ClCompile Include="engine\base\imGui\ToolsPanel.cpp" />
+    <ClCompile Include="application\ui\LockOnHUD.cpp" />
+    <ClCompile Include="application\player\component\PlayerLockedOnComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -469,6 +471,8 @@
     <ClInclude Include="engine\base\imGui\GameViewportPanel.h" />
     <ClInclude Include="engine\base\imGui\HierarchyPanel.h" />
     <ClInclude Include="engine\base\imGui\InspectorPanel.h" />
+    <ClInclude Include="application\ui\LockOnHUD.h" />
+    <ClInclude Include="application\player\component\PlayerLockedOnComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

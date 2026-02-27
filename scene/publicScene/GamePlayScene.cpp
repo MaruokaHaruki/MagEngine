@@ -77,14 +77,14 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	particle_->SetCustomTextureSize({10.0f, 10.0f});
 	particle_->SetBillboard(true); // ビルボードを有効化
 	// 雲パーティクルグループの作成（Board形状、白っぽいテクスチャ）
-	particle_->CreateParticleGroup("CloudParticles", "circle2.png", ParticleShape::Board);
+	particle_->CreateParticleGroup("CloudParticles", "circle2.dds", ParticleShape::Board);
 	// 爆発エフェクト用の複数の形状を作成
 	// 1. メインの爆発エフェクト（Board形状 - 火花）
-	particle_->CreateParticleGroup("ExplosionSparks", "circle2.png", ParticleShape::Board);
+	particle_->CreateParticleGroup("ExplosionSparks", "circle2.dds", ParticleShape::Board);
 	// 2. リング形状の衝撃波（ヒットリアクション用にも使用）
-	particle_->CreateParticleGroup("ExplosionRing", "circle2.png", ParticleShape::Ring);
+	particle_->CreateParticleGroup("ExplosionRing", "circle2.dds", ParticleShape::Ring);
 	// 3. シリンダー形状の煙柱
-	particle_->CreateParticleGroup("ExplosionSmoke", "circle2.png", ParticleShape::Cylinder);
+	particle_->CreateParticleGroup("ExplosionSmoke", "circle2.dds", ParticleShape::Cylinder);
 
 	//========================================
 	// プレイヤー
@@ -107,22 +107,22 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// 雲のTransform設定
 	cloud_->GetTransform().translate = {0.0f, -50.0f, 250.0f};
 
-	// 雲の密度と速度を調整（まばらな雲に）
+	// 雲の密度と速度を調整（美しい表現）
 	auto &cloudParams = cloud_->GetMutableParams();
-	// 密度：雲の濃さ（値を下げてより透明に）
-	cloudParams.density = 1.2f; // かなり薄い雲（以前: 1.8f）
-	// カバレッジ：雲の分布（値を下げてよりまばらに）
-	cloudParams.coverage = 0.20f; // 25%の領域に雲が存在（以前: 0.45f）
-	// ノイズ速度：雲の流れる速さ（ゆっくりとした動き）
-	cloudParams.noiseSpeed = 5.5f; // 少し遅めの流れ（以前: 0.4f）
-	// 環境光：雲の明るさ（値を上げて明るく）
-	cloudParams.ambient = 0.6f; // 明るめの雲（以前: 0.5f）
-	// 太陽光強度：太陽光による照明の強さ
-	cloudParams.sunIntensity = 1.2f; // 柔らかい光（以前: 1.5f）
-	// ベースノイズスケール：大きな雲の形状
-	cloudParams.baseNoiseScale = 0.007f; // より大きな雲の塊
-	// ディテールウェイト：細かいディテールの影響度
-	cloudParams.detailWeight = 0.2f; // なめらかな雲の表面
+	// 密度：雲の濃さ（自然な透け感）
+	cloudParams.density = 1.5f;
+	// カバレッジ：雲の分布（豊かな分布）
+	cloudParams.coverage = 0.35f;
+	// ノイズ速度：雲の流れる速さ（自然な流れ）
+	cloudParams.noiseSpeed = 8.5f;
+	// 環境光：雲の明るさ（明るく映える）
+	cloudParams.ambient = 0.75f;
+	// 太陽光強度：太陽光による照明の強さ（影がはっきり）
+	cloudParams.sunIntensity = 1.6f;
+	// ベースノイズスケール：大きな雲の形状（自然なサイズ）
+	cloudParams.baseNoiseScale = 0.0085f;
+	// ディテールウェイト：細かいディテールの影響度（より詳細に）
+	cloudParams.detailWeight = 0.35f;
 
 	//========================================
 	// 敵マネージャー
@@ -158,7 +158,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 		gameOverUI->SetTextTexture("WolfOne_GameOver.png");
 		gameOverUI->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
 		gameOverUI->SetTextSize({1000.0f, 200.0f});
-		gameOverUI->SetOnCompleteCallback([this]() {
+		gameOverUI->SetOnComplete([this]() {
 			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 				sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 				sceneTransition_->SetOnCompleteCallback([this]() {
@@ -173,7 +173,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
 		gameClearAnim->SetFollowCamera(followCamera_.get());
 		gameClearAnim->SetPlayer(player_.get());
-		gameClearAnim->SetTextTexture("WolfOne_Comprete.png");
+		gameClearAnim->SetTextTexture("WolfOne_Comprete.dds");
 		gameClearAnim->SetBarColor({0.0f, 0.0f, 0.0f, 1.0f});
 		gameClearAnim->SetBarHeightRatio(0.15f);
 		gameClearAnim->SetTextSize({800.0f, 150.0f});
@@ -217,6 +217,12 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	if (auto operationGuideUI = uiManager_->GetOperationGuideUI()) {
 		operationGuideUI->SetGuidePosition({50.0f, 370.0f});
 		operationGuideUI->SetVisible(true);
+	}
+
+	// LockOnHUD の設定
+	if (auto lockOnHUD = uiManager_->GetLockOnHUD()) {
+		lockOnHUD->Initialize(player_.get(), enemyManager_.get());
+		lockOnHUD->SetVisible(true);
 	}
 }
 
@@ -283,7 +289,7 @@ void GamePlayScene::Update() {
 		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
 			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
-				gameOverUI->StartGameOver(2.0f, 3.0f);
+				gameOverUI->Play(2.0f, 3.0f);
 			}
 			// HUDを格納
 			if (auto hud = uiManager_->GetHUD()) {
@@ -311,7 +317,6 @@ void GamePlayScene::Update() {
 			}
 		}
 	}
-
 
 	// デバック用にキーボードでゲームクリアを強制発動
 	if (Input::GetInstance()->TriggerKey(DIK_C)) {
@@ -344,7 +349,7 @@ void GamePlayScene::Update() {
 			forward = MagMath::Normalize(forward);
 
 			// 弾痕を追加（原点、方向、半径、残存時間）
-			cloud_->AddBulletHole(origin - Vector3(0, 0, 100.0f), forward, 8.0f, 3.0f, 700.0f, 2.0f);
+			cloud_->AddBulletHole(origin - Vector3(0, 0, 100.0f), forward, 16.0f, 8.0f, 700.0f, 2.0f);
 
 			// ログ出力
 			Logger::Log("BulletHole added at player position", Logger::LogLevel::Info);

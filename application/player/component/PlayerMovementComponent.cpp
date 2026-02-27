@@ -28,13 +28,14 @@ void PlayerMovementComponent::Initialize() {
 	// バレルロール関連の初期化
 	isBarrelRolling_ = false;
 	barrelRollTime_ = 0.0f;
-	barrelRollDuration_ = 0.8f;
-	barrelRollCooldown_ = 1.5f;
+	barrelRollDuration_ = 0.6f; // 0.8秒 → 0.6秒に短縮 & より反応が良い
+	barrelRollCooldown_ = 1.2f; // 1.5秒 → 1.2秒に短縮
 	barrelRollCoolTimer_ = 0.0f;
 	barrelRollCost_ = 30.0f; // バレルロール1回で30ゲージ消費
 	barrelRollDirection_ = true;
 	barrelRollStartRotation_ = zero;
-	barrelRollMovementOffset_ = zero;
+	barrelRollStartVelocity_ = zero;
+	barrelRollAcceleration_ = 2.0f; // 進行方向への加速倍率を強化（1.5f → 2.0f）
 }
 
 //=============================================================================
@@ -109,11 +110,8 @@ void PlayerMovementComponent::StartBarrelRoll(bool isRight) {
 	barrelRollTime_ = 0.0f;
 	barrelRollDirection_ = isRight;
 	barrelRollStartRotation_ = targetRotationEuler_;
+	barrelRollStartVelocity_ = currentVelocity_; // 進行方向を記録
 	barrelRollCoolTimer_ = barrelRollCooldown_;
-
-	// 横移動オフセットを設定（回避効果）- 元の方向に戻す
-	float offsetDirection = isRight ? 1.0f : -1.0f; // 右バレルロール=右に移動
-	barrelRollMovementOffset_ = {offsetDirection * moveSpeed_ * 2.0f, 0.0f, 0.0f};
 }
 
 //=============================================================================
@@ -131,22 +129,50 @@ void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, fl
 		isBarrelRolling_ = false;
 		barrelRollTime_ = 0.0f;
 		targetRotationEuler_ = barrelRollStartRotation_;
-		barrelRollMovementOffset_ = {0.0f, 0.0f, 0.0f};
+		// 速度は保持させる（慣性のためそのままにする）
 		return;
 	}
 
-	// イージング（EaseInOutCubic）
-	float easedProgress = progress < 0.5f
-							  ? 4.0f * progress * progress * progress
-							  : 1.0f - std::pow(-2.0f * progress + 2.0f, 3.0f) / 2.0f;
+	// イージング（EaseOutQuad + オーバーシュート気味）- より滑らかでリズミカルな加速
+	float easedProgress = 1.0f - (1.0f - progress) * (1.0f - progress); // EaseOutQuad
+	// さらにオーバーシュート要素を追加（最初は控えめ、中盤で加速）
+	if (progress < 0.7f) {
+		easedProgress = progress < 0.5f
+							? 2.0f * progress * progress
+							: 1.0f - (-2.0f * progress + 2.0f) * (-2.0f * progress + 2.0f) / 2.0f;
+	}
 
-	// ロール回転（360度）- 回転方向のみ逆に変更
-	float rollDirection = barrelRollDirection_ ? -1.0f : 1.0f; // 右=負の回転、左=正の回転
-	float rollAngle = easedProgress * 2.0f * PI * rollDirection;
+	// ロール回転（540度 = 1.5回転）- より派手でかっこいい回転
+	float rollDirection = barrelRollDirection_ ? -1.0f : 1.0f;	 // 右=負の回転、左=正の回転
+	float rollAngle = easedProgress * 3.0f * PI * rollDirection; // 2π → 3π（360度 → 540度）
 	transform->rotate.z = barrelRollStartRotation_.z + rollAngle;
 
-	// 横移動の適用（方向は変更なし）
-	currentVelocity_ = barrelRollMovementOffset_;
+	// 進行方向への加速処理 - より指数的でダイナミック
+	// バレルロール開始時の速度がある場合、その方向へ加速
+	float speedMagnitude = std::sqrt(
+		barrelRollStartVelocity_.x * barrelRollStartVelocity_.x +
+		barrelRollStartVelocity_.z * barrelRollStartVelocity_.z);
+
+	if (speedMagnitude > 0.001f) {
+		// 進行方向の正規化
+		Vector3 direction = {
+			barrelRollStartVelocity_.x / speedMagnitude,
+			0.0f,
+			barrelRollStartVelocity_.z / speedMagnitude};
+
+		// より強い加速（最大で3倍速）- ダイナミックな加速感
+		float speedBoost = 1.0f + (barrelRollAcceleration_ - 1.0f) * easedProgress * easedProgress * 1.5f;
+		float acceleratedSpeed = speedMagnitude * speedBoost;
+		currentVelocity_ = {
+			direction.x * acceleratedSpeed,
+			0.0f,
+			direction.z * acceleratedSpeed};
+	} else {
+		// 速度がない場合は前方へ加速
+		float speedBoost = 1.0f + (barrelRollAcceleration_ - 1.0f) * easedProgress * easedProgress * 1.5f;
+		float acceleratedSpeed = moveSpeed_ * speedBoost;
+		currentVelocity_ = {0.0f, 0.0f, acceleratedSpeed};
+	}
 }
 
 //=============================================================================

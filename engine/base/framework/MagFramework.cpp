@@ -147,6 +147,8 @@ namespace MagEngine {
 		skyboxSetup_->Initialize(dxCore_.get());
 		//  Skyboxのカメラ設定
 		skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		// Skyboxのライトマネージャ設定
+		skyboxSetup_->SetLightManager(lightManager_.get());
 
 		///--------------------------------------------------------------
 		///						 パーティクル共通部
@@ -161,6 +163,8 @@ namespace MagEngine {
 		cloudSetup_ = std::make_unique<CloudSetup>();
 		// クラウドセットアップの初期化
 		cloudSetup_->Initialize(dxCore_.get());
+		// CloudのライトマネージャSetup
+		cloudSetup_->SetLightManager(lightManager_.get());
 
 		///--------------------------------------------------------------
 		///						 ラインマネージャ

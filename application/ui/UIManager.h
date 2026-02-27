@@ -2,6 +2,7 @@
 #include "GameClearAnimation.h"
 #include "GameOverUI.h"
 #include "HUD.h"
+#include "LockOnHUD.h"
 #include "MenuUI.h"
 #include "Object3dSetup.h"
 #include "OperationGuideUI.h"
@@ -62,6 +63,11 @@ public:
 		return menuUI_.get();
 	}
 
+	/// \brief LockOnHUD を取得
+	LockOnHUD *GetLockOnHUD() {
+		return lockOnHUD_.get();
+	}
+
 	///--------------------------------------------------------------
 	///                        メンバ変数
 private:
@@ -75,4 +81,5 @@ private:
 	std::unique_ptr<StartAnimation> startAnimation_;
 	std::unique_ptr<HUD> hud_;
 	std::unique_ptr<MenuUI> menuUI_;
+	std::unique_ptr<LockOnHUD> lockOnHUD_;
 };

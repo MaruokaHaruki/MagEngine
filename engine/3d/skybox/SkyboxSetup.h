@@ -9,11 +9,14 @@
 #pragma once
 #include "Camera.h"
 #include "DirectXCore.h"
- ///=============================================================================
- ///                        namespace MagEngine
-namespace MagEngine {
 ///=============================================================================
-///						クラス
+///                        namespace MagEngine
+namespace MagEngine {
+	// 前方宣言
+	class DirectXCore;
+	class LightManager;
+	///=============================================================================
+	///						クラス
 	class SkyboxSetup {
 		///--------------------------------------------------------------
 		///						 メンバ関数
@@ -55,6 +58,18 @@ namespace MagEngine {
 			return defaultCamera_;
 		}
 
+		/// @brief SetLightManager ライトマネージャの設定
+		/// @param lightManager ライトマネージャポインタ
+		void SetLightManager(LightManager *lightManager) {
+			this->lightManager_ = lightManager;
+		}
+
+		/// @brief GetLightManager ライトマネージャの取得
+		/// @return ライトマネージャポインタ
+		LightManager *GetLightManager() const {
+			return lightManager_;
+		}
+
 		///--------------------------------------------------------------
 		///							メンバ変数
 	private:
@@ -73,5 +88,9 @@ namespace MagEngine {
 		//========================================
 		// デフォルトカメラ
 		Camera *defaultCamera_ = nullptr;
+
+		//========================================
+		// LightManagerポインタ
+		LightManager *lightManager_ = nullptr;
 	};
 }

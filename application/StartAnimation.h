@@ -133,7 +133,7 @@ private:
 
 	// 表示設定
 	Vector4 barColor_ = {0.0f, 0.0f, 0.0f, 1.0f}; // デフォルトは黒
-	std::string textTexture_ = "WolfOne_Engage.png";
+	std::string textTexture_ = "WolfOne_Engage.dds";
 	float barHeightRatio_ = 0.15f; // 画面高さの15%
 	Vector2 textSize_ = {400.0f, 100.0f};
 

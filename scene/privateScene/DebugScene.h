@@ -78,13 +78,9 @@ private:
 
 	//========================================
 	// パーティクル
-	std::unique_ptr<MagEngine::Particle> particle_;
+	
 	// パーティクルエミッター
-	std::unique_ptr<MagEngine::ParticleEmitter> particleEmitter_;
-
-	//=========================================
-	// Skybox
-	std::unique_ptr<MagEngine::Skybox> skybox_;
+	
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
@@ -97,7 +93,6 @@ private:
 
 	//========================================
 	// ボールテスト
-	// Ball ball_;
 
 	//========================================
 	// Cloud

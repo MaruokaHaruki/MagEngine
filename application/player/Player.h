@@ -6,19 +6,27 @@
  * \brief  プレイヤーキャラクターの総合管理クラス
  *
  * 責務：
- * - プレイヤーの移動、ブースト、バレルロールの管理（PlayerMovementComponent）
- * - 弾丸・ミサイルの発射と管理（PlayerCombatComponent）
- * - HP・ダメージ・無敵時間の管理（PlayerHealthComponent）
- * - 敵のロックオン機能と追尾
- * - 敗北演出の制御
+ * - 各コンポーネント（移動・HP・射撃・ロックオン・敗北演出）の統合管理
+ * - 入力処理の委譲
+ * - オブジェクト管理
+ *
+ * 各責務は以下のコンポーネントに分離：
+ * - PlayerMovementComponent: 移動・バレルロール・ブースト
+ * - PlayerCombatComponent: 弾・ミサイル発射
+ * - PlayerHealthComponent: HP・ダメージ
+ * - PlayerLockedOnComponent: ロックオン機能
+ * - PlayerDefeatComponent: 敗北演出
  *********************************************************************/
 #pragma once
 #include "BaseObject.h"
 #include "Input.h"
+#include "MagMath.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include "component/PlayerCombatComponent.h"
+#include "component/PlayerDefeatComponent.h"
 #include "component/PlayerHealthComponent.h"
+#include "component/PlayerLockedOnComponent.h"
 #include "component/PlayerMovementComponent.h"
 #include <memory>
 #include <string>
@@ -56,26 +64,62 @@ public:
 	void DrawMissiles();
 
 	//========================================
-	// EnemyManager設定（ミサイル用）
+	// EnemyManager設定（ミサイル・ロックオン用）
 	/// @brief 敵マネージャーの設定
 	void SetEnemyManager(EnemyManager *enemyManager) {
 		enemyManager_ = enemyManager;
 		combatComponent_.SetEnemyManager(enemyManager);
+		lockedOnComponent_.SetEnemyManager(enemyManager);
+	}
+	/// @brief 敵マネージャーの取得（HUD用）
+	EnemyManager *GetEnemyManager() const {
+		return enemyManager_;
 	}
 
 	//========================================
-	// ロックオン機能
-	/// @brief ロックオンモード切替
-	void UpdateLockOn();
-	/// @brief 最寄りの敵を取得
-	EnemyBase *GetNearestEnemy() const; // Enemy* から EnemyBase* に変更
-	/// @brief ロックオン状態クリア
+	// ロックオン機能（PlayerLockedOnComponentに委譲）
+	/// @brief ロックオン状態確認
 	bool HasLockOnTarget() const {
-		return lockOnTarget_ != nullptr;
+		return lockedOnComponent_.HasLockOnTarget();
 	}
-	/// @brief ロックオン対象の取得
-	EnemyBase *GetLockOnTarget() const { // Enemy* から EnemyBase* に変更
-		return lockOnTarget_;
+	/// @brief プライマリロックオン対象の取得
+	EnemyBase *GetLockOnTarget() const {
+		return lockedOnComponent_.GetPrimaryTarget();
+	}
+	/// @brief 全ロックオン対象を取得
+	const std::vector<EnemyBase *> &GetAllLockOnTargets() const {
+		return lockedOnComponent_.GetAllTargets();
+	}
+	/// @brief ロックオン対象の数を取得
+	size_t GetLockOnTargetCount() const {
+		return lockedOnComponent_.GetTargetCount();
+	}
+	/// @brief ロックオン範囲のセッター
+	void SetLockOnRange(float range) {
+		lockedOnComponent_.SetLockOnRange(range);
+	}
+	/// @brief ロックオン範囲のゲッター
+	float GetLockOnRange() const {
+		return lockedOnComponent_.GetLockOnRange();
+	}
+	/// @brief ロックオンFOVのゲッター
+	float GetLockOnFOV() const {
+		return lockedOnComponent_.GetLockOnFOV();
+	}
+
+	///--------------------------------------------------------------
+	///                        敗北演出（PlayerDefeatComponentに委譲）
+	/// @brief 敗北判定
+	bool IsDefeated() const {
+		return defeatComponent_.IsDefeated();
+	}
+	/// @brief 敗北演出完了判定
+	bool IsDefeatAnimationComplete() const {
+		return defeatComponent_.IsDefeatAnimationComplete();
+	}
+	/// @brief 敗北演出開始
+	void StartDefeatAnimation() {
+		defeatComponent_.StartDefeatAnimation();
 	}
 
 	///--------------------------------------------------------------
@@ -123,7 +167,7 @@ public:
 	//========================================
 	// Transform関連のゲッター（GameClearAnimation用）
 	/// @brief Transformの取得
-	Transform *GetTransform() const {
+	MagMath::Transform *GetTransform() const {
 		return obj_ ? obj_->GetTransform() : nullptr;
 	}
 
@@ -150,80 +194,14 @@ public:
 	/// @brief 回復処理
 	void Heal(int healAmount);
 
-	//========================================
-	// 敗北演出関連（Crash から Defeat に変更）
-	/// @brief 敗北判定
-	bool IsDefeated() const {
-		return isDefeated_;
-	}
-	/// @brief 敗北演出完了判定
-	bool IsDefeatAnimationComplete() const {
-		return defeatAnimationComplete_;
-	}
-	/// @brief 敗北演出開始
-	void StartDefeatAnimation(); // StartCrash から変更
-
 	///--------------------------------------------------------------
 	///                        衝突処理
 	void OnCollisionEnter(BaseObject *other) override;
 	void OnCollisionStay(BaseObject *other) override;
 	void OnCollisionExit(BaseObject *other) override;
 
-	///--------------------------------------------------------------
-	///                        静的メンバ関数
-private:
-	/// @brief 移動更新
-	void UpdateMovement();
-	/// @brief バレルロール・ブースト更新
-	void UpdateBarrelRollAndBoost();
-	/// @brief 射撃処理
-	void ProcessShooting();
-	/// @brief 敗北演出更新
-	void UpdateDefeatAnimation();
-	/// @brief Transform安全取得
-	Transform *GetTransformSafe() const;
-	/// @brief ロックオン解除
-	void ClearLockOn();
-
-	///--------------------------------------------------------------
-	///                        静的メンバ変数
-	//========================================
-	// コア
-	std::unique_ptr<MagEngine::Object3d> obj_;
-	MagEngine::Object3dSetup *object3dSetup_;
-
-	//========================================
-	// コンポーネント
-	PlayerHealthComponent healthComponent_;
-	PlayerCombatComponent combatComponent_;
-	PlayerMovementComponent movementComponent_;
-
-	//========================================
-	// システム参照
-	EnemyManager *enemyManager_;
-
-	//========================================
-	// ロックオン関連
-	EnemyBase *lockOnTarget_; // Enemy* から EnemyBase* に変更
-	float lockOnRange_;
-	bool lockOnMode_;
-
-	//========================================
-	// 敗北演出関連
-	bool isDefeated_;
-	bool defeatAnimationComplete_;
-	float defeatAnimationTime_;
-	float defeatAnimationDuration_;
-	Vector3 defeatVelocity_;
-	Vector3 defeatRotationSpeed_;
-
-	//========================================
-	//
-	friend class FollowCamera;
-
 	//========================================
 	// 射撃・弾発射方向（HUD用）
-public:
 	/// @brief 弾の発射方向を取得
 	Vector3 GetBulletFireDirection() const {
 		return combatComponent_.GetBulletFireDirection();
@@ -238,4 +216,39 @@ public:
 		}
 		return {0.0f, 0.0f, 1.0f};
 	}
+
+	///--------------------------------------------------------------
+	///                        内部処理（private）
+private:
+	/// @brief 移動更新
+	void UpdateMovement();
+	/// @brief バレルロール・ブースト更新
+	void UpdateBarrelRollAndBoost();
+	/// @brief 射撃処理
+	void ProcessShooting();
+	/// @brief Transform安全取得
+	MagMath::Transform *GetTransformSafe() const;
+
+	///--------------------------------------------------------------
+	///                        メンバ変数
+	//========================================
+	// コア
+	std::unique_ptr<MagEngine::Object3d> obj_;
+	MagEngine::Object3dSetup *object3dSetup_;
+
+	//========================================
+	// コンポーネント群
+	PlayerHealthComponent healthComponent_;		// HP管理
+	PlayerCombatComponent combatComponent_;		// 射撃・ミサイル管理
+	PlayerMovementComponent movementComponent_; // 移動・バレルロール
+	PlayerLockedOnComponent lockedOnComponent_; // ロックオン管理
+	PlayerDefeatComponent defeatComponent_;		// 敗北演出
+
+	//========================================
+	// システム参照
+	EnemyManager *enemyManager_;
+
+	//========================================
+	// Friend クラス
+	friend class FollowCamera;
 };

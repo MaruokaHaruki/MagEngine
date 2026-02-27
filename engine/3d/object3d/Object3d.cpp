@@ -211,9 +211,11 @@ namespace MagEngine {
 		spotLight.position = {0.0f, 5.0f, 0.0f};
 		spotLight.direction = {0.0f, -1.0f, 0.0f}; // 真下方向
 		spotLight.intensity = 1.0f;
-		spotLight.distance = 15.0f;		 // 影響範囲
-		spotLight.decay = 1.5f;			 // 減衰率
-		spotLight.cosAngle = cosf(0.5f); // 約30度の円錐
+		spotLight.distance = 15.0f; // 影響範囲
+		spotLight.decay = 1.5f;		// 減衰率
+		float angleDefault = 0.5f;
+		spotLight.cosFalloffStart = cosf(angleDefault * 0.7f); // 内側の角度（70%）
+		spotLight.cosFalloffEnd = cosf(angleDefault);		   // 外側の角度（約30度の円錐）
 		// 書き込み
 		*spotLightData_ = spotLight;
 	}

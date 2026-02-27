@@ -12,6 +12,8 @@
 #include <vector>
 //========================================
 // Application
+#include "Cloud.h"
+#include "CloudSetup.h"
 #include "CollisionManager.h"
 #include "Enemy.h"
 #include "EnemyManager.h"
@@ -29,11 +31,11 @@ class TitleScene : public BaseScene {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup, 
-		MagEngine::Object3dSetup *object3dSetup, 
-		MagEngine::ParticleSetup *particleSetup, 
-		MagEngine::SkyboxSetup *skyboxSetup, 
-		MagEngine::CloudSetup *cloudSetup) override;
+	void Initialize(MagEngine::SpriteSetup *spriteSetup,
+					MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::ParticleSetup *particleSetup,
+					MagEngine::SkyboxSetup *skyboxSetup,
+					MagEngine::CloudSetup *cloudSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -80,16 +82,22 @@ private:
 	// スプライト
 	std::unique_ptr<MagEngine::Sprite> titleSprite_;
 	std::unique_ptr<MagEngine::Sprite> pressEnterSprite_;
-
+	MagMath::Vector2 titleSpriteBaseSize_; // タイトルスプライトの基本サイズ
+	MagMath::Vector2 pressEnterBaseSize_;  // Press Enterスプライトの基本サイズ
 	//========================================
 	// 演出用変数
 	float blinkTimer_ = 0.0f;
 	float pressEnterAlpha_ = 1.0f;
 	bool isFadingOut_ = true;
+	float totalElapsedTime_ = 0.0f; // シーン全体の経過時間
 
 	//========================================
 	// スカイボックス
 	std::unique_ptr<MagEngine::Skybox> skybox_;
+
+	//========================================
+	// 雲
+	std::unique_ptr<MagEngine::Cloud> cloud_;
 
 	//========================================
 	// トランジション

@@ -118,6 +118,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\enemy\EnemyBase.cpp" />
     <ClCompile Include="application\enemy\EnemyBullet.cpp" />
     <ClCompile Include="application\enemy\EnemyGunner.cpp" />
+    <ClCompile Include="application\player\component\PlayerLockedOnComponent.cpp" />
     <ClCompile Include="application\ui\MenuUI.cpp" />
     <ClCompile Include="engine\3d\cloud\Cloud.cpp" />
     <ClCompile Include="engine\3d\cloud\CloudSetup.cpp" />
@@ -159,6 +160,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\player\component\PlayerHealthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
     <ClCompile Include="application\ui\OperationGuideUI.cpp" />
+    <ClCompile Include="application\ui\LockOnHUD.cpp" />
     <ClCompile Include="scene\base\SceneFactory.cpp" />
     <ClCompile Include="scene\publicScene\ClearScene.cpp" />
     <ClCompile Include="scene\privateScene\DebugScene.cpp" />
@@ -201,6 +203,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\enemy\EnemyBase.h" />
     <ClInclude Include="application\enemy\EnemyBullet.h" />
     <ClInclude Include="application\enemy\EnemyGunner.h" />
+    <ClInclude Include="application\player\component\PlayerLockedOnComponent.h" />
     <ClInclude Include="application\ui\MenuUI.h" />
     <ClInclude Include="engine\3d\cloud\Cloud.h" />
     <ClInclude Include="engine\3d\cloud\CloudSetup.h" />
@@ -249,6 +252,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
     <ClInclude Include="application\ui\OperationGuideUI.h" />
+    <ClInclude Include="application\ui\LockOnHUD.h" />
     <ClInclude Include="scene\base\AbstractSceneFactory.h" />
     <ClInclude Include="application\collision\Collider.h" />
     <ClInclude Include="application\collision\CollisionManager.h" />
