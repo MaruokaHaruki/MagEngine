@@ -200,6 +200,7 @@
     <ClCompile Include="application\ui\UIManager.cpp" />
     <ClCompile Include="application\ui\MenuUI.cpp" />
     <ClCompile Include="application\ui\LockOnHUD.cpp" />
+    <ClCompile Include="application\player\component\PlayerLockedOnComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -457,6 +458,7 @@
     <ClInclude Include="application\ui\UIManager.h" />
     <ClInclude Include="application\ui\MenuUI.h" />
     <ClInclude Include="application\ui\LockOnHUD.h" />
+    <ClInclude Include="application\player\component\PlayerLockedOnComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

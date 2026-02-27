@@ -16,7 +16,7 @@
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
-#include <Xinput.h>
+#include "input.h"
 #include <algorithm>
 #include <cmath> // std::abs, std::min, std::max のため
 using namespace MagEngine;
@@ -25,14 +25,8 @@ namespace { // 無名名前空間でファイルスコープの定数を定義
 	constexpr float kFrameDelta = 1.0f / 60.0f;
 } // namespace
 
-Transform *Player::GetTransformSafe() const {
+MagMath::Transform *Player::GetTransformSafe() const {
 	return obj_ ? obj_->GetTransform() : nullptr;
-}
-
-void Player::ClearLockOn() {
-	lockOnTargets_.clear();
-	primaryLockOnTarget_ = nullptr;
-	lockOnMode_ = false;
 }
 
 //=======================================================================
@@ -40,42 +34,30 @@ void Player::ClearLockOn() {
 //=======================================================================
 /// 責務:
 /// - 3Dオブジェクト（ビジュアル）の生成と初期化
-/// - 全コンポーネント（移動・HP・射撃）の初期化
-/// - ロックオン・敗北演出などの状態をリセット
+/// - 全コンポーネント（移動・HP・射撃・ロックオン・敗北演出）の初期化
 void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath) {
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
 	object3dSetup_ = object3dSetup;
 
-	// 移動コンポーネントの初期化
+	// === 各コンポーネント初期化 ===
 	movementComponent_.Initialize();
-
-	// HPコンポーネントの初期化
 	healthComponent_.Initialize(100);
-
-	// 戦闘コンポーネントの初期化
 	combatComponent_.Initialize(object3dSetup);
+	lockedOnComponent_.Initialize(nullptr);
+	defeatComponent_.Initialize();
 
+	// === Transform初期化 ===
 	const Vector3 zero{};
-	if (Transform *transform = GetTransformSafe()) {
+	if (MagMath::Transform *transform = GetTransformSafe()) {
 		transform->translate = zero;
 		transform->rotate = zero;
 		BaseObject::Initialize(transform->translate, 1.0f);
 	}
 
+	// === システム参照初期化 ===
 	enemyManager_ = nullptr;
-	lockOnRange_ = 100.0f;
-	lockOnFOV_ = 30.0f; // 視野角60度（左右30度ずつ）
-	maxLockOnTargets_ = 3;  // 最大3つまでロックオン可能
-	ClearLockOn();
-
-	isDefeated_ = false;
-	defeatAnimationComplete_ = false;
-	defeatAnimationTime_ = 0.0f;
-	defeatAnimationDuration_ = 3.0f;
-	defeatVelocity_ = zero;
-	defeatRotationSpeed_ = zero;
 }
 
 //=============================================================================
@@ -84,186 +66,39 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 /// 責勑:
 /// - 蓮北機能を除く各コンポーネントを更新
 /// - 入力処理、移動、回転を处理
-/// - 発射、粗探探を実蘳
+/// 責務: 各コンポーネントを統合更新する
 void Player::Update() {
-	Transform *objTransform = GetTransformSafe();
+	MagMath::Transform *objTransform = GetTransformSafe();
 	if (!objTransform) {
 		return;
 	}
 
-	// === 敗北演出中の処理 ===
-	if (isDefeated_) {
-		UpdateDefeatAnimation();
-		obj_->Update();
-		return;
-	}
-
-	// === コンポーネントの更新 ===
+	// === コンポーネント更新 ===
 	healthComponent_.Update(kFrameDelta);
 	combatComponent_.Update(kFrameDelta);
 
-	// === プレイヤーの各種更新処理 ===
+	// === プレイヤー移動関連処理 ===
 	UpdateMovement();
-	UpdateBarrelRollAndBoost(); // 追加
-	UpdateLockOn();
+	UpdateBarrelRollAndBoost();
+
+	// === ロックオン機能（コンポーネント委譲） ===
+	lockedOnComponent_.Update(GetPosition(), GetForwardVector());
+
+	// === 射撃処理 ===
 	ProcessShooting();
 	combatComponent_.UpdateBullets();
 	combatComponent_.UpdateMissiles();
 
-	// === 当たり判定・オブジェクト更新 ===
-	BaseObject::Update(objTransform->translate);
+	// === 敗北演出（敗北中のみ） ===
+	if (defeatComponent_.IsDefeated()) {
+		defeatComponent_.Update(objTransform, kFrameDelta);
+	}
+
+	// === 基本的なオブジェクト更新（敗北演出中以外） ===
+	if (!defeatComponent_.IsDefeated()) {
+		BaseObject::Update(objTransform->translate);
+	}
 	obj_->Update();
-}
-
-//=============================================================================
-// ロックオン機能の更新（自動マルチロックオン対応）
-void Player::UpdateLockOn() {
-	// 範囲内の敵を自動的にロック対象に追加/更新
-	if (!enemyManager_) {
-		lockOnTargets_.clear();
-		primaryLockOnTarget_ = nullptr;
-		lockOnMode_ = false;
-		return;
-	}
-
-	const Vector3 playerPos = GetPosition();
-	const Vector3 playerForward = GetForwardVector();
-	std::vector<EnemyBase *> enemiesInRange;
-
-	// 範囲内の全敵を取得
-	const auto &enemies = enemyManager_->GetEnemies();
-	for (const auto &enemy : enemies) {
-		if (!enemy || !enemy->IsAlive()) {
-			continue;
-		}
-
-		const Vector3 enemyPos = enemy->GetPosition();
-		const Vector3 toEnemy = {
-			enemyPos.x - playerPos.x,
-			enemyPos.y - playerPos.y,
-			enemyPos.z - playerPos.z};
-
-		float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
-
-		// ロックオン範囲外はスキップ
-		if (distance > lockOnRange_) {
-			continue;
-		}
-
-		// 視野角チェック（コーン形範囲内か）
-		// NOTE: 複数敵ロックのデバッグ用に視野角チェックを無効化
-		// 視野角チェックを有効にする場合は、以下の「#define ENABLE_FOV_CHECK」をコメント解除
-		#define ENABLE_FOV_CHECK 0  // 0=無効, 1=有効
-		
-		#if ENABLE_FOV_CHECK
-		float normalizedX = toEnemy.x / (distance + 0.001f);
-		float normalizedY = toEnemy.y / (distance + 0.001f);
-		float normalizedZ = toEnemy.z / (distance + 0.001f);
-
-		float dotProduct = normalizedX * playerForward.x +
-						  normalizedY * playerForward.y +
-						  normalizedZ * playerForward.z;
-
-		float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f;
-		float angleRadians = std::acos(std::max(-1.0f, std::min(1.0f, dotProduct)));
-		if (angleRadians > fovRadians) {
-			// 視野外の敵はスキップ
-			continue;
-		}
-		#endif
-
-		// 敵リストに追加（重複チェック）
-		bool alreadyInList = false;
-		for (const auto *target : enemiesInRange) {
-			if (target == enemy.get()) {
-				alreadyInList = true;
-				break;
-			}
-		}
-		if (!alreadyInList) {
-			enemiesInRange.push_back(enemy.get());
-		}
-	}
-
-	// ロック対象を範囲内の敵で更新（最大数まで、強制更新）
-	lockOnTargets_.clear();
-	int lockCount = std::min((int)enemiesInRange.size(), maxLockOnTargets_);
-	for (int i = 0; i < lockCount; ++i) {
-		lockOnTargets_.push_back(enemiesInRange[i]);
-	}
-
-	// DEBUG: ロック敵の数をデバッグ出力
-	// WARNING: 本番環境ではコメントアウト
-	// printf("DEBUG: Enemies in range: %zd, Locked targets: %zu\n", enemiesInRange.size(), lockOnTargets_.size());
-
-	// プライマリターゲットの更新
-	if (!lockOnTargets_.empty()) {
-		primaryLockOnTarget_ = lockOnTargets_[0];
-		lockOnMode_ = true;
-	} else {
-		primaryLockOnTarget_ = nullptr;
-		lockOnMode_ = false;
-	}
-}
-
-//=============================================================================
-// 最寄りの敵を取得
-EnemyBase *Player::GetNearestEnemy() const { // Enemy* から EnemyBase* に変更
-	if (!enemyManager_) {
-		return nullptr;
-	}
-
-	const Vector3 playerPos = GetPosition();
-	const Vector3 playerForward = GetForwardVector();
-	EnemyBase *nearestEnemy = nullptr; // Enemy* から EnemyBase* に変更
-	float bestScore = -1.0f;
-
-	const auto &enemies = enemyManager_->GetEnemies();
-	for (const auto &enemy : enemies) {
-		if (!enemy || !enemy->IsAlive()) {
-			continue;
-		}
-
-		const Vector3 enemyPos = enemy->GetPosition();
-		const Vector3 toEnemy = {
-			enemyPos.x - playerPos.x,
-			enemyPos.y - playerPos.y,
-			enemyPos.z - playerPos.z};
-
-		float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
-
-		// ロックオン範囲外はスキップ
-		if (distance > lockOnRange_) {
-			continue;
-		}
-
-		// 進行方向スコア（前方ほど高い）
-		float normalizedX = toEnemy.x / (distance + 0.001f);
-		float normalizedY = toEnemy.y / (distance + 0.001f);
-		float normalizedZ = toEnemy.z / (distance + 0.001f);
-
-		float dotProduct = normalizedX * playerForward.x +
-						   normalizedY * playerForward.y +
-						   normalizedZ * playerForward.z;
-
-		// 視野角チェック（コーン形範囲内か）
-		float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f;
-		float angleRadians = std::acos(std::max(-1.0f, std::min(1.0f, dotProduct)));
-		if (angleRadians > fovRadians) {
-			// 視野外の敵はスキップ
-			continue;
-		}
-
-		// スコア = 前方への角度（高いほど前方）- 距離ペナルティ
-		float score = dotProduct - (distance / lockOnRange_) * 0.3f;
-
-		if (score > bestScore) {
-			bestScore = score;
-			nearestEnemy = enemy.get();
-		}
-	}
-
-	return nearestEnemy;
 }
 
 //=============================================================================
@@ -434,15 +269,15 @@ void Player::ProcessShooting() {
 						input->TriggerButton(XINPUT_GAMEPAD_B);
 
 	if (shootMissile && combatComponent_.CanShootMissile()) {
-		// マルチロックオン対応
-		if (!lockOnTargets_.empty()) {
+		// マルチロックオン対応（コンポーネント委譲）
+		const auto &lockOnTargets = lockedOnComponent_.GetAllTargets();
+		if (!lockOnTargets.empty()) {
 			// ロックオン中：すべてのロックオン対象にミサイルを発射
-			// DEBUG: ShootMultipleMissiles呼び出しログ
-			// printf("DEBUG: Shooting %zu missiles to %zu targets\n", lockOnTargets_.size(), lockOnTargets_.size());
-			combatComponent_.ShootMultipleMissiles(playerPos, forward, lockOnTargets_);
+			combatComponent_.ShootMultipleMissiles(playerPos, forward, lockOnTargets);
 		} else {
 			// ロックオン外：最寄りの敵に発射（互換性保持）
-			EnemyBase *targetEnemy = GetNearestEnemy();
+			// 最寄り敵検索は lockedOnComponent_ に委譲
+			EnemyBase *targetEnemy = lockedOnComponent_.GetPrimaryTarget();
 			if (targetEnemy) {
 				combatComponent_.ShootMissile(playerPos, forward, targetEnemy);
 			}
@@ -458,17 +293,18 @@ void Player::Draw() {
 	}
 
 #ifdef _DEBUG
-	// ロックオン範囲の描画（コーン形）
+	// ロックオン範囲の描画（コンポーネント情報を使用）
 	LineManager *lineManager = LineManager::GetInstance();
 	Vector3 playerPos = GetPosition();
 	Vector3 playerForward = GetForwardVector();
 
 	// コーン形のロックオン範囲を描画
-	Vector4 rangeColor = lockOnMode_ && primaryLockOnTarget_ ? Vector4{1.0f, 0.0f, 0.0f, 0.4f} : // ロックオン中は赤
-							 Vector4{0.0f, 1.0f, 1.0f, 0.2f};							  // 待機中はシアン
+	bool hasLockOn = lockedOnComponent_.HasLockOnTarget();
+	Vector4 rangeColor = hasLockOn ? Vector4{1.0f, 0.0f, 0.0f, 0.4f} : // ロックオン中は赤
+							 Vector4{0.0f, 1.0f, 1.0f, 0.2f};		   // 待機中はシアン
 
 	// コーン形を描画：正面に向かう円錐
-	float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f; // 視野角をラジアンに
+	float fovRadians = lockedOnComponent_.GetLockOnFOV() * 0.5f * MagMath::PI / 180.0f; // 視野角をラジアンに
 	int circleSegments = 16;
 
 	// コーン底面の円を描画
@@ -477,7 +313,7 @@ void Player::Draw() {
 		float angle2 = (2.0f * MagMath::PI / circleSegments) * (i + 1);
 
 		// 円の半径を計算（視野角とロックオン距離から）
-		float coneRadius = lockOnRange_ * std::tan(fovRadians);
+		float coneRadius = lockedOnComponent_.GetLockOnRange() * std::tan(fovRadians);
 
 		// 右ベクトルと上ベクトルを計算
 		Vector3 right = {playerForward.z, 0.0f, -playerForward.x};
@@ -492,10 +328,10 @@ void Player::Draw() {
 		Vector3 up = {0.0f, 1.0f, 0.0f};
 
 		// 円周上の2点
-		Vector3 p1 = playerPos + playerForward * lockOnRange_ +
+		Vector3 p1 = playerPos + playerForward * lockedOnComponent_.GetLockOnRange() +
 					 right * std::cos(angle1) * coneRadius +
 					 up * std::sin(angle1) * coneRadius;
-		Vector3 p2 = playerPos + playerForward * lockOnRange_ +
+		Vector3 p2 = playerPos + playerForward * lockedOnComponent_.GetLockOnRange() +
 					 right * std::cos(angle2) * coneRadius +
 					 up * std::sin(angle2) * coneRadius;
 
@@ -527,7 +363,7 @@ void Player::DrawImGui() {
 	if (!obj_) {
 		return;
 	}
-	Transform *objTransform = obj_->GetTransform();
+	MagMath::Transform *objTransform = obj_->GetTransform();
 	if (objTransform) {
 		ImGui::Begin("Player Debug");
 
@@ -560,14 +396,13 @@ void Player::DrawImGui() {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.6f, 0.2f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.7f, 0.3f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.4f, 0.1f, 1.0f));
-
 		if (ImGui::Button("Trigger End Sequence (Debug)", ImVec2(300, 30))) {
 			static int confirmCount = 0;
 			confirmCount++;
 
 			if (confirmCount >= 2) {
 				healthComponent_.TakeDamage(healthComponent_.GetCurrentHP());
-				StartDefeatAnimation();
+				defeatComponent_.StartDefeatAnimation();
 				confirmCount = 0;
 			} else {
 				ImGui::OpenPopup("Confirm Debug Action");
@@ -666,20 +501,24 @@ void Player::DrawImGui() {
 
 		ImGui::Separator();
 
-		// === ロックオン情報 ===
+		// === ロックオン情報（コンポーネント委譲） ===
 		ImGui::Text("=== Lock-On System ===");
-		ImGui::Text("Lock-On Mode: %s", lockOnMode_ ? "ACTIVE" : "INACTIVE");
-		ImGui::Text("Lock-On Range: %.1f", lockOnRange_);
-		if (ImGui::SliderFloat("Lock-On Range (Slider)", &lockOnRange_, 10.0f, 100.0f)) {
-			// ロックオン範囲を動的に変更可能
+		ImGui::Text("Lock-On Mode: %s", lockedOnComponent_.HasLockOnTarget() ? "ACTIVE" : "INACTIVE");
+		float lockOnRange = lockedOnComponent_.GetLockOnRange();
+		ImGui::Text("Lock-On Range: %.1f", lockOnRange);
+		if (ImGui::SliderFloat("Lock-On Range (Slider)", &lockOnRange, 10.0f, 100.0f)) {
+			lockedOnComponent_.SetLockOnRange(lockOnRange);
 		}
-		ImGui::Text("Lock-On FOV: %.1f degrees", lockOnFOV_);
-		if (ImGui::SliderFloat("Lock-On FOV (Slider)", &lockOnFOV_, 30.0f, 180.0f)) {
-			// ロックオン視野角を動的に変更可能
+		float lockOnFOV = lockedOnComponent_.GetLockOnFOV();
+		ImGui::Text("Lock-On FOV: %.1f degrees", lockOnFOV);
+		if (ImGui::SliderFloat("Lock-On FOV (Slider)", &lockOnFOV, 30.0f, 180.0f)) {
+			lockedOnComponent_.SetLockOnFOV(lockOnFOV);
 		}
-		if (primaryLockOnTarget_ && primaryLockOnTarget_->IsAlive()) {
+
+		EnemyBase *primaryTarget = lockedOnComponent_.GetPrimaryTarget();
+		if (primaryTarget && primaryTarget->IsAlive()) {
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Target Locked!");
-			Vector3 targetPos = primaryLockOnTarget_->GetPosition();
+			Vector3 targetPos = primaryTarget->GetPosition();
 			ImGui::Text("Target Position: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
 			float distToTarget = Distance(GetPosition(), targetPos);
 			ImGui::Text("Distance to Target: %.2f", distToTarget);
@@ -705,38 +544,39 @@ void Player::DrawImGui() {
 		ImGui::Text("  Keyboard: SPACE = Gun, M = Missile");
 		ImGui::Text("  Controller: R-Trigger = Gun, L-Trigger/B = Missile");
 
-		// === ロックオン情報（自動モード） ===
+		// === ロックオン情報（マルチロック） ===
 		ImGui::Text("=== Auto Lock-On Status ===");
-		ImGui::Text("Lock-On Mode: %s", lockOnMode_ ? "ACTIVE" : "INACTIVE");
-		ImGui::Text("Locked Enemies: %zu / %d", lockOnTargets_.size(), maxLockOnTargets_);
-		
+		ImGui::Text("Lock-On Mode: %s", lockedOnComponent_.HasLockOnTarget() ? "ACTIVE" : "INACTIVE");
+		ImGui::Text("Locked Enemies: %zu / %d", lockedOnComponent_.GetTargetCount(), lockedOnComponent_.GetMaxLockOnTargets());
+
 		// ロック敵の詳細情報
-		if (!lockOnTargets_.empty()) {
+		const auto &allTargets = lockedOnComponent_.GetAllTargets();
+		if (!allTargets.empty()) {
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Locked Targets:");
 			Vector3 playerPos = GetPosition();
-			for (size_t i = 0; i < lockOnTargets_.size(); ++i) {
-				if (lockOnTargets_[i]) {
-					Vector3 targetPos = lockOnTargets_[i]->GetPosition();
+			for (size_t i = 0; i < allTargets.size(); ++i) {
+				if (allTargets[i]) {
+					Vector3 targetPos = allTargets[i]->GetPosition();
 					float dist = Distance(playerPos, targetPos);
-					ImGui::Text("  [%zu] Addr: %p, Dist: %.2f", i, (void*)lockOnTargets_[i], dist);
+					ImGui::Text("  [%zu] Addr: %p, Dist: %.2f", i, (void *)allTargets[i], dist);
 				}
 			}
 		}
-		
+
 		if (HasLockOnTarget()) {
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Primary Target: Locked");
-			Vector3 targetPos = primaryLockOnTarget_->GetPosition();
+			Vector3 targetPos = primaryTarget->GetPosition();
 			ImGui::Text("Target Pos: (%.2f, %.2f, %.2f)", targetPos.x, targetPos.y, targetPos.z);
 
 			Vector3 playerPos = GetPosition();
 			const float distance = Distance(targetPos, playerPos);
 			ImGui::Text("Distance: %.2f", distance);
-			
+
 			// ロック敵一覧
-			if (lockOnTargets_.size() > 1) {
+			if (allTargets.size() > 1) {
 				ImGui::Text("Other Locked Targets:");
-				for (size_t i = 1; i < lockOnTargets_.size(); ++i) {
-					Vector3 pos = lockOnTargets_[i]->GetPosition();
+				for (size_t i = 1; i < allTargets.size(); ++i) {
+					Vector3 pos = allTargets[i]->GetPosition();
 					float dist = Distance(playerPos, pos);
 					ImGui::Text("  Enemy %zu: Dist=%.2f", i, dist);
 				}
@@ -744,8 +584,6 @@ void Player::DrawImGui() {
 		} else {
 			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No targets in range");
 		}
-		ImGui::SliderFloat("Lock-On Range", &lockOnRange_, 10.0f, 200.0f);
-		ImGui::SliderFloat("Lock-On FOV (Degrees)", &lockOnFOV_, 10.0f, 180.0f);
 
 		// ミサイル個別情報
 		ImGui::Separator();
@@ -758,25 +596,24 @@ void Player::DrawImGui() {
 							i,
 							missiles[i]->IsLockedOn() ? "Yes" : "No",
 							missiles[i]->HasTarget() ? "Yes" : "No",
-							(void*)targetEnemy);
+							(void *)targetEnemy);
 			}
 		}
 
 		ImGui::Separator();
 
-		// === 敗北演出情報（用語変更） ===
+		// === 敗北演出情報 ===
 		ImGui::Text("=== Defeat Animation Status ===");
-		ImGui::Text("Is Defeated: %s", isDefeated_ ? "Yes" : "No");
-		ImGui::Text("Animation Complete: %s", defeatAnimationComplete_ ? "Yes" : "No");
-		if (isDefeated_) {
-			ImGui::Text("Animation Time: %.2fs / %.2fs", defeatAnimationTime_, defeatAnimationDuration_);
-			ImGui::ProgressBar(defeatAnimationTime_ / defeatAnimationDuration_, ImVec2(200, 20), "");
+		ImGui::Text("Is Defeated: %s", defeatComponent_.IsDefeated() ? "Yes" : "No");
+		ImGui::Text("Animation Complete: %s", defeatComponent_.IsDefeatAnimationComplete() ? "Yes" : "No");
+		if (defeatComponent_.IsDefeated()) {
+			ImGui::Text("Animation Progress: %.2f%%", defeatComponent_.GetAnimationProgress() * 100.0f);
+			ImGui::ProgressBar(defeatComponent_.GetAnimationProgress(), ImVec2(200, 20), "");
 		}
-		ImGui::SliderFloat("Animation Duration", &defeatAnimationDuration_, 1.0f, 10.0f);
 
 		if (ImGui::Button("Test Animation Sequence")) {
 			healthComponent_.TakeDamage(healthComponent_.GetCurrentHP());
-			StartDefeatAnimation();
+			defeatComponent_.StartDefeatAnimation();
 		}
 
 		ImGui::End();
@@ -787,7 +624,7 @@ void Player::DrawImGui() {
 // HP関連処理（コンポーネントへの委譲）
 void Player::TakeDamage(int damage) {
 	// 敗北状態では追加ダメージを受けない
-	if (isDefeated_) {
+	if (defeatComponent_.IsDefeated()) {
 		return;
 	}
 
@@ -795,7 +632,7 @@ void Player::TakeDamage(int damage) {
 
 	// HP0になったら敗北演出開始
 	if (!healthComponent_.IsAlive()) {
-		StartDefeatAnimation();
+		defeatComponent_.StartDefeatAnimation();
 	}
 }
 
@@ -824,63 +661,4 @@ void Player::OnCollisionStay(BaseObject *other) {
 
 void Player::OnCollisionExit(BaseObject *other) {
 	// 衝突終了時の処理（必要に応じて実装）
-}
-
-//=============================================================================
-// 敗北演出処理（Crash から Defeat に改名）
-void Player::StartDefeatAnimation() {
-	if (isDefeated_) {
-		return;
-	}
-
-	isDefeated_ = true;
-	defeatAnimationComplete_ = false;
-	defeatAnimationTime_ = 0.0f;
-
-	// 演出用の速度を設定（疑似ランダム）
-	unsigned int seed = static_cast<unsigned int>(defeatAnimationTime_ * 1000.0f);
-
-	float pseudoRandom1 = (seed % 100) / 50.0f - 1.0f;
-	float pseudoRandom2 = ((seed * 7) % 100) / 500.0f - 0.1f;
-	float pseudoRandom3 = ((seed * 13) % 100) / 1000.0f - 0.05f;
-	float pseudoRandom4 = ((seed * 19) % 100) / 333.0f - 0.15f;
-
-	const Vector3 &currentVelocity = movementComponent_.GetCurrentVelocity();
-	defeatVelocity_ = {
-		pseudoRandom1 * 1.5f,
-		-5.0f,
-		currentVelocity.z * 0.5f};
-
-	defeatRotationSpeed_ = {
-		pseudoRandom2,
-		pseudoRandom3,
-		pseudoRandom4};
-}
-
-//=============================================================================
-// 敗北演出の更新処理
-void Player::UpdateDefeatAnimation() {
-	Transform *objTransform = GetTransformSafe();
-	if (!objTransform) {
-		return;
-	}
-
-	defeatAnimationTime_ += kFrameDelta;
-	const float animationProgress = std::min(defeatAnimationTime_ / defeatAnimationDuration_, 1.0f);
-
-	defeatVelocity_.y -= 9.8f * kFrameDelta * (1.0f + animationProgress);
-
-	objTransform->translate.x += defeatVelocity_.x * kFrameDelta;
-	objTransform->translate.y += defeatVelocity_.y * kFrameDelta;
-	objTransform->translate.z += defeatVelocity_.z * kFrameDelta;
-
-	objTransform->rotate.x += defeatRotationSpeed_.x * (1.0f + animationProgress * 2.0f);
-	objTransform->rotate.y += defeatRotationSpeed_.y * (1.0f + animationProgress * 2.0f);
-	objTransform->rotate.z += defeatRotationSpeed_.z * (1.0f + animationProgress * 2.0f);
-
-	if (objTransform->translate.y <= -10.0f || animationProgress >= 1.0f) {
-		defeatAnimationComplete_ = true;
-	}
-
-	BaseObject::Update(objTransform->translate);
 }
