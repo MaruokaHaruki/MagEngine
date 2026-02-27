@@ -33,8 +33,7 @@ namespace MagEngine {
 		~EditorLayout();
 
 		/// \brief 初期化
-		void Initialize(DirectXCore *dxCore, PostEffectManager *postEffectManager);
-
+		void Initialize(DirectXCore *dxCore, PostEffectManager *postEffectManager, class ImguiSetup *imguiSetup = nullptr);
 		/// \brief 更新
 		void Update();
 
@@ -86,6 +85,7 @@ namespace MagEngine {
 		// ポインタ
 		DirectXCore *dxCore_ = nullptr;
 		PostEffectManager *postEffectManager_ = nullptr;
+		class ImguiSetup *imguiSetup_ = nullptr;
 
 		//========================================
 		// ヘルパー関数

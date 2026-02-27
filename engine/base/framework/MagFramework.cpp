@@ -73,10 +73,10 @@ namespace MagEngine {
 		///						 ImGuiのセットアップ
 		imguiSetup_ = std::make_unique<ImguiSetup>();
 		// ImGuiの初期化
-		imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CLASSIC);
+		imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CYBER);
 
 		///--------------------------------------------------------------
-		/// 					 カメラの初期化
+		/// 					 カメラの初期化s
 		CameraManager::GetInstance()->Initialize();
 
 		///--------------------------------------------------------------
@@ -194,7 +194,7 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 エディターレイアウトの初期化
 		editorLayout_ = std::make_unique<EditorLayout>();
-		editorLayout_->Initialize(dxCore_.get(), postEffectManager_.get());
+		editorLayout_->Initialize(dxCore_.get(), postEffectManager_.get(), imguiSetup_.get());
 
 		///--------------------------------------------------------------
 		///					 Game Viewport にレンダーテクスチャを設定

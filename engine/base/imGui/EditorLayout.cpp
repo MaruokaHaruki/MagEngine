@@ -10,6 +10,7 @@
 #include "DirectXCore.h"
 #include "GameViewportPanel.h"
 #include "HierarchyPanel.h"
+#include "ImguiSetup.h"
 #include "InspectorPanel.h"
 #include "PostEffectManager.h"
 #include "ToolsPanel.h"
@@ -30,9 +31,10 @@ namespace MagEngine {
 		Finalize();
 	}
 
-	void EditorLayout::Initialize(DirectXCore *dxCore, PostEffectManager *postEffectManager) {
+	void EditorLayout::Initialize(DirectXCore *dxCore, PostEffectManager *postEffectManager, class ImguiSetup *imguiSetup) {
 		dxCore_ = dxCore;
 		postEffectManager_ = postEffectManager;
+		imguiSetup_ = imguiSetup;
 
 		// 各パネルを初期化
 		viewportPanel_->Initialize(&editorState_, dxCore_);
@@ -70,6 +72,13 @@ namespace MagEngine {
 		if (editorState_.panelVisibility.tools) {
 			toolsPanel_->Draw();
 		}
+
+		// パフォーマンスモニターの描画
+#ifdef _DEBUG
+		if (editorState_.panelVisibility.performanceMonitor && imguiSetup_) {
+			imguiSetup_->ShowPerformanceMonitor();
+		}
+#endif
 	}
 
 	void EditorLayout::Finalize() {
@@ -85,12 +94,14 @@ namespace MagEngine {
 		editorState_.panelVisibility.viewport = true;
 		editorState_.panelVisibility.console = true;
 		editorState_.panelVisibility.tools = true;
+		editorState_.panelVisibility.performanceMonitor = true;
 	}
 
 	void EditorLayout::HideAllPanels() {
 		editorState_.panelVisibility.viewport = false;
 		editorState_.panelVisibility.console = false;
 		editorState_.panelVisibility.tools = false;
+		editorState_.panelVisibility.performanceMonitor = false;
 	}
 
 	void EditorLayout::ResetLayout() {
@@ -127,6 +138,9 @@ namespace MagEngine {
 				ImGui::MenuItem("Viewport", nullptr, &editorState_.panelVisibility.viewport);
 				ImGui::MenuItem("Console", nullptr, &editorState_.panelVisibility.console);
 				ImGui::MenuItem("Tools", nullptr, &editorState_.panelVisibility.tools);
+#ifdef _DEBUG
+				ImGui::MenuItem("Performance Monitor", nullptr, &editorState_.panelVisibility.performanceMonitor);
+#endif
 				ImGui::Separator();
 				if (ImGui::MenuItem("Reset Layout")) {
 					ResetLayout();

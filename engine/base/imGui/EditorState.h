@@ -17,9 +17,10 @@ namespace MagEngine {
 	///=============================================================================
 	///						パネル表示状態
 	struct PanelVisibility {
-		bool viewport = true; // Viewportパネル
-		bool console = true;  // Consoleパネル
-		bool tools = true;	  // Toolsパネル
+		bool viewport = true;			// Viewportパネル
+		bool console = true;			// Consoleパネル
+		bool tools = true;				// Toolsパネル
+		bool performanceMonitor = true; // パフォーマンスモニター
 	};
 
 	///=============================================================================

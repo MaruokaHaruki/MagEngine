@@ -84,9 +84,6 @@ namespace MagEngine {
 		ImGui_ImplDX12_NewFrame();	// ImGuiのDirectX12サポート開始
 		ImGui_ImplWin32_NewFrame(); // ImGuiのWin32サポート開始
 		ImGui::NewFrame();			// ImGuiのフレーム開始
-#ifdef _DEBUG
-		ShowPerformanceMonitor();
-#endif // DEBUG
 	}
 
 	///=============================================================================
@@ -136,7 +133,7 @@ namespace MagEngine {
 		// カスタムスタイルの設定
 		ImVec4 *colors = style.Colors;
 		colors[ImGuiCol_Text] = ImVec4(0.0f, 0.9f, 0.0f, 0.5f);				 // テキスト色
-		colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.4f);			 // ウィンドウ背景（透過）
+		colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);			 // ウィンドウ背景（透過）
 		colors[ImGuiCol_Border] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);			 // 枠線
 		colors[ImGuiCol_FrameBg] = ImVec4(0.0f, 0.2f, 0.0f, 0.4f);			 // フレーム背景
 		colors[ImGuiCol_FrameBgHovered] = ImVec4(0.0f, 0.7f, 0.0f, 0.4f);	 // フレーム背景（ホバー時）
@@ -197,8 +194,11 @@ namespace MagEngine {
 	}
 
 	void ImguiSetup::ShowPerformanceMonitor() {
-		// ImGuiウィンドウを作成
-		if (ImGui::Begin("Performance Monitor")) {
+		// ウィンドウ表示フラグ
+		static bool show = true;
+
+		// ImGuiウィンドウを作成（ドッキング可能）
+		if (ImGui::Begin("Performance Monitor", &show)) {
 			// FPSの表示
 			ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
@@ -213,25 +213,14 @@ namespace MagEngine {
 				ImGui::Text("Memory Usage: %.2f MB", memoryUsageMB);
 			}
 
-			// 描画コール数の表示
-			// ImGui::Text("Draw Calls: %d", drawCallCount);
-
-			// ポリゴン（トライアングル）数の表示
-			// ImGui::Text("Triangles: %d", triangleCount);
-
-			// ロジック vs レンダリング処理時間
-			// ImGui::Text("Logic Time: %.2f ms", logicTime);
-			// ImGui::Text("Rendering Time: %.2f ms", renderingTime);
-
 			// グラフの表示 (FPSの変動)
 			static float frameTimes[100] = {0.0f};
 			static int frameIndex = 0;
 			frameTimes[frameIndex] = frameTime;
 			frameIndex = (frameIndex + 1) % IM_ARRAYSIZE(frameTimes);
-			//
 			ImGui::PlotLines("Frame Times", frameTimes, IM_ARRAYSIZE(frameTimes), 0, nullptr, 0.0f, 33.0f, ImVec2(0, 80));
 
-			// CPU使用率の取得と表示（Windows限定の簡易例）
+			// CPU使用率の取得と表示
 			FILETIME idleTime, kernelTime, userTime;
 			if (GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
 				static FILETIME prevIdleTime = idleTime, prevKernelTime = kernelTime, prevUserTime = userTime;
@@ -257,8 +246,6 @@ namespace MagEngine {
 				prevKernelTime = kernelTime;
 				prevUserTime = userTime;
 			}
-
-			// 終了
 		}
 		ImGui::End();
 	}
