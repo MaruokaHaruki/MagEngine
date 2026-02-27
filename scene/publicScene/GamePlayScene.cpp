@@ -229,6 +229,39 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 ///=============================================================================
 ///							終了処理
 void GamePlayScene::Finalize() {
+	// リソースの適切なクリーンアップ
+	// unique_ptrは自動的に破棄されますが、明示的な終了処理が
+	// 必要なコンポーネントがあれば追加します
+	if (collisionManager_) {
+		collisionManager_.reset();
+	}
+	if (particle_) {
+		particle_.reset();
+	}
+	if (enemyManager_) {
+		enemyManager_.reset();
+	}
+	if (player_) {
+		player_.reset();
+	}
+	if (cloud_) {
+		cloud_.reset();
+	}
+	if (skybox_) {
+		skybox_.reset();
+	}
+	if (skydome_) {
+		skydome_.reset();
+	}
+	if (followCamera_) {
+		followCamera_.reset();
+	}
+	if (uiManager_) {
+		uiManager_.reset();
+	}
+	if (sceneTransition_) {
+		sceneTransition_.reset();
+	}
 }
 
 ///=============================================================================
@@ -585,77 +618,112 @@ void GamePlayScene::CloudDraw() {
 ///						ImGui描画
 void GamePlayScene::ImGuiDraw() {
 #ifdef _DEBUG
-	ImGui::Begin("DebugScene");
-	ImGui::Text("Hello, GamePlayScene!");
+	// DebugScene ウィンドウ
+	{
+		ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
+		ImGui::Begin("DebugScene");
+		ImGui::Text("Hello, GamePlayScene!");
 
-	// FollowCameraの制御
-	if (followCamera_) {
-		followCamera_->DrawImGui();
-	}
-	// 雲システムの制御
-
-	ImGui::Separator();
-	ImGui::End();
-
-	//========================================
-	// プレイヤー
-	if (player_) {
-		player_->DrawImGui();
-
-		// ミサイルのImGui表示
-		const auto &missiles = player_->GetMissiles();
-		for (size_t i = 0; i < missiles.size(); ++i) {
-			if (missiles[i] && missiles[i]->IsAlive()) {
-				missiles[i]->DrawImGui();
-			}
+		// FollowCameraの制御
+		if (followCamera_) {
+			followCamera_->DrawImGui();
 		}
-	}
 
-	//========================================
-	// 敵マネージャー
-	if (enemyManager_) {
-		enemyManager_->DrawImGui();
-	}
-
-	//========================================
-	// 雲
-	if (cloud_) {
-		cloud_->DrawImGui();
-
-		// 弾痕テスト用のImGui
-		ImGui::Begin("BulletHole Test");
-		ImGui::Text("Bullet Hole System Test");
 		ImGui::Separator();
-		ImGui::Text("Press B: Add bullet hole at player position");
-		ImGui::Text("Press N: Add random bullet hole");
-		ImGui::Text("Press M: Clear all bullet holes");
-		ImGui::Separator();
-
-		// 現在の弾痕数を表示
-		auto &cloudParams = cloud_->GetMutableParams();
-		ImGui::Text("Active Bullet Holes: %d", cloudParams.bulletHoleCount);
-
-		// 弾痕パラメータの調整
-		ImGui::SliderFloat("Fade Start", &cloudParams.bulletHoleFadeStart, -2.0f, 2.0f);
-		ImGui::SliderFloat("Fade End", &cloudParams.bulletHoleFadeEnd, 0.0f, 5.0f);
-
 		ImGui::End();
 	}
 
 	//========================================
-	// 当たり判定
-	collisionManager_->DrawImGui();
+	// プレイヤー ウィンドウ
+	{
+		if (player_) {
+			ImGui::SetNextWindowPos(ImVec2(400.0f, 0.0f), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
+			ImGui::Begin("Player Debug");
+			player_->DrawImGui();
+	
+			// ミサイルのImGui表示
+			if (ImGui::CollapsingHeader("Missiles")) {
+				const auto &missiles = player_->GetMissiles();
+				for (size_t i = 0; i < missiles.size(); ++i) {
+					if (missiles[i] && missiles[i]->IsAlive()) {
+						missiles[i]->DrawImGui();
+					}
+				}
+			}
+			ImGui::End();
+		}
+	}
 
 	//========================================
-	// UI系（UIManager で統一管理）
+	// 敵マネージャー ウィンドウ
+	{
+		if (enemyManager_) {
+			ImGui::SetNextWindowPos(ImVec2(800.0f, 0.0f), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
+			ImGui::Begin("Enemy Manager Debug");
+			enemyManager_->DrawImGui();
+			ImGui::End();
+		}
+	}
+
+	//========================================
+	// 雲 ウィンドウ
+	{
+		if (cloud_) {
+			ImGui::SetNextWindowPos(ImVec2(0.0f, 300.0f), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
+			ImGui::Begin("Cloud Debug");
+			cloud_->DrawImGui();
+	
+			// 弾痕テスト用のImGui
+			ImGui::Separator();
+			ImGui::Text("Bullet Hole System Test");
+			ImGui::Text("Press SPACE: Add bullet hole at player");
+			ImGui::Text("Press N: Add random bullet hole");
+			ImGui::Text("Press M: Clear all bullet holes");
+	
+			// 現在の弾痕数を表示
+			auto &cloudParams = cloud_->GetMutableParams();
+			ImGui::Text("Active Bullet Holes: %d", cloudParams.bulletHoleCount);
+	
+			// 弾痕パラメータの調整
+			ImGui::SliderFloat("Fade Start", &cloudParams.bulletHoleFadeStart, -2.0f, 2.0f);
+			ImGui::SliderFloat("Fade End", &cloudParams.bulletHoleFadeEnd, 0.0f, 5.0f);
+	
+			ImGui::End();
+		}
+	}
+
+	//========================================
+	// 当たり判定 ウィンドウ
+	{
+		ImGui::SetNextWindowPos(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
+		ImGui::Begin("Collision Manager Debug");
+		ImGui::Text("Collision Manager");
+		// collisionManager_->DrawImGui(); // コメントアウト
+		ImGui::End();
+	}
+
+	//========================================
+	// UI系 - UIManagerが独立したウィンドウを管理するため、
+	// 外側のウィンドウなしで直接呼び出す
 	if (uiManager_) {
 		uiManager_->DrawImGui();
 	}
 
 	//========================================
-	// トランジション
-	if (sceneTransition_) {
-		sceneTransition_->DrawImGui();
+	// トランジション ウィンドウ
+	{
+		if (sceneTransition_) {
+			ImGui::SetNextWindowPos(ImVec2(800.0f, 600.0f), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(400.0f, 200.0f), ImGuiCond_FirstUseEver);
+			ImGui::Begin("Scene Transition Debug");
+			sceneTransition_->DrawImGui();
+			ImGui::End();
+		}
 	}
 #endif // _DEBUG
 }
