@@ -8,6 +8,8 @@
  *********************************************************************/
 #include "ImguiSetup.h"
 #include <psapi.h>
+#include <string>
+#include <unordered_map>
 #include <windows.h>
 ///=============================================================================
 ///                        namespace MagEngine
@@ -26,6 +28,17 @@ namespace MagEngine {
 		// ImGuiのコンテキストを生成
 		// NOTE:複数枚作ってフォントを変えることもできる
 		ImGui::CreateContext();
+		//========================================
+		// スタイル別フォント設定
+		if (Style::CYBER == style) {
+			// CYBERスタイル: MS Sans Serif系フォント
+			LoadFont("ms_sans_serif", "resources\\fonts\\MS Sans Serif.ttf", 12.0f);
+			LoadFont("ms_sans_serif_bold", "resources\\fonts\\MS Sans Serif Bold.ttf", 12.0f);
+		} else {
+			// その他のスタイル: デフォルトフォント
+			LoadFont("firge_regular", "resources\\fonts\\Firge-Regular.ttf", 16.0f);
+		}
+		RebuildFonts();
 		//---------------------------------------
 		// ImGUiのスタイルを設定
 		if (Style::CLASSIC == style) {
@@ -127,35 +140,63 @@ namespace MagEngine {
 	void ImguiSetup::StyleColorsCyberGreen(ImGuiStyle &style) {
 		//========================================
 		// スタイルの設定
-		style.WindowRounding = 5.0f; // ウィンドウの角を丸くする
-		style.FrameRounding = 4.0f;	 // フレームの角を丸くする
+		style.WindowRounding = 0.0f; // ウィンドウの角を丸くする
+		style.FrameRounding = 0.0f;	 // フレームの角を丸くする
+		style.FrameBorderSize = 0.0f;
+		style.FramePadding = ImVec2(0.0f, 0.0f);
+		style.WindowMenuButtonPosition = ImGuiDir_Right;
+		style.ScrollbarSize = 16.0f;
 
 		// カスタムスタイルの設定
 		ImVec4 *colors = style.Colors;
-		colors[ImGuiCol_Text] = ImVec4(0.0f, 0.9f, 0.0f, 0.5f);				 // テキスト色
-		colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);			 // ウィンドウ背景（透過）
-		colors[ImGuiCol_Border] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);			 // 枠線
-		colors[ImGuiCol_FrameBg] = ImVec4(0.0f, 0.2f, 0.0f, 0.4f);			 // フレーム背景
-		colors[ImGuiCol_FrameBgHovered] = ImVec4(0.0f, 0.7f, 0.0f, 0.4f);	 // フレーム背景（ホバー時）
-		colors[ImGuiCol_FrameBgActive] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);	 // フレーム背景（アクティブ時）
-		colors[ImGuiCol_TitleBg] = ImVec4(0.0f, 0.4f, 0.0f, 0.4f);			 // タイトル背景
-		colors[ImGuiCol_TitleBgActive] = ImVec4(0.0f, 0.6f, 0.0f, 0.4f);	 // タイトル背景（アクティブ時）
-		colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 0.9f, 0.0f, 1.0f);		 // チェックマーク
-		colors[ImGuiCol_SliderGrab] = ImVec4(0.0f, 0.9f, 0.0f, 1.0f);		 // スライダー
-		colors[ImGuiCol_Button] = ImVec4(0.0f, 0.4f, 0.0f, 0.4f);			 // ボタン
-		colors[ImGuiCol_ButtonHovered] = ImVec4(0.0f, 0.7f, 0.0f, 0.4f);	 // ボタン（ホバー時）
-		colors[ImGuiCol_ButtonActive] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);		 // ボタン（アクティブ時）
-		colors[ImGuiCol_Header] = ImVec4(0.0f, 0.4f, 0.0f, 0.4f);			 // ヘッダー
-		colors[ImGuiCol_HeaderHovered] = ImVec4(0.0f, 0.7f, 0.0f, 0.4f);	 // ヘッダー（ホバー時）
-		colors[ImGuiCol_HeaderActive] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);		 // ヘッダー（アクティブ時）
-		colors[ImGuiCol_Separator] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);		 // セパレーター
-		colors[ImGuiCol_ResizeGrip] = ImVec4(0.0f, 0.4f, 0.0f, 0.4f);		 // リサイズグリップ
-		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.0f, 0.7f, 0.0f, 0.4f); // リサイズグリップ（ホバー時）
-		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);	 // リサイズグリップ（アクティブ時）
-		colors[ImGuiCol_Tab] = ImVec4(0.0f, 0.4f, 0.0f, 0.4f);				 // タブ
-		colors[ImGuiCol_TabHovered] = ImVec4(0.0f, 0.7f, 0.0f, 0.4f);		 // タブ（ホバー時）
-		colors[ImGuiCol_TabActive] = ImVec4(0.0f, 0.9f, 0.0f, 0.4f);		 // タブ（アクティブ時）
-		colors[ImGuiCol_PopupBg] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);			 // ポップアップ背景（透過）
+		colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+		colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+		colors[ImGuiCol_WindowBg] = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
+		colors[ImGuiCol_ChildBg] = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
+		colors[ImGuiCol_PopupBg] = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
+		colors[ImGuiCol_Border] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
+		colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+		colors[ImGuiCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+		colors[ImGuiCol_FrameBgHovered] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+		colors[ImGuiCol_FrameBgActive] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+		colors[ImGuiCol_TitleBg] = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
+		colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.00f, 0.50f, 1.00f);
+		colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.00f, 1.00f, 1.00f, 0.51f);
+		colors[ImGuiCol_MenuBarBg] = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
+		colors[ImGuiCol_ScrollbarBg] = ImVec4(0.98f, 0.98f, 0.98f, 0.53f);
+		colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.69f, 0.69f, 0.69f, 0.80f);
+		colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.49f, 0.49f, 0.49f, 0.80f);
+		colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.49f, 0.49f, 0.49f, 1.00f);
+		colors[ImGuiCol_CheckMark] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+		colors[ImGuiCol_SliderGrab] = ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
+		colors[ImGuiCol_SliderGrabActive] = ImVec4(0.46f, 0.54f, 0.80f, 0.60f);
+		colors[ImGuiCol_Button] = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+		colors[ImGuiCol_ButtonHovered] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+		colors[ImGuiCol_ButtonActive] = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+		colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
+		colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+		colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+		colors[ImGuiCol_Separator] = ImVec4(0.39f, 0.39f, 0.39f, 0.62f);
+		colors[ImGuiCol_SeparatorHovered] = ImVec4(0.14f, 0.44f, 0.80f, 0.78f);
+		colors[ImGuiCol_SeparatorActive] = ImVec4(0.14f, 0.44f, 0.80f, 1.00f);
+		colors[ImGuiCol_ResizeGrip] = ImVec4(0.80f, 0.80f, 0.80f, 0.56f);
+		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+		colors[ImGuiCol_Tab] = ImVec4(0.76f, 0.80f, 0.84f, 0.95f);
+		colors[ImGuiCol_TabHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+		colors[ImGuiCol_TabActive] = ImVec4(0.60f, 0.73f, 0.88f, 0.95f);
+		colors[ImGuiCol_TabUnfocused] = ImVec4(0.92f, 0.92f, 0.94f, 0.95f);
+		colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.74f, 0.82f, 0.91f, 1.00f);
+		colors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+		colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+		colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+		colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
+		colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+		colors[ImGuiCol_DragDropTarget] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+		colors[ImGuiCol_NavHighlight] = colors[ImGuiCol_HeaderHovered];
+		colors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
+		colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
+		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 	}
 
 	///=============================================================================
@@ -309,5 +350,38 @@ namespace MagEngine {
 		nextDescriptorIndex_++;
 
 		return result;
+	}
+
+	///=============================================================================
+	///						フォントをロード
+	bool ImguiSetup::LoadFont(const std::string &fontName, const std::string &filePath, float size) {
+		ImGuiIO &io = ImGui::GetIO();
+		ImFont *font = io.Fonts->AddFontFromFileTTF(filePath.c_str(), size, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		if (font) {
+			loadedFonts_[fontName] = font;
+			fontsDirty_ = true;
+			return true;
+		}
+		return false;
+	}
+
+	///=============================================================================
+	///						フォント情報をImGuiに反映
+	void ImguiSetup::RebuildFonts() {
+		if (fontsDirty_) {
+			ImGuiIO &io = ImGui::GetIO();
+			io.Fonts->Build();
+			fontsDirty_ = false;
+		}
+	}
+
+	///=============================================================================
+	///						ロード済みフォントを取得
+	ImFont *ImguiSetup::GetFont(const std::string &fontName) const {
+		auto it = loadedFonts_.find(fontName);
+		if (it != loadedFonts_.end()) {
+			return it->second;
+		}
+		return nullptr;
 	}
 }

@@ -92,7 +92,26 @@ namespace MagEngine {
 		ID3D12DescriptorHeap *GetSrvDescriptorHeap() const {
 			return srvDescriptorHeap_.Get();
 		}
+		/**----------------------------------------------------------------------------
+		 * \brief  LoadFont フォントをロード
+		 * \param  fontName 管理用のフォント名
+		 * \param  filePath フォントファイルへのパス
+		 * \param  size フォントサイズ
+		 * \return ロードに成功したか
+		 */
+		bool LoadFont(const std::string &fontName, const std::string &filePath, float size);
 
+		/**----------------------------------------------------------------------------
+		 * \brief  RebuildFonts フォント情報をImGuiに反映
+		 */
+		void RebuildFonts();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  GetFont ロード済みフォントを取得
+		 * \param  fontName フォント名
+		 * \return ImFont ポインタ (見つからない場合はnullptr)
+		 */
+		ImFont *GetFont(const std::string &fontName) const;
 		///--------------------------------------------------------------
 		///							静的メンバ関数
 	private:
@@ -122,5 +141,11 @@ namespace MagEngine {
 		int triangleCount = 0;
 		float logicTime = 0.0f;		// ゲームロジック処理時間（ms）
 		float renderingTime = 0.0f; // レンダリング処理時間（ms）
+
+		//========================================
+		// ロード済みフォントのマップ
+		std::unordered_map<std::string, ImFont *> loadedFonts_;
+		// フォントがリビルドされたか
+		bool fontsDirty_ = false;
 	};
 }
