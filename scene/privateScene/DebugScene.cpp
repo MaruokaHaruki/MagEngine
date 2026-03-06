@@ -16,6 +16,7 @@
 #include "ModelManager.h"
 #include "ParticlePreset.h"
 #include "TrailEffectManager.h"
+#include "TrailEffectPreset.h"
 #include "imgui.h"
 using namespace MagEngine;
 
@@ -104,6 +105,23 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	///						 TrailEffect系
 	trailEffectManager_ = std::make_unique<TrailEffectManager>();
 	trailEffectManager_->Initialize(trailEffectSetup);
+
+	// テスト用プリセットを登録
+	TrailEffectPreset testPreset;
+	testPreset.name = "test_trail";
+	testPreset.color = Vector3{0.0f, 1.0f, 0.5f}; // 青緑
+	testPreset.opacity = 0.8f;
+	testPreset.width = 2.5f;
+	testPreset.lifeTime = 2.0f;
+	testPreset.emissionRate = 30.0f;
+	testPreset.velocityDamping = 0.95f;
+	testPreset.gravityInfluence = 0.0f;
+	testPreset.shaderName = "Trail";
+
+	trailEffectManager_->RegisterPreset(testPreset);
+
+	// テスト用トレイルエフェクトを生成
+	trailEffectManager_->CreateFromPreset("test_trail", "debug_test_trail");
 	cloud_->GetMutableParams().baseNoiseScale = 0.008f;
 	cloud_->GetMutableParams().detailNoiseScale = 0.025f;
 	cloud_->GetMutableParams().ambient = 0.4f;
@@ -166,6 +184,26 @@ void DebugScene::Update() {
 	// TrailEffectの更新
 	if (trailEffectManager_) {
 		trailEffectManager_->Update(1.0f / 60.0f);
+
+		// テスト用トレイル：円形ループで移動
+		trailLoopTimer_ += 1.0f / 60.0f * trailLoopSpeed_;
+		if (trailLoopTimer_ >= 2.0f * 3.14159f) {
+			trailLoopTimer_ -= 2.0f * 3.14159f; // リセット
+		}
+
+		// 円形パスを計算
+		float angle = trailLoopTimer_;
+		Vector3 currentPos = {
+			trailLoopCenter_.x + cos(angle) * trailLoopRadius_,
+			trailLoopCenter_.y + sin(angle) * 3.0f, // 簡単な上下動
+			trailLoopCenter_.z + sin(angle) * trailLoopRadius_};
+
+		// トレイルを発生させる
+		auto trailEffect = trailEffectManager_->GetEffect("debug_test_trail");
+		if (trailEffect) {
+			Vector3 velocity = Vector3{-sin(angle) * trailLoopSpeed_ * trailLoopRadius_, cos(angle) * 3.0f, cos(angle) * trailLoopSpeed_ * trailLoopRadius_};
+			trailEffect->EmitAt(currentPos, velocity);
+		}
 	}
 
 	//========================================
@@ -325,6 +363,23 @@ void DebugScene::ImGuiDraw() {
 	// TrailEffectのデバッグ表示
 	if (trailEffectManager_) {
 		trailEffectManager_->DrawImGui();
+
+		// トレイルループテスト用UI
+		ImGui::Begin("Trail Loop Test");
+		ImGui::Text("Trail Loop Animation");
+		ImGui::SliderFloat("Loop Radius##trail", &trailLoopRadius_, 5.0f, 50.0f);
+		ImGui::SliderFloat("Loop Height##trail", &trailLoopHeight_, 10.0f, 100.0f);
+		ImGui::SliderFloat("Loop Speed##trail", &trailLoopSpeed_, 0.5f, 5.0f);
+		ImGui::DragFloat3("Loop Center##trail", &trailLoopCenter_.x, 1.0f);
+
+		ImGui::Separator();
+		ImGui::Text("Current Position: (%.1f, %.1f, %.1f)",
+					trailLoopCenter_.x + cos(trailLoopTimer_) * trailLoopRadius_,
+					trailLoopCenter_.y + sin(trailLoopTimer_) * 3.0f,
+					trailLoopCenter_.z + sin(trailLoopTimer_) * trailLoopRadius_);
+		ImGui::Text("Timer: %.2f / %.2f", trailLoopTimer_, 2.0f * 3.14159f);
+
+		ImGui::End();
 	}
 
 	//========================================

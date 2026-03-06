@@ -260,6 +260,8 @@ namespace MagEngine {
 		particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 		// skyboxのカメラ設定の更新
 		skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		// TrailEffectのカメラ設定の更新
+		trailEffectSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 
 		//========================================
 		// トレイルエフェクトマネージャの更新

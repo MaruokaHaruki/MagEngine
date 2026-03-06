@@ -18,6 +18,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						前方宣言
 	class DirectXCore;
+	class Camera;
 
 	///=============================================================================
 	///						クラス
@@ -48,6 +49,22 @@ namespace MagEngine {
 			return dxCore_;
 		}
 
+		/**----------------------------------------------------------------------------
+		 * \brief  SetDefaultCamera デフォルトカメラの設定
+		 * \param  camera Cameraポインタ
+		 */
+		void SetDefaultCamera(Camera *camera) {
+			defaultCamera_ = camera;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  GetDefaultCamera デフォルトカメラの取得
+		 * \return Cameraポインタ
+		 */
+		Camera *GetDefaultCamera() const {
+			return defaultCamera_;
+		}
+
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
 	private:
@@ -67,6 +84,10 @@ namespace MagEngine {
 		//========================================
 		// DirectXCoreポインタ
 		DirectXCore *dxCore_ = nullptr;
+
+		//========================================
+		// Cameraポインタ
+		Camera *defaultCamera_ = nullptr;
 
 		//========================================
 		// RootSignature

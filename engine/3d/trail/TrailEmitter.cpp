@@ -7,6 +7,7 @@
  * \note
  *********************************************************************/
 #include "TrailEmitter.h"
+#include "Camera.h"
 #include "DirectXCore.h"
 #include "Logger.h"
 #include "TrailEffectSetup.h"
@@ -79,6 +80,15 @@ namespace MagEngine {
 		paramsCB_->Map(0, nullptr, reinterpret_cast<void **>(&paramsData_));
 		// 初期化
 		*paramsData_ = paramsCPU_;
+
+		//========================================
+		// カメラ用定数バッファの作成
+		size_t cameraSize = (sizeof(CameraConstant) + 255) & ~255;
+		cameraCB_ = dxCore->CreateBufferResource(cameraSize);
+		// 書き込むためのアドレスを取得
+		cameraCB_->Map(0, nullptr, reinterpret_cast<void **>(&cameraData_));
+		// 初期化
+		*cameraData_ = cameraCPU_;
 	}
 
 	///=============================================================================
@@ -147,6 +157,23 @@ namespace MagEngine {
 		// 定数バッファの設定
 		// パラメータ定数バッファ（b0）
 		commandList->SetGraphicsRootConstantBufferView(0, paramsCB_->GetGPUVirtualAddress());
+
+		//========================================
+		// カメラ定数バッファの設定（b1）
+		// TrailEffectSetupからカメラを取得
+		auto camera = setup_->GetDefaultCamera();
+		if (camera) {
+			// カメラのVP行列を取得
+			cameraCPU_.viewProj = camera->GetViewProjectionMatrix();
+			cameraCPU_.worldPosition = camera->GetTranslate();
+			cameraCPU_.time = accumulatedTime_;
+
+			// GPUバッファに転送
+			*cameraData_ = cameraCPU_;
+
+			// カメラ定数バッファをセット
+			commandList->SetGraphicsRootConstantBufferView(1, cameraCB_->GetGPUVirtualAddress());
+		}
 
 		//========================================
 		// 描画コール

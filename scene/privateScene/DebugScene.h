@@ -104,6 +104,14 @@ private:
 	std::unique_ptr<MagEngine::TrailEffectManager> trailEffectManager_;
 
 	//========================================
+	// TrailEffect テスト用パラメータ
+	float trailLoopTimer_ = 0.0f;				 // ループアニメーション用タイマー
+	float trailLoopRadius_ = 20.0f;				 // ループの半径
+	float trailLoopHeight_ = 50.0f;				 // ループの高さ
+	float trailLoopSpeed_ = 2.0f;				 // ループの速度（rad/sec）
+	Vector3 trailLoopCenter_{0.0f, 50.0f, 0.0f}; // ループの中心
+
+	//========================================
 	// 雲の穴開けテスト用パラメータ（円錐形状）
 	float bulletHoleStartRadius_ = 4.0f;			   // 弾痕の開始半径（入口）
 	float bulletHoleEndRadius_ = 0.2f;				   // 弾痕の終了半径（出口）

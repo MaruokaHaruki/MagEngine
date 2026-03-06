@@ -51,6 +51,16 @@ namespace MagEngine {
 		float padding = 0.0f;					  ///< パディング
 	};
 
+	/**----------------------------------------------------------------------------
+	 * \brief  CameraConstant カメラ定数バッファ構造体（GPU用）
+	 * \note   トレイル描画に必要なカメラ情報
+	 */
+	struct alignas(16) CameraConstant {
+		MagMath::Matrix4x4 viewProj;	///< ビュープロジェクション行列
+		MagMath::Vector3 worldPosition; ///< カメラのワールド座標
+		float time = 0.0f;				///< 経過時間
+	};
+
 	///=============================================================================
 	///						クラス
 	class TrailEmitter {
@@ -196,6 +206,12 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3D12Resource> paramsCB_;
 		TrailRenderParams *paramsData_ = nullptr;
 		TrailRenderParams paramsCPU_;
+
+		//========================================
+		// カメラ定数バッファ
+		Microsoft::WRL::ComPtr<ID3D12Resource> cameraCB_;
+		CameraConstant *cameraData_ = nullptr;
+		CameraConstant cameraCPU_;
 
 		//========================================
 		// その他
