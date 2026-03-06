@@ -89,7 +89,6 @@ namespace MagEngine {
 
 		// 初期の永続的なデバッグテキストを設定
 		DebugTextManager::GetInstance()->AddAxisLabels(); // 座標軸ラベル
-		// DebugTextManager::GetInstance()->AddGridLabels(5.0f, 2); // グリッドラベル
 
 		///--------------------------------------------------------------
 		///						 SrvSetupクラス
