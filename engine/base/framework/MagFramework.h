@@ -32,6 +32,8 @@
 #include "ParticleSetup.h"
 #include "SkyboxSetup.h"
 #include "SpriteSetup.h"
+#include "TrailEffectManager.h"
+#include "TrailEffectSetup.h"
 // Editor
 #include "EditorLayout.h"
 #include "GameViewportPanel.h"
@@ -86,6 +88,8 @@ namespace MagEngine {
 		void SkyboxCommonDraw();
 		/// @brief Cloud共通描画設定
 		void CloudCommonDraw();
+		/// @brief TrailEffect共通描画設定
+		void TrailEffectCommonDraw();
 
 		///--------------------------------------------------------------
 		///							入出力関数
@@ -127,6 +131,8 @@ namespace MagEngine {
 		std::unique_ptr<SkyboxSetup> skyboxSetup_;
 		// Cloudセットアップ
 		std::unique_ptr<CloudSetup> cloudSetup_;
+		// TrailEffectセットアップ
+		std::unique_ptr<TrailEffectSetup> trailEffectSetup_;
 		//========================================
 		// マネージャ
 		// ポストエフェクトマネージャ
@@ -137,6 +143,8 @@ namespace MagEngine {
 		std::unique_ptr<SceneFactory> sceneFactory_;
 		// ライトマネージャ
 		std::unique_ptr<LightManager> lightManager_;
+		// トレイルエフェクトマネージャ
+		std::unique_ptr<TrailEffectManager> trailEffectManager_;
 		//========================================
 		// エディター
 		std::unique_ptr<EditorLayout> editorLayout_;

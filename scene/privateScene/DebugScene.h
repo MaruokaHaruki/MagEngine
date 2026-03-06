@@ -12,6 +12,7 @@ using namespace MagMath;
 //========================================
 // Game
 #include "Cloud.h"
+#include "TrailEffectManager.h"
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
@@ -19,9 +20,7 @@ class DebugScene : public BaseScene {
 public:
 	/// \brief 初期化
 	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Object3dSetup *object3dSetup, MagEngine::ParticleSetup *particleSetup,
-					MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup) override;
-
-	/// \brief 終了処理
+					MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup, MagEngine::TrailEffectSetup *trailEffectSetup) override;
 	void Finalize() override;
 
 	/// \brief 更新
@@ -41,6 +40,9 @@ public:
 
 	/// \brief Cloud描画
 	void CloudDraw() override;
+
+	/// \brief TrailEffect描画
+	void TrailEffectDraw() override;
 
 	/// \brief ImGui描画
 	void ImGuiDraw() override;
@@ -78,9 +80,8 @@ private:
 
 	//========================================
 	// パーティクル
-	
+
 	// パーティクルエミッター
-	
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
@@ -97,6 +98,10 @@ private:
 	//========================================
 	// Cloud
 	std::unique_ptr<MagEngine::Cloud> cloud_;
+
+	//========================================
+	// TrailEffect
+	std::unique_ptr<MagEngine::TrailEffectManager> trailEffectManager_;
 
 	//========================================
 	// 雲の穴開けテスト用パラメータ（円錐形状）

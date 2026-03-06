@@ -28,7 +28,8 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							   MagEngine::Object3dSetup *object3dSetup,
 							   MagEngine::ParticleSetup *particleSetup,
 							   MagEngine::SkyboxSetup *skyboxSetup,
-							   MagEngine::CloudSetup *cloudSetup) {
+							   MagEngine::CloudSetup *cloudSetup,
+							   MagEngine::TrailEffectSetup *trailEffectSetup) {
 	//========================================
 	// 適当に引数を使用
 	// 引数を使用しない場合は警告を出さないようにする
@@ -612,6 +613,13 @@ void GamePlayScene::CloudDraw() {
 	if (cloud_) {
 		cloud_->Draw();
 	}
+}
+
+///=============================================================================
+///						TrailEffect描画
+void GamePlayScene::TrailEffectDraw() {
+	// TrailEffectマネージャーが設定されている場合は描画
+	// （このシーンではプレイヤーのトレイルなどは別で管理される可能性があるため）
 }
 
 ///=============================================================================

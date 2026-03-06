@@ -18,11 +18,12 @@ class SceneManager {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup, 
-		MagEngine::Object3dSetup *object3dSetup, 
-		MagEngine::ParticleSetup *particleSetup,
-		MagEngine::SkyboxSetup *skyboxSetup, 
-		MagEngine::CloudSetup *cloudSetup);
+	void Initialize(MagEngine::SpriteSetup *spriteSetup,
+					MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::ParticleSetup *particleSetup,
+					MagEngine::SkyboxSetup *skyboxSetup,
+					MagEngine::CloudSetup *cloudSetup,
+					MagEngine::TrailEffectSetup *trailEffectSetup);
 
 	/// @brief 終了処理
 	void Finalize();
@@ -44,6 +45,9 @@ public:
 
 	/// @brief Cloud描画
 	void CloudDraw();
+
+	/// @brief TrailEffect描画
+	void TrailEffectDraw();
 
 	/// @brief ImGui描画
 	void ImGuiDraw();
@@ -83,4 +87,6 @@ private:
 	MagEngine::SkyboxSetup *skyboxSetup_ = nullptr;
 	// Cloud共通部
 	MagEngine::CloudSetup *cloudSetup_ = nullptr;
+	// TrailEffect共通部
+	MagEngine::TrailEffectSetup *trailEffectSetup_ = nullptr;
 };

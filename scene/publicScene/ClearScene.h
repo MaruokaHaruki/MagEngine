@@ -16,11 +16,12 @@ class ClearScene : public BaseScene {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup, 
-		MagEngine::Object3dSetup *object3dSetup, 
-		MagEngine::ParticleSetup *particleSetup, 
-		MagEngine::SkyboxSetup *skyboxSetup, 
-		MagEngine::CloudSetup *cloudSetup) override;
+	void Initialize(MagEngine::SpriteSetup *spriteSetup,
+					MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::ParticleSetup *particleSetup,
+					MagEngine::SkyboxSetup *skyboxSetup,
+					MagEngine::CloudSetup *cloudSetup,
+					MagEngine::TrailEffectSetup *trailEffectSetup) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -42,6 +43,9 @@ public:
 
 	/// \brief Cloud描画
 	void CloudDraw() override;
+
+	/// \brief TrailEffect描画
+	void TrailEffectDraw() override;
 
 	/// \brief ImGui描画
 	void ImGuiDraw() override;

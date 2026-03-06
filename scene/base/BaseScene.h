@@ -22,6 +22,8 @@
 // Cloud
 #include "Cloud.h"
 #include "CloudSetup.h"
+// TrailEffect
+#include "TrailEffectSetup.h"
 // ========================================
 // 2D系
 #include "Sprite.h"
@@ -65,7 +67,8 @@ public:
 							MagEngine::Object3dSetup *object3dSetup,
 							MagEngine::ParticleSetup *particleSetup,
 							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup) = 0;
+							MagEngine::CloudSetup *cloudSetup,
+							MagEngine::TrailEffectSetup *trailEffectSetup) = 0;
 
 	/// \brief 終了処理
 	virtual void Finalize() = 0;
@@ -90,6 +93,9 @@ public:
 
 	/// \brief Cloud描画
 	virtual void CloudDraw() = 0;
+
+	/// \brief TrailEffect描画
+	virtual void TrailEffectDraw() = 0;
 
 	/**----------------------------------------------------------------------------
 	 * \brief  ~IScene 抽象クラスのデストラクタ

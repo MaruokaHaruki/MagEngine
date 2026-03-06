@@ -166,6 +166,18 @@ namespace MagEngine {
 		cloudSetup_->SetLightManager(lightManager_.get());
 
 		///--------------------------------------------------------------
+		///						 トレイルエフェクト共通部
+		trailEffectSetup_ = std::make_unique<TrailEffectSetup>();
+		// トレイルエフェクトセットアップの初期化
+		trailEffectSetup_->Initialize(dxCore_.get());
+
+		///--------------------------------------------------------------
+		///						 トレイルエフェクトマネージャ
+		trailEffectManager_ = std::make_unique<TrailEffectManager>();
+		// トレイルエフェクトマネージャの初期化
+		trailEffectManager_->Initialize(trailEffectSetup_.get());
+
+		///--------------------------------------------------------------
 		///						 ラインマネージャ
 		LineManager::GetInstance()->Initialize(dxCore_.get(), srvSetup_.get());
 		// Lineのカメラ設定
@@ -180,7 +192,7 @@ namespace MagEngine {
 		sceneManager_ = std::make_unique<SceneManager>();
 		// シーンマネージャの初期化
 		sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get(),
-								  skyboxSetup_.get(), cloudSetup_.get());
+								  skyboxSetup_.get(), cloudSetup_.get(), trailEffectSetup_.get());
 		// シーンファクトリーのセット
 		sceneFactory_ = std::make_unique<SceneFactory>();
 		sceneManager_->SetSceneFactory(sceneFactory_.get());
@@ -248,6 +260,11 @@ namespace MagEngine {
 		particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
 		// skyboxのカメラ設定の更新
 		skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+
+		//========================================
+		// トレイルエフェクトマネージャの更新
+		trailEffectManager_->Update(1.0f / 60.0f); // 固定フレームレート
+
 		//========================================
 		// インプットの更新
 		Input::GetInstance()->Update();
@@ -347,6 +364,8 @@ namespace MagEngine {
 		lightManager_->DrawImGui();
 		// LineのImGui描画
 		LineManager::GetInstance()->DrawImGui();
+		// TrailEffectManagerのImGui描画
+		trailEffectManager_->DrawImGui();
 		// ImGuiでデバッグテキストを描画
 		DebugTextManager::GetInstance()->DrawImGui();
 		// ポストエフェクトのImGui描画
@@ -410,6 +429,16 @@ namespace MagEngine {
 		cloudSetup_->CommonDrawSetup();
 		// Cloud描画
 		sceneManager_->CloudDraw();
+	}
+
+	///=============================================================================
+	///						TrailEffect共通描画設定
+	void MagFramework::TrailEffectCommonDraw() {
+		//========================================
+		// TrailEffect共通描画設定
+		trailEffectSetup_->CommonDrawSetup();
+		// TrailEffect描画
+		sceneManager_->TrailEffectDraw();
 	}
 
 	///=============================================================================

@@ -9,11 +9,12 @@
 
 ///=============================================================================
 ///						初期化
-void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup, 
-	MagEngine::Object3dSetup *object3dSetup, 
-	MagEngine::ParticleSetup *particleSetup,
-	MagEngine::SkyboxSetup *skyboxSetup, 
-	MagEngine::CloudSetup *cloudSetup) {
+void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
+							  MagEngine::Object3dSetup *object3dSetup,
+							  MagEngine::ParticleSetup *particleSetup,
+							  MagEngine::SkyboxSetup *skyboxSetup,
+							  MagEngine::CloudSetup *cloudSetup,
+							  MagEngine::TrailEffectSetup *trailEffectSetup) {
 	//========================================
 	// 2D共通部
 	spriteSetup_ = spriteSetup;
@@ -25,9 +26,11 @@ void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	skyboxSetup_ = skyboxSetup;
 	// Cloud共通部
 	cloudSetup_ = cloudSetup;
+	// TrailEffect共通部
+	trailEffectSetup_ = trailEffectSetup;
 	// 初期シーンを設定（例としてDebugSceneを設定）
 	nowScene_ = std::make_unique<TitleScene>();
-	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_);
+	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_);
 
 	// シーンの初期設定
 	currentSceneNo_ = 0;
@@ -60,7 +63,7 @@ void SceneManager::Update() {
 		// シーンの生成
 		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_);
 		// シーンの初期化
-		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_);
+		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_);
 	}
 
 	//========================================
@@ -107,6 +110,14 @@ void SceneManager::SkyboxDraw() {
 void SceneManager::CloudDraw() {
 	if (nowScene_) {
 		nowScene_->CloudDraw();
+	}
+}
+
+///=============================================================================
+///						TrailEffect描画
+void SceneManager::TrailEffectDraw() {
+	if (nowScene_) {
+		nowScene_->TrailEffectDraw();
 	}
 }
 

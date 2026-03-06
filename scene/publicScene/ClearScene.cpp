@@ -11,11 +11,12 @@
 
 ///=============================================================================
 ///						初期化
-void ClearScene::Initialize(MagEngine::SpriteSetup *spriteSetup, 
-	MagEngine::Object3dSetup *object3dSetup, 
-	MagEngine::ParticleSetup *particleSetup, 
-	MagEngine::SkyboxSetup *skyboxSetup, 
-	MagEngine::CloudSetup *cloudSetup) {
+void ClearScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
+							MagEngine::Object3dSetup *object3dSetup,
+							MagEngine::ParticleSetup *particleSetup,
+							MagEngine::SkyboxSetup *skyboxSetup,
+							MagEngine::CloudSetup *cloudSetup,
+							MagEngine::TrailEffectSetup *trailEffectSetup) {
 	// 適当に引数を使用
 	// 引数を使用しない場合は警告を出さないようにする
 	spriteSetup;
@@ -65,6 +66,11 @@ void ClearScene::SkyboxDraw() {
 ///=============================================================================
 ///						Cloud描画
 void ClearScene::CloudDraw() {
+}
+
+///=============================================================================
+///						TrailEffect描画
+void ClearScene::TrailEffectDraw() {
 }
 
 ///=============================================================================

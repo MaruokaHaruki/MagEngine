@@ -15,6 +15,7 @@
 #include "MAudioG.h"
 #include "ModelManager.h"
 #include "ParticlePreset.h"
+#include "TrailEffectManager.h"
 #include "imgui.h"
 using namespace MagEngine;
 
@@ -24,7 +25,8 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							MagEngine::Object3dSetup *object3dSetup,
 							MagEngine::ParticleSetup *particleSetup,
 							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup) {
+							MagEngine::CloudSetup *cloudSetup,
+							MagEngine::TrailEffectSetup *trailEffectSetup) {
 	spriteSetup;
 	particleSetup;
 
@@ -97,6 +99,11 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	cloud_->GetMutableParams().density = 3.0f;	 // 高密度
 	cloud_->GetMutableParams().coverage = 0.25f; // 低いカバレッジ
 	cloud_->GetMutableParams().stepSize = 4.0f;
+
+	///--------------------------------------------------------------
+	///						 TrailEffect系
+	trailEffectManager_ = std::make_unique<TrailEffectManager>();
+	trailEffectManager_->Initialize(trailEffectSetup);
 	cloud_->GetMutableParams().baseNoiseScale = 0.008f;
 	cloud_->GetMutableParams().detailNoiseScale = 0.025f;
 	cloud_->GetMutableParams().ambient = 0.4f;
@@ -154,6 +161,12 @@ void DebugScene::Update() {
 	//========================================
 	// Cloudの更新
 	cloud_->Update(*CameraManager::GetInstance()->GetCamera("DebugCamera"), 1.0f / 60.0f);
+
+	//========================================
+	// TrailEffectの更新
+	if (trailEffectManager_) {
+		trailEffectManager_->Update(1.0f / 60.0f);
+	}
 
 	//========================================
 	// 雲の穴開けテスト（デバッグ用）
@@ -246,6 +259,15 @@ void DebugScene::CloudDraw() {
 }
 
 ///=============================================================================
+///						TrailEffect描画
+void DebugScene::TrailEffectDraw() {
+	// TrailEffectの描画
+	if (trailEffectManager_) {
+		trailEffectManager_->Draw();
+	}
+}
+
+///=============================================================================
 ///						ImGui描画
 void DebugScene::ImGuiDraw() {
 	// DebugSceneのImGui描画
@@ -297,6 +319,12 @@ void DebugScene::ImGuiDraw() {
 			cloud_->ClearBulletHoles();
 		}
 		ImGui::End();
+	}
+
+	//========================================
+	// TrailEffectのデバッグ表示
+	if (trailEffectManager_) {
+		trailEffectManager_->DrawImGui();
 	}
 
 	//========================================

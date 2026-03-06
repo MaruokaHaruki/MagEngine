@@ -16,7 +16,8 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							MagEngine::Object3dSetup *object3dSetup,
 							MagEngine::ParticleSetup *particleSetup,
 							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup) {
+							MagEngine::CloudSetup *cloudSetup,
+							MagEngine::TrailEffectSetup *trailEffectSetup) {
 
 	//========================================
 	// 読み込み関係
@@ -313,6 +314,12 @@ void TitleScene::CloudDraw() {
 	if (cloud_) {
 		cloud_->Draw();
 	}
+}
+
+///=============================================================================
+///						TrailEffect描画
+void TitleScene::TrailEffectDraw() {
+	// タイトルシーンではTrailEffectは不要
 }
 
 ///=============================================================================
