@@ -96,13 +96,17 @@ namespace MagEngine {
 			particle.age += deltaTime;
 
 			// 速度減衰を適用
-			particle.velocity *= paramsCPU_.velocityDamping;
+			particle.velocity.x *= paramsCPU_.velocityDamping;
+			particle.velocity.y *= paramsCPU_.velocityDamping;
+			particle.velocity.z *= paramsCPU_.velocityDamping;
 
 			// 重力を適用
 			particle.velocity.y -= 9.8f * paramsCPU_.gravityInfluence * deltaTime;
 
 			// 位置更新
-			particle.position += particle.velocity * deltaTime;
+			particle.position.x += particle.velocity.x * deltaTime;
+			particle.position.y += particle.velocity.y * deltaTime;
+			particle.position.z += particle.velocity.z * deltaTime;
 		}
 
 		//========================================
