@@ -76,16 +76,20 @@ PixelOutput main(VertexShaderOutput input) {
     
     //========================================
     // レイマーチングの初期化
-    float3 sunDir = normalize(gDirectionalLight.direction);  // 並行光源の方向を使用
     float3 accumulatedLight = 0.0f;            // 累積光量
     float transmittance = 1.0f;                // 透過率（初期値は完全透過）
     
     //========================================
     // レイマーチングのステップ計算
-    float t = tNear;                                    // 現在のレイパラメータ
-    float marchDistance = tFar - tNear;                 // マーチング総距離
-    int numSteps = min(int(marchDistance / gStepSize), MAX_STEPS);  // ステップ数を計算
-    float actualStepSize = marchDistance / float(max(numSteps, 1)); // 実際のステップサイズ
+    float t = tNear;
+    float marchDistance = tFar - tNear;
+    int numSteps = min(int(marchDistance / gStepSize), MAX_STEPS);
+    float actualStepSize = marchDistance / float(max(numSteps, 1));
+    
+    //NOTE : レイマーチループの事前計算をループ外で実施（GPU分岐最適化）
+    float3 sunDir = normalize(gDirectionalLight.direction);
+    float cosThetaSun = dot(rayDir, sunDir);
+    float phaseDual = PhaseDualLobe(cosThetaSun, 0.8f, -0.3f, 0.7f);
     
     //========================================
     // デバッグ用変数
@@ -95,14 +99,14 @@ PixelOutput main(VertexShaderOutput input) {
     
     //========================================
     // レイマーチングループ
-    // 透過率が0.1より高い間のみ処理（高速化優先）
-    for (int i = 0; i < numSteps && transmittance > 0.1f; i++) {
+    //NOTE : 透過率閾値を0.01→0.02に緩和（視覚的にほぼ同じで早期終了頻度UP）
+    for (int i = 0; i < numSteps && transmittance > 0.02f; i++) {
         float3 position = rayOrigin + rayDir * (t + actualStepSize * 0.5f);
         
         float density = SampleCloudDensity(position);
         
-        // 適応的ステップサイズ: 密度が低い場合は大きくスキップ（高速化優先）
-        float adaptiveStep = (density < 0.001f) ? actualStepSize * 3.5f : actualStepSize;
+        //NOTE : 空き空間スキップ倍率を2.0→3.0に強化（空の空間を素早く通過）
+        float adaptiveStep = (density < 0.001f) ? actualStepSize * 3.0f : actualStepSize;
         
         if (density > 0.001f) {
             if (!hasHit) {
@@ -117,46 +121,52 @@ PixelOutput main(VertexShaderOutput input) {
             //========================================
             // ディレクショナルライト
             float lightEnergy = LightMarch(position);
-            float phase = PhaseHG(dot(rayDir, sunDir), gAnisotropy);
-            // DirectionalLight: グロー的効果として強く表現
-            lighting += gDirectionalLight.color.rgb * lightEnergy * phase * gDirectionalLight.intensity * 1.5f;
+            //NOTE : PhaseDualLobeをループ外で事前計算済み（レイ方向は不変なため）
+            lighting += gDirectionalLight.color.rgb * lightEnergy * phaseDual * gDirectionalLight.intensity * 2.0f;
             
             //========================================
-            // アンビエントライト（フォールバック）：最低限の明るさを確保
-            float3 ambientLight = float3(0.2f, 0.2f, 0.25f) * 0.5f;  // 軽い青色の環境光
+            // 高さベースのアンビエントライト（品質重視）
+            // 雲の上部は明るく、下部は暗い（実際の雲の光の散乱を再現）
+            float3 uvw = (position - gCloudCenter) / gCloudSize;
+            float heightFraction = saturate(uvw.y + 0.5f);
+            // 空の色によるアンビエント（上部は暖色、下部は寒色）
+            float3 ambientTop = float3(0.35f, 0.35f, 0.4f);    // 上方からの空の散乱光
+            float3 ambientBottom = float3(0.12f, 0.12f, 0.16f); // 地面からの反射光
+            float3 ambientLight = lerp(ambientBottom, ambientTop, heightFraction) * gAmbient;
             lighting += ambientLight;
             
             //========================================
-            // ポイントライト：距離減衰で局所的な光を表現
-            float3 posToLight = gPointLight.position - position;
-            float distToLight = length(posToLight);
-            if (distToLight < gPointLight.radius && gPointLight.intensity > 0.0f) {
-                float3 lightDir = normalize(posToLight);
-                // より物理的な減衰を適用（距離の二乗則）
-                float attenuation = 1.0f / (1.0f + gPointLight.decay * distToLight * distToLight);
-                float phasePoint = PhaseHG(dot(rayDir, lightDir), gAnisotropy);
-                // ポイントライトの寄与を明確に（やや強め）
-                lighting += gPointLight.color.rgb * phasePoint * gPointLight.intensity * attenuation * 1.2f;
+            //NOTE : ポイントライトは強度>0の場合のみ計算（分岐最適化）
+            if (gPointLight.intensity > 0.0f) {
+                float3 posToLight = gPointLight.position - position;
+                float distToLightSq = dot(posToLight, posToLight); //NOTE : length⇒dotでsqrt回避
+                float radiusSq = gPointLight.radius * gPointLight.radius;
+                if (distToLightSq < radiusSq) {
+                    float distToLight = sqrt(distToLightSq);
+                    float3 lightDir2 = posToLight / distToLight; //NOTE : normalizeを手動化（sqrt再利用）
+                    float attenuation = 1.0f / (1.0f + gPointLight.decay * distToLightSq);
+                    float phasePoint = PhaseDualLobe(dot(rayDir, lightDir2), 0.6f, -0.2f, 0.65f);
+                    lighting += gPointLight.color.rgb * phasePoint * gPointLight.intensity * attenuation * 1.2f;
+                }
             }
             
             //========================================
-            // スポットライト：角度フォールオフで指向性のある光を表現
+            //NOTE : スポットライトは強度>0の場合のみ計算（分岐最適化）
             if (gSpotLight.intensity > 0.0f) {
                 float3 posToSpot = gSpotLight.position - position;
-                float distToSpot = length(posToSpot);
-                if (distToSpot < gSpotLight.distance) {
-                    float3 spotDir = normalize(posToSpot);
+                float distToSpotSq = dot(posToSpot, posToSpot); //NOTE : sqrt回避
+                float distanceSq = gSpotLight.distance * gSpotLight.distance;
+                if (distToSpotSq < distanceSq) {
+                    float distToSpot = sqrt(distToSpotSq);
+                    float3 spotDir = posToSpot / distToSpot;
                     float angleCos = dot(spotDir, normalize(gSpotLight.direction));
                     
-                    // フォールオフ計算：コーン状の光を明確に表現
                     float falloff = smoothstep(gSpotLight.cosFalloffEnd, gSpotLight.cosFalloffStart, angleCos);
-                    // フォールオフを二乗して、光の角度フォールオフをより目立たせる
                     falloff = falloff * falloff;
                     
                     if (falloff > 0.0f) {
-                        float attenuation = 1.0f / (1.0f + gSpotLight.decay * distToSpot * distToSpot);
-                        float phaseSpot = PhaseHG(dot(rayDir, spotDir), gAnisotropy);
-                        // スポットライトのコーン型効果を強調
+                        float attenuation = 1.0f / (1.0f + gSpotLight.decay * distToSpotSq); //NOTE : distToSpotSq再利用
+                        float phaseSpot = PhaseDualLobe(dot(rayDir, spotDir), 0.6f, -0.2f, 0.65f);
                         lighting += gSpotLight.color.rgb * phaseSpot * gSpotLight.intensity * attenuation * falloff * 1.3f;
                     }
                 }

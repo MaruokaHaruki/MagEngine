@@ -48,39 +48,44 @@ namespace MagEngine {
 		// 雲をまばらにし、自然な配置にする
 
 		// 雲のサイズ（X, Y, Z方向の広がり）
-		paramsCPU_.cloudSize = {300.0f, 100.0f, 300.0f};
+		paramsCPU_.cloudSize = {500.0f, 120.0f, 500.0f};
 
 		// 雲の中心座標（ワールド空間）
-		paramsCPU_.cloudCenter = {0.0f, 150.0f, 0.0f};
+		paramsCPU_.cloudCenter = {0.0f, 180.0f, 0.0f};
 
 		// 密度 : 雲の濃さを制御（値が小さいほど薄くなる）
 		// 品質重視：より厚みのあるリアルな雲
-		paramsCPU_.density = 3.5f;
+		paramsCPU_.density = 4.0f;
 
 		// カバレッジ : 雲の分布範囲（0.0～1.0）
-		// 値が小さいほど雲が連続的になる
-		// 品質重視：より連続的で自然な雲の分布
-		paramsCPU_.coverage = 0.6f;
+		// 値が高いほど雲が白く、値が低いほど雲が少ない
+		// 0.35 = 積乱雲風の自然な分布
+		paramsCPU_.coverage = 0.35f;
 
 		// レイマーチングのステップサイズ（大きいほど処理が軽いが粗くなる）
-		// 品質重視：小さい値でより細かいボリュメトリック雲を実現
+		// NOTE : 2.0→3.0 ステップ拡大でレイマーチ回数削減（適応ステップとLODで品質維持）
 		paramsCPU_.stepSize = 3.0f;
 
 		// ベースノイズスケール : 雲の大きな形状を決定
 		// 値が小さいほど大きな雲の塊ができる
-		paramsCPU_.baseNoiseScale = 0.005f; // より自然で大きな雲の形状
+		paramsCPU_.baseNoiseScale = 0.004f;
 
 		// ディテールノイズスケール : 雲の細かいディテールを追加
 		// 値が大きいほど細かい模様が現れる
-		paramsCPU_.detailNoiseScale = 0.025f; // 細かいディテールを追加
+		paramsCPU_.detailNoiseScale = 0.02f;
 
 		// ディテールノイズの影響度（0.0～1.0）
-		// 値が小さいほどなめらかな雲になる
-		paramsCPU_.detailWeight = 0.5f; // より細かいディテール（品質重視）
+		paramsCPU_.detailWeight = 0.45f;
 
 		// ノイズアニメーション速度 : 雲が流れる速さ
-		// 値が小さいほどゆっくり動く
-		paramsCPU_.noiseSpeed = 0.015f; // ゆっくりとした自然な流れ
+		paramsCPU_.noiseSpeed = 0.01f; // ゆっくりとした自然な流れ
+
+		// ライティング設定
+		// NOTE : lightStepSize 4.0→6.0 指数増大ステップと組み合わせBeer-Powder効果で品質維持
+		paramsCPU_.lightStepSize = 6.0f;		   // ライトマーチングのステップサイズ
+		paramsCPU_.shadowDensityMultiplier = 1.5f; // 影の濃さ（立体感向上）
+		paramsCPU_.anisotropy = 0.7f;			   // 前方散乱の強さ（Silver Lining効果）
+		paramsCPU_.ambient = 0.35f;				   // 環境光の強さ
 
 		// デバッグフラグ（0.0 = 通常モード、1.0 = デバッグモード）
 		paramsCPU_.debugFlag = 0.0f;

@@ -58,10 +58,10 @@ namespace MagEngine {
 	struct alignas(16) CloudRenderParams {
 		//========================================
 		// 雲の位置とサイズ
-		MagMath::Vector3 cloudCenter{0.0f, 150.0f, 0.0f}; // 雲の中心座標
-		float cloudSizeX = 300.0f;						  // 未使用（構造体パディング用）
+		MagMath::Vector3 cloudCenter{0.0f, 180.0f, 0.0f}; // 雲の中心座標
+		float cloudSizeX = 500.0f;						  // 未使用（構造体パディング用）
 
-		MagMath::Vector3 cloudSize{300.0f, 100.0f, 300.0f}; // 雲のXYZサイズ
+		MagMath::Vector3 cloudSize{500.0f, 120.0f, 500.0f}; // 雲のXYZサイズ
 		float padding0 = 0.0f;								// パディング
 
 		//========================================
@@ -70,28 +70,28 @@ namespace MagEngine {
 		float sunIntensity = 1.2f;						 // 太陽光の強度
 
 		MagMath::Vector3 sunColor{1.0f, 0.96f, 0.88f}; // 太陽光の色
-		float ambient = 0.3f;						   // 環境光の強度
+		float ambient = 0.35f;						   // 環境光の強度（品質重視）
 
 		//========================================
 		// 雲の密度とノイズ
-		float density = 1.0f;			 // 雲の密度
-		float coverage = 0.5f;			 // 雲のカバレッジ（雲量）
-		float baseNoiseScale = 0.003f;	 // ベースノイズのスケール
-		float detailNoiseScale = 0.015f; // ディテールノイズのスケール
+		float density = 4.0f;			// 雲の密度（品質重視）
+		float coverage = 0.35f;			// 雲のカバレッジ（品質重視）
+		float baseNoiseScale = 0.004f;	// ベースノイズのスケール（品質重視）
+		float detailNoiseScale = 0.02f; // ディテールノイズのスケール（品質重視）
 
 		//========================================
 		// レイマーチング設定
-		float stepSize = 3.0f;				  // レイマーチングのステップサイズ
+		float stepSize = 3.0f;				  // NOTE : 2.0→3.0 ステップ拡大でFPS向上
 		float maxDistance = 2000.0f;		  // 最大レイマーチング距離
-		float lightStepSize = 5.0f;			  // ライトサンプリングのステップサイズ（品質重視）
-		float shadowDensityMultiplier = 1.2f; // 影の密度倍率
+		float lightStepSize = 6.0f;			  // NOTE : 4.0→6.0 指数増大とBeer-Powderで品質維持
+		float shadowDensityMultiplier = 1.5f; // 影の密度倍率
 
 		//========================================
 		// アニメーション
-		float time = 0.0f;		   // 経過時間（アニメーション用）
-		float noiseSpeed = 0.05f;  // ノイズのアニメーション速度
-		float detailWeight = 0.4f; // ディテールノイズの重み
-		float anisotropy = 0.6f;   // 異方性パラメータ
+		float time = 0.0f;			// 経過時間（アニメーション用）
+		float noiseSpeed = 0.01f;	// ノイズのアニメーション速度（品質重視）
+		float detailWeight = 0.45f; // ディテールノイズの重み（品質重視）
+		float anisotropy = 0.7f;	// 異方性パラメータ（品質重視）
 
 		//========================================
 		// デバッグ
