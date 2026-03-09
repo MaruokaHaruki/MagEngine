@@ -314,6 +314,9 @@ namespace MagEngine {
 	void MagFramework::RenderPreDraw() {
 		dxCore_->RenderTexturePreDraw();
 		srvSetup_->PreDraw();
+		//========================================
+		//  Lineの描画
+		LineManager::GetInstance()->Draw();
 	}
 
 	///=============================================================================
@@ -328,9 +331,6 @@ namespace MagEngine {
 		//========================================
 		// ループ前処理(ポストエフェクト適用)
 		dxCore_->PreDraw(postEffectManager_.get());
-		//========================================
-		//  Lineの描画
-		LineManager::GetInstance()->Draw();
 	}
 
 	///=============================================================================
