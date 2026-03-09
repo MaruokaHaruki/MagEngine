@@ -199,6 +199,9 @@ namespace MagEngine {
 		accumulatedTime_ += deltaTime;
 		paramsCPU_.time = accumulatedTime_;
 
+		// NOTE : windOffset事前計算 - C++側でgTime*gNoiseSpeedを計算（毎フレーム1回で高速化）
+		paramsCPU_.windOffset = MagMath::Vector3(0.0f, 0.0f, accumulatedTime_ * paramsCPU_.noiseSpeed);
+
 		//========================================
 		// Transformから雲の中心位置を更新
 		paramsCPU_.cloudCenter = transform_.translate;

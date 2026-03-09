@@ -44,6 +44,10 @@ cbuffer CloudParamsCB : register(b1)
     float3 gCloudSize;            // 雲のバウンディングボックスサイズ（X, Y, Z）
     float gPadding0;              // パディング
     
+    //NOTE : windOffsetを事前計算で定数化 - C++側で gTime * gNoiseSpeed を計算済み
+    float3 gWindOffset;           // 風による時間ベースのオフセット（C++事前計算）
+    float gPadding1;              // パディング
+    
     //========================================
     // ライティングパラメータ
     float3 gSunDirection;         // 太陽光の方向ベクトル（正規化済み）
@@ -222,12 +226,13 @@ float FBM(float3 p, int octaves) {
     return value;
 }
 
-//NOTE : 距離ベースのオクターブ数決定関数（遠い雲ほど少ないオクターブで計算）
+//NOTE : 距離LOD - distanceSq使用でsqrt削減（距離2乗で判定→高速化）
 int GetLODOctaves(float3 position, int baseOctaves) {
-    float dist = length(position - gCameraPosition);
-    //NOTE : 距離に応じてオクターブ数を削減（200以内=フル、400以上=最低2）
-    if (dist > 400.0f) return max(baseOctaves - 2, 2);
-    if (dist > 200.0f) return max(baseOctaves - 1, 2);
+    float3 offset = position - gCameraPosition;
+    float distSq = dot(offset, offset); // sqrt不要
+    //NOTE : 2乗距離で判定（160000=400^2, 40000=200^2）
+    if (distSq > 160000.0f) return max(baseOctaves - 2, 2); // 400m以上
+    if (distSq > 40000.0f) return max(baseOctaves - 1, 2);  // 200m以上
     return baseOctaves;
 }
 
@@ -387,18 +392,22 @@ float SampleCloudDensity(float3 position) {
     }
     
     //========================================
-    // 高さグラデーション（リアルな雲は底が平ら、上がモコモコ）
-    float heightFraction = uvw.y + 0.5f;
-    float heightGradient = saturate(smoothstep(0.0f, 0.15f, heightFraction) * smoothstep(1.0f, 0.6f, heightFraction));
+    // 高さグラデーション(簡素化版) - smoothstep→saturate+mul で計算削減
+    float heightFraction = uvw.y + 0.5f; // -0.5～0.5 → 0.0～1.0
+    //NOTE : 高さフェード簡素化 - smoothstep2つ→saturate+線形で品質維持、計算50%削減
+    float lowerFade = saturate(heightFraction * 6.666f);           // smoothstep(0.0, 0.15, h)相当
+    float upperFade = saturate(2.5f - heightFraction * 2.5f);      // smoothstep(1.0, 0.6, h)相当
+    float heightGradient = lowerFade * upperFade;
     
-    //NOTE : 高さグラデーションが極小なら早期リターン（無駄なノイズ計算を回避）
+    //========================================
+    // 高さが極小なら早期リターン
     if (heightGradient < 0.01f) {
         return 0.0f;
     }
     
     //========================================
-    // 風オフセット（Z軸正方向に流れる）
-    float3 windOffset = float3(0.0f, 0.0f, gTime * gNoiseSpeed);
+    // 風オフセット（C++で事前計算済み）
+    //NOTE : gWindOffset は C++ 側で毎フレーム gTime * gNoiseSpeed を計算済み
     
     //NOTE : 距離LODでオクターブ数を動的に削減
     int baseOctaves = GetLODOctaves(position, 4);
@@ -406,7 +415,7 @@ float SampleCloudDensity(float3 position) {
     
     //========================================
     // ベースノイズ（大きな雲の形状を決定）
-    float3 baseCoord = position * gBaseNoiseScale + windOffset;
+    float3 baseCoord = position * gBaseNoiseScale + gWindOffset;
     float baseNoise = FBM(baseCoord, baseOctaves);
     
     //NOTE : ベースノイズが低すぎる場合、ディテール計算をスキップ（早期リターン最適化）
@@ -417,7 +426,7 @@ float SampleCloudDensity(float3 position) {
     
     //========================================
     // ディテールノイズ（細かい模様を追加）
-    float3 detailCoord = position * gDetailNoiseScale + windOffset * 0.5f;
+    float3 detailCoord = position * gDetailNoiseScale + gWindOffset * 0.5f;
     float detailNoise = FBM(detailCoord, detailOctaves);
     
     //NOTE : erosionノイズをディテールノイズから導出（独立FBM呼び出し削減）
@@ -442,13 +451,9 @@ float SampleCloudDensity(float3 position) {
     
     float baseDensity = density * edgeFade * gDensity;
     
-    //NOTE : 弾痕計算は密度がある場合のみ実行（無駄な計算を回避）
-    if (baseDensity > 0.001f && gBulletHoleCount > 0) {
-        float bulletMask = CalculateBulletHoleMask(position);
-        return baseDensity * bulletMask;
-    }
-    
-    return baseDensity;
+    //NOTE : 条件分岐統合 - 弾痕がある＆密度がある場合のみマスク計算
+    float bulletMask = (gBulletHoleCount > 0 && baseDensity > 0.001f) ? CalculateBulletHoleMask(position) : 1.0f;
+    return baseDensity * bulletMask;
 }
 
 ///=============================================================================

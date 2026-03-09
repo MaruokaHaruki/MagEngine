@@ -63,7 +63,9 @@ namespace MagEngine {
 
 		MagMath::Vector3 cloudSize{500.0f, 120.0f, 500.0f}; // 雲のXYZサイズ
 		float padding0 = 0.0f;								// パディング
-
+		// NOTE : windOffsetを事前計算で定数化
+		MagMath::Vector3 windOffset{0.0f, 0.0f, 0.0f}; // C++側で毎フレームgTime*gNoiseSpeedで計算
+		float padding1 = 0.0f;						   // パディング
 		//========================================
 		// ライティング
 		MagMath::Vector3 sunDirection{0.3f, 0.8f, 0.5f}; // 太陽光の方向
