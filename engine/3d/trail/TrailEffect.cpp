@@ -88,9 +88,12 @@ namespace MagEngine {
 		ImGui::SliderFloat("Width##Trail", &currentPreset_.width, 0.1f, 10.0f);
 
 		//========================================
-		// ライフサイクル設定
-		ImGui::SliderFloat("LifeTime##Trail", &currentPreset_.lifeTime, 0.1f, 10.0f);
-		ImGui::SliderFloat("EmissionRate##Trail", &currentPreset_.emissionRate, 1.0f, 200.0f);
+		// グラデーション色（新機能）
+		ImGui::Separator();
+		ImGui::Text("Color Gradient");
+		ImGui::ColorEdit3("Start Color##Trail", &currentPreset_.startColor.x);
+		ImGui::ColorEdit3("End Color##Trail", &currentPreset_.endColor.x);
+		ImGui::Separator();
 
 		//========================================
 		// 物理パラメータ
@@ -132,6 +135,11 @@ namespace MagEngine {
 		emitter_.SetLifeTime(preset.lifeTime);
 		emitter_.SetVelocityDamping(preset.velocityDamping);
 		emitter_.SetGravityInfluence(preset.gravityInfluence);
+
+		//========================================
+		// グラデーション色を適用
+		emitter_.SetStartColor(preset.startColor);
+		emitter_.SetEndColor(preset.endColor);
 
 		Log("Preset applied: " + preset.name, Logger::LogLevel::Info);
 	}

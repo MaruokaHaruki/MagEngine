@@ -6,6 +6,9 @@
  * \date   March 2026
  * \note
  *********************************************************************/
+#define _USE_MATH_DEFINES
+ // 以下はstd::maxを使用する場合に必要
+#define NOMINMAX
 #include "TrailEmitter.h"
 #include "Camera.h"
 #include "DirectXCore.h"
@@ -34,6 +37,14 @@ namespace MagEngine {
 		setup_ = setup;
 
 		//========================================
+		// メッシュデータ初期化
+		trailHistory_.clear();
+		vertices_.clear();
+		indices_.clear();
+		lastEmitPosition_ = {0.0f, 0.0f, 0.0f};
+		accumulatedTime_ = 0.0f;
+
+		//========================================
 		// 各種バッファの作成
 		CreateVertexBuffer();
 		CreateConstantBuffers();
@@ -54,16 +65,31 @@ namespace MagEngine {
 	///						頂点バッファの作成
 	void TrailEmitter::CreateVertexBuffer() {
 		//========================================
-		// 頂点バッファの作成
+		// 頂点バッファの作成（リボンメッシュ用）
+		// 最大 maxTrailPoints * 2 (左右の頂点) * 3 インデックス/セグメント
 		auto dxCore = setup_->GetDXCore();
-		size_t bufferSize = sizeof(TrailVertex) * maxVertices_;
-		vertexBuffer_ = dxCore->CreateBufferResource(bufferSize);
+		size_t maxVertexCount = maxTrailPoints_ * 2;
+		size_t vertexBufferSize = sizeof(TrailVertex) * maxVertexCount;
+		vertexBuffer_ = dxCore->CreateBufferResource(vertexBufferSize);
 
 		//========================================
 		// 頂点バッファビューの設定
 		vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
-		vertexBufferView_.SizeInBytes = static_cast<UINT>(bufferSize);
+		vertexBufferView_.SizeInBytes = static_cast<UINT>(vertexBufferSize);
 		vertexBufferView_.StrideInBytes = sizeof(TrailVertex);
+
+		//========================================
+		// インデックスバッファの作成
+		// 最大 (maxTrailPoints - 1) * 6 インデックス（2三角形/セグメント）
+		size_t maxIndexCount = (maxTrailPoints_ - 1) * 6;
+		size_t indexBufferSize = sizeof(uint32_t) * maxIndexCount;
+		indexBuffer_ = dxCore->CreateBufferResource(indexBufferSize);
+
+		//========================================
+		// インデックスバッファビューの設定
+		indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
+		indexBufferView_.SizeInBytes = static_cast<UINT>(indexBufferSize);
+		indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 	}
 
 	///=============================================================================
@@ -100,39 +126,24 @@ namespace MagEngine {
 		paramsCPU_.time = accumulatedTime_;
 
 		//========================================
-		// 各パーティクルの更新
-		for (auto &particle : particles_) {
-			// ライフタイム進行
-			particle.age += deltaTime;
-
-			// 速度減衰を適用
-			particle.velocity.x *= paramsCPU_.velocityDamping;
-			particle.velocity.y *= paramsCPU_.velocityDamping;
-			particle.velocity.z *= paramsCPU_.velocityDamping;
-
-			// 重力を適用
-			particle.velocity.y -= 9.8f * paramsCPU_.gravityInfluence * deltaTime;
-
-			// 位置更新
-			particle.position.x += particle.velocity.x * deltaTime;
-			particle.position.y += particle.velocity.y * deltaTime;
-			particle.position.z += particle.velocity.z * deltaTime;
-		}
-
-		//========================================
-		// ライフタイムが終了したパーティクルを削除
-		particles_.erase(
-			std::remove_if(particles_.begin(), particles_.end(),
-						   [this](const TrailParticle &p) { return p.age >= paramsCPU_.lifeTime; }),
-			particles_.end());
+		// 古いポイントを削除
+		RemoveExpiredPoints(accumulatedTime_);
 
 		//========================================
 		// GPUバッファへパラメータをコピー
-		*paramsData_ = paramsCPU_;
+		if (paramsData_) {
+			*paramsData_ = paramsCPU_;
+		}
 
 		//========================================
-		// パーティクルデータをGPUに転送
-		TransferParticlesToGPU();
+		// カメラ情報を更新
+		auto camera = setup_->GetDefaultCamera();
+		if (camera && cameraData_) {
+			cameraCPU_.viewProj = camera->GetViewProjectionMatrix();
+			cameraCPU_.worldPosition = camera->GetTranslate();
+			cameraCPU_.time = accumulatedTime_;
+			*cameraData_ = cameraCPU_;
+		}
 	}
 
 	///=============================================================================
@@ -140,7 +151,17 @@ namespace MagEngine {
 	void TrailEmitter::Draw() {
 		//========================================
 		// 描画可能かチェック
-		if (!setup_ || !vertexBuffer_ || !paramsCB_ || particles_.empty()) {
+		if (!setup_ || !vertexBuffer_ || !indexBuffer_ || trailHistory_.size() < 2) {
+			return;
+		}
+
+		//========================================
+		// メッシュを再構築
+		BuildRibbonMesh();
+
+		//========================================
+		// インデックス数が0の場合はスキップ
+		if (indices_.empty()) {
 			return;
 		}
 
@@ -154,30 +175,21 @@ namespace MagEngine {
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
 		//========================================
+		// インデックスバッファの設定
+		commandList->IASetIndexBuffer(&indexBufferView_);
+
+		//========================================
 		// 定数バッファの設定
 		// パラメータ定数バッファ（b0）
 		commandList->SetGraphicsRootConstantBufferView(0, paramsCB_->GetGPUVirtualAddress());
 
 		//========================================
 		// カメラ定数バッファの設定（b1）
-		// TrailEffectSetupからカメラを取得
-		auto camera = setup_->GetDefaultCamera();
-		if (camera) {
-			// カメラのVP行列を取得
-			cameraCPU_.viewProj = camera->GetViewProjectionMatrix();
-			cameraCPU_.worldPosition = camera->GetTranslate();
-			cameraCPU_.time = accumulatedTime_;
-
-			// GPUバッファに転送
-			*cameraData_ = cameraCPU_;
-
-			// カメラ定数バッファをセット
-			commandList->SetGraphicsRootConstantBufferView(1, cameraCB_->GetGPUVirtualAddress());
-		}
+		commandList->SetGraphicsRootConstantBufferView(1, cameraCB_->GetGPUVirtualAddress());
 
 		//========================================
 		// 描画コール
-		commandList->DrawInstanced(static_cast<UINT>(particles_.size() * 3), 1, 0, 0);
+		commandList->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
 	}
 
 	///=============================================================================
@@ -185,73 +197,169 @@ namespace MagEngine {
 	void TrailEmitter::EmitTrail(const MagMath::Vector3 &position,
 								 const MagMath::Vector3 &velocity) {
 		//========================================
-		// 最大数を超える場合は最も古いパーティクルを削除
-		if (particles_.size() >= maxVertices_ / 3) {
-			particles_.erase(particles_.begin());
+		// 最小距離以上の距離がある場合のみポイントを追加
+		float distance = MagMath::Length(position - lastEmitPosition_);
+		if (distance < minPointDistance_ && !trailHistory_.empty()) {
+			return; // 最小距離に達していない
 		}
 
 		//========================================
-		// 新しいパーティクルを追加
-		TrailParticle particle;
-		particle.position = position;
-		particle.velocity = velocity;
-		particle.age = 0.0f;
-		particle.maxLifeTime = paramsCPU_.lifeTime;
-		particles_.push_back(particle);
+		// 新しいポイントを追加
+		TrailPoint newPoint;
+		newPoint.position = position;
+		newPoint.time = accumulatedTime_;
+		trailHistory_.push_back(newPoint);
+		lastEmitPosition_ = position;
+
+		//========================================
+		// 最大ポイント数を超えた場合は古いものから削除
+		if (trailHistory_.size() > maxTrailPoints_) {
+			trailHistory_.erase(trailHistory_.begin());
+		}
 	}
 
 	///=============================================================================
 	///						すべての軌跡をクリア
 	void TrailEmitter::ClearTrails() {
-		particles_.clear();
+		trailHistory_.clear();
+		vertices_.clear();
+		indices_.clear();
 		Log("All trail particles cleared", LogLevel::Info);
 	}
 
 	///=============================================================================
-	///						パーティクルデータをGPUバッファに転送
-	void TrailEmitter::TransferParticlesToGPU() {
+	///						古いポイントを削除
+	void TrailEmitter::RemoveExpiredPoints(float currentTime) {
 		//========================================
-		// バッファが有効かチェック
-		if (!vertexBuffer_) {
+		// ライフタイムが終わったポイントを削除
+		while (!trailHistory_.empty()) {
+			float pointAge = currentTime - trailHistory_.front().time;
+			if (pointAge > paramsCPU_.lifeTime) {
+				trailHistory_.erase(trailHistory_.begin());
+			} else {
+				break;
+			}
+		}
+	}
+
+	///=============================================================================
+	///						リボンメッシュを生成
+	void TrailEmitter::BuildRibbonMesh() {
+		vertices_.clear();
+		indices_.clear();
+
+		if (trailHistory_.size() < 2) {
 			return;
 		}
 
 		//========================================
-		// CPU側のパーティクルデータをGPU形式に変換
-		std::vector<TrailVertex> vertices;
-		vertices.reserve(particles_.size() * 3);
+		// ポイント履歴から頂点を生成
+		GenerateVerticesFromHistory();
 
-		for (const auto &particle : particles_) {
-			float ageRatio = particle.age / particle.maxLifeTime;
+		//========================================
+		// メモリに転送
+		if (!vertices_.empty() && vertexBuffer_) {
+			size_t bufferSize = sizeof(TrailVertex) * vertices_.size();
+			if (vertexBuffer_->GetDesc().Width >= bufferSize) {
+				void *vertexData = nullptr;
+				D3D12_RANGE readRange{0, 0};
+				vertexBuffer_->Map(0, &readRange, &vertexData);
+				std::memcpy(vertexData, vertices_.data(), bufferSize);
+				vertexBuffer_->Unmap(0, nullptr);
+			}
+		}
 
-			// 3頂点からなる三角形を生成（ビルボード的に）
-			TrailVertex v;
-			v.age = ageRatio;
+		if (!indices_.empty() && indexBuffer_) {
+			size_t bufferSize = sizeof(uint32_t) * indices_.size();
+			if (indexBuffer_->GetDesc().Width >= bufferSize) {
+				void *indexData = nullptr;
+				D3D12_RANGE readRange{0, 0};
+				indexBuffer_->Map(0, &readRange, &indexData);
+				std::memcpy(indexData, indices_.data(), bufferSize);
+				indexBuffer_->Unmap(0, nullptr);
+			}
+		}
+	}
 
-			// 頂点1
-			v.position = particle.position + MagMath::Vector3{-paramsCPU_.width * 0.5f, 0.0f, 0.0f};
-			v.normal = {-1.0f, 0.0f, 0.0f};
-			vertices.push_back(v);
+	///=============================================================================
+	///						ポイント履歴から頂点を生成
+	void TrailEmitter::GenerateVerticesFromHistory() {
+		//========================================
+		// カメラ位置を取得
+		MagMath::Vector3 cameraPos = cameraCPU_.worldPosition;
 
-			// 頂点2
-			v.position = particle.position + MagMath::Vector3{paramsCPU_.width * 0.5f, 0.0f, 0.0f};
-			v.normal = {1.0f, 0.0f, 0.0f};
-			vertices.push_back(v);
+		for (size_t i = 0; i < trailHistory_.size(); ++i) {
+			const TrailPoint &point = trailHistory_[i];
+			float pointAge = paramsCPU_.time - point.time;
+			float lifeFraction = std::max(0.0f, std::min(1.0f, pointAge / paramsCPU_.lifeTime));
 
-			// 頂点3
-			v.position = particle.position + MagMath::Vector3{0.0f, paramsCPU_.width, 0.0f};
-			v.normal = {0.0f, 1.0f, 0.0f};
-			vertices.push_back(v);
+			//========================================
+			// 方向を計算
+			MagMath::Vector3 direction;
+			if (i < trailHistory_.size() - 1) {
+				direction = (trailHistory_[i + 1].position - point.position);
+				if (MagMath::Length(direction) > 0.001f) {
+					direction = MagMath::Normalize(direction);
+				} else {
+					direction = {0.0f, 0.0f, 1.0f};
+				}
+			} else {
+				direction = {0.0f, 0.0f, 1.0f};
+			}
+
+			//========================================
+			// カメラに向く法線を計算（ビルボード）
+			MagMath::Vector3 toCamera = (cameraPos - point.position);
+			if (MagMath::Length(toCamera) > 0.001f) {
+				toCamera = MagMath::Normalize(toCamera);
+			} else {
+				toCamera = {0.0f, 0.0f, 1.0f};
+			}
+
+			MagMath::Vector3 normal = MagMath::Cross(direction, toCamera);
+			if (MagMath::Length(normal) > 0.001f) {
+				normal = MagMath::Normalize(normal);
+			} else {
+				normal = {1.0f, 0.0f, 0.0f};
+			}
+
+			//========================================
+			// 幅を計算（ライフタイムで減衰）
+			float width = paramsCPU_.width * (1.0f - lifeFraction);
+
+			//========================================
+			// 左右の頂点を作成
+			TrailVertex leftVertex;
+			leftVertex.position = point.position - normal * width;
+			leftVertex.age = lifeFraction;
+			leftVertex.normal = -normal;
+
+			TrailVertex rightVertex;
+			rightVertex.position = point.position + normal * width;
+			rightVertex.age = lifeFraction;
+			rightVertex.normal = normal;
+
+			vertices_.push_back(leftVertex);
+			vertices_.push_back(rightVertex);
 		}
 
 		//========================================
-		// GPUバッファに転送
-		if (vertices.size() > 0) {
-			void *mapped = nullptr;
-			D3D12_RANGE readRange{0, 0};
-			vertexBuffer_->Map(0, &readRange, &mapped);
-			std::memcpy(mapped, vertices.data(), vertices.size() * sizeof(TrailVertex));
-			vertexBuffer_->Unmap(0, nullptr);
+		// インデックスを生成（各セグメントに2つの三角形）
+		for (size_t i = 0; i + 3 < vertices_.size(); i += 2) {
+			uint32_t l0 = static_cast<uint32_t>(i);
+			uint32_t r0 = static_cast<uint32_t>(i + 1);
+			uint32_t l1 = static_cast<uint32_t>(i + 2);
+			uint32_t r1 = static_cast<uint32_t>(i + 3);
+
+			// 三角形1（左手系）
+			indices_.push_back(l0);
+			indices_.push_back(r0);
+			indices_.push_back(l1);
+
+			// 三角形2（左手系）
+			indices_.push_back(r0);
+			indices_.push_back(r1);
+			indices_.push_back(l1);
 		}
 	}
 }

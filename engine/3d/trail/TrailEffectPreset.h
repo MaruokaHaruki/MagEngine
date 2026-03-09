@@ -27,9 +27,17 @@ namespace MagEngine {
 		std::string name; ///< プリセット名（例："SmokeTrail"）
 
 		// ビジュアルパラメータ
-		MagMath::Vector3 color{0.5f, 0.5f, 0.5f}; ///< エフェクト色
+		MagMath::Vector3 color{0.5f, 0.5f, 0.5f}; ///< エフェクト色（結合色）
 		float opacity = 0.8f;					  ///< 透明度 (0.0-1.0)
 		float width = 2.0f;						  ///< 軌跡幅
+
+		// カラーグラデーション（ライフタイムに基づく）
+		MagMath::Vector3 startColor{1.0f, 1.0f, 1.0f}; ///< 開始色
+		MagMath::Vector3 endColor{0.0f, 0.0f, 0.0f};   ///< 終了色
+
+		// 幅曲線（ライフタイムに基づく）
+		float startWidth = 1.0f; ///< 開始時の幅（相対値）
+		float endWidth = 0.0f;	 ///< 終了時の幅（相対値）
 
 		// ライフサイクル
 		float lifeTime = 3.0f;		///< ライフタイム（秒）

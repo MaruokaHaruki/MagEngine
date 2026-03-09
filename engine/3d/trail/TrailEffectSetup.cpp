@@ -9,6 +9,7 @@
 #include "TrailEffectSetup.h"
 #include "DirectXCore.h"
 #include "Logger.h"
+#include "SrvSetup.h"
 #include <stdexcept>
 
 using namespace Logger;
@@ -45,6 +46,10 @@ namespace MagEngine {
 
 		// プリミティブトポロジーをセット（三角形リスト）
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		//========================================
+		// テクスチャはColorのグラデーションで表現される
+		// ポイントのageに応じてStartColorからEndColorへ補間される
 	}
 
 	///=============================================================================

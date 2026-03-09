@@ -84,4 +84,12 @@ namespace MagMath {
 		return Length(v1 - v2);
 	}
 
+	// 外積（クロス積）を計算
+	inline Vector3 Cross(const Vector3 &v1, const Vector3 &v2) {
+		return {
+			v1.y * v2.z - v1.z * v2.y,
+			v1.z * v2.x - v1.x * v2.z,
+			v1.x * v2.y - v1.y * v2.x};
+	}
+
 } // namespace MagMath

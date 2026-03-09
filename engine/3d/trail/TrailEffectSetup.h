@@ -19,6 +19,7 @@ namespace MagEngine {
 	///						前方宣言
 	class DirectXCore;
 	class Camera;
+	class SrvSetup;
 
 	///=============================================================================
 	///						クラス
@@ -65,6 +66,14 @@ namespace MagEngine {
 			return defaultCamera_;
 		}
 
+		/**----------------------------------------------------------------------------
+		 * \brief  SetSrvSetup SrvSetupの設定
+		 * \param  srvSetup SrvSetupポインタ
+		 */
+		void SetSrvSetup(SrvSetup *srvSetup) {
+			srvSetup_ = srvSetup;
+		}
+
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
 	private:
@@ -88,6 +97,10 @@ namespace MagEngine {
 		//========================================
 		// Cameraポインタ
 		Camera *defaultCamera_ = nullptr;
+
+		//========================================
+		// SrvSetupポインタ
+		SrvSetup *srvSetup_ = nullptr;
 
 		//========================================
 		// RootSignature

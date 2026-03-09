@@ -170,6 +170,8 @@ namespace MagEngine {
 		trailEffectSetup_ = std::make_unique<TrailEffectSetup>();
 		// トレイルエフェクトセットアップの初期化
 		trailEffectSetup_->Initialize(dxCore_.get());
+		// トレイルエフェクトセットアップにSrvSetupを設定
+		trailEffectSetup_->SetSrvSetup(srvSetup_.get());
 
 		///--------------------------------------------------------------
 		///						 トレイルエフェクトマネージャ

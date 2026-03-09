@@ -26,6 +26,15 @@ namespace MagEngine {
 	///						構造体
 
 	/**----------------------------------------------------------------------------
+	 * \brief  TrailPoint トレイルポイント（位置履歴）
+	 * \note   リボンメッシュ生成に使用
+	 */
+	struct TrailPoint {
+		MagMath::Vector3 position; ///< ワールド座標
+		float time;				   ///< 生成時刻
+	};
+
+	/**----------------------------------------------------------------------------
 	 * \brief  TrailVertex トレイル頂点構造体
 	 * \note   GPU用の頂点データ
 	 */
@@ -41,14 +50,16 @@ namespace MagEngine {
 	 * \note   トレイルの見た目を制御するパラメータ群
 	 */
 	struct alignas(16) TrailRenderParams {
-		MagMath::Vector3 color{0.5f, 0.5f, 0.5f}; ///< エフェクト色
-		float opacity = 0.8f;					  ///< 透明度 (0.0-1.0)
-		float width = 2.0f;						  ///< 軌跡幅
-		float lifeTime = 3.0f;					  ///< ライフタイム（秒）
-		float time = 0.0f;						  ///< 経過時間
-		float velocityDamping = 0.95f;			  ///< 速度減衰
-		float gravityInfluence = 0.2f;			  ///< 重力影響度
-		float padding = 0.0f;					  ///< パディング
+		MagMath::Vector3 color{0.5f, 0.5f, 0.5f};	   ///< エフェクト色（基本色）
+		float opacity = 0.8f;						   ///< 透明度 (0.0-1.0)
+		MagMath::Vector3 startColor{1.0f, 1.0f, 1.0f}; ///< グラデーション開始色
+		float width = 2.0f;							   ///< 軌跡幅
+		MagMath::Vector3 endColor{0.0f, 0.0f, 0.0f};   ///< グラデーション終了色
+		float lifeTime = 3.0f;						   ///< ライフタイム（秒）
+		float time = 0.0f;							   ///< 経過時間
+		float velocityDamping = 0.95f;				   ///< 速度減衰
+		float gravityInfluence = 0.2f;				   ///< 重力影響度
+		float padding = 0.0f;						   ///< パディング
 	};
 
 	/**----------------------------------------------------------------------------
@@ -148,11 +159,27 @@ namespace MagEngine {
 		}
 
 		/**----------------------------------------------------------------------------
+		 * \brief  グラデーション開始色の設定
+		 * \param  color グラデーション開始色
+		 */
+		void SetStartColor(const MagMath::Vector3 &color) {
+			paramsCPU_.startColor = color;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  グラデーション終了色の設定
+		 * \param  color グラデーション終了色
+		 */
+		void SetEndColor(const MagMath::Vector3 &color) {
+			paramsCPU_.endColor = color;
+		}
+
+		/**----------------------------------------------------------------------------
 		 * \brief  パーティクル数の取得
 		 * \return パーティクル数
 		 */
 		size_t GetParticleCount() const {
-			return particles_.size();
+			return trailHistory_.size();
 		}
 
 		///--------------------------------------------------------------
@@ -169,37 +196,44 @@ namespace MagEngine {
 		void CreateConstantBuffers();
 
 		/**----------------------------------------------------------------------------
-		 * \brief  パーティクルデータをGPUバッファに転送
+		 * \brief  リボンメッシュを生成（頂点・インデックスバッファを更新）
 		 */
-		void TransferParticlesToGPU();
+		void BuildRibbonMesh();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  ポイント履歴から頂点を生成
+		 */
+		void GenerateVerticesFromHistory();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  古いポイントを削除
+		 */
+		void RemoveExpiredPoints(float currentTime);
 
 		///--------------------------------------------------------------
 		///						 メンバ変数
 	private:
-		/**----------------------------------------------------------------------------
-		 * \brief  TrailParticle パーティクルデータ(CPU側)
-		 * \note   CPU側で管理するパーティクル情報
-		 */
-		struct TrailParticle {
-			MagMath::Vector3 position; ///< 現在位置
-			MagMath::Vector3 velocity; ///< 速度
-			float age;				   ///< 経過時間（秒）
-			float maxLifeTime;		   ///< 最大ライフタイム
-		};
-
 		//========================================
 		// TrailEffectSetupポインタ
 		TrailEffectSetup *setup_ = nullptr;
 
 		//========================================
-		// パーティクルデータ
-		std::vector<TrailParticle> particles_;
+		// トレイルポイント履歴（リング）
+		std::vector<TrailPoint> trailHistory_;
+		size_t maxTrailPoints_ = 128;	///< 最大ポイント数
+		float minPointDistance_ = 0.1f; ///< ポイント生成の最小距離
+
+		//========================================
+		// 頂点データ（CPU側）
+		std::vector<TrailVertex> vertices_;
+		std::vector<uint32_t> indices_;
 
 		//========================================
 		// 頂点バッファ
 		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
+		Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
-		size_t maxVertices_ = 10000;
+		D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
 
 		//========================================
 		// 定数バッファ
@@ -216,5 +250,6 @@ namespace MagEngine {
 		//========================================
 		// その他
 		float accumulatedTime_ = 0.0f;
+		MagMath::Vector3 lastEmitPosition_ = {0.0f, 0.0f, 0.0f};
 	};
 }

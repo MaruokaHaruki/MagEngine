@@ -28,9 +28,11 @@ struct PixelShaderOutput {
 //========================================
 // トレイルレンダリングパラメータ
 struct TrailRenderParams {
-	float3 color;				// エフェクト色
+	float3 color;				// エフェクト色（基本色）
 	float opacity;				// 透明度 (0.0-1.0)
+	float3 startColor;			// グラデーション開始色
 	float width;				// 軌跡幅
+	float3 endColor;			// グラデーション終了色
 	float lifeTime;				// ライフタイム（秒）
 	float time;					// 経過時間
 	float velocityDamping;		// 速度減衰

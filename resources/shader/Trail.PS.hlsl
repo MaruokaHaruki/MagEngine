@@ -35,8 +35,19 @@ PixelShaderOutput main(VertexShaderOutput input) {
 	float finalAlpha = gTrailParams.opacity * easeOutAlpha;
 	
 	//========================================
-	// 基本色を設定（シンプルな無ライティング）
-	output.color = float4(gTrailParams.color, finalAlpha);
+	// グラデーション色を計算（startColor から endColor へ）
+	// age = 0.0 の時は startColor
+	// age = 1.0 の時は endColor
+	float3 gradientColor = lerp(gTrailParams.startColor, gTrailParams.endColor, fadeFactor);
+	
+	//========================================
+	// 基本色とグラデーション色を合成
+	// gradientColor が設定されていない場合は基本色を使用
+	float3 finalColor = length(gTrailParams.startColor + gTrailParams.endColor) > 0.001f 
+		? gradientColor 
+		: gTrailParams.color;
+	
+	output.color = float4(finalColor, finalAlpha);
 	
 	return output;
 }
