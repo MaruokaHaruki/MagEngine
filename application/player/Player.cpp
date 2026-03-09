@@ -48,6 +48,9 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 	lockedOnComponent_.Initialize(nullptr);
 	defeatComponent_.Initialize();
 
+	// === 武装設定をコンポーネントに適用 ===
+	ApplyWeaponConfigToCombatComponent();
+
 	// === Transform初期化 ===
 	const Vector3 zero{};
 	if (MagMath::Transform *transform = GetTransformSafe()) {

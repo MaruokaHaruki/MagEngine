@@ -40,6 +40,28 @@ class EnemyBase; // Enemy から EnemyBase に変更
 class EnemyBullet;
 
 ///=============================================================================
+///						武装設定構造体
+struct WeaponConfig {
+	// 弾（銃）の設定
+	std::string bulletModelPath = "Bullet.obj"; // 弾のモデルパス
+	std::string bulletTexturePath = "";			// 弾のテクスチャパス（未使用）
+	float bulletSpeed = 128.0f;					// 弾の速度
+	float bulletMaxLifeTime = 3.0f;				// 弾の生存時間（秒）
+	float bulletRadius = 0.5f;					// 弾の当たり判定半径
+	float shootCoolTime = 0.1f;					// 連射クールタイム
+
+	// ミサイルの設定
+	std::string missileModelPath = "Missile.obj"; // ミサイルのモデルパス
+	std::string missileTexturePath = "";		  // ミサイルのテクスチャパス（未使用）
+	float missileSpeed = 50.0f;					  // ミサイルの速度
+	float missileMaxTurnRate = 120.0f;			  // ミサイルの最大旋回速度（度/秒）
+	float missileMaxLifeTime = 15.0f;			  // ミサイルの生存時間（秒）
+	float missileCoolTime = 1.0f;				  // ミサイル発射クールタイム
+
+	// 拡張用：マシンガンなど他の武装タイプはここに追加
+};
+
+///=============================================================================
 ///						クラス定義
 class Player : public BaseObject {
 public:
@@ -218,15 +240,125 @@ public:
 	}
 
 	//========================================
-	// モデル・テクスチャ設定
-	/// @brief 弾のモデルパスを設定
-	void SetBulletModelPath(const std::string &modelPath) {
-		combatComponent_.SetBulletModelPath(modelPath);
+	// 武装設定（一元管理）
+	/// @brief 武装設定構造体の取得
+	const WeaponConfig &GetWeaponConfig() const {
+		return weaponConfig_;
 	}
 
+	/// @brief 武装設定構造体の参照を取得（変更用）
+	WeaponConfig &GetWeaponConfigRef() {
+		return weaponConfig_;
+	}
+
+	/// @brief 全ての武装設定をデフォルトに初期化
+	void ResetWeaponConfig() {
+		weaponConfig_ = WeaponConfig();
+		ApplyWeaponConfigToCombatComponent();
+	}
+
+	/// @brief 武装設定をコンポーネントに適用
+	void ApplyWeaponConfigToCombatComponent() {
+		combatComponent_.SetBulletModelPath(weaponConfig_.bulletModelPath);
+		combatComponent_.SetMissileModelPath(weaponConfig_.missileModelPath);
+		combatComponent_.SetMaxShootCoolTime(weaponConfig_.shootCoolTime);
+		combatComponent_.SetMaxMissileCoolTime(weaponConfig_.missileCoolTime);
+	}
+
+	//---- 弾（銃）の設定 ----
+	/// @brief 弾のモデルパスを設定
+	void SetBulletModelPath(const std::string &modelPath) {
+		weaponConfig_.bulletModelPath = modelPath;
+		combatComponent_.SetBulletModelPath(modelPath);
+	}
+	/// @brief 弾のモデルパスを取得
+	const std::string &GetBulletModelPath() const {
+		return weaponConfig_.bulletModelPath;
+	}
+
+	/// @brief 弾の速度を設定
+	void SetBulletSpeed(float speed) {
+		weaponConfig_.bulletSpeed = speed;
+	}
+	/// @brief 弾の速度を取得
+	float GetBulletSpeed() const {
+		return weaponConfig_.bulletSpeed;
+	}
+
+	/// @brief 弾の生存時間を設定
+	void SetBulletMaxLifeTime(float lifeTime) {
+		weaponConfig_.bulletMaxLifeTime = lifeTime;
+	}
+	/// @brief 弾の生存時間を取得
+	float GetBulletMaxLifeTime() const {
+		return weaponConfig_.bulletMaxLifeTime;
+	}
+
+	/// @brief 弾の当たり判定半径を設定
+	void SetBulletRadius(float radius) {
+		weaponConfig_.bulletRadius = radius;
+	}
+	/// @brief 弾の当たり判定半径を取得
+	float GetBulletRadius() const {
+		return weaponConfig_.bulletRadius;
+	}
+
+	/// @brief 連射クールタイムを設定
+	void SetShootCoolTime(float coolTime) {
+		weaponConfig_.shootCoolTime = coolTime;
+		combatComponent_.SetMaxShootCoolTime(coolTime);
+	}
+	/// @brief 連射クールタイムを取得
+	float GetShootCoolTime() const {
+		return weaponConfig_.shootCoolTime;
+	}
+
+	//---- ミサイルの設定 ----
 	/// @brief ミサイルのモデルパスを設定
 	void SetMissileModelPath(const std::string &modelPath) {
+		weaponConfig_.missileModelPath = modelPath;
 		combatComponent_.SetMissileModelPath(modelPath);
+	}
+	/// @brief ミサイルのモデルパスを取得
+	const std::string &GetMissileModelPath() const {
+		return weaponConfig_.missileModelPath;
+	}
+
+	/// @brief ミサイルの速度を設定
+	void SetMissileSpeed(float speed) {
+		weaponConfig_.missileSpeed = speed;
+	}
+	/// @brief ミサイルの速度を取得
+	float GetMissileSpeed() const {
+		return weaponConfig_.missileSpeed;
+	}
+
+	/// @brief ミサイルの最大旋回速度を設定（度/秒）
+	void SetMissileMaxTurnRate(float turnRate) {
+		weaponConfig_.missileMaxTurnRate = turnRate;
+	}
+	/// @brief ミサイルの最大旋回速度を取得
+	float GetMissileMaxTurnRate() const {
+		return weaponConfig_.missileMaxTurnRate;
+	}
+
+	/// @brief ミサイルの生存時間を設定
+	void SetMissileMaxLifeTime(float lifeTime) {
+		weaponConfig_.missileMaxLifeTime = lifeTime;
+	}
+	/// @brief ミサイルの生存時間を取得
+	float GetMissileMaxLifeTime() const {
+		return weaponConfig_.missileMaxLifeTime;
+	}
+
+	/// @brief ミサイル発射クールタイムを設定
+	void SetMissileCoolTime(float coolTime) {
+		weaponConfig_.missileCoolTime = coolTime;
+		combatComponent_.SetMaxMissileCoolTime(coolTime);
+	}
+	/// @brief ミサイル発射クールタイムを取得
+	float GetMissileCoolTime() const {
+		return weaponConfig_.missileCoolTime;
 	}
 
 	///--------------------------------------------------------------
@@ -259,6 +391,10 @@ private:
 	//========================================
 	// システム参照
 	EnemyManager *enemyManager_;
+
+	//========================================
+	// 武装設定（一元管理）
+	WeaponConfig weaponConfig_;
 
 	//========================================
 	// Friend クラス
