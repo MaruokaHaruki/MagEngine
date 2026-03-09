@@ -152,8 +152,8 @@ Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクス
 SamplerState gLinearSampler : register(s0);    // 線形補間サンプラー
 
 static const float PI = 3.14159265f;           // 円周率
-static const int MAX_STEPS = 16;               // レイマーチングの最大ステップ数（高速化優先）
-static const int MAX_LIGHT_STEPS = 2;          // ライトマーチングの最大ステップ数（パフォーマンス優先）
+static const int MAX_STEPS = 64;               // レイマーチングの最大ステップ数（品質重視）
+static const int MAX_LIGHT_STEPS = 8;          // ライトマーチングの最大ステップ数（品質重視）
 
 ///=============================================================================
 ///                      ハッシュ関数

@@ -83,7 +83,7 @@ namespace MagEngine {
 		// レイマーチング設定
 		float stepSize = 3.0f;				  // レイマーチングのステップサイズ
 		float maxDistance = 2000.0f;		  // 最大レイマーチング距離
-		float lightStepSize = 15.0f;		  // ライトサンプリングのステップサイズ
+		float lightStepSize = 5.0f;			  // ライトサンプリングのステップサイズ（品質重視）
 		float shadowDensityMultiplier = 1.2f; // 影の密度倍率
 
 		//========================================

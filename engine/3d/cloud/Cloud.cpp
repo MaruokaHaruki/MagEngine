@@ -54,33 +54,33 @@ namespace MagEngine {
 		paramsCPU_.cloudCenter = {0.0f, 150.0f, 0.0f};
 
 		// 密度 : 雲の濃さを制御（値が小さいほど薄くなる）
-		// 2.0 = 適度な濃さの雲（品質重視）
-		paramsCPU_.density = 2.0f;
+		// 品質重視：より厚みのあるリアルな雲
+		paramsCPU_.density = 3.5f;
 
 		// カバレッジ : 雲の分布範囲（0.0～1.0）
 		// 値が小さいほど雲が連続的になる
-		// 0.2 = 雲の途切れを減らす（以前: 0.3f）
-		paramsCPU_.coverage = 0.1f;
+		// 品質重視：より連続的で自然な雲の分布
+		paramsCPU_.coverage = 0.6f;
 
 		// レイマーチングのステップサイズ（大きいほど処理が軽いが粗くなる）
-		// 高速化優先で大きめに設定
-		paramsCPU_.stepSize = 15.0f;
+		// 品質重視：小さい値でより細かいボリュメトリック雲を実現
+		paramsCPU_.stepSize = 3.0f;
 
 		// ベースノイズスケール : 雲の大きな形状を決定
 		// 値が小さいほど大きな雲の塊ができる
-		paramsCPU_.baseNoiseScale = 0.008f; // より大きな雲の形状（以前: 0.01f）
+		paramsCPU_.baseNoiseScale = 0.005f; // より自然で大きな雲の形状
 
 		// ディテールノイズスケール : 雲の細かいディテールを追加
 		// 値が大きいほど細かい模様が現れる
-		paramsCPU_.detailNoiseScale = 0.025f; // 細かいディテールを少し抑える（以前: 0.03f）
+		paramsCPU_.detailNoiseScale = 0.025f; // 細かいディテールを追加
 
 		// ディテールノイズの影響度（0.0～1.0）
 		// 値が小さいほどなめらかな雲になる
-		paramsCPU_.detailWeight = 0.25f; // 適度なディテール（品質とパフォーマンスのバランス）
+		paramsCPU_.detailWeight = 0.5f; // より細かいディテール（品質重視）
 
 		// ノイズアニメーション速度 : 雲が流れる速さ
 		// 値が小さいほどゆっくり動く
-		paramsCPU_.noiseSpeed = 0.015f; // ゆっくりとした流れ（以前: 0.02f）
+		paramsCPU_.noiseSpeed = 0.015f; // ゆっくりとした自然な流れ
 
 		// デバッグフラグ（0.0 = 通常モード、1.0 = デバッグモード）
 		paramsCPU_.debugFlag = 0.0f;
