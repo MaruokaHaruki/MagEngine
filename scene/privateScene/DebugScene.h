@@ -102,6 +102,7 @@ private:
 	//========================================
 	// TrailEffect
 	std::unique_ptr<MagEngine::TrailEffectManager> trailEffectManager_;
+	bool trailInitialized_ = false; // トレイルインスタンスの初期化フラグ
 
 	//========================================
 	// TrailEffect テスト用パラメータ

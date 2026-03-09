@@ -7,7 +7,7 @@
  * \note
  *********************************************************************/
 #define _USE_MATH_DEFINES
- // 以下はstd::maxを使用する場合に必要
+// 以下はstd::maxを使用する場合に必要
 #define NOMINMAX
 #include "TrailEmitter.h"
 #include "Camera.h"
@@ -281,11 +281,12 @@ namespace MagEngine {
 		}
 	}
 
-	///=============================================================================
-	///						ポイント履歴から頂点を生成
 	void TrailEmitter::GenerateVerticesFromHistory() {
-		//========================================
-		// カメラ位置を取得
+		// 簡易実装：後で詳細版に置き換え
+		if (trailHistory_.empty()) {
+			return;
+		}
+
 		MagMath::Vector3 cameraPos = cameraCPU_.worldPosition;
 
 		for (size_t i = 0; i < trailHistory_.size(); ++i) {
@@ -293,42 +294,33 @@ namespace MagEngine {
 			float pointAge = paramsCPU_.time - point.time;
 			float lifeFraction = std::max(0.0f, std::min(1.0f, pointAge / paramsCPU_.lifeTime));
 
-			//========================================
-			// 方向を計算
-			MagMath::Vector3 direction;
+			MagMath::Vector3 direction{0.0f, 0.0f, 1.0f};
 			if (i < trailHistory_.size() - 1) {
-				direction = (trailHistory_[i + 1].position - point.position);
-				if (MagMath::Length(direction) > 0.001f) {
-					direction = MagMath::Normalize(direction);
-				} else {
-					direction = {0.0f, 0.0f, 1.0f};
+				MagMath::Vector3 delta = trailHistory_[i + 1].position - point.position;
+				float len = MagMath::Length(delta);
+				if (len > 0.001f) {
+					direction = MagMath::Normalize(delta);
 				}
-			} else {
-				direction = {0.0f, 0.0f, 1.0f};
 			}
 
-			//========================================
-			// カメラに向く法線を計算（ビルボード）
-			MagMath::Vector3 toCamera = (cameraPos - point.position);
-			if (MagMath::Length(toCamera) > 0.001f) {
+			MagMath::Vector3 toCamera = cameraPos - point.position;
+			float toLen = MagMath::Length(toCamera);
+			if (toLen > 0.001f) {
 				toCamera = MagMath::Normalize(toCamera);
 			} else {
 				toCamera = {0.0f, 0.0f, 1.0f};
 			}
 
 			MagMath::Vector3 normal = MagMath::Cross(direction, toCamera);
-			if (MagMath::Length(normal) > 0.001f) {
+			float normLen = MagMath::Length(normal);
+			if (normLen > 0.001f) {
 				normal = MagMath::Normalize(normal);
 			} else {
 				normal = {1.0f, 0.0f, 0.0f};
 			}
 
-			//========================================
-			// 幅を計算（ライフタイムで減衰）
 			float width = paramsCPU_.width * (1.0f - lifeFraction);
 
-			//========================================
-			// 左右の頂点を作成
 			TrailVertex leftVertex;
 			leftVertex.position = point.position - normal * width;
 			leftVertex.age = lifeFraction;
@@ -343,20 +335,16 @@ namespace MagEngine {
 			vertices_.push_back(rightVertex);
 		}
 
-		//========================================
-		// インデックスを生成（各セグメントに2つの三角形）
 		for (size_t i = 0; i + 3 < vertices_.size(); i += 2) {
 			uint32_t l0 = static_cast<uint32_t>(i);
 			uint32_t r0 = static_cast<uint32_t>(i + 1);
 			uint32_t l1 = static_cast<uint32_t>(i + 2);
 			uint32_t r1 = static_cast<uint32_t>(i + 3);
 
-			// 三角形1（左手系）
 			indices_.push_back(l0);
 			indices_.push_back(r0);
 			indices_.push_back(l1);
 
-			// 三角形2（左手系）
 			indices_.push_back(r0);
 			indices_.push_back(r1);
 			indices_.push_back(l1);

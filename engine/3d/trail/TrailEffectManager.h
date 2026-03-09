@@ -141,6 +141,38 @@ namespace MagEngine {
 		}
 
 		///--------------------------------------------------------------
+		///						 JSON保存・読み込み
+	public:
+		/**----------------------------------------------------------------------------
+		 * \brief  プリセットをJSONファイルに保存
+		 * \param  presetName プリセット名
+		 * \param  filePath 保存ファイルパス
+		 * \return 成功時はtrue
+		 */
+		bool SavePresetToJson(const std::string &presetName, const std::string &filePath);
+
+		/**----------------------------------------------------------------------------
+		 * \brief  JSONファイルからプリセットを読み込み
+		 * \param  filePath 読み込みファイルパス
+		 * \return 成功時はtrue
+		 */
+		bool LoadPresetFromJson(const std::string &filePath);
+
+		/**----------------------------------------------------------------------------
+		 * \brief  すべてのプリセットをJSONファイルに保存
+		 * \param  filePath 保存ファイルパス
+		 * \return 成功時はtrue
+		 */
+		bool SaveAllPresetsToJson(const std::string &filePath);
+
+		/**----------------------------------------------------------------------------
+		 * \brief  JSONファイルからすべてのプリセットを読み込み
+		 * \param  filePath 読み込みファイルパス
+		 * \return 成功時はtrue
+		 */
+		bool LoadAllPresetsFromJson(const std::string &filePath);
+
+		///--------------------------------------------------------------
 		///						 メンバ変数
 	private:
 		//========================================
@@ -154,5 +186,12 @@ namespace MagEngine {
 		//========================================
 		// インスタンス管理
 		std::map<std::string, std::unique_ptr<TrailEffect>> activeEffects_;
+
+		//========================================
+		// エディター用
+		std::string editingPresetName_;		  ///< 編集中のプリセット名
+		bool editingPresetActive_ = false;	  ///< 編集中か
+		TrailEffectPreset editingPresetCopy_; ///< 編集中のプリセット（コピー）
+		char presetNameBuffer_[128] = {};	  ///< プリセット名入力バッファ
 	};
 }

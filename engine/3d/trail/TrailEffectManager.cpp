@@ -10,6 +10,9 @@
 #include "Logger.h"
 #include "TrailEffectSetup.h"
 #include "externals/imgui/imgui.h"
+#include "externals/json.hpp"
+#include <fstream>
+#include <sstream>
 
 using namespace Logger;
 
@@ -69,12 +72,206 @@ namespace MagEngine {
 		ImGui::Separator();
 
 		//========================================
-		// プリセット一覧
-		if (ImGui::TreeNode("Presets")) {
+		// プリセット管理セクション
+		if (ImGui::CollapsingHeader("Preset Management", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::BeginChild("PresetManagement", ImVec2(0, 300), true);
+
+			//========================================
+			// プリセット一覧と操作
 			for (const auto &presetName : GetPresetNames()) {
-				ImGui::BulletText("%s", presetName.c_str());
+				bool isCurrent = (editingPresetName_ == presetName && editingPresetActive_);
+
+				ImGui::PushID(presetName.c_str());
+				if (isCurrent) {
+					ImGui::SetNextItemOpen(true);
+				}
+
+				if (ImGui::TreeNode(presetName.c_str())) {
+					if (ImGui::Button("Edit")) {
+						editingPresetName_ = presetName;
+						editingPresetCopy_ = *GetPreset(presetName);
+						editingPresetActive_ = true;
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Duplicate")) {
+						TrailEffectPreset *original = GetPreset(presetName);
+						if (original) {
+							TrailEffectPreset copy = *original;
+							copy.name = presetName + "_copy";
+							RegisterPreset(copy);
+						}
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Save to JSON")) {
+						std::string jsonPath = "resources/presets/" + presetName + ".json";
+						SavePresetToJson(presetName, jsonPath);
+					}
+					ImGui::SameLine();
+					std::string deleteLabel = "Delete##" + presetName;
+					if (ImGui::Button(deleteLabel.c_str())) {
+						UnregisterPreset(presetName);
+					}
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
 			}
-			ImGui::TreePop();
+
+			ImGui::EndChild();
+		}
+
+		ImGui::Separator();
+
+		//========================================
+		// エディターセクション
+		if (editingPresetActive_ && ImGui::CollapsingHeader("Preset Editor", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::BeginChild("PresetEditor", ImVec2(0, 500), true);
+
+			ImGui::Text("Editing: %s", editingPresetName_.c_str());
+			ImGui::Separator();
+
+			//========================================
+			// ライフタイム設定
+			if (ImGui::TreeNodeEx("Lifetime Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::SliderFloat("Life Time##editor", &editingPresetCopy_.lifeTime, 0.1f, 10.0f);
+				ImGui::SliderFloat("Min Point Distance##editor", &editingPresetCopy_.minPointDistance, 0.01f, 2.0f);
+				ImGui::SliderInt("Max Points##editor", (int *)&editingPresetCopy_.maxPoints, 8, 256);
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// 幅設定
+			if (ImGui::TreeNodeEx("Width Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::SliderFloat("Width##editor", &editingPresetCopy_.width, 0.1f, 20.0f);
+				ImGui::SliderFloat("Width Multiplier##editor", &editingPresetCopy_.widthMultiplier, 0.1f, 3.0f);
+				ImGui::SliderFloat("Start Width##editor", &editingPresetCopy_.startWidth, 0.0f, 2.0f);
+				ImGui::SliderFloat("End Width##editor", &editingPresetCopy_.endWidth, 0.0f, 2.0f);
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// カラー設定
+			if (ImGui::TreeNodeEx("Color Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::ColorEdit3("Base Color##editor", &editingPresetCopy_.color.x);
+				ImGui::SliderFloat("Opacity##editor", &editingPresetCopy_.opacity, 0.0f, 1.0f);
+				ImGui::ColorEdit3("Start Color##editor", &editingPresetCopy_.startColor.x);
+				ImGui::ColorEdit3("End Color##editor", &editingPresetCopy_.endColor.x);
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// アライメント・シミュレーション空間
+			if (ImGui::TreeNodeEx("Alignment & Space", ImGuiTreeNodeFlags_DefaultOpen)) {
+				const char *alignItems[] = {"World", "Local", "View"};
+				ImGui::Combo("Alignment##editor", (int *)&editingPresetCopy_.alignment, alignItems, IM_ARRAYSIZE(alignItems));
+
+				const char *spaceItems[] = {"World", "Local"};
+				ImGui::Combo("Simulation Space##editor", (int *)&editingPresetCopy_.simulationSpace, spaceItems, IM_ARRAYSIZE(spaceItems));
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// マテリアル設定
+			if (ImGui::TreeNodeEx("Material Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				static char materialBuffer[64] = {};
+				if (editingPresetActive_) {
+					strncpy_s(materialBuffer, editingPresetCopy_.material.c_str(), sizeof(materialBuffer) - 1);
+				}
+				if (ImGui::InputText("Material##editor", materialBuffer, IM_ARRAYSIZE(materialBuffer))) {
+					editingPresetCopy_.material = materialBuffer;
+				}
+
+				const char *texModeItems[] = {"None", "Tiled", "Stretched"};
+				ImGui::Combo("Texture Mode##editor", (int *)&editingPresetCopy_.textureMode, texModeItems, IM_ARRAYSIZE(texModeItems));
+
+				ImGui::DragFloat2("Tiling##editor", &editingPresetCopy_.tiling.x, 0.01f, 0.1f, 10.0f);
+				ImGui::DragFloat2("Offset##editor", &editingPresetCopy_.offset.x, 0.01f, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// 発光・クリア設定
+			if (ImGui::TreeNodeEx("Emission Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::Checkbox("Emitting##editor", &editingPresetCopy_.emitting);
+				ImGui::Checkbox("Auto Clear##editor", &editingPresetCopy_.autoClear);
+				ImGui::SliderFloat("Emission Rate##editor", &editingPresetCopy_.emissionRate, 1.0f, 200.0f);
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// コーナー・細分化設定
+			if (ImGui::TreeNodeEx("Corner & Subdivision", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::SliderFloat("Corner Smooth##editor", &editingPresetCopy_.cornerSmooth, 0.0f, 1.0f);
+				ImGui::SliderInt("Subdivisions##editor", (int *)&editingPresetCopy_.subdivisions, 1, 4);
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// ノイズ設定
+			if (ImGui::TreeNodeEx("Noise Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::SliderFloat("Noise Amplitude##editor", &editingPresetCopy_.noiseAmplitude, 0.0f, 1.0f);
+				ImGui::SliderFloat("Noise Frequency##editor", &editingPresetCopy_.noiseFrequency, 0.1f, 10.0f);
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// フェード設定
+			if (ImGui::TreeNodeEx("Fade Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+				const char *fadeModeItems[] = {"Linear", "EaseOut", "EaseIn"};
+				ImGui::Combo("Fade Mode##editor", (int *)&editingPresetCopy_.fadeMode, fadeModeItems, IM_ARRAYSIZE(fadeModeItems));
+				ImGui::TreePop();
+			}
+
+			//========================================
+			// 物理パラメータ
+			if (ImGui::TreeNodeEx("Physics", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui::SliderFloat("Velocity Damping##editor", &editingPresetCopy_.velocityDamping, 0.0f, 1.0f);
+				ImGui::SliderFloat("Gravity Influence##editor", &editingPresetCopy_.gravityInfluence, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			ImGui::Separator();
+
+			//========================================
+			// 保存・プレビュー・キャンセルボタン
+			if (ImGui::Button("Save Changes##editor", ImVec2(150, 0))) {
+				UpdatePreset(editingPresetName_, editingPresetCopy_);
+				editingPresetActive_ = false;
+				Log("Preset updated: " + editingPresetName_, LogLevel::Success);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Save to JSON##editor", ImVec2(150, 0))) {
+				std::string jsonPath = "resources/presets/" + editingPresetName_ + ".json";
+				SavePresetToJson(editingPresetName_, jsonPath);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel##editor", ImVec2(100, 0))) {
+				editingPresetActive_ = false;
+			}
+
+			ImGui::EndChild();
+		}
+
+		ImGui::Separator();
+
+		//========================================
+		// JSON操作セクション
+		if (ImGui::CollapsingHeader("JSON Import/Export")) {
+			static char jsonPathBuffer[256] = "resources/trail/test_preset.json";
+			ImGui::InputText("JSON File Path##import", jsonPathBuffer, IM_ARRAYSIZE(jsonPathBuffer));
+
+			if (ImGui::Button("Load Preset from JSON")) {
+				if (LoadPresetFromJson(jsonPathBuffer)) {
+					Log("Preset loaded successfully", LogLevel::Success);
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Load All Presets from JSON")) {
+				LoadAllPresetsFromJson(jsonPathBuffer);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Save All Presets to JSON")) {
+				SaveAllPresetsToJson(jsonPathBuffer);
+			}
 		}
 
 		ImGui::Separator();
@@ -246,5 +443,337 @@ namespace MagEngine {
 		// すべてのインスタンスを削除
 		activeEffects_.clear();
 		Log("All TrailEffects destroyed", LogLevel::Success);
+	}
+
+	///=============================================================================
+	///						JSON保存・読み込み機能
+	bool TrailEffectManager::SavePresetToJson(const std::string &presetName, const std::string &filePath) {
+		//========================================
+		// プリセットを取得
+		TrailEffectPreset *preset = GetPreset(presetName);
+		if (!preset) {
+			Log("Preset not found: " + presetName, LogLevel::Warning);
+			return false;
+		}
+
+		try {
+			//========================================
+			// jsonオブジェクトを作成
+			nlohmann::json j;
+			j["name"] = preset->name;
+
+			// ライフタイム設定
+			j["lifeTime"] = preset->lifeTime;
+			j["minPointDistance"] = preset->minPointDistance;
+			j["maxPoints"] = preset->maxPoints;
+
+			// 幅設定
+			j["width"] = preset->width;
+			j["widthMultiplier"] = preset->widthMultiplier;
+			j["startWidth"] = preset->startWidth;
+			j["endWidth"] = preset->endWidth;
+
+			// カラー設定
+			j["color"] = {{"x", preset->color.x}, {"y", preset->color.y}, {"z", preset->color.z}};
+			j["opacity"] = preset->opacity;
+			j["startColor"] = {{"x", preset->startColor.x}, {"y", preset->startColor.y}, {"z", preset->startColor.z}};
+			j["endColor"] = {{"x", preset->endColor.x}, {"y", preset->endColor.y}, {"z", preset->endColor.z}};
+
+			// アライメント・シミュレーション空間
+			j["alignment"] = preset->alignment;
+			j["simulationSpace"] = preset->simulationSpace;
+
+			// マテリアル設定
+			j["material"] = preset->material;
+			j["textureMode"] = preset->textureMode;
+			j["tiling"] = {{"x", preset->tiling.x}, {"y", preset->tiling.y}};
+			j["offset"] = {{"x", preset->offset.x}, {"y", preset->offset.y}};
+
+			// 発光・クリア設定
+			j["emitting"] = preset->emitting;
+			j["autoClear"] = preset->autoClear;
+
+			// コーナー・細分化設定
+			j["cornerSmooth"] = preset->cornerSmooth;
+			j["subdivisions"] = preset->subdivisions;
+
+			// ノイズ設定
+			j["noiseAmplitude"] = preset->noiseAmplitude;
+			j["noiseFrequency"] = preset->noiseFrequency;
+
+			// フェード設定
+			j["fadeMode"] = preset->fadeMode;
+
+			// 物理パラメータ
+			j["emissionRate"] = preset->emissionRate;
+			j["velocityDamping"] = preset->velocityDamping;
+			j["gravityInfluence"] = preset->gravityInfluence;
+
+			// シェーダー情報
+			j["shaderName"] = preset->shaderName;
+
+			//========================================
+			// ファイルに保存
+			std::ofstream file(filePath);
+			if (!file.is_open()) {
+				Log("Failed to open file: " + filePath, LogLevel::Error);
+				return false;
+			}
+			file << j.dump(2);
+			file.close();
+
+			Log("Preset saved to JSON: " + filePath, LogLevel::Success);
+			return true;
+		} catch (const std::exception &e) {
+			Log(std::string("JSON save error: ") + e.what(), LogLevel::Error);
+			return false;
+		}
+	}
+
+	///=============================================================================
+	bool TrailEffectManager::LoadPresetFromJson(const std::string &filePath) {
+		try {
+			//========================================
+			// JSONファイルを読み込み
+			std::ifstream file(filePath);
+			if (!file.is_open()) {
+				Log("Failed to open file: " + filePath, LogLevel::Warning);
+				return false;
+			}
+
+			nlohmann::json j;
+			file >> j;
+			file.close();
+
+			//========================================
+			// プリセットを復元
+			TrailEffectPreset preset;
+			preset.name = j.value("name", "Unnamed");
+
+			// ライフタイム設定
+			preset.lifeTime = j.value("lifeTime", 3.0f);
+			preset.minPointDistance = j.value("minPointDistance", 0.1f);
+			preset.maxPoints = j.value("maxPoints", 128u);
+
+			// 幅設定
+			preset.width = j.value("width", 2.0f);
+			preset.widthMultiplier = j.value("widthMultiplier", 1.0f);
+			preset.startWidth = j.value("startWidth", 1.0f);
+			preset.endWidth = j.value("endWidth", 0.0f);
+
+			// カラー設定
+			if (j.contains("color")) {
+				preset.color = {j["color"]["x"], j["color"]["y"], j["color"]["z"]};
+			}
+			preset.opacity = j.value("opacity", 0.8f);
+			if (j.contains("startColor")) {
+				preset.startColor = {j["startColor"]["x"], j["startColor"]["y"], j["startColor"]["z"]};
+			}
+			if (j.contains("endColor")) {
+				preset.endColor = {j["endColor"]["x"], j["endColor"]["y"], j["endColor"]["z"]};
+			}
+
+			// アライメント・シミュレーション空間
+			preset.alignment = j.value("alignment", 0u);
+			preset.simulationSpace = j.value("simulationSpace", 0u);
+
+			// マテリアル設定
+			preset.material = j.value("material", "Default");
+			preset.textureMode = j.value("textureMode", 0u);
+			if (j.contains("tiling")) {
+				preset.tiling = {j["tiling"]["x"], j["tiling"]["y"]};
+			}
+			if (j.contains("offset")) {
+				preset.offset = {j["offset"]["x"], j["offset"]["y"]};
+			}
+
+			// 発光・クリア設定
+			preset.emitting = j.value("emitting", true);
+			preset.autoClear = j.value("autoClear", false);
+
+			// コーナー・細分化設定
+			preset.cornerSmooth = j.value("cornerSmooth", 0.1f);
+			preset.subdivisions = j.value("subdivisions", 1u);
+
+			// ノイズ設定
+			preset.noiseAmplitude = j.value("noiseAmplitude", 0.0f);
+			preset.noiseFrequency = j.value("noiseFrequency", 1.0f);
+
+			// フェード設定
+			preset.fadeMode = j.value("fadeMode", 0u);
+
+			// 物理パラメータ
+			preset.emissionRate = j.value("emissionRate", 50.0f);
+			preset.velocityDamping = j.value("velocityDamping", 0.95f);
+			preset.gravityInfluence = j.value("gravityInfluence", 0.2f);
+
+			// シェーダー情報
+			preset.shaderName = j.value("shaderName", "TrailDefault");
+
+			//========================================
+			// プリセットを登録
+			RegisterPreset(preset);
+			Log("Preset loaded from JSON: " + filePath, LogLevel::Success);
+			return true;
+		} catch (const std::exception &e) {
+			Log(std::string("JSON load error: ") + e.what(), LogLevel::Error);
+			return false;
+		}
+	}
+
+	///=============================================================================
+	bool TrailEffectManager::SaveAllPresetsToJson(const std::string &filePath) {
+		try {
+			//========================================
+			// JSONオブジェクトを作成
+			nlohmann::json j;
+			j["presets"] = nlohmann::json::array();
+
+			//========================================
+			// すべてのプリセットを保存
+			for (const auto &name : GetPresetNames()) {
+				TrailEffectPreset *preset = GetPreset(name);
+				if (!preset)
+					continue;
+
+				nlohmann::json presetJson;
+				presetJson["name"] = preset->name;
+				presetJson["lifeTime"] = preset->lifeTime;
+				presetJson["minPointDistance"] = preset->minPointDistance;
+				presetJson["maxPoints"] = preset->maxPoints;
+				presetJson["width"] = preset->width;
+				presetJson["widthMultiplier"] = preset->widthMultiplier;
+				presetJson["startWidth"] = preset->startWidth;
+				presetJson["endWidth"] = preset->endWidth;
+				presetJson["color"] = {{"x", preset->color.x}, {"y", preset->color.y}, {"z", preset->color.z}};
+				presetJson["opacity"] = preset->opacity;
+				presetJson["startColor"] = {{"x", preset->startColor.x}, {"y", preset->startColor.y}, {"z", preset->startColor.z}};
+				presetJson["endColor"] = {{"x", preset->endColor.x}, {"y", preset->endColor.y}, {"z", preset->endColor.z}};
+				presetJson["alignment"] = preset->alignment;
+				presetJson["simulationSpace"] = preset->simulationSpace;
+				presetJson["material"] = preset->material;
+				presetJson["textureMode"] = preset->textureMode;
+				presetJson["tiling"] = {{"x", preset->tiling.x}, {"y", preset->tiling.y}};
+				presetJson["offset"] = {{"x", preset->offset.x}, {"y", preset->offset.y}};
+				presetJson["emitting"] = preset->emitting;
+				presetJson["autoClear"] = preset->autoClear;
+				presetJson["cornerSmooth"] = preset->cornerSmooth;
+				presetJson["subdivisions"] = preset->subdivisions;
+				presetJson["noiseAmplitude"] = preset->noiseAmplitude;
+				presetJson["noiseFrequency"] = preset->noiseFrequency;
+				presetJson["fadeMode"] = preset->fadeMode;
+				presetJson["emissionRate"] = preset->emissionRate;
+				presetJson["velocityDamping"] = preset->velocityDamping;
+				presetJson["gravityInfluence"] = preset->gravityInfluence;
+				presetJson["shaderName"] = preset->shaderName;
+
+				j["presets"].push_back(presetJson);
+			}
+
+			//========================================
+			// ファイルに保存
+			std::ofstream file(filePath);
+			if (!file.is_open()) {
+				Log("Failed to open file: " + filePath, LogLevel::Error);
+				return false;
+			}
+			file << j.dump(2);
+			file.close();
+
+			Log("All presets saved to JSON: " + filePath, LogLevel::Success);
+			return true;
+		} catch (const std::exception &e) {
+			Log(std::string("JSON save error: ") + e.what(), LogLevel::Error);
+			return false;
+		}
+	}
+
+	///=============================================================================
+	bool TrailEffectManager::LoadAllPresetsFromJson(const std::string &filePath) {
+		try {
+			//========================================
+			// JSONファイルを読み込み
+			std::ifstream file(filePath);
+			if (!file.is_open()) {
+				Log("Failed to open file: " + filePath, LogLevel::Warning);
+				return false;
+			}
+
+			nlohmann::json j;
+			file >> j;
+			file.close();
+
+			//========================================
+			// プリセット配列または単一プリセットを復元
+			std::vector<nlohmann::json> presetsToLoad;
+
+			if (j.contains("presets") && j["presets"].is_array()) {
+				// 複数プリセット形式
+				presetsToLoad = j["presets"];
+			} else if (j.contains("name")) {
+				// 単一プリセット形式
+				presetsToLoad.push_back(j);
+			} else {
+				Log("Invalid JSON format: missing 'presets' array or 'name' field", LogLevel::Warning);
+				return false;
+			}
+
+			//========================================
+			// プリセットを復元
+			for (const auto &presetJson : presetsToLoad) {
+				TrailEffectPreset preset;
+				preset.name = presetJson.value("name", "Unnamed");
+				preset.lifeTime = presetJson.value("lifeTime", 3.0f);
+				preset.minPointDistance = presetJson.value("minPointDistance", 0.1f);
+				preset.maxPoints = presetJson.value("maxPoints", 128u);
+				preset.width = presetJson.value("width", 2.0f);
+				preset.widthMultiplier = presetJson.value("widthMultiplier", 1.0f);
+				preset.startWidth = presetJson.value("startWidth", 1.0f);
+				preset.endWidth = presetJson.value("endWidth", 0.0f);
+
+				if (presetJson.contains("color")) {
+					preset.color = {presetJson["color"]["x"], presetJson["color"]["y"], presetJson["color"]["z"]};
+				}
+				preset.opacity = presetJson.value("opacity", 0.8f);
+				if (presetJson.contains("startColor")) {
+					preset.startColor = {presetJson["startColor"]["x"], presetJson["startColor"]["y"], presetJson["startColor"]["z"]};
+				}
+				if (presetJson.contains("endColor")) {
+					preset.endColor = {presetJson["endColor"]["x"], presetJson["endColor"]["y"], presetJson["endColor"]["z"]};
+				}
+
+				preset.alignment = presetJson.value("alignment", 0u);
+				preset.simulationSpace = presetJson.value("simulationSpace", 0u);
+				preset.material = presetJson.value("material", "Default");
+				preset.textureMode = presetJson.value("textureMode", 0u);
+				if (presetJson.contains("tiling")) {
+					preset.tiling = {presetJson["tiling"]["x"], presetJson["tiling"]["y"]};
+				}
+				if (presetJson.contains("offset")) {
+					preset.offset = {presetJson["offset"]["x"], presetJson["offset"]["y"]};
+				}
+
+				preset.emitting = presetJson.value("emitting", true);
+				preset.autoClear = presetJson.value("autoClear", false);
+				preset.cornerSmooth = presetJson.value("cornerSmooth", 0.1f);
+				preset.subdivisions = presetJson.value("subdivisions", 1u);
+				preset.noiseAmplitude = presetJson.value("noiseAmplitude", 0.0f);
+				preset.noiseFrequency = presetJson.value("noiseFrequency", 1.0f);
+				preset.fadeMode = presetJson.value("fadeMode", 0u);
+				preset.emissionRate = presetJson.value("emissionRate", 50.0f);
+				preset.velocityDamping = presetJson.value("velocityDamping", 0.95f);
+				preset.gravityInfluence = presetJson.value("gravityInfluence", 0.2f);
+				preset.shaderName = presetJson.value("shaderName", "TrailDefault");
+
+				RegisterPreset(preset);
+				Log("Preset loaded: " + preset.name, LogLevel::Success);
+			}
+
+			Log("All presets loaded from JSON: " + filePath, LogLevel::Success);
+			return true;
+		} catch (const std::exception &e) {
+			Log(std::string("JSON load error: ") + e.what(), LogLevel::Error);
+			return false;
+		}
 	}
 }

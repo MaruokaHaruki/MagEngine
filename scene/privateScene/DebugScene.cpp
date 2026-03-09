@@ -101,32 +101,19 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	cloud_->GetMutableParams().coverage = 0.25f; // 低いカバレッジ
 	cloud_->GetMutableParams().stepSize = 4.0f;
 
-	///--------------------------------------------------------------
-	///						 TrailEffect系
-	trailEffectManager_ = std::make_unique<TrailEffectManager>();
-	trailEffectManager_->Initialize(trailEffectSetup);
-
-	// テスト用プリセットを登録
-	TrailEffectPreset testPreset;
-	testPreset.name = "test_trail";
-	testPreset.color = Vector3{0.0f, 1.0f, 0.5f}; // 青緑
-	testPreset.opacity = 0.8f;
-	testPreset.width = 2.5f;
-	testPreset.lifeTime = 2.0f;
-	testPreset.emissionRate = 30.0f;
-	testPreset.velocityDamping = 0.95f;
-	testPreset.gravityInfluence = 0.0f;
-	testPreset.shaderName = "Trail";
-
-	trailEffectManager_->RegisterPreset(testPreset);
-
-	// テスト用トレイルエフェクトを生成
-	trailEffectManager_->CreateFromPreset("test_trail", "debug_test_trail");
 	cloud_->GetMutableParams().baseNoiseScale = 0.008f;
 	cloud_->GetMutableParams().detailNoiseScale = 0.025f;
 	cloud_->GetMutableParams().ambient = 0.4f;
 	cloud_->GetMutableParams().sunIntensity = 2.0f;
 	cloud_->GetMutableParams().debugFlag = 0.0f; // 通常モード
+
+	///--------------------------------------------------------------
+	///						 TrailEffect系
+	trailEffectManager_ = std::make_unique<TrailEffectManager>();
+	trailEffectManager_->Initialize(trailEffectSetup);
+
+	// JSONからすべてのプリセットを読み込み
+	trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
 }
 
 ///=============================================================================
@@ -183,6 +170,12 @@ void DebugScene::Update() {
 	//========================================
 	// TrailEffectの更新
 	if (trailEffectManager_) {
+		// 初回のみトレイルインスタンスを生成
+		if (!trailInitialized_) {
+			trailEffectManager_->CreateFromPreset("test_trail", "debug_test_trail");
+			trailInitialized_ = true;
+		}
+
 		trailEffectManager_->Update(1.0f / 60.0f);
 
 		// テスト用トレイル：円形ループで移動
