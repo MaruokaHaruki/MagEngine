@@ -36,6 +36,10 @@ void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup) 
 	missileCoolTime_ = 0.0f;
 	maxMissileCoolTime_ = 1.0f;
 	bulletFireDirection_ = {0.0f, 0.0f, 1.0f};
+
+	// デフォルトモデルパス
+	bulletModelPath_ = "Bullet.obj";
+	missileModelPath_ = "Bullet.obj";
 }
 
 //=============================================================================
@@ -57,7 +61,7 @@ void PlayerCombatComponent::ShootBullet(const Vector3 &position, const Vector3 &
 	bulletFireDirection_ = direction;
 
 	auto bullet = std::make_unique<PlayerBullet>();
-	bullet->Initialize(object3dSetup_, "Bullet.obj", position, direction);
+	bullet->Initialize(object3dSetup_, bulletModelPath_, position, direction);
 	bullets_.push_back(std::move(bullet));
 	shootCoolTime_ = maxShootCoolTime_;
 }
@@ -70,7 +74,7 @@ void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 
 	}
 
 	auto missile = std::make_unique<PlayerMissile>();
-	missile->Initialize(object3dSetup_, "Bullet.obj", position, direction);
+	missile->Initialize(object3dSetup_, missileModelPath_, position, direction);
 	missile->SetEnemyManager(enemyManager_);
 
 	if (target) {
@@ -131,7 +135,7 @@ void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const
 		//        targets[i]->GetPosition().x, targets[i]->GetPosition().y, targets[i]->GetPosition().z);
 
 		auto missile = std::make_unique<PlayerMissile>();
-		missile->Initialize(object3dSetup_, "Missile.obj", position, direction);
+		missile->Initialize(object3dSetup_, missileModelPath_, position, direction);
 		missile->SetEnemyManager(enemyManager_);
 		missile->SetTarget(targets[i]);
 		missile->StartLockOn();

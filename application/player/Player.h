@@ -217,6 +217,18 @@ public:
 		return {0.0f, 0.0f, 1.0f};
 	}
 
+	//========================================
+	// モデル・テクスチャ設定
+	/// @brief 弾のモデルパスを設定
+	void SetBulletModelPath(const std::string &modelPath) {
+		combatComponent_.SetBulletModelPath(modelPath);
+	}
+
+	/// @brief ミサイルのモデルパスを設定
+	void SetMissileModelPath(const std::string &modelPath) {
+		combatComponent_.SetMissileModelPath(modelPath);
+	}
+
 	///--------------------------------------------------------------
 	///                        内部処理（private）
 private:

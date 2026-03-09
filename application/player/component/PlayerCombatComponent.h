@@ -74,6 +74,12 @@ public:
 	void SetMaxMissileCoolTime(float coolTime) {
 		maxMissileCoolTime_ = coolTime;
 	}
+	void SetBulletModelPath(const std::string &modelPath) {
+		bulletModelPath_ = modelPath;
+	}
+	void SetMissileModelPath(const std::string &modelPath) {
+		missileModelPath_ = modelPath;
+	}
 
 private:
 	///--------------------------------------------------------------
@@ -90,4 +96,7 @@ private:
 	float maxMissileCoolTime_; // 最大ミサイルクールタイム
 
 	Vector3 bulletFireDirection_; // 弾の発射方向（HUD用）
+
+	std::string bulletModelPath_;  // 弾のモデルパス
+	std::string missileModelPath_; // ミサイルのモデルパス
 };
