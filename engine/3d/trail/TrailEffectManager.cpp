@@ -232,19 +232,33 @@ namespace MagEngine {
 			ImGui::Separator();
 
 			//========================================
-			// 保存・プレビュー・キャンセルボタン
-			if (ImGui::Button("Save Changes##editor", ImVec2(150, 0))) {
+			// リアルタイム反映： 編集中のプリセットをアクティブなエフェクトに適用
+			{
+				// プリセットを更新
 				UpdatePreset(editingPresetName_, editingPresetCopy_);
-				editingPresetActive_ = false;
-				Log("Preset updated: " + editingPresetName_, LogLevel::Success);
+
+				// 編集中のプリセット名で生成されたインスタンスを探して更新
+				for (auto &pair : activeEffects_) {
+					// インスタンス名が"debug_"で始ま場合、編集中のプリセットを適用
+					if (pair.first.find("debug_") == 0) {
+						pair.second->ApplyPreset(editingPresetCopy_);
+					}
+				}
 			}
-			ImGui::SameLine();
-			if (ImGui::Button("Save to JSON##editor", ImVec2(150, 0))) {
+
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.5f, 1.0f), "(Changes are applied in real-time)");
+
+			ImGui::Separator();
+
+			//========================================
+			// 保存・キャンセルボタン
+			if (ImGui::Button("Save to JSON##editor", ImVec2(200, 0))) {
 				std::string jsonPath = "resources/presets/" + editingPresetName_ + ".json";
 				SavePresetToJson(editingPresetName_, jsonPath);
+				Log("Preset saved to JSON: " + jsonPath, LogLevel::Success);
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Cancel##editor", ImVec2(100, 0))) {
+			if (ImGui::Button("Close##editor", ImVec2(100, 0))) {
 				editingPresetActive_ = false;
 			}
 

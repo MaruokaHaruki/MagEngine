@@ -113,7 +113,16 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	trailEffectManager_->Initialize(trailEffectSetup);
 
 	// JSONからすべてのプリセットを読み込み
-	trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
+	bool loadPresetSuccess = trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
+	if (loadPresetSuccess) {
+		Logger::Log("Successfully loaded trail presets from JSON", Logger::LogLevel::Success);
+		auto presetNames = trailEffectManager_->GetPresetNames();
+		for (const auto &name : presetNames) {
+			Logger::Log("Loaded preset: " + name, Logger::LogLevel::Info);
+		}
+	} else {
+		Logger::Log("Failed to load trail presets from JSON", Logger::LogLevel::Error);
+	}
 }
 
 ///=============================================================================
@@ -172,13 +181,17 @@ void DebugScene::Update() {
 	if (trailEffectManager_) {
 		// 初回のみトレイルインスタンスを生成
 		if (!trailInitialized_) {
-			trailEffectManager_->CreateFromPreset("test_trail", "debug_test_trail");
-			trailInitialized_ = true;
+			TrailEffect *trailEffect = trailEffectManager_->CreateFromPreset("test_trail", "debug_test_trail");
+			if (trailEffect) {
+				Logger::Log("Successfully created trail from preset: test_trail", Logger::LogLevel::Success);
+				trailInitialized_ = true;
+			} else {
+				Logger::Log("Failed to create trail from preset: test_trail - Preset not found", Logger::LogLevel::Error);
+			}
 		}
 
 		trailEffectManager_->Update(1.0f / 60.0f);
 
-		// テスト用トレイル：円形ループで移動
 		trailLoopTimer_ += 1.0f / 60.0f * trailLoopSpeed_;
 		if (trailLoopTimer_ >= 2.0f * 3.14159f) {
 			trailLoopTimer_ -= 2.0f * 3.14159f; // リセット
