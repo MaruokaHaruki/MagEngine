@@ -131,4 +131,5 @@ private:
 	// ゲーム状態
 	bool isGameOver_;
 	bool isGameClear_;
+	bool hasUIDeploymentStarted_ = false; // UI展開開始フラグ
 };

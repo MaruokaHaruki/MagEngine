@@ -204,20 +204,15 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 		startAnim->SetBarHeightRatio(0.15f);
 		startAnim->SetTextSize({600.0f, 100.0f});
 		startAnim->StartOpening(2.0f, 1.0f, 1.0f);
-		startAnim->SetOnCompleteCallback([this]() {
-			if (auto hud = uiManager_->GetHUD()) {
-				hud->StartDeployAnimation(2.0f);
-			}
-		});
 	}
 
 	// トランジション開始
 	sceneTransition_->StartOpening(TransitionType::ZoomIn, 1.5f);
 
-	// OperationGuideUI の設定
+	// OperationGuideUI の設定（初期状態は非表示）
 	if (auto operationGuideUI = uiManager_->GetOperationGuideUI()) {
 		operationGuideUI->SetGuidePosition({50.0f, 370.0f});
-		operationGuideUI->SetVisible(true);
+		operationGuideUI->SetVisible(false); // スタート演出終了後に表示
 	}
 
 	// LockOnHUD の設定
@@ -225,6 +220,9 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 		lockOnHUD->Initialize(player_.get(), enemyManager_.get());
 		lockOnHUD->SetVisible(true);
 	}
+
+	// UI展開開始フラグをリセット
+	hasUIDeploymentStarted_ = false;
 }
 
 ///=============================================================================
@@ -272,6 +270,26 @@ void GamePlayScene::Update() {
 	// UI系の更新（メニュー状態確認用）
 	if (uiManager_) {
 		uiManager_->Update(player_.get());
+	}
+
+	//========================================
+	// スタートアニメーション終了後の各種UI展開
+	if (!hasUIDeploymentStarted_ && uiManager_ && uiManager_->GetStartAnimation()) {
+		StartAnimation *startAnim = uiManager_->GetStartAnimation();
+		if (startAnim->IsDone()) {
+			hasUIDeploymentStarted_ = true;
+
+			// HUDの展開を開始
+			if (auto hud = uiManager_->GetHUD()) {
+				hud->StartDeployAnimation(1.5f);
+			}
+
+			// OperationGuideUIの展開を開始
+			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+				operationGuide->SetVisible(true);
+				operationGuide->StartDeployAnimation(1.0f);
+			}
+		}
 	}
 
 	//========================================

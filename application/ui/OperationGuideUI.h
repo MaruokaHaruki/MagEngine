@@ -96,12 +96,24 @@ public:
 		guideBasePosition_ = position;
 	}
 
+	/// \brief 展開アニメーションを開始
+	void StartDeployAnimation(float duration = 1.0f);
+
+	/// \brief 収束アニメーションを開始
+	void StartRetractAnimation(float duration = 0.8f);
+
+	/// \brief アニメーション中かどうか
+	bool IsAnimating() const {
+		return isAnimating_;
+	}
+
 	///--------------------------------------------------------------
 	///                        プライベート関数
 private:
 	void InitializeButtons();
 	void UpdateButtonStates();
 	void UpdateButtonAnimations(float deltaTime);
+	void UpdateDeployAnimation();
 	float EaseOutElastic(float t);
 	float EaseInOutQuad(float t);
 
@@ -139,4 +151,13 @@ private:
 	// グロー効果
 	float glowIntensity_ = 0.0f;
 	float glowPulseSpeed_ = 5.0f;
+
+	// 展開アニメーション状態
+	bool isAnimating_ = false;
+	bool isDeploying_ = false;
+	float deployAnimationTime_ = 0.0f;
+	float deployAnimationDuration_ = 1.0f;
+	float deployProgress_ = 0.0f;
+	float baseOpacity_ = 0.8f;
+	Vector2 baseGuidePosition_ = {16.0f, 600.0f};
 };
