@@ -27,6 +27,8 @@ namespace MagEngine {
 	struct LineVertex {
 		MagMath::Vector3 position;
 		MagMath::Vector4 color;
+		float thickness = 1.0f;
+		float padding[3]{0.0f, 0.0f, 0.0f}; // 16バイト境界にアライン
 	};
 
 	class Camera;
@@ -54,8 +56,9 @@ namespace MagEngine {
 		 * \param  start 始点
 		 * \param  end 終点
 		 * \param  color 色
+		 * \param  thickness 線の太さ
 		 */
-		void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color);
+		void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness = 1.0f);
 
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
@@ -156,6 +159,10 @@ namespace MagEngine {
 		//---------------------------------------
 		// オブジェクト3Dセットアップポインタ
 		LineSetup *lineSetup_ = nullptr;
+
+		//---------------------------------------
+		// 頂点データサイズ管理
+		size_t maxVertexCount_ = 100000; // バッファの最大頂点数
 
 		//---------------------------------------
 		// 頂点データ

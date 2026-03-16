@@ -144,14 +144,8 @@ namespace MagEngine {
 		if (!isDrawLine_) {
 			return;
 		}
-		// TODO: 問題あり
-		line_->DrawLine(start, end, color);
-#ifdef _DEBUG
-		// ラインの追加
-		line_->DrawLine(start, end, color);
-		// 注：Line.cppを修正して線の太さのサポートを追加する必要があります
-		// ここでは既存の関数を使用していますが、実際には線の太さを設定する機能を追加すべきです
-#endif // _DEBUG
+		// ラインの追加（太さを指定）
+		line_->DrawLine(start, end, color, thickness);
 	}
 
 	///=============================================================================

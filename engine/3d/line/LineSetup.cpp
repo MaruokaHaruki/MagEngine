@@ -7,11 +7,11 @@
  * \note
  *********************************************************************/
 #include "LineSetup.h"
- ///=============================================================================
- ///                        namespace MagEngine
+///=============================================================================
+///                        namespace MagEngine
 namespace MagEngine {
- ///=============================================================================
- ///						初期化
+	///=============================================================================
+	///						初期化
 	void LineSetup::Initialize(DirectXCore *dxCore, SrvSetup *srvSetup) {
 		/// ===引数でdxManagerを受取=== ///
 		dxCore_ = dxCore;
@@ -27,14 +27,14 @@ namespace MagEngine {
 	///=============================================================================
 	///						共通化処理
 	void LineSetup::CommonDrawSetup() {
-		//コマンドリストの取得
-		// NOTE:Getを複数回呼び出すのは非効率的なので、変数に保持しておく
+		// コマンドリストの取得
+		//  NOTE:Getを複数回呼び出すのは非効率的なので、変数に保持しておく
 		auto commandList = dxCore_->GetCommandList();
-		//ルートシグネイチャのセット
+		// ルートシグネイチャのセット
 		commandList->SetGraphicsRootSignature(rootSignature_.Get());
-		//グラフィックスパイプラインステートをセット
+		// グラフィックスパイプラインステートをセット
 		commandList->SetPipelineState(graphicsPipelineState_.Get());
-		//プリミティブトポロジーをセットする(Line用にLINELISTに変更)
+		// プリミティブトポロジーをセットする(Line用にLINELISTに変更)
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 	}
 
@@ -60,19 +60,18 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
 		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 		HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc,
-			D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-		if(FAILED(hr)) {
-			throw std::runtime_error(reinterpret_cast<char *>( errorBlob->GetBufferPointer() ));
+												 D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+		if (FAILED(hr)) {
+			throw std::runtime_error(reinterpret_cast<char *>(errorBlob->GetBufferPointer()));
 		}
 
 		hr = dxCore_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(),
-			signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature_));
-		if(FAILED(hr)) {
+													   signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature_));
+		if (FAILED(hr)) {
 			throw std::runtime_error("Failed to create root signature");
 		}
 		Logger::Log("Particle Root signature created successfully :)", Logger::LogLevel::Success);
 	}
-
 
 	///=============================================================================
 	///						グラフィックスパイプラインの作成
@@ -83,7 +82,7 @@ namespace MagEngine {
 
 		//========================================
 		// InputElementの設定
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
+		D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
 		// 位置データ
 		inputElementDescs[0].SemanticName = "POSITION";
 		inputElementDescs[0].SemanticIndex = 0;
@@ -100,6 +99,14 @@ namespace MagEngine {
 		inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 		inputElementDescs[1].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
 		inputElementDescs[1].InstanceDataStepRate = 0;
+		// 太さデータ
+		inputElementDescs[2].SemanticName = "THICKNESS";
+		inputElementDescs[2].SemanticIndex = 0;
+		inputElementDescs[2].Format = DXGI_FORMAT_R32_FLOAT;
+		inputElementDescs[2].InputSlot = 0;
+		inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+		inputElementDescs[2].InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+		inputElementDescs[2].InstanceDataStepRate = 0;
 
 		//========================================
 		// InputLayoutの設定を行う
@@ -120,16 +127,16 @@ namespace MagEngine {
 
 		//========================================
 		// VertexShaderをコンパイルする
-		Microsoft::WRL::ComPtr <IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(L"resources/shader/Line.VS.hlsl", L"vs_6_0");
-		if(!vertexShaderBlob) {
+		Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(L"resources/shader/Line.VS.hlsl", L"vs_6_0");
+		if (!vertexShaderBlob) {
 			Logger::Log("Particle Failed to compile vertex shader :(", Logger::LogLevel::Error);
 			throw std::runtime_error("Particle Failed to compile vertex shader :(");
 		}
 		Logger::Log("Particle Vertex shader created successfully :)", Logger::LogLevel::Success);
 		//========================================
 		// PixelShaderをコンパイルする
-		Microsoft::WRL::ComPtr <IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Line.PS.hlsl", L"ps_6_0");
-		if(!pixelShaderBlob) {
+		Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Line.PS.hlsl", L"ps_6_0");
+		if (!pixelShaderBlob) {
 			Logger::Log("Particle Failed to compile pixel shader :(", Logger::LogLevel::Error);
 			throw std::runtime_error("Particle Failed to compile pixel shader :(");
 		}
@@ -140,8 +147,8 @@ namespace MagEngine {
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
 		graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
 		graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-		graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-		graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
+		graphicsPipelineStateDesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+		graphicsPipelineStateDesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
 		graphicsPipelineStateDesc.BlendState = blendDesc;
 		graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 		graphicsPipelineStateDesc.NumRenderTargets = 1;
@@ -162,8 +169,8 @@ namespace MagEngine {
 		//========================================
 		// 実際に生成
 		HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-			IID_PPV_ARGS(&graphicsPipelineState_));
-		if(FAILED(hr)) {
+																	   IID_PPV_ARGS(&graphicsPipelineState_));
+		if (FAILED(hr)) {
 			Logger::Log("Particle Failed to create graphics pipeline state :(", Logger::LogLevel::Error);
 			throw std::runtime_error("Particle Failed to create graphics pipeline state :(");
 		}
