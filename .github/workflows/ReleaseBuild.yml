@@ -1,28 +1,31 @@
 name: ReleaseBuild
 
-# トリガー設定
 on:
   push:
     branches:
       - master
-  workflow_dispatch:  # 手動実行も可能
+  workflow_dispatch:
 
-# 環境変数
 env:
   SOLUTION_FILE_PATH: MagEngine.sln
   CONFIGURATION: Release
   PLATFORM: x64
 
 jobs:
+
   build:
-    runs-on: windows-2022
+
+    # VS2026対応
+    runs-on: windows-latest
 
     steps:
-      # 1️⃣ ソース取得
+
+      # 1️⃣ Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ NuGet キャッシュ
+
+      # 2️⃣ Cache NuGet
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -31,19 +34,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # 3️⃣ MSBuild 準備
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.3
 
-      # 4️⃣ NuGet パッケージ復元
+      # 3️⃣ MSBuild setup
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+
+      # 4️⃣ Restore
       - name: Restore dependencies
         run: nuget restore ${{ env.SOLUTION_FILE_PATH }}
 
-      # 5️⃣ リリースビルド実行
-      - name: Build Solution (Release)
-        run: msbuild ${{ env.SOLUTION_FILE_PATH }} /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.PLATFORM }}
 
-      # 6️⃣ 成果物アップロード
+      # 5️⃣ Release build (2026対応)
+      - name: Build Solution (Release)
+        run: |
+          msbuild ${{ env.SOLUTION_FILE_PATH }} ^
+            /m ^
+            /p:Configuration=${{ env.CONFIGURATION }} ^
+            /p:Platform=${{ env.PLATFORM }} ^
+            /p:PlatformToolset=v145 ^
+            /p:WindowsTargetPlatformVersion=10.0
+
+
+      # 6️⃣ Upload artifacts
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -52,12 +65,13 @@ jobs:
             **/x64/${{ env.CONFIGURATION }}/
             !**/*.pdb
 
-      # 7️⃣ 自動リリース作成（タグ時のみ）
+
+      # 7️⃣ Create Release (tag build only)
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          generate_release_notes: true
           files: |
             **/x64/${{ env.CONFIGURATION }}/*.exe
             **/x64/${{ env.CONFIGURATION }}/*.dll
-          generate_release_notes: true
