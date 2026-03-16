@@ -388,13 +388,22 @@ float CalculateBulletHoleMask(float3 position)
 /// @brief 指定座標での雲の密度を計算
 /// @param position サンプリング座標（ワールド空間）
 /// @return 雲の密度（0.0～任意、0なら空気）
-/// @note FBMノイズを使用し、エッジフェードで自然な境界を作る
+/// @note FBMノイズを使用し、球形フェードで自然な境界を作る
 float SampleCloudDensity(float3 position) {
     float3 uvw = (position - gCloudCenter) / gCloudSize;
     
     if (any(abs(uvw) > 0.5f)) {
         return 0.0f;
     }
+    
+    //========================================
+    // 球形フェードマスク - AABBの角を丸くしてもこもこ雲を表現
+    // NOTE : ユークリッド距離ベースで球形を実現、Y方向は控えめに（卵形）
+    float3 normalizedPos = uvw * 2.0f;  // -1～1の範囲に正規化
+    float3 sphereDistVec = normalizedPos * float3(1.0f, 0.6f, 1.0f);  // Y方向は0.6倍で卵型
+    float sphereDist = length(sphereDistVec);
+    //NOTE : smoothstepで滑らかに減衰、球の半径0.8、フェード範囲0.3
+    float sphereMask = smoothstep(1.1f, 0.8f, sphereDist);
     
     //========================================
     // 高さグラデーション(簡素化版) - smoothstep→saturate+mul で計算削減
@@ -449,12 +458,15 @@ float SampleCloudDensity(float3 position) {
     density = density * density;
     
     //========================================
-    // エッジフェード
+    // 球形フェードとエッジフェードを統合
+    // NOTE : 球形マスクで角を丸く、エッジフェードで滑らかに減衰
     float3 edgeDist = 0.5f - abs(uvw);
     float edgeFade = min(edgeDist.x, edgeDist.z);
-    edgeFade = smoothstep(0.0f, 0.15f, edgeFade);
+    edgeFade = smoothstep(0.0f, 0.1f, edgeFade);  // 角の部分をより強く減衰
     
-    float baseDensity = density * edgeFade * gDensity;
+    //NOTE : 球形マスクとエッジフェードを乗算で合成（両方の条件を満たす領域のみ密度あり）
+    float finalMask = sphereMask * edgeFade;
+    float baseDensity = density * finalMask * gDensity;
     
     //NOTE : 条件分岐統合 - 弾痕がある＆密度がある場合のみマスク計算
     float bulletMask = (gBulletHoleCount > 0 && baseDensity > 0.001f) ? CalculateBulletHoleMask(position) : 1.0f;

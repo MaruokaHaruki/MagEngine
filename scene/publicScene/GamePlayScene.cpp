@@ -115,19 +115,24 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	// 雲の密度と速度を調整（美しい表現）
 	auto &cloudParams = cloud_->GetMutableParams();
 	// 密度：雲の濃さ（自然な透け感）
-	cloudParams.density = 1.5f;
+	// NOTE : 1.5→2.2 雲の量を増加、ボリューム感UP
+	cloudParams.density = 2.2f;
 	// カバレッジ：雲の分布（豊かな分布）
-	cloudParams.coverage = 0.35f;
+	// NOTE : 0.35→0.20 分布範囲を拡大、もこもこ量増加
+	cloudParams.coverage = 0.20f;
 	// ノイズ速度：雲の流れる速さ（自然な流れ）
 	cloudParams.noiseSpeed = 8.5f;
 	// 環境光：雲の明るさ（明るく映える）
-	cloudParams.ambient = 0.75f;
+	// NOTE : 0.75→0.82 雲全体を明るく、量増加時の見映え向上
+	cloudParams.ambient = 0.82f;
 	// 太陽光強度：太陽光による照明の強さ（影がはっきり）
 	cloudParams.sunIntensity = 1.6f;
 	// ベースノイズスケール：大きな雲の形状（自然なサイズ）
-	cloudParams.baseNoiseScale = 0.0085f;
+	// NOTE : 0.0085→0.0070 より大きな塊のスケール、もこもこ感強調
+	cloudParams.baseNoiseScale = 0.0070f;
 	// ディテールウェイト：細かいディテールの影響度（より詳細に）
-	cloudParams.detailWeight = 0.35f;
+	// NOTE : 0.35→0.42 ディテール強調で表情豊かに
+	cloudParams.detailWeight = 0.42f;
 
 	//========================================
 	// 敵マネージャー

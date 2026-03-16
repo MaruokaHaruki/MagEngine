@@ -107,7 +107,7 @@ void TitleScene::Initialize(SceneContext *context) {
 	titleCamera_->SetPlayer(player_.get());
 
 	//========================================
-	// スカイボックス
+	// スカイボックス	
 	skybox_ = std::make_unique<Skybox>();
 	skybox_->Initialize(skyboxSetup);
 	// Skyboxのモデルを設定
