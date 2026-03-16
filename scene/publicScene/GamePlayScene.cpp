@@ -1,12 +1,13 @@
 /*********************************************************************
  * \file   GamePlayScene.cpp
- * \brief
+ * \brief  ゲームプレイシーン実装
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "GamePlayScene.h"
+#include "SceneContext.h"
 //========================================
 // Game
 #include "CameraManager.h"
@@ -23,24 +24,22 @@
 using namespace MagEngine;
 
 ///=============================================================================
-///						初期化
-void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
-							   MagEngine::Object3dSetup *object3dSetup,
-							   MagEngine::ParticleSetup *particleSetup,
-							   MagEngine::SkyboxSetup *skyboxSetup,
-							   MagEngine::CloudSetup *cloudSetup,
-							   MagEngine::TrailEffectSetup *trailEffectSetup,
-							   MagEngine::TrailEffectManager *trailEffectManager) {
+/// 初期化
+/// NOTE: contextからセットアップを取得
+void GamePlayScene::Initialize(SceneContext *context) {
 	//========================================
-	// 適当に引数を使用
-	// 引数を使用しない場合は警告を出さないようにする
-	spriteSetup;
-	object3dSetup;
-	particleSetup;
-	skyboxSetup;
-	cloudSetup;
-	trailEffectSetup;
-	trailEffectManager;
+	// NOTE: contextがnullptrでないかチェック
+	if (!context) {
+		return;
+	}
+
+	// NOTE: contextからセットアップを取得
+	MagEngine::SpriteSetup *spriteSetup = context->GetSpriteSetup();
+	MagEngine::Object3dSetup *object3dSetup = context->GetObject3dSetup();
+	MagEngine::ParticleSetup *particleSetup = context->GetParticleSetup();
+	MagEngine::SkyboxSetup *skyboxSetup = context->GetSkyboxSetup();
+	MagEngine::CloudSetup *cloudSetup = context->GetCloudSetup();
+
 	//========================================
 	// カメラ設定
 	CameraManager::GetInstance()->AddCamera("FollowCamera");
@@ -168,7 +167,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 				sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 				sceneTransition_->SetOnCompleteCallback([this]() {
-					sceneNo = SCENE::TITLE;
+					SetSceneNo(SCENE::TITLE);
 				});
 			}
 		});
@@ -189,7 +188,7 @@ void GamePlayScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 				sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
 				sceneTransition_->SetOnCompleteCallback([this]() {
-					sceneNo = SCENE::TITLE;
+					SetSceneNo(SCENE::TITLE);
 				});
 			}
 		});
@@ -320,7 +319,7 @@ void GamePlayScene::Update() {
 				if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 					sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 					sceneTransition_->SetOnCompleteCallback([this]() {
-						sceneNo = SCENE::TITLE;
+						SetSceneNo(SCENE::TITLE);
 					});
 				}
 			}
@@ -552,7 +551,7 @@ void GamePlayScene::Update() {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
-				sceneNo = SCENE::TITLE;
+				SetSceneNo(SCENE::TITLE);
 			});
 		}
 	}

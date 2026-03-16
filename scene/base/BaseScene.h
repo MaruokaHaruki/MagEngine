@@ -8,6 +8,11 @@
  *********************************************************************/
 #pragma once
 //========================================
+// NOTE: SceneContextを使用してセットアップ類をまとめている
+//       これにより各シーンのInitialize引数を削減
+#include "SceneContext.h"
+
+//========================================
 // 3D系
 // Object3d
 #include "Object3d.h"
@@ -57,20 +62,17 @@ enum SCENE {
 };
 
 ///=============================================================================
-///						インターフェースシーン
+///                         インターフェースシーン
+/// NOTE: このクラスはすべてのシーンの基底クラス
+///       SceneContextを通じて共通リソースにアクセスする
 class BaseScene {
 	///--------------------------------------------------------------
-	///							メンバ関数
-	// NOTE:継承先で実装される関数。抽象クラスなので純粋仮想関数とする。
+	///                            メンバ関数
+	// NOTE: 継承先で実装される関数。抽象クラスなので純粋仮想関数とする。
 public:
-	/// \brief 初期化
-	virtual void Initialize(MagEngine::SpriteSetup *spriteSetup,
-							MagEngine::Object3dSetup *object3dSetup,
-							MagEngine::ParticleSetup *particleSetup,
-							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup,
-							MagEngine::TrailEffectManager *trailEffectManager) = 0;
+	/// \brief 初期化 - NOTE: 引数をSceneContextの1つにまとめられた
+	/// \param context シーンが使用するすべてのセットアップを含むコンテキスト
+	virtual void Initialize(SceneContext *context) = 0;
 
 	/// \brief 終了処理
 	virtual void Finalize() = 0;
@@ -100,31 +102,34 @@ public:
 	virtual void TrailEffectDraw() = 0;
 
 	/**----------------------------------------------------------------------------
-	 * \brief  ~IScene 抽象クラスのデストラクタ
+	 * \brief  ~BaseScene 抽象クラスのデストラクタ
 	 * NOTE: 仮想デストラクタを用意することで、継承先のクラスのデストラクタが呼ばれるようにする。
 	 */
 	virtual ~BaseScene() = default;
 
 	/**----------------------------------------------------------------------------
 	 * \brief  GetSceneNo シーン番号を取得する
-	 * \return
+	 * \note   NOTE: SceneManagerで次のシーン番号を管理する
+	 * \return 次のシーン番号
 	 */
-	int GetSceneNo() {
-		return sceneNo;
+	int GetSceneNo() const {
+		return nextSceneNo_;
 	}
 
 	/**----------------------------------------------------------------------------
-	 * \brief  SetSceneNo
-	 * \param  sceneNo
-	 * \return
+	 * \brief  SetSceneNo 次のシーン番号を設定する
+	 * \param  sceneNo 次のシーン番号
+	 * \note   NOTE: シーンから次のシーン番号を設定するために使用
+	 * \return 設定されたシーン番号
 	 */
-	int SetSceneNo(int nextNo) {
-		return sceneNo = nextNo;
+	int SetSceneNo(int sceneNo) {
+		return nextSceneNo_ = sceneNo;
 	}
 
 	///--------------------------------------------------------------
-	///							メンバ変数
+	///                            メンバ変数
 protected:
-	// シーン番号を保存する変数
-	static int sceneNo;
+	// NOTE: 各シーンインスタンスは次のシーン番号を保持する
+	//       これによりSceneManagerが複雑な管理をしなくて済む
+	int nextSceneNo_ = -1;
 };

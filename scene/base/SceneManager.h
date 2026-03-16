@@ -1,22 +1,25 @@
 /*********************************************************************
  * \file   SceneManager.h
- * \brief
+ * \brief  シーン管理クラス
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップを統一管理
+ *         NOTE: シーンの遷移と生成を管理する
  *********************************************************************/
 #pragma once
 #include "AbstractSceneFactory.h"
 #include "BaseScene.h"
+#include "SceneContext.h"
 #include "TrailEffectManager.h"
 #include <memory>
 
 ///=============================================================================
-///						シーンマネージャ
+///                         シーンマネージャ
+/// NOTE: SceneContextを内部で管理し、シーンに統合して渡す
 class SceneManager {
 	///--------------------------------------------------------------
-	///							メンバ関数
+	///                            メンバ関数
 public:
 	/// \brief 初期化
 	void Initialize(MagEngine::SpriteSetup *spriteSetup,
@@ -60,11 +63,15 @@ public:
 	}
 
 	///--------------------------------------------------------------
-	///							メンバ変数
+	///                            メンバ変数
 private:
 	//========================================
 	// シーンファクトリーポインタ
 	AbstractSceneFactory *sceneFactory_ = nullptr;
+
+	//========================================
+	// シーンコンテキスト - NOTE: セットアップ類をここで統一管理
+	SceneContext sceneContext_;
 
 	//========================================
 	// 今のシーン

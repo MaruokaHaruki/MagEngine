@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   DebugScene.cpp
- * \brief
+ * \brief  デバッグシーン実装
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "DebugScene.h"
 #include "CameraManager.h"
@@ -15,32 +15,36 @@
 #include "MAudioG.h"
 #include "ModelManager.h"
 #include "ParticlePreset.h"
+#include "SceneContext.h"
 #include "TrailEffectManager.h"
 #include "TrailEffectPreset.h"
 #include "imgui.h"
 using namespace MagEngine;
 
 ///=============================================================================
-///						初期化
-void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
-							MagEngine::Object3dSetup *object3dSetup,
-							MagEngine::ParticleSetup *particleSetup,
-							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup,
-							MagEngine::TrailEffectManager *trailEffectManager) {
-	spriteSetup;
-	particleSetup;
+/// 初期化
+/// NOTE: contextからセットアップを取得
+void DebugScene::Initialize(SceneContext *context) {
+	//========================================
+	// NOTE: contextがnullptrでないかチェック
+	if (!context) {
+		return;
+	}
+
+	// NOTE: contextからセットアップを取得
+	MagEngine::Object3dSetup *object3dSetup = context->GetObject3dSetup();
+	MagEngine::CloudSetup *cloudSetup = context->GetCloudSetup();
+	MagEngine::TrailEffectManager *trailEffectManager = context->GetTrailEffectManager();
 
 	// object3dSetupを保存（再読み込み時に使用）
 	object3dSetup_ = object3dSetup;
 
 	///--------------------------------------------------------------
-	///						 音声クラス
+	/// 音声クラス
 	audio_ = MAudioG::GetInstance();
 
 	///--------------------------------------------------------------
-	///						 2D系クラス
+	/// 2D系クラス
 	//========================================
 	//// テクスチャマネージャ
 
@@ -48,7 +52,7 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	// スプライトクラス(Game)
 
 	///--------------------------------------------------------------
-	///						 3D系クラス
+	/// 3D系クラス
 	// モデルの読み込み
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj");
 	ModelManager::GetInstance()->LoadModel("ball.obj");

@@ -1,32 +1,23 @@
 /*********************************************************************
  * \file   ClearScene.cpp
- * \brief
+ * \brief  クリアシーン実装
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "ClearScene.h"
 #include "Input.h"
 
 ///=============================================================================
-///						初期化
-void ClearScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
-							MagEngine::Object3dSetup *object3dSetup,
-							MagEngine::ParticleSetup *particleSetup,
-							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup,
-							MagEngine::TrailEffectManager *trailEffectManager) {
-	// 適当に引数を使用
-	// 引数を使用しない場合は警告を出さないようにする
-	spriteSetup;
-	object3dSetup;
-	particleSetup;
-	skyboxSetup;
-	cloudSetup;
-	trailEffectSetup;
-	trailEffectManager;
+/// 初期化
+void ClearScene::Initialize(SceneContext *context) {
+	// NOTE: 引数が1つに削減された
+	// NOTE: contextから必要なセットアップにアクセスする場合は
+	//       context->GetXxxSetup()で取得できる
+
+	// 使用しない場合は何もしなくてもよい
+	context;
 }
 
 ///=============================================================================
@@ -40,11 +31,11 @@ void ClearScene::Update() {
 	//========================================
 	// シーン遷移
 	if (MagEngine::Input::GetInstance()->PushKey(VK_SPACE)) {
-		BaseScene::sceneNo = TITLE;
+		SetSceneNo(TITLE);
 	}
 	// コントローラ
 	if (MagEngine::Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
-		BaseScene::sceneNo = TITLE;
+		SetSceneNo(TITLE);
 	}
 }
 

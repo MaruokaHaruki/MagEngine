@@ -1,5 +1,15 @@
+/*********************************************************************
+ * \file   SceneManager.cpp
+ * \brief  シーン管理実装
+ *
+ * \author Harukichimaru
+ * \date   January 2025
+ * \note   NOTE: SceneContextを使用してセットアップを統一管理
+ *         NOTE: シーン遷移は各シーンが設定したnextSceneNo_から判定
+ *********************************************************************/
 #include "SceneManager.h"
 #include "ImguiSetup.h"
+#include "SceneFactory.h"
 // public:
 #include "ClearScene.h"
 #include "GamePlayScene.h"
@@ -8,7 +18,8 @@
 #include "DebugScene.h"
 
 ///=============================================================================
-///						初期化
+/// NOTE: SceneContextにセットアップを設定して一元管理
+/// NOTE: ファクトリーパターンで初期シーンも生成
 void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							  MagEngine::Object3dSetup *object3dSetup,
 							  MagEngine::ParticleSetup *particleSetup,
@@ -17,31 +28,44 @@ void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							  MagEngine::TrailEffectSetup *trailEffectSetup,
 							  MagEngine::TrailEffectManager *trailEffectManager) {
 	//========================================
-	// 2D共通部
+	// NOTE: SceneContextにすべてのセットアップを設定
+	sceneContext_.SetSpriteSetup(spriteSetup);
+	sceneContext_.SetObject3dSetup(object3dSetup);
+	sceneContext_.SetParticleSetup(particleSetup);
+	sceneContext_.SetSkyboxSetup(skyboxSetup);
+	sceneContext_.SetCloudSetup(cloudSetup);
+	sceneContext_.SetTrailEffectSetup(trailEffectSetup);
+	sceneContext_.SetTrailEffectManager(trailEffectManager);
+
+	//========================================
+	// NOTE: 互換性のため、ローカル変数にも保存
+	// NOTE: 将来的にはこれらは削除可能
 	spriteSetup_ = spriteSetup;
-	// 3D共通部
 	object3dSetup_ = object3dSetup;
-	// パーティクル共通部
 	particleSetup_ = particleSetup;
-	// Skybox共通部
 	skyboxSetup_ = skyboxSetup;
-	// Cloud共通部
 	cloudSetup_ = cloudSetup;
-	// TrailEffect共通部
 	trailEffectSetup_ = trailEffectSetup;
-	// TrailEffectManagerを保慕
 	trailEffectManager_ = trailEffectManager;
-	// 初期シーンを設定（例としてTitleSceneを設定）
-	nowScene_ = std::make_unique<TitleScene>();
-	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_, trailEffectManager_);
+
+	//========================================
+	// NOTE: ファクトリーが設定されていない場合は生成
+	if (!sceneFactory_) {
+		// NOTE: デフォルトファクトリーを生成（この方法は改良の余地あり）
+		static SceneFactory defaultFactory;
+		sceneFactory_ = &defaultFactory;
+	}
+
+	// NOTE: 初期シーンをFactoryで生成
+	nowScene_ = sceneFactory_->CreateScene(SCENE::TITLE, &sceneContext_);
 
 	// シーンの初期設定
-	currentSceneNo_ = 0;
+	currentSceneNo_ = SCENE::TITLE;
 	prevSceneNo_ = -1;
 }
 
 ///=============================================================================
-///						終了処理
+/// 終了処理
 void SceneManager::Finalize() {
 	if (nowScene_) {
 		nowScene_->Finalize();
@@ -49,24 +73,24 @@ void SceneManager::Finalize() {
 }
 
 ///=============================================================================
-///						更新
+/// NOTE: シーン番号はnowScene_->nextSceneNo_から取得
+/// NOTE: nextSceneNo_ == -1の場合はシーン遷移なし
 void SceneManager::Update() {
 	//========================================
-	// シーンの切り替え
+	// NOTE: 前のシーン番号を保存
 	prevSceneNo_ = currentSceneNo_;
+	// NOTE: 次のシーン番号をシーンから取得
 	currentSceneNo_ = nowScene_->GetSceneNo();
 
 	//========================================
-	// シーンが切り替わった場合
-	if (prevSceneNo_ != currentSceneNo_) {
+	// NOTE: シーン遷移判定（-1の場合は遷移しない）
+	if (prevSceneNo_ != currentSceneNo_ && currentSceneNo_ != -1) {
 		if (nowScene_) {
 			// 現在のシーンの終了処理
 			nowScene_->Finalize();
 		}
-		// シーンの生成
-		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_);
-		// シーンの初期化
-		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_, trailEffectManager_);
+		// NOTE: ファクトリーでシーンをSceneContextと共に生成
+		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_, &sceneContext_);
 	}
 
 	//========================================
@@ -77,7 +101,7 @@ void SceneManager::Update() {
 }
 
 ///=============================================================================
-///						2D描画
+/// 2D描画
 void SceneManager::Object2DDraw() {
 	if (nowScene_) {
 		nowScene_->Object2DDraw();
@@ -85,7 +109,7 @@ void SceneManager::Object2DDraw() {
 }
 
 ///=============================================================================
-///						3D描画
+/// 3D描画
 void SceneManager::Object3DDraw() {
 	if (nowScene_) {
 		nowScene_->Object3DDraw();
@@ -93,7 +117,7 @@ void SceneManager::Object3DDraw() {
 }
 
 ///=============================================================================
-///						パーティクル描画
+/// パーティクル描画
 void SceneManager::ParticleDraw() {
 	if (nowScene_) {
 		nowScene_->ParticleDraw();
@@ -101,7 +125,7 @@ void SceneManager::ParticleDraw() {
 }
 
 ///=============================================================================
-///						Skybox描画
+/// Skybox描画
 void SceneManager::SkyboxDraw() {
 	if (nowScene_) {
 		nowScene_->SkyboxDraw();
@@ -109,7 +133,7 @@ void SceneManager::SkyboxDraw() {
 }
 
 ///=============================================================================
-///						Cloud描画
+/// Cloud描画
 void SceneManager::CloudDraw() {
 	if (nowScene_) {
 		nowScene_->CloudDraw();
@@ -117,7 +141,7 @@ void SceneManager::CloudDraw() {
 }
 
 ///=============================================================================
-///						TrailEffect描画
+/// TrailEffect描画
 void SceneManager::TrailEffectDraw() {
 	if (nowScene_) {
 		nowScene_->TrailEffectDraw();
@@ -125,7 +149,7 @@ void SceneManager::TrailEffectDraw() {
 }
 
 ///=============================================================================
-///						ImGui描画
+/// ImGui描画
 void SceneManager::ImGuiDraw() {
 	//========================================
 
@@ -133,7 +157,7 @@ void SceneManager::ImGuiDraw() {
 		nowScene_->ImGuiDraw();
 	}
 	//========================================
-	// シーンを切り替えるボタン
+	// NOTE: シーンを切り替えるボタン
 	// publicScene
 	ImGui::Begin("SceneChange");
 	ImGui::Text("publicScene");

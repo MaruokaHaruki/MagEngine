@@ -1,24 +1,31 @@
 /*********************************************************************
  * \file   TitleScene.cpp
- * \brief
+ * \brief  タイトルシーン実装
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "TitleScene.h"
+#include "SceneContext.h"
 #include "TitleCamera.h"
 using namespace MagEngine;
 
 ///=============================================================================
-///						初期化
-void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
-							MagEngine::Object3dSetup *object3dSetup,
-							MagEngine::ParticleSetup *particleSetup,
-							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup,
-							MagEngine::TrailEffectManager *trailEffectManager) {
+/// 初期化
+/// NOTE: contextからセットアップを取得
+void TitleScene::Initialize(SceneContext *context) {
+	//========================================
+	// NOTE: contextがnullptrでないかチェック
+	if (!context) {
+		return;
+	}
+
+	// NOTE: contextからセットアップを取得
+	MagEngine::SpriteSetup *spriteSetup = context->GetSpriteSetup();
+	MagEngine::Object3dSetup *object3dSetup = context->GetObject3dSetup();
+	MagEngine::SkyboxSetup *skyboxSetup = context->GetSkyboxSetup();
+	MagEngine::CloudSetup *cloudSetup = context->GetCloudSetup();
 
 	//========================================
 	// 読み込み関係
@@ -244,7 +251,7 @@ void TitleScene::Update() {
 			sceneTransition_->StartClosing(TransitionType::ZoomIn, 1.0f);
 			// トランジション完了時にシーン遷移
 			sceneTransition_->SetOnCompleteCallback([this]() {
-				sceneNo = SCENE::GAMEPLAY;
+				SetSceneNo(SCENE::GAMEPLAY);
 			});
 		}
 	}
@@ -253,7 +260,7 @@ void TitleScene::Update() {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::ZoomIn, 0.8f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
-				sceneNo = SCENE::GAMEPLAY;
+				SetSceneNo(SCENE::GAMEPLAY);
 			});
 		}
 	}
@@ -262,7 +269,7 @@ void TitleScene::Update() {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::ZoomIn, 0.5f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
-				sceneNo = SCENE::TITLE;
+				SetSceneNo(SCENE::TITLE);
 			});
 		}
 	}

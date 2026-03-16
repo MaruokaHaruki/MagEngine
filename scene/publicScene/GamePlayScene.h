@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   GamePlayScene.h
- * \brief
+ * \brief  ゲームプレイシーンクラス
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップの依存関係を削減
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
@@ -28,28 +28,23 @@
 #include "UIManager.h"
 
 //========================================
-// 前方宣言
+// Forward declaration
 class CollisionManager;
 class FollowCamera;
 class Skydome;
 class Player;
 class EnemyManager;
 class SceneTransition;
+class SceneContext;
 
 ///=============================================================================
-///						ゲームプレイシーンクラス
+///                         ゲームプレイシーンクラス
 class GamePlayScene : public BaseScene {
 	///--------------------------------------------------------------
-	///							メンバ関数
+	///                            メンバ関数
 public:
-	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup,
-					MagEngine::Object3dSetup *object3dSetup,
-					MagEngine::ParticleSetup *particleSetup,
-					MagEngine::SkyboxSetup *skyboxSetup,
-					MagEngine::CloudSetup *cloudSetup,
-					MagEngine::TrailEffectSetup *trailEffectSetup,
-					MagEngine::TrailEffectManager *trailEffectManager) override;
+	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
+	void Initialize(SceneContext *context) override;
 	void Finalize() override;
 
 	void Update() override;
