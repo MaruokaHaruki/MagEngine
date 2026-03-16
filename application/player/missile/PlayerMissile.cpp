@@ -15,6 +15,7 @@
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
+#include "TrailEffectManager.h"
 #include <algorithm>
 #include <cmath>
 using namespace MagEngine;
@@ -43,6 +44,7 @@ namespace {
 // 初期化
 void PlayerMissile::Initialize(
 	MagEngine::Object3dSetup *object3dSetup,
+	MagEngine::TrailEffectManager *trailEffectManager,
 	const std::string &modelPath,
 	const Vector3 &position,
 	const Vector3 &direction,
@@ -127,6 +129,14 @@ void PlayerMissile::Initialize(
 	showForwardVector_ = true;
 	trajectoryPoints_.clear();
 	trajectoryPoints_.reserve(maxTrajectoryPoints_);
+
+	//========================================
+	// トレイルエフェクトの初期化
+	if (trailEffectManager) {
+		trailEffect_ = std::make_unique<TrailEffect>();
+		TrailEffectPreset missilePreset = *trailEffectManager->GetPreset("Missile");
+		trailEffect_->Initialize(trailEffectManager->GetSetup(), missilePreset);
+	}
 }
 
 //=============================================================================
@@ -168,6 +178,14 @@ void PlayerMissile::Update() {
 	if (objTransform) {
 		BaseObject::Update(objTransform->translate);
 		obj_->Update();
+
+		// トレイルエフェクトの更新
+		if (trailEffect_) {
+			const float frameTime = 1.0f / 60.0f;
+			trailEffect_->Update(frameTime);
+			// 現在位置で軌跡を発生させる
+			trailEffect_->EmitAt(objTransform->translate, velocity_);
+		}
 	}
 }
 
@@ -405,6 +423,12 @@ void PlayerMissile::Explode() {
 void PlayerMissile::Draw() {
 	if (obj_ && isAlive_) {
 		obj_->Draw();
+	}
+}
+
+void PlayerMissile::DrawTrail() {
+	if (trailEffect_) {
+		trailEffect_->Draw();
 	}
 }
 

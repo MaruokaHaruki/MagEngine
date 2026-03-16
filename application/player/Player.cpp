@@ -360,6 +360,14 @@ void Player::DrawMissiles() {
 	combatComponent_.DrawMissiles();
 }
 
+void Player::DrawBulletsTrails() {
+	combatComponent_.DrawBulletsTrails();
+}
+
+void Player::DrawMissilesTrails() {
+	combatComponent_.DrawMissilesTrails();
+}
+
 //=============================================================================
 // ImGui描画
 void Player::DrawImGui() {

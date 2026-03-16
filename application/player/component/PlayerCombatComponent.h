@@ -9,6 +9,9 @@
 class Object3dSetup;
 class EnemyManager;
 class EnemyBase; // Enemy から EnemyBase に変更
+namespace MagEngine {
+	class TrailEffectManager;
+}
 
 ///=============================================================================
 ///						戦闘管理コンポーネント
@@ -16,7 +19,8 @@ class PlayerCombatComponent {
 public:
 	///--------------------------------------------------------------
 	///                        メンバ関数
-	void Initialize(MagEngine::Object3dSetup *object3dSetup);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::TrailEffectManager *trailEffectManager = nullptr);
 	void Update(float deltaTime);
 
 	///--------------------------------------------------------------
@@ -38,6 +42,8 @@ public:
 	///                        描画
 	void DrawBullets();
 	void DrawMissiles();
+	void DrawBulletsTrails();
+	void DrawMissilesTrails();
 
 	///--------------------------------------------------------------
 	///                        ゲッター
@@ -80,12 +86,16 @@ public:
 	void SetMissileModelPath(const std::string &modelPath) {
 		missileModelPath_ = modelPath;
 	}
+	void SetTrailEffectManager(MagEngine::TrailEffectManager *trailEffectManager) {
+		trailEffectManager_ = trailEffectManager;
+	}
 
 private:
 	///--------------------------------------------------------------
 	///                        メンバ変数
-	MagEngine::Object3dSetup *object3dSetup_; // オブジェクト設定（弾生成用）
-	EnemyManager *enemyManager_;			  // 敵管理への参照（ミサイルターゲット用）
+	MagEngine::Object3dSetup *object3dSetup_;			// オブジェクト設定（弾生成用）
+	MagEngine::TrailEffectManager *trailEffectManager_; // トレイルエフェクト管理
+	EnemyManager *enemyManager_;						// 敵管理への参照（ミサイルターゲット用）
 
 	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト
 	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // ミサイルリスト

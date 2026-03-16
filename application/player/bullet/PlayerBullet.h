@@ -1,6 +1,7 @@
 #pragma once
 #include "BaseObject.h" // BaseObjectを継承
 #include "Object3d.h"
+#include "TrailEffect.h"
 #include "Transform.h"
 #include "Vector3.h"
 #include <memory>
@@ -8,17 +9,25 @@
 
 // Forward declarations
 class Object3dSetup;
+namespace MagEngine {
+	class TrailEffectManager;
+}
 
 class PlayerBullet : public BaseObject {
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::TrailEffectManager *trailEffectManager,
+					const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
 
 	/// \brief 更新
 	void Update();
 
 	/// \brief 描画
 	void Draw();
+
+	/// \brief トレイル描画
+	void DrawTrail();
 
 	/// \brief 生存フラグの取得
 	bool IsAlive() const {
@@ -47,6 +56,10 @@ private:
 	//========================================
 	//  3Dオブジェクト
 	std::unique_ptr<MagEngine::Object3d> obj_;
+
+	//========================================
+	//  トレイルエフェクト
+	std::unique_ptr<MagEngine::TrailEffect> trailEffect_;
 
 	//========================================
 	//  位置情報

@@ -54,7 +54,15 @@ namespace MagEngine {
 		///						 プリセット管理
 	public:
 		/**----------------------------------------------------------------------------
-		 * \brief  プリセットを登録
+		 * \brief  Setup を取得
+		 * \return TrailEffectSetupポインタ
+		 */
+		TrailEffectSetup *GetSetup() const {
+			return setup_;
+		}
+
+		/**----------------------------------------------------------------------------
+		 * \brief  プリセートを登録
 		 * \param  preset 登録するプリセット
 		 */
 		void RegisterPreset(const TrailEffectPreset &preset);

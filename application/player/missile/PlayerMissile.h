@@ -11,6 +11,7 @@
 using namespace MagMath;
 #include "BaseObject.h"
 #include "Object3d.h"
+#include "TrailEffect.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,6 +20,9 @@ using namespace MagMath;
 class Object3dSetup;
 class EnemyBase;
 class EnemyManager; // 前方宣言を追加
+namespace MagEngine {
+	class TrailEffectManager;
+}
 
 ///=============================================================================
 ///                        プレイヤーミサイルクラス
@@ -28,17 +32,22 @@ public:
 	// 初期化・更新・描画
 	/// @brief Initialize 初期化
 	/// @param object3dSetup オブジェクト設定
+	/// @param trailEffectManager トレイルエフェクト管理
 	/// @param modelPath モデルパス
 	/// @param startPos 初期位置
 	/// @param initialDirection 初期進行方向
 	/// @param target ターゲット（初期値はnullptr）
-	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath,
+	void Initialize(MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::TrailEffectManager *trailEffectManager,
+					const std::string &modelPath,
 					const Vector3 &startPos, const Vector3 &initialDirection,
 					EnemyBase *target = nullptr); // Enemy* から EnemyBase* に変更
 	/// @brief Update 更新
 	void Update();
 	/// @brief Draw 描画
 	void Draw();
+	/// @brief DrawTrail トレイル描画
+	void DrawTrail();
 	/// @brief DrawDebugInfo デバッグ情報描画
 	void DrawDebugInfo();
 	/// @brief DrawImGui ImGui描画
@@ -142,6 +151,10 @@ private:
 	// コア
 	std::unique_ptr<MagEngine::Object3d> obj_; // 3Dオブジェクト
 	MagEngine::Object3dSetup *object3dSetup_;  // オブジェクト設定
+
+	//========================================
+	// トレイルエフェクト
+	std::unique_ptr<MagEngine::TrailEffect> trailEffect_; // トレイルエフェクト
 
 	//========================================
 	// 物理関連

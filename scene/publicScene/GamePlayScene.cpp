@@ -144,6 +144,12 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	// プレイヤーにEnemyManagerを設定（ミサイル用）
 	player_->SetEnemyManager(enemyManager_.get());
 
+	// プレイヤーにTrailEffectManagerを設定（弾・ミサイルトレイル用）
+	MagEngine::TrailEffectManager *trailEffectManager = context->GetTrailEffectManager();
+	if (trailEffectManager) {
+		player_->SetTrailEffectManager(trailEffectManager);
+	}
+
 	//========================================
 	// 当たり判定（軽量システムで初期化）
 	collisionManager_ = std::make_unique<CollisionManager>();
@@ -645,8 +651,11 @@ void GamePlayScene::CloudDraw() {
 ///=============================================================================
 ///						TrailEffect描画
 void GamePlayScene::TrailEffectDraw() {
-	// TrailEffectマネージャーが設定されている場合は描画
-	// （このシーンではプレイヤーのトレイルなどは別で管理される可能性があるため）
+	// プレイヤーの弾のトレイル描画
+	if (player_) {
+		player_->DrawBulletsTrails();
+		player_->DrawMissilesTrails();
+	}
 }
 
 ///=============================================================================

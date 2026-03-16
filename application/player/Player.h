@@ -84,6 +84,10 @@ public:
 	void DrawBullets();
 	/// @brief ミサイル描画
 	void DrawMissiles();
+	/// @brief 弾のトレイル描画
+	void DrawBulletsTrails();
+	/// @brief ミサイルのトレイル描画
+	void DrawMissilesTrails();
 
 	//========================================
 	// EnemyManager設定（ミサイル・ロックオン用）
@@ -96,6 +100,13 @@ public:
 	/// @brief 敵マネージャーの取得（HUD用）
 	EnemyManager *GetEnemyManager() const {
 		return enemyManager_;
+	}
+
+	//========================================
+	// TrailEffectManager設定（弾・ミサイルトレイル用）
+	/// @brief トレイルエフェクトマネージャーの設定
+	void SetTrailEffectManager(MagEngine::TrailEffectManager *trailEffectManager) {
+		combatComponent_.SetTrailEffectManager(trailEffectManager);
 	}
 
 	//========================================
