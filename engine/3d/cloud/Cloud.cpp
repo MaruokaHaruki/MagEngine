@@ -63,8 +63,8 @@ namespace MagEngine {
 		paramsCPU_.coverage = 0.35f;
 
 		// レイマーチングのステップサイズ（大きいほど処理が軽いが粗くなる）
-		// NOTE : 2.0→3.0 ステップ拡大でレイマーチ回数削減（適応ステップとLODで品質維持）
-		paramsCPU_.stepSize = 3.0f;
+		// NOTE : 1.5→2.0 距離ベースLODで視覚品質保ちながら処理軽量化
+		paramsCPU_.stepSize = 2.0f;
 
 		// ベースノイズスケール : 雲の大きな形状を決定
 		// 値が小さいほど大きな雲の塊ができる
@@ -81,8 +81,8 @@ namespace MagEngine {
 		paramsCPU_.noiseSpeed = 0.01f; // ゆっくりとした自然な流れ
 
 		// ライティング設定
-		// NOTE : lightStepSize 4.0→6.0 指数増大ステップと組み合わせBeer-Powder効果で品質維持
-		paramsCPU_.lightStepSize = 6.0f;		   // ライトマーチングのステップサイズ
+		// NOTE : lightStepSize 4.0→5.0 条件付き実行で負荷軽減、品質同等
+		paramsCPU_.lightStepSize = 5.0f;		   // ライトマーチングのステップサイズ
 		paramsCPU_.shadowDensityMultiplier = 1.5f; // 影の濃さ（立体感向上）
 		paramsCPU_.anisotropy = 0.7f;			   // 前方散乱の強さ（Silver Lining効果）
 		paramsCPU_.ambient = 0.35f;				   // 環境光の強さ

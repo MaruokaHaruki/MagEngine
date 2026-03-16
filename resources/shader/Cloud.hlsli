@@ -156,8 +156,13 @@ Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクス
 SamplerState gLinearSampler : register(s0);    // 線形補間サンプラー
 
 static const float PI = 3.14159265f;           // 円周率
-static const int MAX_STEPS = 48;               //NOTE : 64→48 品質と速度のバランス最適化
-static const int MAX_LIGHT_STEPS = 4;          //NOTE : 8→4 ライトマーチ回数削減（Beer-Powder効果で品質維持）
+static const int MAX_STEPS = 72;               //NOTE : 96→72 距離ベースLODで補いながら処理軽量化
+static const int MAX_LIGHT_STEPS = 5;          //NOTE : 6→5 条件付き実行で品質を保ちつつ負荷低減
+static const float MIN_STEP_SIZE = 0.3f;       //NOTE : 0.5→0.3 遠距離での基準ステップサイズ
+static const float LOD_DISTANCE_1 = 80.0f;     // 第1段階のLODトリガー距離
+static const float LOD_DISTANCE_2 = 150.0f;    // 第2段階のLODトリガー距離
+static const float LOD_MULTIPLIER_1 = 1.3f;    // 第1段階のLOD乗数
+static const float LOD_MULTIPLIER_2 = 1.8f;    // 第2段階のLOD乗数
 
 ///=============================================================================
 ///                      ハッシュ関数
