@@ -6,6 +6,19 @@ using namespace MagMath;
 class BaseObject;
 
 ///=============================================================================
+///						衝突情報構造体
+/**
+ * @struct CollisionInfo
+ * @brief 2つのコライダー間の衝突詳細情報
+ */
+struct CollisionInfo {
+	Vector3 contactPoint = {0.0f, 0.0f, 0.0f}; ///< 接触点
+	Vector3 normal = {0.0f, 1.0f, 0.0f};	   ///< 衝突法線
+	float distance = 0.0f;					   ///< 2つのコライダーの中心間距離
+	float penetration = 0.0f;				   ///< 貫通量
+};
+
+///=============================================================================
 ///						コライダー
 class Collider {
 public:
@@ -36,6 +49,14 @@ public:
 	 * @note 両コライダーの中心間距離と半径の合計で判定
 	 */
 	bool Intersects(const Collider &other) const;
+
+	/**
+	 * @brief 衝突詳細情報を計算
+	 * @param other 衝突判定対象となるコライダー
+	 * @param outInfo 接触点などの詳細情報を出力
+	 * @return 衝突している場合true
+	 */
+	bool GetCollisionInfo(const Collider &other, CollisionInfo &outInfo) const;
 
 private:
 	// 位置

@@ -11,6 +11,8 @@ void CollisionManager::Initialize(float cellSize, int maxObjects) {
 	cellSize_ = cellSize;
 	invCellSize_ = 1.0f / cellSize; // 除算回避用
 	enableDebugDraw_ = false;
+	enableGroupFilter_ = false;
+	debugGroupFilter_ = 0;
 	collisionChecksThisFrame_ = 0;
 
 	// メモリ予約（パフォーマンス最適化）
@@ -18,6 +20,9 @@ void CollisionManager::Initialize(float cellSize, int maxObjects) {
 	objectPool_.reserve(maxObjects);
 	grid_.reserve(maxObjects / 8);			  // より小さい初期容量
 	collisionStates_.reserve(maxObjects * 2); // 衝突ペア予約
+
+	// グループ衝突マトリクスを初期化（デフォルトはすべて衝突可能）
+	ResetGroupCollisions();
 }
 
 ///=============================================================================
@@ -51,19 +56,91 @@ void CollisionManager::Draw() {
 ///						ImGuiの描画
 void CollisionManager::DrawImGui() {
 	ImGui::Begin("CollisionManager");
+
+	//========================================
+	// システム情報
 	ImGui::Text("Active Objects: %zu", activeObjects_.size());
 	ImGui::Text("Active Grids: %zu", grid_.size());
 	ImGui::Text("Collision Checks: %zu", collisionChecksThisFrame_);
 	ImGui::Text("Cell Size: %.1f", cellSize_);
 
 	ImGui::Separator();
+
+	//========================================
+	// 有効/無効と主要設定
 	ImGui::Checkbox("Debug Draw", &enableDebugDraw_);
+	ImGui::Checkbox("Group Filter", &enableGroupFilter_);
+
+	if (enableGroupFilter_) {
+		int filterGroupInt = static_cast<int>(debugGroupFilter_);
+		if (ImGui::SliderInt("Filter Group", &filterGroupInt, 0, 15)) {
+			debugGroupFilter_ = static_cast<uint16_t>(filterGroupInt);
+		}
+	}
 
 	if (ImGui::SliderFloat("Cell Size", &cellSize_, 16.0f, 128.0f)) {
 		SetCellSize(cellSize_);
 		// セルサイズ変更時にグリッドを再構築
 		for (auto &pair : grid_) {
 			pair.second.Clear();
+		}
+	}
+
+	ImGui::Separator();
+
+	//========================================
+	// グループ衝突マトリクス表示
+	if (ImGui::CollapsingHeader("Group Collision Matrix")) {
+		// リセットボタン
+		if (ImGui::Button("Reset All Collisions")) {
+			ResetGroupCollisions();
+		}
+
+		// グループ衝突マトリクスを表示（下三角のみ）
+		ImGui::Text("Groups can collide:");
+		for (int i = 0; i < 16; ++i) {
+			for (int j = i; j < 16; ++j) {
+				std::string label = "G" + std::to_string(i) + "-G" + std::to_string(j);
+				ImGui::Checkbox(label.c_str(), &groupCollisionMatrix_[i][j]);
+				if (j < 15)
+					ImGui::SameLine();
+			}
+		}
+	}
+
+	//========================================
+	// オブジェクト一覧表示
+	if (ImGui::CollapsingHeader("Active Objects")) {
+		for (size_t idx = 0; idx < activeObjects_.size(); ++idx) {
+			BaseObject *obj = activeObjects_[idx];
+			if (!obj)
+				continue;
+
+			ImGui::PushID(static_cast<int>(idx));
+
+			auto collider = obj->GetCollider();
+			if (collider) {
+				Vector3 pos = collider->GetPosition();
+				float radius = collider->GetRadius();
+				bool enabled = obj->IsCollisionEnabled();
+				int type = static_cast<int>(obj->GetCollisionType());
+				uint16_t group = obj->GetGroup();
+				size_t collidingCount = obj->GetCollidingObjects().size();
+
+				ImGui::Text("Obj[%zu]: Pos(%.1f, %.1f, %.1f) Radius=%.1f", idx, pos.x, pos.y, pos.z, radius);
+				ImGui::Text("  Enabled: %s | Type: %s | Group: %u | Colliding: %zu",
+							enabled ? "Yes" : "No",
+							type == 0 ? "DYNAMIC" : (type == 1 ? "STATIC" : "TRIGGER"),
+							group, collidingCount);
+
+				// 有効/無効の切り替え
+				if (ImGui::Checkbox(("Enable##" + std::to_string(idx)).c_str(), &enabled)) {
+					obj->SetCollisionEnabled(enabled);
+				}
+			}
+
+			ImGui::PopID();
+			ImGui::Separator();
 		}
 	}
 
@@ -212,6 +289,14 @@ bool CollisionManager::FastIntersects(BaseObject *objA, BaseObject *objB) const 
 	if (!colliderA || !colliderB)
 		return false;
 
+	// 有効/無効チェック
+	if (!objA->IsCollisionEnabled() || !objB->IsCollisionEnabled())
+		return false;
+
+	// グループ・レイヤーマスク経由の衝突可否判定
+	if (!CanCollideByGroupAndMask(objA, objB))
+		return false;
+
 	// 早期リターン：ざっくりした距離チェック
 	Vector3 diff = colliderA->GetPosition() - colliderB->GetPosition();
 	float radiusSum = colliderA->GetRadius() + colliderB->GetRadius();
@@ -282,11 +367,81 @@ void CollisionManager::DrawDebugColliders() {
 			Vector3 position = obj->GetCollider()->GetPosition();
 			float radius = obj->GetCollider()->GetRadius();
 
-			// 衝突中のオブジェクトは赤、そうでなければ白
-			bool isColliding = !obj->GetCollidingObjects().empty();
-			Vector4 color = isColliding ? Vector4{1.0f, 0.0f, 0.0f, 1.0f} : Vector4{1.0f, 1.0f, 1.0f, 1.0f};
+			// グループフィルタリングが有効な場合
+			bool passFilter = true;
+			if (enableGroupFilter_) {
+				passFilter = (obj->GetGroup() == debugGroupFilter_);
+			}
+
+			if (!passFilter)
+				continue;
+
+			// 衝突中のオブジェクトは赤、無効は灰色、その他は白
+			Vector4 color;
+			if (!obj->IsCollisionEnabled()) {
+				color = Vector4{0.5f, 0.5f, 0.5f, 1.0f}; // 灰色：無効
+			} else if (!obj->GetCollidingObjects().empty()) {
+				color = Vector4{1.0f, 0.0f, 0.0f, 1.0f}; // 赤：衝突中
+			} else {
+				color = Vector4{1.0f, 1.0f, 1.0f, 1.0f}; // 白：衝突していない
+			}
 
 			LineManager::GetInstance()->DrawSphere(position, radius, color);
 		}
 	}
+}
+
+///=============================================================================
+///						グループ間衝突設定
+void CollisionManager::SetGroupCollision(uint16_t groupA, uint16_t groupB, bool canCollide) {
+	if (groupA >= 16 || groupB >= 16)
+		return;
+
+	groupCollisionMatrix_[groupA][groupB] = canCollide;
+	groupCollisionMatrix_[groupB][groupA] = canCollide; // 双方向
+}
+
+///=============================================================================
+///						グループ衝突設定リセット
+void CollisionManager::ResetGroupCollisions() {
+	// すべてのグループが衝突可能に
+	for (int i = 0; i < 16; ++i) {
+		for (int j = 0; j < 16; ++j) {
+			groupCollisionMatrix_[i][j] = true;
+		}
+	}
+}
+
+///=============================================================================
+///						グループ衝突可能性を問い合わせ
+bool CollisionManager::CanGroupsCollide(uint16_t groupA, uint16_t groupB) const {
+	if (groupA >= 16 || groupB >= 16)
+		return false;
+
+	return groupCollisionMatrix_[groupA][groupB];
+}
+
+///=============================================================================
+///						グループ・レイヤーマスクによる衝突可否判定
+bool CollisionManager::CanCollideByGroupAndMask(BaseObject *objA, BaseObject *objB) const {
+	uint16_t groupA = objA->GetGroup();
+	uint16_t groupB = objB->GetGroup();
+
+	// グループマトリクスで許可されているか確認
+	if (!CanGroupsCollide(groupA, groupB))
+		return false;
+
+	// グループIDがレイヤーマスク内か確認（ビット単位）
+	if (groupB >= 16 || groupA >= 16)
+		return false; // グループIDが範囲外
+
+	// objAがobjBのグループと衝突可能か
+	if ((objA->GetCollisionLayerMask() & (1 << groupB)) == 0)
+		return false;
+
+	// objBがobjAのグループと衝突可能か
+	if ((objB->GetCollisionLayerMask() & (1 << groupA)) == 0)
+		return false;
+
+	return true;
 }

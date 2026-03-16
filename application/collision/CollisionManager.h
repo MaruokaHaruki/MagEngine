@@ -140,6 +140,22 @@ public:
 		return collisionChecksThisFrame_;
 	}
 
+	//========================================
+	// グループ/レイヤー管理
+	//========================================
+
+	/// @brief グループ間の衝突設定（グループAがグループBと衝突するか）
+	/// @param groupA グループA
+	/// @param groupB グループB
+	/// @param canCollide 衝突するかどうか
+	void SetGroupCollision(uint16_t groupA, uint16_t groupB, bool canCollide);
+
+	/// @brief すべての衝突設定をリセット（すべて衝突するようにする）
+	void ResetGroupCollisions();
+
+	/// @brief グループAがグループBと衝突するかを問い合わせ
+	bool CanGroupsCollide(uint16_t groupA, uint16_t groupB) const;
+
 private:
 	/// \brief グリッド座標計算（改良版）
 	GridCoord CalculateGridCoord(const Vector3 &position) const;
@@ -162,6 +178,9 @@ private:
 	/// \brief デバッグ描画（最適化版）
 	void DrawDebugColliders();
 
+	/// \brief グループとレイヤーマスクの衝突判定
+	bool CanCollideByGroupAndMask(BaseObject *objA, BaseObject *objB) const;
+
 private:
 	//========================================
 	// グリッドシステム（改良版）
@@ -179,7 +198,14 @@ private:
 	std::unordered_map<CollisionPair, bool, CollisionPairHash> collisionStates_;
 
 	//========================================
+	// グループ間の衝突フラグマトリクス（16x16 = 256フラグ）
+	// groupCollisionMatrix[i][j] = グループiがグループjと衝突するかどうか
+	bool groupCollisionMatrix_[16][16];
+
+	//========================================
 	// デバッグ情報
 	bool enableDebugDraw_;
+	bool enableGroupFilter_;	///< グループフィルタリングの有効/無効
+	uint16_t debugGroupFilter_; ///< デバッグ表示用のグループフィルタ
 	size_t collisionChecksThisFrame_;
 };
