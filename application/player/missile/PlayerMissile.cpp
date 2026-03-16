@@ -356,7 +356,7 @@ EnemyBase *PlayerMissile::FindNearestTarget() { // Enemy* から EnemyBase* に�
 	float fovRadians = lockOnFOV_ * 0.5f * MagMath::PI / 180.0f; // 視野角をラジアンに
 
 	for (const auto &enemy : enemies) {
-		if (!enemy || !enemy->IsAlive()) {
+		if (!enemy || !enemy->IsAlive() || !enemy->IsCollisionEnabled()) {
 			continue;
 		}
 
