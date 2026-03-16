@@ -1,12 +1,12 @@
 #define _USE_MATH_DEFINES
 #define NOMINMAX
 #include "EnemyBase.h"
+#include "BaseObject.h"
 #include "ImguiSetup.h"
 #include "Particle.h"
 #include "Player.h"
 #include <algorithm>
 #include <cmath>
-#include "BaseObject.h"
 using namespace MagEngine;
 
 // 定数定義
@@ -78,8 +78,8 @@ void EnemyBase::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::s
 
 ///=============================================================================
 ///                        パーティクルシステムの設定
-void EnemyBase::SetParticleSystem(MagEngine::Particle *particle, 
-	MagEngine::ParticleSetup *particleSetup) {
+void EnemyBase::SetParticleSystem(MagEngine::Particle *particle,
+								  MagEngine::ParticleSetup *particleSetup) {
 	particle_ = particle;
 	particleSetup_ = particleSetup;
 }
@@ -303,6 +303,7 @@ void EnemyBase::TakeDamage(int damage, std::function<void()> onDefeatCallback) {
 void EnemyBase::StartDestroy() {
 	destroyState_ = DestroyState::Destroying;
 	destroyTimer_ = 0.0f;
+	SetCollisionEnabled(false); // 敵がHP0になったら衝突判定を無効化
 }
 
 ///=============================================================================

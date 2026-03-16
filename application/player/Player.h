@@ -6,19 +6,27 @@
  * \brief  プレイヤーキャラクターの総合管理クラス
  *
  * 責務：
- * - プレイヤーの移動、ブースト、バレルロールの管理（PlayerMovementComponent）
- * - 弾丸・ミサイルの発射と管理（PlayerCombatComponent）
- * - HP・ダメージ・無敵時間の管理（PlayerHealthComponent）
- * - 敵のロックオン機能と追尾
- * - 敗北演出の制御
+ * - 各コンポーネント（移動・HP・射撃・ロックオン・敗北演出）の統合管理
+ * - 入力処理の委譲
+ * - オブジェクト管理
+ *
+ * 各責務は以下のコンポーネントに分離：
+ * - PlayerMovementComponent: 移動・バレルロール・ブースト
+ * - PlayerCombatComponent: 弾・ミサイル発射
+ * - PlayerHealthComponent: HP・ダメージ
+ * - PlayerLockedOnComponent: ロックオン機能
+ * - PlayerDefeatComponent: 敗北演出
  *********************************************************************/
 #pragma once
 #include "BaseObject.h"
 #include "Input.h"
+#include "MagMath.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include "component/PlayerCombatComponent.h"
+#include "component/PlayerDefeatComponent.h"
 #include "component/PlayerHealthComponent.h"
+#include "component/PlayerLockedOnComponent.h"
 #include "component/PlayerMovementComponent.h"
 #include <memory>
 #include <string>
@@ -30,6 +38,28 @@ class Object3dSetup;
 class EnemyManager;
 class EnemyBase; // Enemy から EnemyBase に変更
 class EnemyBullet;
+
+///=============================================================================
+///						武装設定構造体
+struct WeaponConfig {
+	// 弾（銃）の設定
+	std::string bulletModelPath = "Bullet.obj"; // 弾のモデルパス
+	std::string bulletTexturePath = "";			// 弾のテクスチャパス（未使用）
+	float bulletSpeed = 128.0f;					// 弾の速度
+	float bulletMaxLifeTime = 3.0f;				// 弾の生存時間（秒）
+	float bulletRadius = 0.5f;					// 弾の当たり判定半径
+	float shootCoolTime = 0.1f;					// 連射クールタイム
+
+	// ミサイルの設定
+	std::string missileModelPath = "Missile.obj"; // ミサイルのモデルパス
+	std::string missileTexturePath = "";		  // ミサイルのテクスチャパス（未使用）
+	float missileSpeed = 50.0f;					  // ミサイルの速度
+	float missileMaxTurnRate = 120.0f;			  // ミサイルの最大旋回速度（度/秒）
+	float missileMaxLifeTime = 15.0f;			  // ミサイルの生存時間（秒）
+	float missileCoolTime = 1.0f;				  // ミサイル発射クールタイム
+
+	// 拡張用：マシンガンなど他の武装タイプはここに追加
+};
 
 ///=============================================================================
 ///						クラス定義
@@ -54,28 +84,75 @@ public:
 	void DrawBullets();
 	/// @brief ミサイル描画
 	void DrawMissiles();
+	/// @brief 弾のトレイル描画
+	void DrawBulletsTrails();
+	/// @brief ミサイルのトレイル描画
+	void DrawMissilesTrails();
 
 	//========================================
-	// EnemyManager設定（ミサイル用）
+	// EnemyManager設定（ミサイル・ロックオン用）
 	/// @brief 敵マネージャーの設定
 	void SetEnemyManager(EnemyManager *enemyManager) {
 		enemyManager_ = enemyManager;
 		combatComponent_.SetEnemyManager(enemyManager);
+		lockedOnComponent_.SetEnemyManager(enemyManager);
+	}
+	/// @brief 敵マネージャーの取得（HUD用）
+	EnemyManager *GetEnemyManager() const {
+		return enemyManager_;
 	}
 
 	//========================================
-	// ロックオン機能
-	/// @brief ロックオンモード切替
-	void UpdateLockOn();
-	/// @brief 最寄りの敵を取得
-	EnemyBase *GetNearestEnemy() const; // Enemy* から EnemyBase* に変更
-	/// @brief ロックオン状態クリア
-	bool HasLockOnTarget() const {
-		return lockOnTarget_ != nullptr;
+	// TrailEffectManager設定（弾・ミサイルトレイル用）
+	/// @brief トレイルエフェクトマネージャーの設定
+	void SetTrailEffectManager(MagEngine::TrailEffectManager *trailEffectManager) {
+		combatComponent_.SetTrailEffectManager(trailEffectManager);
 	}
-	/// @brief ロックオン対象の取得
-	EnemyBase *GetLockOnTarget() const { // Enemy* から EnemyBase* に変更
-		return lockOnTarget_;
+
+	//========================================
+	// ロックオン機能（PlayerLockedOnComponentに委譲）
+	/// @brief ロックオン状態確認
+	bool HasLockOnTarget() const {
+		return lockedOnComponent_.HasLockOnTarget();
+	}
+	/// @brief プライマリロックオン対象の取得
+	EnemyBase *GetLockOnTarget() const {
+		return lockedOnComponent_.GetPrimaryTarget();
+	}
+	/// @brief 全ロックオン対象を取得
+	const std::vector<EnemyBase *> &GetAllLockOnTargets() const {
+		return lockedOnComponent_.GetAllTargets();
+	}
+	/// @brief ロックオン対象の数を取得
+	size_t GetLockOnTargetCount() const {
+		return lockedOnComponent_.GetTargetCount();
+	}
+	/// @brief ロックオン範囲のセッター
+	void SetLockOnRange(float range) {
+		lockedOnComponent_.SetLockOnRange(range);
+	}
+	/// @brief ロックオン範囲のゲッター
+	float GetLockOnRange() const {
+		return lockedOnComponent_.GetLockOnRange();
+	}
+	/// @brief ロックオンFOVのゲッター
+	float GetLockOnFOV() const {
+		return lockedOnComponent_.GetLockOnFOV();
+	}
+
+	///--------------------------------------------------------------
+	///                        敗北演出（PlayerDefeatComponentに委譲）
+	/// @brief 敗北判定
+	bool IsDefeated() const {
+		return defeatComponent_.IsDefeated();
+	}
+	/// @brief 敗北演出完了判定
+	bool IsDefeatAnimationComplete() const {
+		return defeatComponent_.IsDefeatAnimationComplete();
+	}
+	/// @brief 敗北演出開始
+	void StartDefeatAnimation() {
+		defeatComponent_.StartDefeatAnimation();
 	}
 
 	///--------------------------------------------------------------
@@ -123,7 +200,7 @@ public:
 	//========================================
 	// Transform関連のゲッター（GameClearAnimation用）
 	/// @brief Transformの取得
-	Transform *GetTransform() const {
+	MagMath::Transform *GetTransform() const {
 		return obj_ ? obj_->GetTransform() : nullptr;
 	}
 
@@ -150,80 +227,14 @@ public:
 	/// @brief 回復処理
 	void Heal(int healAmount);
 
-	//========================================
-	// 敗北演出関連（Crash から Defeat に変更）
-	/// @brief 敗北判定
-	bool IsDefeated() const {
-		return isDefeated_;
-	}
-	/// @brief 敗北演出完了判定
-	bool IsDefeatAnimationComplete() const {
-		return defeatAnimationComplete_;
-	}
-	/// @brief 敗北演出開始
-	void StartDefeatAnimation(); // StartCrash から変更
-
 	///--------------------------------------------------------------
 	///                        衝突処理
 	void OnCollisionEnter(BaseObject *other) override;
 	void OnCollisionStay(BaseObject *other) override;
 	void OnCollisionExit(BaseObject *other) override;
 
-	///--------------------------------------------------------------
-	///                        静的メンバ関数
-private:
-	/// @brief 移動更新
-	void UpdateMovement();
-	/// @brief バレルロール・ブースト更新
-	void UpdateBarrelRollAndBoost();
-	/// @brief 射撃処理
-	void ProcessShooting();
-	/// @brief 敗北演出更新
-	void UpdateDefeatAnimation();
-	/// @brief Transform安全取得
-	Transform *GetTransformSafe() const;
-	/// @brief ロックオン解除
-	void ClearLockOn();
-
-	///--------------------------------------------------------------
-	///                        静的メンバ変数
-	//========================================
-	// コア
-	std::unique_ptr<MagEngine::Object3d> obj_;
-	MagEngine::Object3dSetup *object3dSetup_;
-
-	//========================================
-	// コンポーネント
-	PlayerHealthComponent healthComponent_;
-	PlayerCombatComponent combatComponent_;
-	PlayerMovementComponent movementComponent_;
-
-	//========================================
-	// システム参照
-	EnemyManager *enemyManager_;
-
-	//========================================
-	// ロックオン関連
-	EnemyBase *lockOnTarget_; // Enemy* から EnemyBase* に変更
-	float lockOnRange_;
-	bool lockOnMode_;
-
-	//========================================
-	// 敗北演出関連
-	bool isDefeated_;
-	bool defeatAnimationComplete_;
-	float defeatAnimationTime_;
-	float defeatAnimationDuration_;
-	Vector3 defeatVelocity_;
-	Vector3 defeatRotationSpeed_;
-
-	//========================================
-	//
-	friend class FollowCamera;
-
 	//========================================
 	// 射撃・弾発射方向（HUD用）
-public:
 	/// @brief 弾の発射方向を取得
 	Vector3 GetBulletFireDirection() const {
 		return combatComponent_.GetBulletFireDirection();
@@ -238,4 +249,165 @@ public:
 		}
 		return {0.0f, 0.0f, 1.0f};
 	}
+
+	//========================================
+	// 武装設定（一元管理）
+	/// @brief 武装設定構造体の取得
+	const WeaponConfig &GetWeaponConfig() const {
+		return weaponConfig_;
+	}
+
+	/// @brief 武装設定構造体の参照を取得（変更用）
+	WeaponConfig &GetWeaponConfigRef() {
+		return weaponConfig_;
+	}
+
+	/// @brief 全ての武装設定をデフォルトに初期化
+	void ResetWeaponConfig() {
+		weaponConfig_ = WeaponConfig();
+		ApplyWeaponConfigToCombatComponent();
+	}
+
+	/// @brief 武装設定をコンポーネントに適用
+	void ApplyWeaponConfigToCombatComponent() {
+		combatComponent_.SetBulletModelPath(weaponConfig_.bulletModelPath);
+		combatComponent_.SetMissileModelPath(weaponConfig_.missileModelPath);
+		combatComponent_.SetMaxShootCoolTime(weaponConfig_.shootCoolTime);
+		combatComponent_.SetMaxMissileCoolTime(weaponConfig_.missileCoolTime);
+	}
+
+	//---- 弾（銃）の設定 ----
+	/// @brief 弾のモデルパスを設定
+	void SetBulletModelPath(const std::string &modelPath) {
+		weaponConfig_.bulletModelPath = modelPath;
+		combatComponent_.SetBulletModelPath(modelPath);
+	}
+	/// @brief 弾のモデルパスを取得
+	const std::string &GetBulletModelPath() const {
+		return weaponConfig_.bulletModelPath;
+	}
+
+	/// @brief 弾の速度を設定
+	void SetBulletSpeed(float speed) {
+		weaponConfig_.bulletSpeed = speed;
+	}
+	/// @brief 弾の速度を取得
+	float GetBulletSpeed() const {
+		return weaponConfig_.bulletSpeed;
+	}
+
+	/// @brief 弾の生存時間を設定
+	void SetBulletMaxLifeTime(float lifeTime) {
+		weaponConfig_.bulletMaxLifeTime = lifeTime;
+	}
+	/// @brief 弾の生存時間を取得
+	float GetBulletMaxLifeTime() const {
+		return weaponConfig_.bulletMaxLifeTime;
+	}
+
+	/// @brief 弾の当たり判定半径を設定
+	void SetBulletRadius(float radius) {
+		weaponConfig_.bulletRadius = radius;
+	}
+	/// @brief 弾の当たり判定半径を取得
+	float GetBulletRadius() const {
+		return weaponConfig_.bulletRadius;
+	}
+
+	/// @brief 連射クールタイムを設定
+	void SetShootCoolTime(float coolTime) {
+		weaponConfig_.shootCoolTime = coolTime;
+		combatComponent_.SetMaxShootCoolTime(coolTime);
+	}
+	/// @brief 連射クールタイムを取得
+	float GetShootCoolTime() const {
+		return weaponConfig_.shootCoolTime;
+	}
+
+	//---- ミサイルの設定 ----
+	/// @brief ミサイルのモデルパスを設定
+	void SetMissileModelPath(const std::string &modelPath) {
+		weaponConfig_.missileModelPath = modelPath;
+		combatComponent_.SetMissileModelPath(modelPath);
+	}
+	/// @brief ミサイルのモデルパスを取得
+	const std::string &GetMissileModelPath() const {
+		return weaponConfig_.missileModelPath;
+	}
+
+	/// @brief ミサイルの速度を設定
+	void SetMissileSpeed(float speed) {
+		weaponConfig_.missileSpeed = speed;
+	}
+	/// @brief ミサイルの速度を取得
+	float GetMissileSpeed() const {
+		return weaponConfig_.missileSpeed;
+	}
+
+	/// @brief ミサイルの最大旋回速度を設定（度/秒）
+	void SetMissileMaxTurnRate(float turnRate) {
+		weaponConfig_.missileMaxTurnRate = turnRate;
+	}
+	/// @brief ミサイルの最大旋回速度を取得
+	float GetMissileMaxTurnRate() const {
+		return weaponConfig_.missileMaxTurnRate;
+	}
+
+	/// @brief ミサイルの生存時間を設定
+	void SetMissileMaxLifeTime(float lifeTime) {
+		weaponConfig_.missileMaxLifeTime = lifeTime;
+	}
+	/// @brief ミサイルの生存時間を取得
+	float GetMissileMaxLifeTime() const {
+		return weaponConfig_.missileMaxLifeTime;
+	}
+
+	/// @brief ミサイル発射クールタイムを設定
+	void SetMissileCoolTime(float coolTime) {
+		weaponConfig_.missileCoolTime = coolTime;
+		combatComponent_.SetMaxMissileCoolTime(coolTime);
+	}
+	/// @brief ミサイル発射クールタイムを取得
+	float GetMissileCoolTime() const {
+		return weaponConfig_.missileCoolTime;
+	}
+
+	///--------------------------------------------------------------
+	///                        内部処理（private）
+private:
+	/// @brief 移動更新
+	void UpdateMovement();
+	/// @brief バレルロール・ブースト更新
+	void UpdateBarrelRollAndBoost();
+	/// @brief 射撃処理
+	void ProcessShooting();
+	/// @brief Transform安全取得
+	MagMath::Transform *GetTransformSafe() const;
+
+	///--------------------------------------------------------------
+	///                        メンバ変数
+	//========================================
+	// コア
+	std::unique_ptr<MagEngine::Object3d> obj_;
+	MagEngine::Object3dSetup *object3dSetup_;
+
+	//========================================
+	// コンポーネント群
+	PlayerHealthComponent healthComponent_;		// HP管理
+	PlayerCombatComponent combatComponent_;		// 射撃・ミサイル管理
+	PlayerMovementComponent movementComponent_; // 移動・バレルロール
+	PlayerLockedOnComponent lockedOnComponent_; // ロックオン管理
+	PlayerDefeatComponent defeatComponent_;		// 敗北演出
+
+	//========================================
+	// システム参照
+	EnemyManager *enemyManager_;
+
+	//========================================
+	// 武装設定（一元管理）
+	WeaponConfig weaponConfig_;
+
+	//========================================
+	// Friend クラス
+	friend class FollowCamera;
 };

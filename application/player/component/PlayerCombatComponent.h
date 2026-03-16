@@ -9,6 +9,9 @@
 class Object3dSetup;
 class EnemyManager;
 class EnemyBase; // Enemy から EnemyBase に変更
+namespace MagEngine {
+	class TrailEffectManager;
+}
 
 ///=============================================================================
 ///						戦闘管理コンポーネント
@@ -16,13 +19,22 @@ class PlayerCombatComponent {
 public:
 	///--------------------------------------------------------------
 	///                        メンバ関数
-	void Initialize(MagEngine::Object3dSetup *object3dSetup);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::TrailEffectManager *trailEffectManager = nullptr);
 	void Update(float deltaTime);
 
 	///--------------------------------------------------------------
 	///                        射撃処理
 	void ShootBullet(const Vector3 &position, const Vector3 &direction);
 	void ShootMissile(const Vector3 &position, const Vector3 &direction, EnemyBase *target); // Enemy* から EnemyBase* に変更
+
+	/// @brief マルチロックオンで複数敵に同時発射
+	/// @param position ミサイル発射位置
+	/// @param direction 発射基準方向
+	/// @param targets ロックオン対象敵のリスト
+	void ShootMultipleMissiles(const Vector3 &position, const Vector3 &direction,
+							   const std::vector<EnemyBase *> &targets);
+
 	void UpdateBullets();
 	void UpdateMissiles();
 
@@ -30,6 +42,8 @@ public:
 	///                        描画
 	void DrawBullets();
 	void DrawMissiles();
+	void DrawBulletsTrails();
+	void DrawMissilesTrails();
 
 	///--------------------------------------------------------------
 	///                        ゲッター
@@ -66,12 +80,22 @@ public:
 	void SetMaxMissileCoolTime(float coolTime) {
 		maxMissileCoolTime_ = coolTime;
 	}
+	void SetBulletModelPath(const std::string &modelPath) {
+		bulletModelPath_ = modelPath;
+	}
+	void SetMissileModelPath(const std::string &modelPath) {
+		missileModelPath_ = modelPath;
+	}
+	void SetTrailEffectManager(MagEngine::TrailEffectManager *trailEffectManager) {
+		trailEffectManager_ = trailEffectManager;
+	}
 
 private:
 	///--------------------------------------------------------------
 	///                        メンバ変数
-	MagEngine::Object3dSetup *object3dSetup_; // オブジェクト設定（弾生成用）
-	EnemyManager *enemyManager_;			  // 敵管理への参照（ミサイルターゲット用）
+	MagEngine::Object3dSetup *object3dSetup_;			// オブジェクト設定（弾生成用）
+	MagEngine::TrailEffectManager *trailEffectManager_; // トレイルエフェクト管理
+	EnemyManager *enemyManager_;						// 敵管理への参照（ミサイルターゲット用）
 
 	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト
 	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // ミサイルリスト
@@ -82,4 +106,7 @@ private:
 	float maxMissileCoolTime_; // 最大ミサイルクールタイム
 
 	Vector3 bulletFireDirection_; // 弾の発射方向（HUD用）
+
+	std::string bulletModelPath_;  // 弾のモデルパス
+	std::string missileModelPath_; // ミサイルのモデルパス
 };

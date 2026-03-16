@@ -42,6 +42,7 @@ float CylinderSDF(float3 p, float3 origin, float3 direction, float radius)
 /// @param position 評価点（ワールド座標）
 /// @return マスク値（0.0=完全に空洞、1.0=影響なし）
 /// @note FinalDensity(p) = BaseDensity(p) * BulletMask(p) という形で合成する
+//NOTE : 処理最適化 - 早期終了と距離スキップで不要な計算削減
 float CalculateBulletHoleMask(float3 position)
 {
     float mask = 1.0f;  // 初期値：影響なし
@@ -49,10 +50,31 @@ float CalculateBulletHoleMask(float3 position)
     // すべての有効な弾痕をループで処理
     for (int i = 0; i < gBulletHoleCount; ++i)
     {
+        // NOTE : maskが十分小さい場合は計算をスキップ（早期終了）
+        // 複数弾痕の乗算で0に近づいた時点で追加計算は視覚的効果が薄い
+        if (mask < 0.01f) {
+            break;
+        }
+        
         // 弾痕データを取得
         BulletHoleGPU hole = gBulletHoles[i];
         
-        // 円柱SDFで距離を計算
+        // NOTE : lifeTimeが消えかけている場合はスキップ（残存時間チェック）
+        if (hole.lifeTime < 0.01f) {
+            continue;
+        }
+        
+        // NOTE : 粗い距離判定で遠い弾痕をスキップ（球面距離チェック）
+        // 計算負荷の高いSDF計算を回避し、影響範囲外の弾痕を除外
+        float3 toPosition = position - hole.origin;
+        float roughDistance = length(toPosition);
+        float influenceRange = (hole.startRadius + hole.endRadius) * 0.5f + gBulletHoleFadeEnd;
+        
+        if (roughDistance > influenceRange) {
+            continue;  // 影響範囲外なのでスキップ
+        }
+        
+        // 円柱SDFで距離を計算（影響範囲内の弾痕のみ）
         float sdfDist = CylinderSDF(position, hole.origin, hole.direction, hole.radius);
         
         // smoothstepで滑らかなマスクを作成

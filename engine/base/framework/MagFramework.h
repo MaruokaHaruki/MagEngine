@@ -32,13 +32,18 @@
 #include "ParticleSetup.h"
 #include "SkyboxSetup.h"
 #include "SpriteSetup.h"
+#include "TrailEffectManager.h"
+#include "TrailEffectSetup.h"
+// Editor
+#include "EditorLayout.h"
+#include "GameViewportPanel.h"
 
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
 
-///=============================================================================
-///						FrameWorkクラス
+	///=============================================================================
+	///						FrameWorkクラス
 	class MagFramework {
 		///--------------------------------------------------------------
 		///							メンバ関数
@@ -83,6 +88,8 @@ namespace MagEngine {
 		void SkyboxCommonDraw();
 		/// @brief Cloud共通描画設定
 		void CloudCommonDraw();
+		/// @brief TrailEffect共通描画設定
+		void TrailEffectCommonDraw();
 
 		///--------------------------------------------------------------
 		///							入出力関数
@@ -90,6 +97,11 @@ namespace MagEngine {
 		/// \brief 終了リクエストの取得
 		virtual bool IsEndRequest() const {
 			return isEndRequest_;
+		}
+
+		/// \brief トレイルエフェクトマネージャーの取得
+		TrailEffectManager *GetTrailEffectManager() const {
+			return trailEffectManager_.get();
 		}
 
 		///--------------------------------------------------------------
@@ -124,6 +136,8 @@ namespace MagEngine {
 		std::unique_ptr<SkyboxSetup> skyboxSetup_;
 		// Cloudセットアップ
 		std::unique_ptr<CloudSetup> cloudSetup_;
+		// TrailEffectセットアップ
+		std::unique_ptr<TrailEffectSetup> trailEffectSetup_;
 		//========================================
 		// マネージャ
 		// ポストエフェクトマネージャ
@@ -134,6 +148,11 @@ namespace MagEngine {
 		std::unique_ptr<SceneFactory> sceneFactory_;
 		// ライトマネージャ
 		std::unique_ptr<LightManager> lightManager_;
+		// トレイルエフェクトマネージャ
+		std::unique_ptr<TrailEffectManager> trailEffectManager_;
+		//========================================
+		// エディター
+		std::unique_ptr<EditorLayout> editorLayout_;
 	};
 
 }

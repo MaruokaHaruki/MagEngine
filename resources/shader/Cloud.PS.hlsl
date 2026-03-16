@@ -9,6 +9,13 @@
 #include "Cloud.hlsli"
 
 ///=============================================================================
+///						ハッシュ関数（ジッタリング用）
+/// @brief スカラー値から擬似乱数を生成（レイマーチ用ジッタリング）
+float Hash1D(float x) {
+	return frac(sin(x * 74.65f) * 27.12f);
+}
+
+///=============================================================================
 ///						PixelShader出力構造体
 struct PixelOutput {
     float4 color : SV_TARGET0;  // 最終的な色
@@ -76,16 +83,20 @@ PixelOutput main(VertexShaderOutput input) {
     
     //========================================
     // レイマーチングの初期化
-    float3 sunDir = normalize(gSunDirection);  // 太陽光の方向
     float3 accumulatedLight = 0.0f;            // 累積光量
     float transmittance = 1.0f;                // 透過率（初期値は完全透過）
     
     //========================================
     // レイマーチングのステップ計算
-    float t = tNear;                                    // 現在のレイパラメータ
-    float marchDistance = tFar - tNear;                 // マーチング総距離
-    int numSteps = min(int(marchDistance / gStepSize), MAX_STEPS);  // ステップ数を計算
-    float actualStepSize = marchDistance / float(max(numSteps, 1)); // 実際のステップサイズ
+    float t = tNear;
+    float marchDistance = tFar - tNear;
+    int numSteps = min(int(marchDistance / gStepSize), MAX_STEPS);
+    float actualStepSize = marchDistance / float(max(numSteps, 1));
+    
+    //NOTE : レイマーチループの事前計算をループ外で実施（GPU分岐最適化）
+    float3 sunDir = normalize(gDirectionalLight.direction);
+    float cosThetaSun = dot(rayDir, sunDir);
+    float phaseDual = PhaseDualLobe(cosThetaSun, 0.8f, -0.3f, 0.7f);
     
     //========================================
     // デバッグ用変数
@@ -94,15 +105,33 @@ PixelOutput main(VertexShaderOutput input) {
     bool hasHit = false;            // 雲に衝突したかどうか
     
     //========================================
+    // 距離ベースのLOD計算（処理負荷軽減）
+    // NOTE : 遠距離ではステップサイズを大きくして処理を軽減しつつ、
+    //        ジッター効果で視覚品質を保つ
+    float lodFactor = 1.0f;
+    if (t > LOD_DISTANCE_2) lodFactor = LOD_MULTIPLIER_2;
+    else if (t > LOD_DISTANCE_1) lodFactor = LOD_MULTIPLIER_1;
+    float lodAdjustedStepSize = actualStepSize * lodFactor;
+    
+    //========================================
     // レイマーチングループ
-    // 透過率が0.1より高い間のみ処理（高速化優先）
-    for (int i = 0; i < numSteps && transmittance > 0.1f; i++) {
-        float3 position = rayOrigin + rayDir * (t + actualStepSize * 0.5f);
+    //NOTE : 距離ベースLODで処理軽量化、条件付きライトマーチングで品質保持
+    float jitterSeed = float(input.uv.x * 1920.0 + input.uv.y * 1080.0);  // スクリーン座標ベースのシード
+    float jitter = Hash1D(jitterSeed) * 0.3f - 0.15f;  // -0.15～0.15のジッタ量（効きを弱め）
+    
+    for (int i = 0; i < numSteps && transmittance > 0.005f; i++) {
+        // NOTE : ジッタリング付きサンプリング位置
+        float jitteredStep = lodAdjustedStepSize + jitter * lodAdjustedStepSize;
+        float samplingT = t + jitteredStep;  // ジッタされたステップ位置
+        float3 position = rayOrigin + rayDir * samplingT;
         
         float density = SampleCloudDensity(position);
         
-        // 適応的ステップサイズ: 密度が低い場合は大きくスキップ（高速化優先）
-        float adaptiveStep = (density < 0.001f) ? actualStepSize * 3.5f : actualStepSize;
+        //NOTE : LOD対応の適応的ステップ（密度低い部分はさらにスキップ）
+        float adaptiveStep = (density < 0.001f) ? lodAdjustedStepSize * 2.0f : lodAdjustedStepSize;
+        
+        // NOTE: 最小ステップサイズで下限を設定（段差防止）
+        adaptiveStep = max(adaptiveStep, MIN_STEP_SIZE);
         
         if (density > 0.001f) {
             if (!hasHit) {
@@ -112,14 +141,73 @@ PixelOutput main(VertexShaderOutput input) {
             
             denseSampleCount++;
             
-            float lightEnergy = LightMarch(position);
-            float phase = PhaseHG(dot(rayDir, sunDir), gAnisotropy);
-            float3 lighting = gAmbient + gSunColor * gSunIntensity * lightEnergy * phase;
+            float3 lighting = float3(0.0f, 0.0f, 0.0f);
             
-            float scatterAmount = density * actualStepSize;
+            //========================================
+            // ディレクショナルライト
+            //NOTE : 密度が高い場合とカメラ近くの場合のみライトマーチング実行
+            //        遠距離の低密度部分はスキップして処理軽減
+            float lightEnergy = 1.0f;
+            if (density > 0.05f || t < LOD_DISTANCE_1) {
+                lightEnergy = LightMarch(position);
+            }
+            //NOTE : PhaseDualLobeをループ外で事前計算済み（レイ方向は不変なため）
+            lighting += gDirectionalLight.color.rgb * lightEnergy * phaseDual * gDirectionalLight.intensity * 2.0f;
+            
+            //========================================
+            // 高さベースのアンビエントライト（品質重視）
+            // 雲の上部は明るく、下部は暗い（実際の雲の光の散乱を再現）
+            float3 uvw = (position - gCloudCenter) / gCloudSize;
+            float heightFraction = saturate(uvw.y + 0.5f);
+            // 空の色によるアンビエント（上部は暖色、下部は寒色）
+            float3 ambientTop = float3(0.35f, 0.35f, 0.4f);    // 上方からの空の散乱光
+            float3 ambientBottom = float3(0.12f, 0.12f, 0.16f); // 地面からの反射光
+            float3 ambientLight = lerp(ambientBottom, ambientTop, heightFraction) * gAmbient;
+            lighting += ambientLight;
+            
+            //========================================
+            //NOTE : ポイントライトは密度高い・カメラ近い場合+強度>0のみ計算（分岐・処理最適化）
+            if ((density > 0.05f || t < LOD_DISTANCE_1) && gPointLight.intensity > 0.0f) {
+                float3 posToLight = gPointLight.position - position;
+                float distToLightSq = dot(posToLight, posToLight); //NOTE : length⇒dotでsqrt回避
+                float radiusSq = gPointLight.radius * gPointLight.radius;
+                if (distToLightSq < radiusSq) {
+                    float distToLight = sqrt(distToLightSq);
+                    float3 lightDir2 = posToLight / distToLight; //NOTE : normalizeを手動化（sqrt再利用）
+                    float attenuation = 1.0f / (1.0f + gPointLight.decay * distToLightSq);
+                    float phasePoint = PhaseDualLobe(dot(rayDir, lightDir2), 0.6f, -0.2f, 0.65f);
+                    lighting += gPointLight.color.rgb * phasePoint * gPointLight.intensity * attenuation * 1.2f;
+                }
+            }
+            
+            //========================================
+            //NOTE : スポットライトは密度高い・カメラ近い場合+強度>0のみ計算（分岐・処理最適化）
+            if ((density > 0.05f || t < LOD_DISTANCE_1) && gSpotLight.intensity > 0.0f) {
+                float3 posToSpot = gSpotLight.position - position;
+                float distToSpotSq = dot(posToSpot, posToSpot); //NOTE : sqrt回避
+                float distanceSq = gSpotLight.distance * gSpotLight.distance;
+                if (distToSpotSq < distanceSq) {
+                    float distToSpot = sqrt(distToSpotSq);
+                    float3 spotDir = posToSpot / distToSpot;
+                    float angleCos = dot(spotDir, normalize(gSpotLight.direction));
+                    
+                    float falloff = smoothstep(gSpotLight.cosFalloffEnd, gSpotLight.cosFalloffStart, angleCos);
+                    falloff = falloff * falloff;
+                    
+                    if (falloff > 0.0f) {
+                        float attenuation = 1.0f / (1.0f + gSpotLight.decay * distToSpotSq); //NOTE : distToSpotSq再利用
+                        float phaseSpot = PhaseDualLobe(dot(rayDir, spotDir), 0.6f, -0.2f, 0.65f);
+                        lighting += gSpotLight.color.rgb * phaseSpot * gSpotLight.intensity * attenuation * falloff * 1.3f;
+                    }
+                }
+            }
+            
+            float scatterAmount = density * lodAdjustedStepSize;
             accumulatedLight += lighting * scatterAmount * transmittance;
             
-            transmittance *= exp(-density * actualStepSize);
+            //NOTE : 段階的な透過率更新（Beer-Lambert則）
+            // NOTE : より細かい段階で更新することで層状の段差を目立たなくする
+            transmittance *= exp(-density * lodAdjustedStepSize * 0.8f);  // 0.8倍で段階的フェード
         }
         
         t += adaptiveStep;  // 適応的ステップで進む

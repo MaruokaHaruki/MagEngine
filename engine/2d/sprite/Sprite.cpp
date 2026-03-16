@@ -29,7 +29,9 @@ namespace MagEngine {
 
 		// ファイルパスの記録
 		textureFilePath_ = textureFilePath;
-		// textureIndex = TextureManager::GetInstance()->GetTextureIndex(textureFilePath);
+
+		// テクスチャの読み込み
+		TextureManager::GetInstance()->LoadTexture(textureFilePath);
 
 		// テクスチャのサイズを取得
 		AdjustTextureSize();

@@ -1,9 +1,10 @@
 /*********************************************************************
  * \file   DebugScene.h
+ * \brief  デバッグシーンクラス
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップの依存関係を削減
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
@@ -12,16 +13,17 @@ using namespace MagMath;
 //========================================
 // Game
 #include "Cloud.h"
+#include "TrailEffectManager.h"
+
+// Forward declaration
+class SceneContext;
 
 class DebugScene : public BaseScene {
 	///--------------------------------------------------------------
-	///							メンバ関数
+	///                            メンバ関数
 public:
-	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Object3dSetup *object3dSetup, MagEngine::ParticleSetup *particleSetup,
-					MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup) override;
-
-	/// \brief 終了処理
+	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
+	void Initialize(SceneContext *context) override;
 	void Finalize() override;
 
 	/// \brief 更新
@@ -41,6 +43,9 @@ public:
 
 	/// \brief Cloud描画
 	void CloudDraw() override;
+
+	/// \brief TrailEffect描画
+	void TrailEffectDraw() override;
 
 	/// \brief ImGui描画
 	void ImGuiDraw() override;
@@ -78,13 +83,8 @@ private:
 
 	//========================================
 	// パーティクル
-	std::unique_ptr<MagEngine::Particle> particle_;
-	// パーティクルエミッター
-	std::unique_ptr<MagEngine::ParticleEmitter> particleEmitter_;
 
-	//=========================================
-	// Skybox
-	std::unique_ptr<MagEngine::Skybox> skybox_;
+	// パーティクルエミッター
 
 	///--------------------------------------------------------------
 	///						 アプリケーション固有
@@ -97,11 +97,22 @@ private:
 
 	//========================================
 	// ボールテスト
-	// Ball ball_;
 
 	//========================================
 	// Cloud
 	std::unique_ptr<MagEngine::Cloud> cloud_;
+
+	//========================================
+	// TrailEffect
+	MagEngine::TrailEffectManager *trailEffectManager_ = nullptr;
+
+	//========================================
+	// TrailEffect テスト用パラメータ
+	float trailLoopTimer_ = 0.0f;				// ループアニメーション用タイマー
+	float trailLoopRadius_ = 2.0f;				// ループの半径
+	float trailLoopHeight_ = 2.0f;				// ループの高さ
+	float trailLoopSpeed_ = 2.0f;				// ループの速度（rad/sec）
+	Vector3 trailLoopCenter_{0.0f, 0.0f, 0.0f}; // ループの中心
 
 	//========================================
 	// 雲の穴開けテスト用パラメータ（円錐形状）

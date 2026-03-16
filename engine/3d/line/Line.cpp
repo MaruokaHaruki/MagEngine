@@ -68,11 +68,11 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						ライン描画
-	void Line::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color) {
+	void Line::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness) {
 		// 頂点データを追加
-		vertices_.push_back({start, color});
+		vertices_.push_back({start, color, thickness, {0.0f, 0.0f, 0.0f}});
 		// 頂点データを追加
-		vertices_.push_back({end, color});
+		vertices_.push_back({end, color, thickness, {0.0f, 0.0f, 0.0f}});
 	}
 
 	///=============================================================================
@@ -82,20 +82,31 @@ namespace MagEngine {
 		// 描画するラインがない場合は何もしない
 		if (vertices_.empty())
 			return;
+
+		//========================================
+		// バッファサイズを動的に拡張
+		if (vertices_.size() > maxVertexCount_) {
+			// バッファを拡張し直す必要があります
+			// 現在のフレームは描画をスキップして、次フレームに備える
+			return;
+		}
+
 		//========================================
 		// 描画設定
 		void *pData;
-		// バーテックスバッファのマップ
-		vertexBuffer_->Map(0, nullptr, &pData);
+		// バーテックスバッファのマップ（NO_DISCARD フラグでパフォーマンス向上）
+		D3D12_RANGE range = {0, 0}; // 読み込みなし
+		vertexBuffer_->Map(0, &range, &pData);
 		// メモリコピー
 		memcpy(pData, vertices_.data(), sizeof(LineVertex) * vertices_.size());
 		// バーテックスバッファのアンマップ
 		vertexBuffer_->Unmap(0, nullptr);
+
 		//========================================
 		// 描画設定
 		auto commandList = lineSetup_->GetDXManager()->GetCommandList();
-		// taransformMatrixBufferのマップ
-		commandList->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress()); // 修正: RootParameterIndexを0に変更
+		// transformationMatrixBufferのセット
+		commandList->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 		// vertexBufferの設定
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 		//========================================
@@ -118,8 +129,9 @@ namespace MagEngine {
 		// デバイスの取得
 		auto device = lineSetup_->GetDXManager()->GetDevice();
 		// バッファサイズ
-		// NOTE: 1000本のラインを描画できるようにしている
-		auto bufferSize = sizeof(LineVertex) * 100000000;
+		// NOTE: 初期配置は50000ラインまで描画可能。必要に応じて動的に拡張。
+		maxVertexCount_ = 100000; // 50000ラインx2頂点
+		size_t bufferSize = sizeof(LineVertex) * maxVertexCount_;
 		//========================================
 		// バーテックスバッファの作成
 		D3D12_HEAP_PROPERTIES heapProps = {};

@@ -1,9 +1,11 @@
 #include "PlayerBullet.h"
 #include "Object3d.h"
+#include "TrailEffectManager.h"
 using namespace MagEngine;
 
 void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
-	const std::string &modelPath,const Vector3 &position,const Vector3 &direction) {
+							  MagEngine::TrailEffectManager *trailEffectManager,
+							  const std::string &modelPath, const Vector3 &position, const Vector3 &direction) {
 
 	// Object3dの初期化
 	obj_ = std::make_unique<Object3d>();
@@ -12,14 +14,14 @@ void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
 
 	// 初期設定
 	Transform *transform = obj_->GetTransform();
-	if(transform) {
+	if (transform) {
 		transform->translate = position;
-		transform->scale = { 0.1f, 0.1f, 0.1f }; // 弾は小さく
+		transform->scale = {0.1f, 0.1f, 0.1f}; // 弾は小さく
 	}
 
 	// 移動設定
 	speed_ = 128.0f; // 弾の速度
-	velocity_ = { direction.x * speed_, direction.y * speed_, direction.z * speed_ };
+	velocity_ = {direction.x * speed_, direction.y * speed_, direction.z * speed_};
 
 	// 生存時間設定
 	lifeTime_ = 0.0f;
@@ -32,15 +34,22 @@ void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
 	// BaseObjectの初期化（当たり判定）
 	Vector3 pos = position;
 	BaseObject::Initialize(pos, radius_);
+
+	// トレイルエフェクトの初期化
+	if (trailEffectManager) {
+		trailEffect_ = std::make_unique<TrailEffect>();
+		TrailEffectPreset bulletPreset = *trailEffectManager->GetPreset("Bullet");
+		trailEffect_->Initialize(trailEffectManager->GetSetup(), bulletPreset);
+	}
 }
 
 void PlayerBullet::Update() {
-	if(!isAlive_ || !obj_) {
+	if (!isAlive_ || !obj_) {
 		return;
 	}
 
 	Transform *transform = obj_->GetTransform();
-	if(!transform) {
+	if (!transform) {
 		return;
 	}
 
@@ -52,28 +61,41 @@ void PlayerBullet::Update() {
 
 	// 生存時間の更新
 	lifeTime_ += frameTime;
-	if(lifeTime_ >= maxLifeTime_) {
+	if (lifeTime_ >= maxLifeTime_) {
 		isAlive_ = false;
 	}
 
 	// BaseObjectのコライダー位置を更新
 	BaseObject::Update(transform->translate);
 
+	// トレイルエフェクトの更新
+	if (trailEffect_) {
+		trailEffect_->Update(frameTime);
+		// 現在位置で軌跡を発生させる
+		trailEffect_->EmitAt(transform->translate, velocity_);
+	}
+
 	// Object3dの更新
 	obj_->Update();
 }
 
 void PlayerBullet::Draw() {
-	if(isAlive_ && obj_) {
+	if (isAlive_ && obj_) {
 		obj_->Draw();
 	}
 }
 
+void PlayerBullet::DrawTrail() {
+	if (trailEffect_) {
+		trailEffect_->Draw();
+	}
+}
+
 Vector3 PlayerBullet::GetPosition() const {
-	if(obj_) {
+	if (obj_) {
 		return obj_->GetPosition();
 	}
-	return { 0.0f, 0.0f, 0.0f };
+	return {0.0f, 0.0f, 0.0f};
 }
 
 void PlayerBullet::OnCollisionEnter(BaseObject *other) {

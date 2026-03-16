@@ -81,5 +81,52 @@
         "ranges": "cpp",
         "span": "cpp",
         "valarray": "cpp"
-    }
+    },
+    //========================================
+    // エディタの外観に関する設定
+    // グリフマージン(行番号やブレークポイントなどを表示するスペース)を非表示にする
+    "editor.glyphMargin": false,
+
+    //========================================
+    // フォントサイズとズームレベルの設定
+    // エディタのズームレベルを-0.75に設定する
+    "window.zoomLevel": -0.75,
+    // エディタのフォントサイズを16に設定する
+    "editor.fontSize": 16,
+    // ターミナルのフォントサイズを16に設定する
+    "terminal.integrated.fontSize": 16,
+    // デバッグコンソールのフォントサイズを16に設定する
+    "debug.console.fontSize": 16,
+    // エディタのマウスホイールズームを有効にする
+    "editor.mouseWheelZoom": true,
+
+    //========================================
+    // フォントのスタイルに関する設定
+    // Firge-Regularフォントを使用する
+    "editor.fontFamily": "Firge-Regular, Consolas, 'Courier New', monospace",
+
+    //========================================
+    // インデントとタブに関する設定
+    "editor.detectIndentation": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.rulers": [80, 120],
+    "editor.wordWrap": "on",
+
+    //========================================
+    // コーディング支援の設定
+    "editor.suggestSelection": "first",
+    "editor.acceptSuggestionOnEnter": "smart",
+    "editor.snippetSuggestions": "top",
+    "editor.wordBasedSuggestions": "allDocuments",
+
+    // ========================================
+    // パフォーマンスの最適化
+        "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/node_modules/**": true,
+        "**/tmp/**": true
+    },
+    "editor.accessibilitySupport": "off",
+    "editor.smoothScrolling": false
 }

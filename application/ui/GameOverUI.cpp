@@ -13,26 +13,29 @@ void GameOverUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
 	progress_ = 0.0f;
 	elapsedTime_ = 0.0f;
 
-	// 画面サイズを取得
-	if (spriteSetup_) {
-		screenWidth_ = static_cast<float>(spriteSetup_->GetDXManager()->GetWinApp().GetWindowWidth());
-		screenHeight_ = static_cast<float>(spriteSetup_->GetDXManager()->GetWinApp().GetWindowHeight());
-	}
+	InitializeSprites();
+}
 
-	// 背景スプライトの作成
+///=============================================================================
+///                        スプライト初期化
+void GameOverUI::InitializeSprites() {
+	if (!spriteSetup_)
+		return;
+
+	// 背景スプライト
 	backgroundSprite_ = std::make_unique<MagEngine::Sprite>();
-	backgroundSprite_->Initialize(spriteSetup_, "white1x1.png");
-	backgroundSprite_->SetSize({screenWidth_, screenHeight_});
+	backgroundSprite_->Initialize(spriteSetup_, "white1x1.dds");
+	backgroundSprite_->SetSize({SCREEN_WIDTH, SCREEN_HEIGHT});
 	backgroundSprite_->SetPosition({0.0f, 0.0f});
-	backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f}); // 初期は透明
+	backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f});
 
-	// テキストスプライトの作成
+	// テキストスプライト
 	textSprite_ = std::make_unique<MagEngine::Sprite>();
 	textSprite_->Initialize(spriteSetup_, textTexture_);
-	textSprite_->SetAnchorPoint({0.5f, 0.5f}); // 中心を基準点に設定
-	textSprite_->SetPosition({screenWidth_ / 2.0f, screenHeight_ / 2.0f});
-	textSprite_->SetSize(textSize_);				 // 初期サイズを設定
-	textSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f}); // 初期は透明
+	textSprite_->SetAnchorPoint({0.5f, 0.5f});
+	textSprite_->SetPosition({SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
+	textSprite_->SetSize(textSize_);
+	textSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
 }
 
 ///=============================================================================
@@ -49,79 +52,48 @@ void GameOverUI::Update() {
 		return;
 	}
 
-	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
-	elapsedTime_ += deltaTime;
+	constexpr float DELTA_TIME = 1.0f / 60.0f;
+	elapsedTime_ += DELTA_TIME;
+	UpdateAnimation();
 
-	UpdateShowing();
-
-	// スプライト更新
-	if (backgroundSprite_) {
-		backgroundSprite_->Update();
-	}
-	if (textSprite_) {
-		textSprite_->Update();
-	}
+	backgroundSprite_->Update();
+	textSprite_->Update();
 }
 
 ///=============================================================================
-///                        表示状態の更新
-void GameOverUI::UpdateShowing() {
+///                        アニメーション更新
+void GameOverUI::UpdateAnimation() {
 	float totalDuration = fadeDuration_ + displayDuration_;
-	float rawProgress = elapsedTime_ / totalDuration;
+	float rawProgress = std::clamp(elapsedTime_ / totalDuration, 0.0f, 1.0f);
 
-	if (rawProgress > 1.0f) {
-		rawProgress = 1.0f;
-	}
-
-	// フェーズ分け
 	if (elapsedTime_ < fadeDuration_) {
 		// フェードインフェーズ
 		float fadeProgress = elapsedTime_ / fadeDuration_;
 		progress_ = EaseInOut(fadeProgress);
 
-		// 背景を徐々に表示
 		Vector4 bgColor = backgroundColor_;
-		bgColor.w = progress_ * 0.8f; // 最大80%の不透明度
+		bgColor.w = progress_ * DEFAULT_BACKGROUND_ALPHA;
 		backgroundSprite_->SetColor(bgColor);
 
-		// テキストをフェードイン + 拡大（アンカーポイント考慮）
-		float textAlpha = progress_; // 0.0 ~ 1.0 で完全に不透明に
 		float scale = 0.5f + progress_ * 0.5f;
-
-		// サイズを直接設定（アンカーポイントが中心なので問題なし）
-		Vector2 scaledSize = {
-			textSize_.x * scale,
-			textSize_.y * scale};
-
-		textSprite_->SetSize(scaledSize);
-		textSprite_->SetColor({1.0f, 1.0f, 1.0f, textAlpha}); // アルファ値を正しく適用
-
+		textSprite_->SetSize({textSize_.x * scale, textSize_.y * scale});
+		textSprite_->SetColor({1.0f, 1.0f, 1.0f, progress_});
 	} else {
 		// 表示維持フェーズ
 		progress_ = 1.0f;
 
-		// 背景を維持
 		Vector4 bgColor = backgroundColor_;
-		bgColor.w = 0.8f;
+		bgColor.w = DEFAULT_BACKGROUND_ALPHA;
 		backgroundSprite_->SetColor(bgColor);
 
-		// テキストを維持（少しパルス効果 - より強く表示）
-		float pulseTime = elapsedTime_ - fadeDuration_;
-		float pulse = 0.95f + 0.05f * sinf(pulseTime * 2.0f); // 0.9 ~ 1.0 の範囲で脈動
-
-		// パルス効果も正しくサイズ調整
-		Vector2 pulseSize = {
-			textSize_.x * pulse,
-			textSize_.y * pulse};
-
-		textSprite_->SetSize(pulseSize);
-		textSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f}); // 完全に不透明
+		float pulse = 0.95f + 0.05f * std::sin((elapsedTime_ - fadeDuration_) * 2.0f);
+		textSprite_->SetSize({textSize_.x * pulse, textSize_.y * pulse});
+		textSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 	}
 
 	// 完了チェック
-	if (rawProgress >= 1.0f) {
-		state_ = GameOverState::Done; // Completed から Done に変更
-
+	if (rawProgress >= 1.0f && state_ != GameOverState::Done) {
+		state_ = GameOverState::Done;
 		if (onCompleteCallback_) {
 			onCompleteCallback_();
 		}
@@ -130,46 +102,31 @@ void GameOverUI::UpdateShowing() {
 
 ///=============================================================================
 ///                        アニメーション制御
-void GameOverUI::StartGameOver(float fadeDuration, float displayDuration) {
+void GameOverUI::Play(float fadeDuration, float displayDuration) {
 	state_ = GameOverState::Showing;
 	fadeDuration_ = fadeDuration;
 	displayDuration_ = displayDuration;
-	elapsedTime_ = 0.0f;
-	progress_ = 0.0f;
+	ResetAnimation();
 
-	// 初期状態設定
-	if (backgroundSprite_) {
-		backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f});
-	}
-	if (textSprite_) {
-		// 初期サイズを小さく設定（0.5倍）
-		Vector2 initialSize = {
-			textSize_.x * 0.5f,
-			textSize_.y * 0.5f};
-		textSprite_->SetSize(initialSize);
-		textSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
-
-		// 位置を再設定（念のため）
-		textSprite_->SetPosition({screenWidth_ / 2.0f, screenHeight_ / 2.0f});
-	}
+	backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f});
+	textSprite_->SetSize({textSize_.x * 0.5f, textSize_.y * 0.5f});
+	textSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
+	textSprite_->SetPosition({SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
 }
 
-void GameOverUI::Cancel() {
+void GameOverUI::Stop() {
 	state_ = GameOverState::Idle;
-	progress_ = 0.0f;
-	elapsedTime_ = 0.0f;
+	ResetAnimation();
 
-	// 全て非表示に
-	if (backgroundSprite_) {
-		backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f});
-	}
-	if (textSprite_) {
-		textSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
-	}
+	backgroundSprite_->SetColor({backgroundColor_.x, backgroundColor_.y, backgroundColor_.z, 0.0f});
+	textSprite_->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
 }
 
-void GameOverUI::Reset() {
-	Cancel();
+///=============================================================================
+///                        アニメーション初期化
+void GameOverUI::ResetAnimation() {
+	progress_ = 0.0f;
+	elapsedTime_ = 0.0f;
 }
 
 ///=============================================================================
@@ -179,17 +136,13 @@ void GameOverUI::Draw() {
 		return;
 	}
 
-	if (backgroundSprite_) {
-		backgroundSprite_->Draw();
-	}
-	if (textSprite_) {
-		textSprite_->Draw();
-	}
+	backgroundSprite_->Draw();
+	textSprite_->Draw();
 }
 
 ///=============================================================================
 ///                        イージング関数
-float GameOverUI::EaseInOut(float t) {
+float GameOverUI::EaseInOut(float t) const {
 	return t < 0.5f ? 2.0f * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) / 2.0f;
 }
 
@@ -199,30 +152,26 @@ void GameOverUI::DrawImGui() {
 #ifdef _DEBUG
 	ImGui::Begin("Game Over UI");
 
-	// 状態表示
-	const char *stateNames[] = {"Idle", "Showing", "Done"}; // Completed を Done に変更
+	const char *stateNames[] = {"Idle", "Showing", "Done"};
 	ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
 	ImGui::Text("Progress: %.2f", progress_);
 
 	ImGui::Separator();
 
-	// タイミング設定
 	ImGui::SliderFloat("Fade Duration", &fadeDuration_, 0.5f, 5.0f);
 	ImGui::SliderFloat("Display Duration", &displayDuration_, 1.0f, 10.0f);
 
-	// 表示設定
 	ImGui::ColorEdit4("Background Color", &backgroundColor_.x);
 	ImGui::InputFloat2("Text Size", &textSize_.x);
 
 	ImGui::Separator();
 
-	// テスト用ボタン
-	if (ImGui::Button("Start Game Over")) {
-		StartGameOver(fadeDuration_, displayDuration_);
+	if (ImGui::Button("Play")) {
+		Play(fadeDuration_, displayDuration_);
 	}
 
-	if (ImGui::Button("Cancel")) {
-		Cancel();
+	if (ImGui::Button("Stop")) {
+		Stop();
 	}
 
 	ImGui::End();

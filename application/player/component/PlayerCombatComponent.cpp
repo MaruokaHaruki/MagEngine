@@ -24,8 +24,10 @@ namespace {
 
 //=============================================================================
 // 初期化
-void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup) {
+void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup,
+									   MagEngine::TrailEffectManager *trailEffectManager) {
 	object3dSetup_ = object3dSetup;
+	trailEffectManager_ = trailEffectManager;
 	enemyManager_ = nullptr;
 
 	bullets_.clear();
@@ -36,6 +38,10 @@ void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup) 
 	missileCoolTime_ = 0.0f;
 	maxMissileCoolTime_ = 1.0f;
 	bulletFireDirection_ = {0.0f, 0.0f, 1.0f};
+
+	// デフォルトモデルパス
+	bulletModelPath_ = "Bullet.obj";
+	missileModelPath_ = "Bullet.obj";
 }
 
 //=============================================================================
@@ -57,7 +63,7 @@ void PlayerCombatComponent::ShootBullet(const Vector3 &position, const Vector3 &
 	bulletFireDirection_ = direction;
 
 	auto bullet = std::make_unique<PlayerBullet>();
-	bullet->Initialize(object3dSetup_, "Bullet.obj", position, direction);
+	bullet->Initialize(object3dSetup_, trailEffectManager_, bulletModelPath_, position, direction);
 	bullets_.push_back(std::move(bullet));
 	shootCoolTime_ = maxShootCoolTime_;
 }
@@ -70,7 +76,7 @@ void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 
 	}
 
 	auto missile = std::make_unique<PlayerMissile>();
-	missile->Initialize(object3dSetup_, "Bullet.obj", position, direction);
+	missile->Initialize(object3dSetup_, trailEffectManager_, missileModelPath_, position, direction);
 	missile->SetEnemyManager(enemyManager_);
 
 	if (target) {
@@ -107,4 +113,71 @@ void PlayerCombatComponent::DrawMissiles() {
 		missile->DrawDebugInfo();
 #endif
 	}
+}
+
+void PlayerCombatComponent::DrawBulletsTrails() {
+	for (auto &bullet : bullets_) {
+		bullet->DrawTrail();
+	}
+}
+
+void PlayerCombatComponent::DrawMissilesTrails() {
+	for (auto &missile : missiles_) {
+		missile->DrawTrail();
+	}
+}
+
+//=============================================================================
+// マルチロックオンで複数敵に同時発射（1体につき1ミサイル）
+void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const Vector3 &direction,
+												  const std::vector<EnemyBase *> &targets) {
+	if (targets.empty() || !CanShootMissile()) {
+		return;
+	}
+
+	// DEBUG: 発射ミサイル情報をログ出力
+	// printf("ShootMultipleMissiles: Firing %zu missiles\n", targets.size());
+
+	// ロック対象の敵の数分だけミサイルを発射（1体=1ミサイル）
+	for (size_t i = 0; i < targets.size(); ++i) {
+		if (!targets[i]) {
+			continue;
+		}
+
+		// DEBUG: 各ミサイルのターゲット情報をログ出力
+		// printf("  Missile %zu -> Target %p at (%.2f, %.2f, %.2f)\n", i, (void*)targets[i],
+		//        targets[i]->GetPosition().x, targets[i]->GetPosition().y, targets[i]->GetPosition().z);
+
+		auto missile = std::make_unique<PlayerMissile>();
+		missile->Initialize(object3dSetup_, trailEffectManager_, missileModelPath_, position, direction);
+		missile->SetEnemyManager(enemyManager_);
+		missile->SetTarget(targets[i]);
+		missile->StartLockOn();
+
+		// 着弾時間を調整して、ターゲット敵での到着をずらす
+		float adjustedHitTime = 3.0f + (i * 0.3f);
+		missile->SetDesiredHitTime(adjustedHitTime);
+
+		// 発射時の速度オフセットを設定（複数ミサイルが異なる軌道を描くようにする）
+		if (i > 0) {
+			float angleOffset = i * 12.0f; // ミサイル間の角度オフセット
+			float rad = angleOffset * MagMath::PI / 180.0f;
+			Vector3 offsetDir = {
+				direction.x * std::cos(rad) - direction.z * std::sin(rad),
+				direction.y,
+				direction.x * std::sin(rad) + direction.z * std::cos(rad)};
+
+			// 発射初速オフセットを設定
+			Vector3 velocityOffset = {
+				offsetDir.x * 8.0f - direction.x * 8.0f,
+				offsetDir.y * 3.0f,
+				offsetDir.z * 8.0f - direction.z * 8.0f};
+			missile->SetLaunchVelocityOffset(velocityOffset, 0.2f);
+		}
+
+		missiles_.push_back(std::move(missile));
+	}
+
+	// クールタイムを設定（複数敵発射でもクールタイムは1回分）
+	missileCoolTime_ = maxMissileCoolTime_;
 }

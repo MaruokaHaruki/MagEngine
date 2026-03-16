@@ -11,6 +11,7 @@
 using namespace MagMath;
 #include "BaseObject.h"
 #include "Object3d.h"
+#include "TrailEffect.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,6 +20,9 @@ using namespace MagMath;
 class Object3dSetup;
 class EnemyBase;
 class EnemyManager; // 前方宣言を追加
+namespace MagEngine {
+	class TrailEffectManager;
+}
 
 ///=============================================================================
 ///                        プレイヤーミサイルクラス
@@ -28,17 +32,22 @@ public:
 	// 初期化・更新・描画
 	/// @brief Initialize 初期化
 	/// @param object3dSetup オブジェクト設定
+	/// @param trailEffectManager トレイルエフェクト管理
 	/// @param modelPath モデルパス
 	/// @param startPos 初期位置
 	/// @param initialDirection 初期進行方向
 	/// @param target ターゲット（初期値はnullptr）
-	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath,
+	void Initialize(MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::TrailEffectManager *trailEffectManager,
+					const std::string &modelPath,
 					const Vector3 &startPos, const Vector3 &initialDirection,
 					EnemyBase *target = nullptr); // Enemy* から EnemyBase* に変更
 	/// @brief Update 更新
 	void Update();
 	/// @brief Draw 描画
 	void Draw();
+	/// @brief DrawTrail トレイル描画
+	void DrawTrail();
 	/// @brief DrawDebugInfo デバッグ情報描画
 	void DrawDebugInfo();
 	/// @brief DrawImGui ImGui描画
@@ -93,6 +102,33 @@ public:
 		return lockedTarget_;
 	}
 
+	//========================================
+	// 発射オプション設定（マルチロックオン対応）
+	/// \brief SetLaunchVelocityOffset 発射時の初速オフセット設定
+	/// @param offset 発射方向へのオフセット速度
+	/// @param duration そのオフセットが有効な時間
+	void SetLaunchVelocityOffset(const Vector3 &offset, float duration = 0.3f) {
+		launchVelocityOffset_ = offset;
+		launchVelocityDuration_ = duration;
+		launchVelocityElapsed_ = 0.0f;
+	}
+
+	/// \brief SetDesiredHitTime 目標着弾時間を設定（連続発射時の分散用）
+	/// @param hitTime ターゲットに着弾するまでの目標時間
+	void SetDesiredHitTime(float hitTime) {
+		desiredHitTime_ = hitTime;
+	}
+
+	/// \brief SetLaunchWobble 発射直後の揺らぎを設定
+	/// @param strength 揺らぎの強度（0-1）
+	/// @param duration 揺らぎが適用される時間
+	void SetLaunchWobble(float strength = 0.3f, float duration = 0.5f) {
+		launchWobbleStrength_ = strength;
+		launchWobbleDuration_ = duration;
+		launchWobbleElapsed_ = 0.0f;
+		wobbleFrequency_ = 8.0f; // 1秒あたりの振動回数
+	}
+
 private:
 	//========================================
 	// 内部処理
@@ -114,7 +150,11 @@ private:
 	//========================================
 	// コア
 	std::unique_ptr<MagEngine::Object3d> obj_; // 3Dオブジェクト
-	MagEngine::Object3dSetup *object3dSetup_;	// オブジェクト設定
+	MagEngine::Object3dSetup *object3dSetup_;  // オブジェクト設定
+
+	//========================================
+	// トレイルエフェクト
+	std::unique_ptr<MagEngine::TrailEffect> trailEffect_; // トレイルエフェクト
 
 	//========================================
 	// 物理関連
@@ -130,17 +170,30 @@ private:
 	EnemyBase *lockedTarget_; // ロックオンしたターゲット（EnemyBase*に変更）
 	float trackingStrength_;
 	float lockOnRange_;
+	float lockOnFOV_; // ロックオン視野角（度数法）
 	float trackingStartTime_;
 	bool isTracking_;
 	bool isLockedOn_;
 	float lockOnTime_;
 	EnemyManager *enemyManager_; // EnemyManager参照
+	float desiredHitTime_;		 // 目標着弾時間（着弾タイミング分散用）
 
 	//========================================
 	// 回転関連
 	Vector3 targetRotation_;  // 目標回転
 	Vector3 currentRotation_; // 現在の回転
 	float rotationSpeed_;	  // 回転速度
+
+	//========================================
+	// 発射初速・揺らぎ関連
+	Vector3 launchVelocityOffset_; // 発射初速オフセット
+	float launchVelocityDuration_; // 初速が適用される時間
+	float launchVelocityElapsed_;  // 初速適用経過時間
+	float launchWobbleStrength_;   // 揺らぎの強度（発射直後の短時間）
+	float launchWobbleDuration_;   // 揺らぎが適用される時間
+	float launchWobbleElapsed_;	   // 揺らぎ適用経過時間
+	float wobbleFrequency_;		   // 揺らぎの周波数
+	Vector3 wobbleOffset_;		   // 揺らぎ方向オフセット
 
 	//========================================
 	// 寿命関連

@@ -1,0 +1,151 @@
+{
+  "presets": [
+    {
+      "alignment": 0,
+      "autoClear": true,
+      "color": {
+        "x": 0.5,
+        "y": 0.5,
+        "z": 0.5
+      },
+      "cornerSmooth": 0.10000000149011612,
+      "emissionRate": 50.0,
+      "emitting": true,
+      "endColor": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "endWidth": 0.0,
+      "fadeMode": 1,
+      "gravityInfluence": 0.20000000298023224,
+      "lifeTime": 3.0,
+      "material": "Default",
+      "maxPoints": 128,
+      "minPointDistance": 0.10000000149011612,
+      "name": "Bullet",
+      "noiseAmplitude": 0.0,
+      "noiseFrequency": 1.0,
+      "offset": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "opacity": 0.800000011920929,
+      "shaderName": "TrailDefault",
+      "simulationSpace": 0,
+      "startColor": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "startWidth": 1.0,
+      "subdivisions": 1,
+      "textureMode": 0,
+      "tiling": {
+        "x": 1.0,
+        "y": 1.0
+      },
+      "velocityDamping": 0.949999988079071,
+      "width": 0.10000000149011612,
+      "widthMultiplier": 1.0
+    },
+    {
+      "alignment": 0,
+      "autoClear": true,
+      "color": {
+        "x": 0.5,
+        "y": 0.5,
+        "z": 0.5
+      },
+      "cornerSmooth": 0.10000000149011612,
+      "emissionRate": 50.0,
+      "emitting": true,
+      "endColor": {
+        "x": 1.0,
+        "y": 0.48101264238357544,
+        "z": 0.0
+      },
+      "endWidth": 0.0,
+      "fadeMode": 0,
+      "gravityInfluence": 0.20000000298023224,
+      "lifeTime": 1.031999945640564,
+      "material": "Default",
+      "maxPoints": 128,
+      "minPointDistance": 0.10000000149011612,
+      "name": "Missile",
+      "noiseAmplitude": 0.0,
+      "noiseFrequency": 1.0,
+      "offset": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "opacity": 0.800000011920929,
+      "shaderName": "TrailDefault",
+      "simulationSpace": 0,
+      "startColor": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "startWidth": 1.0,
+      "subdivisions": 1,
+      "textureMode": 0,
+      "tiling": {
+        "x": 1.0,
+        "y": 1.0
+      },
+      "velocityDamping": 0.949999988079071,
+      "width": 0.21699999272823334,
+      "widthMultiplier": 1.0
+    },
+    {
+      "alignment": 0,
+      "autoClear": false,
+      "color": {
+        "x": 0.5,
+        "y": 0.5,
+        "z": 0.5
+      },
+      "cornerSmooth": 0.10000000149011612,
+      "emissionRate": 50.0,
+      "emitting": true,
+      "endColor": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.1772150993347168
+      },
+      "endWidth": 0.0,
+      "fadeMode": 0,
+      "gravityInfluence": 0.20000000298023224,
+      "lifeTime": 3.0,
+      "material": "Default",
+      "maxPoints": 128,
+      "minPointDistance": 0.10000000149011612,
+      "name": "test_trail",
+      "noiseAmplitude": 0.0,
+      "noiseFrequency": 1.0,
+      "offset": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "opacity": 0.800000011920929,
+      "shaderName": "TrailDefault",
+      "simulationSpace": 0,
+      "startColor": {
+        "x": 0.27558600902557373,
+        "y": 0.9789029359817505,
+        "z": 0.004130395594984293
+      },
+      "startWidth": 1.0,
+      "subdivisions": 1,
+      "textureMode": 0,
+      "tiling": {
+        "x": 1.0,
+        "y": 1.0
+      },
+      "velocityDamping": 0.949999988079071,
+      "width": 2.0,
+      "widthMultiplier": 1.0
+    }
+  ]
+}

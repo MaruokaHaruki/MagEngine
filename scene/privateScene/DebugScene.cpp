@@ -1,47 +1,58 @@
 /*********************************************************************
  * \file   DebugScene.cpp
- * \brief
+ * \brief  デバッグシーン実装
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "DebugScene.h"
 #include "CameraManager.h"
+#include "DebugTextManager.h"
+#include "Input.h"
+#include "LevelDataLoader.h"
+#include "Logger.h"
+#include "MAudioG.h"
+#include "ModelManager.h"
 #include "ParticlePreset.h"
+#include "SceneContext.h"
+#include "TrailEffectManager.h"
+#include "TrailEffectPreset.h"
+#include "imgui.h"
 using namespace MagEngine;
 
 ///=============================================================================
-///						初期化
-void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
-							MagEngine::Object3dSetup *object3dSetup,
-							MagEngine::ParticleSetup *particleSetup,
-							MagEngine::SkyboxSetup *skyboxSetup,
-							MagEngine::CloudSetup *cloudSetup) {
-	spriteSetup;
-	particleSetup;
+/// 初期化
+/// NOTE: contextからセットアップを取得
+void DebugScene::Initialize(SceneContext *context) {
+	//========================================
+	// NOTE: contextがnullptrでないかチェック
+	if (!context) {
+		return;
+	}
+
+	// NOTE: contextからセットアップを取得
+	MagEngine::Object3dSetup *object3dSetup = context->GetObject3dSetup();
+	MagEngine::CloudSetup *cloudSetup = context->GetCloudSetup();
+	MagEngine::TrailEffectManager *trailEffectManager = context->GetTrailEffectManager();
 
 	// object3dSetupを保存（再読み込み時に使用）
 	object3dSetup_ = object3dSetup;
 
 	///--------------------------------------------------------------
-	///						 音声クラス
+	/// 音声クラス
 	audio_ = MAudioG::GetInstance();
 
 	///--------------------------------------------------------------
-	///						 2D系クラス
+	/// 2D系クラス
 	//========================================
 	//// テクスチャマネージャ
-	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
+
 	//========================================
 	// スプライトクラス(Game)
 
 	///--------------------------------------------------------------
-	///						 3D系クラス
+	/// 3D系クラス
 	// モデルの読み込み
 	ModelManager::GetInstance()->LoadModel("axisPlus.obj");
 	ModelManager::GetInstance()->LoadModel("ball.obj");
@@ -77,31 +88,9 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	///						 パーティクル系
 	//========================================
 	// パーティクルの作成
-	particle_ = std::make_unique<Particle>();
-	particle_->Initialize(particleSetup);
-
-	// パーティクルのグループを作成
-	particle_->CreateParticleGroup("Test", "gradationLine_top.png", ParticleShape::Board);
-
-	//========================================
-	// エミッターの作成（プリセットを使用）
-	particleEmitter_ = std::make_unique<ParticleEmitter>(
-		particle_.get(),
-		"Test",
-		Transform{{0.2f, 0.2f, 0.2f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-		1024,
-		0.01f,
-		true);
-
-	// プリセットを適用（炎エフェクト）
-	particleEmitter_->ApplyConfig(ParticlePresets::Fire());
 
 	///--------------------------------------------------------------
 	///						 Skybox系
-	skybox_ = std::make_unique<Skybox>();
-	skybox_->Initialize(skyboxSetup);
-	// Skyboxのモデルを設定
-	skybox_->SetTexture("moonless_golf_4k.dds");
 
 	///--------------------------------------------------------------
 	///						 Cloud系
@@ -116,11 +105,19 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	cloud_->GetMutableParams().density = 3.0f;	 // 高密度
 	cloud_->GetMutableParams().coverage = 0.25f; // 低いカバレッジ
 	cloud_->GetMutableParams().stepSize = 4.0f;
+
 	cloud_->GetMutableParams().baseNoiseScale = 0.008f;
 	cloud_->GetMutableParams().detailNoiseScale = 0.025f;
 	cloud_->GetMutableParams().ambient = 0.4f;
 	cloud_->GetMutableParams().sunIntensity = 2.0f;
 	cloud_->GetMutableParams().debugFlag = 0.0f; // 通常モード
+
+	///--------------------------------------------------------------
+	///						 TrailEffect系
+	// 受け取ったマネージャーポインターを保存
+	trailEffectManager_ = trailEffectManager;
+
+	///--------------------------------------------------------------
 }
 
 ///=============================================================================
@@ -163,24 +160,42 @@ void DebugScene::Update() {
 
 	//========================================
 	// パーティクル系
-	particleEmitter_->Update();
 
 	//========================================
 	// 音声の再生
-	if (audio_->IsWavPlaying("Duke_Ellington.wav") == false) {
-		// audio_->PlayWavReverse("Duke_Ellington.wav", true, 1.0f, 1.0f);
-		// audio_->PlayWav("Duke_Ellington.wav", true, 1.0f, 1.0f);
-	}
 
 	//=========================================
 	// Skyboxの更新
-	if (skybox_) {
-		skybox_->Update();
-	}
 
 	//========================================
 	// Cloudの更新
 	cloud_->Update(*CameraManager::GetInstance()->GetCamera("DebugCamera"), 1.0f / 60.0f);
+
+	//========================================
+	// TrailEffectの更新
+	if (trailEffectManager_) {
+
+		trailEffectManager_->Update(1.0f / 60.0f);
+
+		trailLoopTimer_ += 1.0f / 60.0f * trailLoopSpeed_;
+		if (trailLoopTimer_ >= 2.0f * 3.14159f) {
+			trailLoopTimer_ -= 2.0f * 3.14159f; // リセット
+		}
+
+		// 円形パスを計算
+		float angle = trailLoopTimer_;
+		Vector3 currentPos = {
+			trailLoopCenter_.x + cos(angle) * trailLoopRadius_,
+			trailLoopCenter_.y + sin(angle) * 3.0f, // 簡単な上下動
+			trailLoopCenter_.z + sin(angle) * trailLoopRadius_};
+
+		// トレイルを発生させる
+		auto trailEffect = trailEffectManager_->GetEffect("test_trail");
+		if (trailEffect) {
+			Vector3 velocity = Vector3{-sin(angle) * trailLoopSpeed_ * trailLoopRadius_, cos(angle) * 3.0f, cos(angle) * trailLoopSpeed_ * trailLoopRadius_};
+			trailEffect->EmitAt(currentPos, velocity);
+		}
+	}
 
 	//========================================
 	// 雲の穴開けテスト（デバッグ用）
@@ -243,16 +258,11 @@ void DebugScene::Object2DDraw() {
 ///=============================================================================
 ///						3D描画
 void DebugScene::Object3DDraw() {
-	// モンスターボール
-	// objMonsterBall_->Draw();
-	// 地面
-	// objTerrain_->Draw();
 
 	//========================================
 	// レベルデータオブジェクトの描画
 	for (auto &levelObj : levelObjects_) {
 		if (levelObj) {
-			// levelObj->Draw();
 		}
 	}
 }
@@ -268,9 +278,6 @@ void DebugScene::ParticleDraw() {
 ///						Skybox描画
 void DebugScene::SkyboxDraw() {
 	// Skyboxの描画
-	if (skybox_) {
-		// skybox_->Draw();
-	}
 }
 
 ///=============================================================================
@@ -278,6 +285,15 @@ void DebugScene::SkyboxDraw() {
 void DebugScene::CloudDraw() {
 	// Cloudの描画
 	cloud_->Draw();
+}
+
+///=============================================================================
+///						TrailEffect描画
+void DebugScene::TrailEffectDraw() {
+	// TrailEffectの描画
+	if (trailEffectManager_) {
+		trailEffectManager_->Draw();
+	}
 }
 
 ///=============================================================================
@@ -335,6 +351,27 @@ void DebugScene::ImGuiDraw() {
 	}
 
 	//========================================
+	// TrailEffectのデバッグ表示
+	// トレイルループテスト用UI
+	if (trailEffectManager_) {
+		ImGui::Begin("Trail Loop Test");
+		ImGui::Text("Trail Loop Animation");
+		ImGui::SliderFloat("Loop Radius##trail", &trailLoopRadius_, 5.0f, 50.0f);
+		ImGui::SliderFloat("Loop Height##trail", &trailLoopHeight_, 10.0f, 100.0f);
+		ImGui::SliderFloat("Loop Speed##trail", &trailLoopSpeed_, 0.5f, 5.0f);
+		ImGui::DragFloat3("Loop Center##trail", &trailLoopCenter_.x, 1.0f);
+
+		ImGui::Separator();
+		ImGui::Text("Current Position: (%.1f, %.1f, %.1f)",
+					trailLoopCenter_.x + cos(trailLoopTimer_) * trailLoopRadius_,
+					trailLoopCenter_.y + sin(trailLoopTimer_) * 3.0f,
+					trailLoopCenter_.z + sin(trailLoopTimer_) * trailLoopRadius_);
+		ImGui::Text("Timer: %.2f / %.2f", trailLoopTimer_, 2.0f * 3.14159f);
+
+		ImGui::End();
+	}
+
+	//========================================
 	// 3DオブジェクトのImGui描画
 	// ライトの設定
 	ImGui::Begin("3DObject");
@@ -371,17 +408,10 @@ void DebugScene::ImGuiDraw() {
 		levelDataLoader_->ImGuiDraw(levelObjects_);
 	}
 
+	ImGui::End();
+
 	//========================================
 	// SkyBoxの移動
-	ImGui::Separator();
-	// 移動
-	ImGui::SliderFloat3("Skybox Position", &skybox_->GetTransform()->translate.x, -10.0f, 10.0f);
-	// 回転
-	ImGui::SliderFloat3("Skybox Rotation", &skybox_->GetTransform()->rotate.x, -180.0f, 180.0f);
-	// スケール
-	ImGui::SliderFloat3("Skybox Scale", &skybox_->GetTransform()->scale.x, 0.1f, 10.0f);
-
-	ImGui::End();
 
 	DebugTextManager::GetInstance()->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
 }

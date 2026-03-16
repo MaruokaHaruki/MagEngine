@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   TitleScene.h
- * \brief
+ * \brief  タイトルシーンクラス
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップの依存関係を削減
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
@@ -12,6 +12,8 @@
 #include <vector>
 //========================================
 // Application
+#include "Cloud.h"
+#include "CloudSetup.h"
 #include "CollisionManager.h"
 #include "Enemy.h"
 #include "EnemyManager.h"
@@ -22,23 +24,19 @@
 #include "Skydome.h"
 #include "TitleCamera.h"
 
+// Forward declaration
+class SceneContext;
+
 ///=============================================================================
-///						タイトルシーンクラス
+///                         タイトルシーンクラス
 class TitleScene : public BaseScene {
 	///--------------------------------------------------------------
-	///							メンバ関数
+	///                            メンバ関数
 public:
-	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup, 
-		MagEngine::Object3dSetup *object3dSetup, 
-		MagEngine::ParticleSetup *particleSetup, 
-		MagEngine::SkyboxSetup *skyboxSetup, 
-		MagEngine::CloudSetup *cloudSetup) override;
-
-	/// \brief 終了処理
+	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
+	void Initialize(SceneContext *context) override;
 	void Finalize() override;
 
-	/// \brief 更新
 	void Update() override;
 
 	/// @brie 2D描画
@@ -55,6 +53,9 @@ public:
 
 	/// \brief Cloud描画
 	void CloudDraw() override;
+
+	/// \brief TrailEffect描画
+	void TrailEffectDraw() override;
 
 	/// \brief ImGui描画
 	void ImGuiDraw() override;
@@ -80,16 +81,22 @@ private:
 	// スプライト
 	std::unique_ptr<MagEngine::Sprite> titleSprite_;
 	std::unique_ptr<MagEngine::Sprite> pressEnterSprite_;
-
+	MagMath::Vector2 titleSpriteBaseSize_; // タイトルスプライトの基本サイズ
+	MagMath::Vector2 pressEnterBaseSize_;  // Press Enterスプライトの基本サイズ
 	//========================================
 	// 演出用変数
 	float blinkTimer_ = 0.0f;
 	float pressEnterAlpha_ = 1.0f;
 	bool isFadingOut_ = true;
+	float totalElapsedTime_ = 0.0f; // シーン全体の経過時間
 
 	//========================================
 	// スカイボックス
 	std::unique_ptr<MagEngine::Skybox> skybox_;
+
+	//========================================
+	// 雲
+	std::unique_ptr<MagEngine::Cloud> cloud_;
 
 	//========================================
 	// トランジション

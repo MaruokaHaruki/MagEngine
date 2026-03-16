@@ -49,20 +49,18 @@ float CalculatePointAttenuation(float distance, float radius, float decay)
 }
 
 // スポットライトの減衰計算
-float CalculateSpotAttenuation(float3 lightDir, float3 spotDir, float cosAngle, 
+float CalculateSpotAttenuation(float3 lightDir, float3 spotDir, float cosFalloffStart, float cosFalloffEnd,
                               float distance, float maxDistance, float decay)
 {
     // 距離が影響範囲を超えていたら0を返す
     if (distance > maxDistance)
         return 0.0f;
         
-    // スポットの円錐内にあるかチェック
+    // スポットの角度を計算
     float cosTheta = dot(normalize(-lightDir), normalize(spotDir));
-    if (cosTheta < cosAngle)
-        return 0.0f;
-        
-    // 円錐のエッジ付近で滑らかに減衰
-    float spotEffect = pow(saturate((cosTheta - cosAngle) / (1.0f - cosAngle)), 2.0f);
+    
+    // フォールオフを計算（smoothstepで滑らかに）
+    float spotEffect = smoothstep(cosFalloffEnd, cosFalloffStart, cosTheta);
     
     // 距離による減衰
     float distanceAttenuation = saturate(1.0f - distance/maxDistance);
@@ -146,7 +144,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         float3 spotLightDir_S = normalize(spotLightVector_S);
         
         float spotAttenuation = CalculateSpotAttenuation(
-            spotLightVector_S, gSpotLight.direction, gSpotLight.cosAngle,
+            spotLightVector_S, gSpotLight.direction, gSpotLight.cosFalloffStart, gSpotLight.cosFalloffEnd,
             spotLightDistance_S, gSpotLight.distance, gSpotLight.decay);
 
         if(spotAttenuation > 0.0f)

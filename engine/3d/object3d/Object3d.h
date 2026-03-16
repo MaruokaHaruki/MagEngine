@@ -211,7 +211,9 @@ namespace MagEngine {
 			spotLightData_->intensity = intensity;
 			spotLightData_->distance = distance;
 			spotLightData_->decay = decay;
-			spotLightData_->cosAngle = cosf(angle);
+			// 内側の角度（完全に明るい領域）と外側の角度（フェード開始）を設定
+			spotLightData_->cosFalloffStart = cosf(angle * 0.7f); // 内側: 70%の角度
+			spotLightData_->cosFalloffEnd = cosf(angle);		  // 外側: 設定角度
 		}
 		/*
 		 * \brief  GetSpotLight スポットライトの取得

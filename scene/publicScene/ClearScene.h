@@ -1,26 +1,25 @@
 /*********************************************************************
  * \file   ClearScene.h
- * \brief
+ * \brief  クリアシーンクラス
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   NOTE: SceneContextを使用してセットアップの依存関係を削減
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
 
+// Forward declaration
+class SceneContext;
+
 ///=============================================================================
-///						クリアシーンクラス
+///                         クリアシーンクラス
 class ClearScene : public BaseScene {
 	///--------------------------------------------------------------
-	///							メンバ関数
+	///                            メンバ関数
 public:
-	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup, 
-		MagEngine::Object3dSetup *object3dSetup, 
-		MagEngine::ParticleSetup *particleSetup, 
-		MagEngine::SkyboxSetup *skyboxSetup, 
-		MagEngine::CloudSetup *cloudSetup) override;
+	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
+	void Initialize(SceneContext *context) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -42,6 +41,9 @@ public:
 
 	/// \brief Cloud描画
 	void CloudDraw() override;
+
+	/// \brief TrailEffect描画
+	void TrailEffectDraw() override;
 
 	/// \brief ImGui描画
 	void ImGuiDraw() override;

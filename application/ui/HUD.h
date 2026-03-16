@@ -7,6 +7,7 @@ using namespace MagMath;
 #include "LineManager.h"
 #include "Player.h"
 #include <memory>
+#include "Camera.h"
 
 class HUD {
 public:
@@ -17,6 +18,14 @@ public:
 
 	// FollowCameraの設定
 	void SetFollowCamera(FollowCamera *followCamera);
+
+	// アクセッサ
+	const Player *GetCurrentPlayer() const {
+		return currentPlayer_;
+	}
+	MagEngine::Camera *GetCurrentCamera() const {
+		return currentCamera_;
+	}
 
 	// アニメーション制御
 	void StartDeployAnimation(float duration = 1.5f);
@@ -37,6 +46,8 @@ private:
 	void DrawHeadingTape(float progress = 1.0f);				   // 上部: 方位テープ
 	void DrawGForceIndicator(float progress = 1.0f);			   // G-Force表示
 	void DrawBoostBarrel(float progress = 1.0f);				   // 下部: ブースト＆回避統合UI
+	void DrawLockOnReticle(float progress = 1.0f);				   // ロックオン用レティクル
+	void DrawEnemyIndicators(float progress = 1.0f);			   // 敵位置インジケーター
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);
@@ -63,6 +74,10 @@ private:
 	// カメラ参照
 	FollowCamera *followCamera_;
 
+	// プレイヤー参照
+	const Player *currentPlayer_;
+	MagEngine::Camera *currentCamera_;
+
 	// プレイヤーデータ
 	Vector3 playerPosition_;
 	Vector3 playerRotation_;
@@ -85,6 +100,14 @@ private:
 	bool showVelocityVector_;
 	bool showFlightPath_;
 	bool showPitchLadder_;
+	bool showLockOnReticle_;
+	bool showEnemyIndicators_;
+
+	// ロックオン情報
+	EnemyBase *lockOnTarget_;
+	float lockOnRange_;
+	float lockOnFOV_;
+	int lockedEnemyCount_;
 
 	// アニメーション状態
 	bool isAnimating_;

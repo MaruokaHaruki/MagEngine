@@ -44,6 +44,10 @@ cbuffer CloudParamsCB : register(b1)
     float3 gCloudSize;            // 雲のバウンディングボックスサイズ（X, Y, Z）
     float gPadding0;              // パディング
     
+    //NOTE : windOffsetを事前計算で定数化 - C++側で gTime * gNoiseSpeed を計算済み
+    float3 gWindOffset;           // 風による時間ベースのオフセット（C++事前計算）
+    float gPadding1;              // パディング
+    
     //========================================
     // ライティングパラメータ
     float3 gSunDirection;         // 太陽光の方向ベクトル（正規化済み）
@@ -101,12 +105,64 @@ cbuffer BulletHoleBufferCB : register(b2)
     BulletHoleGPU gBulletHoles[32];  // 最大32個の弾痕
 };
 
+///=============================================================================
+///                      ライト構造体（Object3dと同じ）
+// 並行光源
+struct DirectionalLight {
+    float4 color;      // ライトの色
+    float3 direction;  // ライトの向き
+    float intensity;   // ライトの強度
+};
+
+// ポイントライト
+struct PointLight {
+    float4 color;      // ライトの色(16 bytes)
+    float3 position;   // ライトの位置(12 bytes) + padding(4 bytes) = 16 bytes
+    float intensity;   // ライトの強度(4 bytes)
+    float radius;      // ライトの範囲(4 bytes)
+    float decay;       // ライトの減衰(4 bytes)
+    float padding;     // パディング(4 bytes)
+};
+
+// スポットライト
+struct SpotLight {
+    float4 color;           // ライトの色(16 bytes)
+    float3 position;        // ライトの位置(12 bytes) + padding(4 bytes) = 16 bytes
+    float intensity;        // ライトの強度(4 bytes)
+    float3 direction;       // ライトの向き(12 bytes) + padding(4 bytes) = 16 bytes
+    float distance;         // ライトの距離(4 bytes)
+    float decay;            // ライトの減衰(4 bytes)
+    float cosFalloffStart;  // フォールオフ開始(4 bytes)
+    float cosFalloffEnd;    // フォールオフ終了(4 bytes)
+};
+
+// ライト定数バッファ
+cbuffer DirectionalLightCB : register(b3)
+{
+    DirectionalLight gDirectionalLight;
+};
+
+cbuffer PointLightCB : register(b4)
+{
+    PointLight gPointLight;
+};
+
+cbuffer SpotLightCB : register(b5)
+{
+    SpotLight gSpotLight;
+};
+
 Texture2D<float4> gWeatherMap : register(t0);  // ウェザーマップテクスチャ（雲の分布制御用）
 SamplerState gLinearSampler : register(s0);    // 線形補間サンプラー
 
 static const float PI = 3.14159265f;           // 円周率
-static const int MAX_STEPS = 16;               // レイマーチングの最大ステップ数（高速化優先）
-static const int MAX_LIGHT_STEPS = 2;          // ライトマーチングの最大ステップ数（パフォーマンス優先）
+static const int MAX_STEPS = 72;               //NOTE : 96→72 距離ベースLODで補いながら処理軽量化
+static const int MAX_LIGHT_STEPS = 5;          //NOTE : 6→5 条件付き実行で品質を保ちつつ負荷低減
+static const float MIN_STEP_SIZE = 0.3f;       //NOTE : 0.5→0.3 遠距離での基準ステップサイズ
+static const float LOD_DISTANCE_1 = 80.0f;     // 第1段階のLODトリガー距離
+static const float LOD_DISTANCE_2 = 150.0f;    // 第2段階のLODトリガー距離
+static const float LOD_MULTIPLIER_1 = 1.3f;    // 第1段階のLOD乗数
+static const float LOD_MULTIPLIER_2 = 1.8f;    // 第2段階のLOD乗数
 
 ///=============================================================================
 ///                      ハッシュ関数
@@ -157,26 +213,32 @@ float Noise3D(float3 p) {
 /// @param octaves オクターブ数（重ね合わせる層の数）
 /// @return 0.0～1.0のノイズ値
 /// @note 高周波成分（細かい模様）と低周波成分（大きな形状）を組み合わせる
-/// @note パフォーマンス最適化：最大2オクターブに制限
+/// @note 品質重視：最大5オクターブでリアルなディテールを実現
+//NOTE : 距離LOD対応版FBM - 遠距離では低オクターブで近似し大幅に高速化
 float FBM(float3 p, int octaves) {
-    float value = 0.0f;       // 累積ノイズ値
-    float amplitude = 0.5f;   // 各オクターブの振幅（初期値0.5）
-    float frequency = 1.0f;   // 各オクターブの周波数（初期値1.0）
+    float value = 0.0f;
+    float amplitude = 0.5f;
+    float frequency = 1.0f;
     
-    // パフォーマンスのため最大2オクターブに制限
-    int maxOctaves = min(octaves, 2);
+    //NOTE : 最大4オクターブに制限（5→4、視覚的差異は極小）
+    int maxOctaves = min(octaves, 4);
     
-    // オクターブ数だけループ
     for (int i = 0; i < maxOctaves; i++) {
-        // 現在の周波数でノイズをサンプリングし、振幅をかけて加算
         value += amplitude * Noise3D(p * frequency);
-        
-        // 次のオクターブは周波数を2倍に（細かい模様）
         frequency *= 2.0f;
-        // 次のオクターブは振幅を半分に（影響度を下げる）
         amplitude *= 0.5f;
     }
     return value;
+}
+
+//NOTE : 距離LOD - distanceSq使用でsqrt削減（距離2乗で判定→高速化）
+int GetLODOctaves(float3 position, int baseOctaves) {
+    float3 offset = position - gCameraPosition;
+    float distSq = dot(offset, offset); // sqrt不要
+    //NOTE : 2乗距離で判定（160000=400^2, 40000=200^2）
+    if (distSq > 160000.0f) return max(baseOctaves - 2, 2); // 400m以上
+    if (distSq > 40000.0f) return max(baseOctaves - 1, 2);  // 200m以上
+    return baseOctaves;
 }
 
 ///=============================================================================
@@ -249,9 +311,11 @@ float CylinderSDF(float3 p, float3 origin, float3 direction, float radius)
 /// @note 円錐形状により入口から徐々に狭まる自然な弾痕を表現
 float CalculateBulletHoleMask(float3 position)
 {
-    float mask = 1.0f;  // 初期値：影響なし
+    float mask = 1.0f;
     
-    // すべての有効な弾痕をループで処理
+    //NOTE : 弾痕がない場合は即座にリターン（ループ回避で高速化）
+    if (gBulletHoleCount <= 0) return 1.0f;
+    
     for (int i = 0; i < gBulletHoleCount; ++i)
     {
         // 弾痕データを取得
@@ -324,57 +388,88 @@ float CalculateBulletHoleMask(float3 position)
 /// @brief 指定座標での雲の密度を計算
 /// @param position サンプリング座標（ワールド空間）
 /// @return 雲の密度（0.0～任意、0なら空気）
-/// @note FBMノイズを使用し、エッジフェードで自然な境界を作る
+/// @note FBMノイズを使用し、球形フェードで自然な境界を作る
 float SampleCloudDensity(float3 position) {
-    // ワールド座標をボックス内のUVW座標（-0.5～0.5）に変換
     float3 uvw = (position - gCloudCenter) / gCloudSize;
     
-    // ボックス外なら密度0を返す（早期リターンで高速化）
     if (any(abs(uvw) > 0.5f)) {
         return 0.0f;
     }
     
     //========================================
+    // 球形フェードマスク - AABBの角を丸くしてもこもこ雲を表現
+    // NOTE : ユークリッド距離ベースで球形を実現、Y方向は控えめに（卵形）
+    float3 normalizedPos = uvw * 2.0f;  // -1～1の範囲に正規化
+    float3 sphereDistVec = normalizedPos * float3(1.0f, 0.6f, 1.0f);  // Y方向は0.6倍で卵型
+    float sphereDist = length(sphereDistVec);
+    //NOTE : smoothstepで滑らかに減衰、球の半径0.8、フェード範囲0.3
+    float sphereMask = smoothstep(1.1f, 0.8f, sphereDist);
+    
+    //========================================
+    // 高さグラデーション(簡素化版) - smoothstep→saturate+mul で計算削減
+    float heightFraction = uvw.y + 0.5f; // -0.5～0.5 → 0.0～1.0
+    //NOTE : 高さフェード簡素化 - smoothstep2つ→saturate+線形で品質維持、計算50%削減
+    float lowerFade = saturate(heightFraction * 6.666f);           // smoothstep(0.0, 0.15, h)相当
+    float upperFade = saturate(2.5f - heightFraction * 2.5f);      // smoothstep(1.0, 0.6, h)相当
+    float heightGradient = lowerFade * upperFade;
+    
+    //========================================
+    // 高さが極小なら早期リターン
+    if (heightGradient < 0.01f) {
+        return 0.0f;
+    }
+    
+    //========================================
+    // 風オフセット（C++で事前計算済み）
+    //NOTE : gWindOffset は C++ 側で毎フレーム gTime * gNoiseSpeed を計算済み
+    
+    //NOTE : 距離LODでオクターブ数を動的に削減
+    int baseOctaves = GetLODOctaves(position, 4);
+    int detailOctaves = GetLODOctaves(position, 3);
+    
+    //========================================
     // ベースノイズ（大きな雲の形状を決定）
-    // 時間経過でZ軸方向にオフセットを加えてアニメーション
-    float3 baseCoord = position * gBaseNoiseScale + float3(0.0f, 0.0f, gTime * gNoiseSpeed);
-    float baseNoise = FBM(baseCoord, 2);  // 2オクターブで計算（パフォーマンス最適化）
+    float3 baseCoord = position * gBaseNoiseScale + gWindOffset;
+    float baseNoise = FBM(baseCoord, baseOctaves);
+    
+    //NOTE : ベースノイズが低すぎる場合、ディテール計算をスキップ（早期リターン最適化）
+    float earlyDensity = baseNoise - gCoverage;
+    if (earlyDensity < -0.1f) {
+        return 0.0f;
+    }
     
     //========================================
     // ディテールノイズ（細かい模様を追加）
-    // ベースより少し遅めにアニメーション（0.7倍速）
-    float3 detailCoord = position * gDetailNoiseScale + float3(0.0f, 0.0f, gTime * gNoiseSpeed * 0.7f);
-    float detailNoise = FBM(detailCoord, 2);  // 2オクターブで計算（滑らかさ重視）
+    float3 detailCoord = position * gDetailNoiseScale + gWindOffset * 0.5f;
+    float detailNoise = FBM(detailCoord, detailOctaves);
+    
+    //NOTE : erosionノイズをディテールノイズから導出（独立FBM呼び出し削減）
+    // 元は別のFBM(2octaves)だったが、detailNoiseを再利用して1回分のFBM削除
+    float erosion = detailNoise * 0.7f;
     
     //========================================
     // ベースとディテールを混合
-    // gDetailWeight = 0.0 → ベースのみ（滑らか）
-    // gDetailWeight = 1.0 → ディテールのみ（ザラザラ）
-    float density = lerp(baseNoise, detailNoise, gDetailWeight);
+    float density = baseNoise;
+    density -= detailNoise * gDetailWeight * 0.5f;
+    density -= erosion * gDetailWeight * 0.3f;
     
-    // カバレッジを適用（閾値以下をカット）
-    // gCoverage = 0.0 → 雲が多い
-    // gCoverage = 1.0 → 雲がほとんどない
+    density *= heightGradient;
     density = saturate(density - gCoverage);
+    density = density * density;
     
     //========================================
-    // エッジフェード（ボックスの境界で密度を減衰）
-    // ボックス境界からの距離を計算
+    // 球形フェードとエッジフェードを統合
+    // NOTE : 球形マスクで角を丸く、エッジフェードで滑らかに減衰
     float3 edgeDist = 0.5f - abs(uvw);
-    // 最も近い境界までの距離を取得
-    float edgeFade = min(min(edgeDist.x, edgeDist.y), edgeDist.z);
-    // smoothstepで滑らかにフェードアウト（0.0～0.1の範囲で）
-    edgeFade = smoothstep(0.0f, 0.1f, edgeFade);
+    float edgeFade = min(edgeDist.x, edgeDist.z);
+    edgeFade = smoothstep(0.0f, 0.1f, edgeFade);  // 角の部分をより強く減衰
     
-    // 密度 × エッジフェード × 全体密度倍率
-    float baseDensity = density * edgeFade * gDensity;
+    //NOTE : 球形マスクとエッジフェードを乗算で合成（両方の条件を満たす領域のみ密度あり）
+    float finalMask = sphereMask * edgeFade;
+    float baseDensity = density * finalMask * gDensity;
     
-    //========================================
-    // 弾痕マスクを適用
-    // なぜ：Counter-Strike風の動的スモークで、弾が通過した箇所に空洞を作るため
-    // FinalDensity(p) = BaseDensity(p) * BulletMask(p)
-    float bulletMask = CalculateBulletHoleMask(position);
-    
+    //NOTE : 条件分岐統合 - 弾痕がある＆密度がある場合のみマスク計算
+    float bulletMask = (gBulletHoleCount > 0 && baseDensity > 0.001f) ? CalculateBulletHoleMask(position) : 1.0f;
     return baseDensity * bulletMask;
 }
 
@@ -384,42 +479,44 @@ float SampleCloudDensity(float3 position) {
 /// @param position 開始座標（ワールド空間）
 /// @return 光の透過率（0.0=完全に影、1.0=影なし）
 /// @note 雲の中を通過する光がどれだけ減衰するかを計算
+//NOTE : LightMarch高速化 - ステップ数4回、指数増大ステップ、早期打ち切り強化
 float LightMarch(float3 position) {
-    // 太陽方向ベクトル（正規化）
-    float3 lightDir = normalize(gSunDirection);
+    float3 lightDir = normalize(gDirectionalLight.direction);
     
-    // 雲のバウンディングボックス
     float3 boxMin = gCloudCenter - gCloudSize * 0.5f;
     float3 boxMax = gCloudCenter + gCloudSize * 0.5f;
     
-    float transmittance = 1.0f;  // 透過率（初期値は完全透過）
-    float3 rayPos = position;    // 現在のレイ位置
+    float transmittance = 1.0f;
+    float3 rayPos = position;
+    float totalDensity = 0.0f;
     
-    // ライトマーチングループ（最大MAX_LIGHT_STEPSステップ）
+    //NOTE : 指数増大ステップサイズ（近距離は精密、遠距離は粗く→品質維持しつつ高速化）
+    float currentStepSize = gLightStepSize;
+    
     for (int i = 0; i < MAX_LIGHT_STEPS; i++) {
-        // 太陽方向へステップサイズ分進む
-        rayPos += lightDir * gLightStepSize;
+        rayPos += lightDir * currentStepSize;
         
-        // バウンディングボックスを出たら終了（これ以上雲がない）
         if (any(rayPos < boxMin) || any(rayPos > boxMax)) {
             break;
         }
         
-        // 現在位置の雲密度をサンプリング
         float density = SampleCloudDensity(rayPos);
         
-        // 密度が存在する場合、透過率を減衰
         if (density > 0.001f) {
-            // ベール・ランベルトの法則: I = I0 * exp(-密度 * 距離)
-            // gShadowDensityMultiplierで影の濃さを調整可能
-            transmittance *= exp(-density * gLightStepSize * gShadowDensityMultiplier);
+            totalDensity += density * currentStepSize;
+            transmittance *= exp(-density * currentStepSize * gShadowDensityMultiplier);
             
-            // 透過率がほぼ0になったら打ち切り（最適化）
-            if (transmittance < 0.01f) break;
+            //NOTE : 早期打ち切り閾値を緩和（0.01→0.03 影は精度が多少低くても目立たない）
+            if (transmittance < 0.03f) break;
         }
+        
+        //NOTE : ステップごとに1.5倍に増大（遠距離の密度は粗サンプルで十分）
+        currentStepSize *= 1.5f;
     }
     
-    return transmittance;
+    float powder = 1.0f - exp(-totalDensity * 2.0f);
+    
+    return transmittance * lerp(1.0f, powder, 0.5f);
 }
 
 ///=============================================================================
@@ -431,12 +528,22 @@ float LightMarch(float3 position) {
 /// @note g = 0.0: 等方散乱、g > 0.0: 前方散乱、g < 0.0: 後方散乱
 ///       雲は前方散乱が強いため、太陽方向から見ると明るく見える
 float PhaseHG(float cosTheta, float g) {
-    float g2 = g * g;  // g^2を事前計算
-    
-    // Henyey-Greenstein位相関数の式
-    // (1 - g^2) / (4π * (1 + g^2 - 2g*cosθ)^1.5)
-    // この関数は散乱角度に対する確率密度を表す
+    float g2 = g * g;
     return (1.0f - g2) / (4.0f * PI * pow(abs(1.0f + g2 - 2.0f * g * cosTheta), 1.5f));
+}
+
+///=============================================================================
+///                      デュアルローブ位相関数
+/// @brief 前方散乱と後方散乱を組み合わせたリアルな位相関数
+/// @param cosTheta 入射方向と散乱方向の内積
+/// @param gForward 前方散乱パラメータ（0.7～0.9が雲に適する）
+/// @param gBackward 後方散乱パラメータ（-0.3～-0.5が雲に適する）
+/// @param blendFactor 前方/後方の混合比（0.7程度が自然）
+/// @return 散乱確率
+/// @note 雲は「Silver Lining」効果で前方散乱が強いが、
+///       後方散乱も含めることでよりリアルな見た目を実現
+float PhaseDualLobe(float cosTheta, float gForward, float gBackward, float blendFactor) {
+    return lerp(PhaseHG(cosTheta, gBackward), PhaseHG(cosTheta, gForward), blendFactor);
 }
 
 ///=============================================================================

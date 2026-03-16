@@ -112,8 +112,8 @@ private:
 
 	///--------------------------------------------------------------
 	///                        メンバ変数
-	MagMath::Vector3 currentVelocity_;	  // 現在の移動速度
-	MagMath::Vector3 targetVelocity_;	  // 目標移動速度
+	MagMath::Vector3 currentVelocity_;	   // 現在の移動速度
+	MagMath::Vector3 targetVelocity_;	   // 目標移動速度
 	MagMath::Vector3 targetRotationEuler_; // 目標回転角度（オイラー角）
 
 	float moveSpeed_;		  // 基本移動速度
@@ -133,13 +133,14 @@ private:
 
 	///--------------------------------------------------------------
 	///                        バレルロール関連
-	bool isBarrelRolling_;			   // バレルロール実行中フラグ
-	float barrelRollTime_;			   // バレルロール経過時間
-	float barrelRollDuration_;		   // バレルロール全体時間
-	float barrelRollCooldown_;		   // バレルロールクールダウン時間
-	float barrelRollCoolTimer_;		   // 現在のクールダウンタイマー
-	float barrelRollCost_;			   // バレルロール消費ゲージ量
-	bool barrelRollDirection_;		   // true=右回転, false=左回転
-	MagMath::Vector3 barrelRollStartRotation_;  // バレルロール開始時の回転
-	MagMath::Vector3 barrelRollMovementOffset_; // バレルロール中の横移動オフセット
+	bool isBarrelRolling_;					   // バレルロール実行中フラグ
+	float barrelRollTime_;					   // バレルロール経過時間
+	float barrelRollDuration_;				   // バレルロール全体時間
+	float barrelRollCooldown_;				   // バレルロールクールダウン時間
+	float barrelRollCoolTimer_;				   // 現在のクールダウンタイマー
+	float barrelRollCost_;					   // バレルロール消費ゲージ量
+	bool barrelRollDirection_;				   // true=右回転, false=左回転
+	MagMath::Vector3 barrelRollStartRotation_; // バレルロール開始時の回転
+	MagMath::Vector3 barrelRollStartVelocity_; // バレルロール開始時の进行速度
+	float barrelRollAcceleration_;			   // バレルロール時の加速度（倍率）
 };
