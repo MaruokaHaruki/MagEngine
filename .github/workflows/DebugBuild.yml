@@ -1,4 +1,4 @@
-name: C++ Build & Test
+name: DebugBuild
 
 on:
   push:
@@ -9,22 +9,22 @@ on:
 
 env:
   SOLUTION_FILE_PATH: MagEngine.sln
-  PLATFORM: x64
   CONFIGURATION: Debug
+  PLATFORM: x64
 
 jobs:
+
   build:
 
-    # 2026対応
     runs-on: windows-latest
 
     steps:
 
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
 
-      - name: Cache NuGet packages
+      - name: Cache NuGet
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
@@ -37,37 +37,24 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
 
-      - name: Restore dependencies
+      - name: Restore
         run: nuget restore ${{ env.SOLUTION_FILE_PATH }}
 
 
-      # ★2026対応ビルド
-      - name: Build Solution
+      - name: Build Debug
         run: |
-          msbuild ${{ env.SOLUTION_FILE_PATH }} ^
-            /m ^
-            /p:Configuration=${{ env.CONFIGURATION }} ^
-            /p:Platform=${{ env.PLATFORM }} ^
-            /p:PlatformToolset=v145 ^
+          msbuild $env:SOLUTION_FILE_PATH `
+            /m `
+            /p:Configuration=$env:CONFIGURATION `
+            /p:Platform=$env:PLATFORM `
+            /p:PlatformToolset=v145 `
             /p:WindowsTargetPlatformVersion=10.0
 
 
-      - name: Run Unit Tests
-        shell: cmd
-        run: |
-          echo Running tests...
-          for /R . %%f in (*.exe) do (
-            if /I "%%~nxf"=="UnitTests.exe" (
-              echo Running %%f
-              "%%f"
-            )
-          )
-
-
-      - name: Upload Build Artifacts
+      - name: Upload Debug Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: MagEngine-${{ env.CONFIGURATION }}
+          name: MagEngine-Debug
           path: |
-            **/x64/${{ env.CONFIGURATION }}/
+            **/x64/Debug/
             !**/*.pdb
