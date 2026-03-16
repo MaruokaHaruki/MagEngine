@@ -16,7 +16,7 @@ jobs:
 
   build:
 
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
 
@@ -47,7 +47,6 @@ jobs:
             /m `
             /p:Configuration=$env:CONFIGURATION `
             /p:Platform=$env:PLATFORM `
-            /p:PlatformToolset=v145 `
             /p:WindowsTargetPlatformVersion=10.0
 
 
