@@ -16,12 +16,17 @@ void ClearScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							MagEngine::ParticleSetup *particleSetup,
 							MagEngine::SkyboxSetup *skyboxSetup,
 							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup) {
+							MagEngine::TrailEffectSetup *trailEffectSetup,
+							MagEngine::TrailEffectManager *trailEffectManager) {
 	// 適当に引数を使用
 	// 引数を使用しない場合は警告を出さないようにする
 	spriteSetup;
 	object3dSetup;
 	particleSetup;
+	skyboxSetup;
+	cloudSetup;
+	trailEffectSetup;
+	trailEffectManager;
 }
 
 ///=============================================================================

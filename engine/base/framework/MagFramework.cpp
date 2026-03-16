@@ -178,6 +178,10 @@ namespace MagEngine {
 		trailEffectManager_ = std::make_unique<TrailEffectManager>();
 		// トレイルエフェクトマネージャの初期化
 		trailEffectManager_->Initialize(trailEffectSetup_.get());
+		// トレイルプリセットJSONを一度だけ読み込む（シーン内では読み込まない）
+		trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
+		// テスト用インスタンスを作成
+		trailEffectManager_->CreateFromPreset("test_trail", "test_trail");
 
 		///--------------------------------------------------------------
 		///						 ラインマネージャ
@@ -194,7 +198,7 @@ namespace MagEngine {
 		sceneManager_ = std::make_unique<SceneManager>();
 		// シーンマネージャの初期化
 		sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get(),
-								  skyboxSetup_.get(), cloudSetup_.get(), trailEffectSetup_.get());
+								  skyboxSetup_.get(), cloudSetup_.get(), trailEffectSetup_.get(), trailEffectManager_.get());
 		// シーンファクトリーのセット
 		sceneFactory_ = std::make_unique<SceneFactory>();
 		sceneManager_->SetSceneFactory(sceneFactory_.get());

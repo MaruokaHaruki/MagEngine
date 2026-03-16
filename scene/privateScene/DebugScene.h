@@ -20,7 +20,8 @@ class DebugScene : public BaseScene {
 public:
 	/// \brief 初期化
 	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Object3dSetup *object3dSetup, MagEngine::ParticleSetup *particleSetup,
-					MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup, MagEngine::TrailEffectSetup *trailEffectSetup) override;
+					MagEngine::SkyboxSetup *skyboxSetup, MagEngine::CloudSetup *cloudSetup, MagEngine::TrailEffectSetup *trailEffectSetup,
+					MagEngine::TrailEffectManager *trailEffectManager) override;
 	void Finalize() override;
 
 	/// \brief 更新
@@ -101,15 +102,14 @@ private:
 
 	//========================================
 	// TrailEffect
-	std::unique_ptr<MagEngine::TrailEffectManager> trailEffectManager_;
-	bool trailInitialized_ = false; // トレイルインスタンスの初期化フラグ
+	MagEngine::TrailEffectManager *trailEffectManager_ = nullptr;
 
 	//========================================
 	// TrailEffect テスト用パラメータ
-	float trailLoopTimer_ = 0.0f;				 // ループアニメーション用タイマー
-	float trailLoopRadius_ = 2.0f;				 // ループの半径
-	float trailLoopHeight_ = 2.0f;				 // ループの高さ
-	float trailLoopSpeed_ = 2.0f;				 // ループの速度（rad/sec）
+	float trailLoopTimer_ = 0.0f;				// ループアニメーション用タイマー
+	float trailLoopRadius_ = 2.0f;				// ループの半径
+	float trailLoopHeight_ = 2.0f;				// ループの高さ
+	float trailLoopSpeed_ = 2.0f;				// ループの速度（rad/sec）
 	Vector3 trailLoopCenter_{0.0f, 0.0f, 0.0f}; // ループの中心
 
 	//========================================

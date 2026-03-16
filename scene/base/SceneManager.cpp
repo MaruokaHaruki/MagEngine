@@ -14,7 +14,8 @@ void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							  MagEngine::ParticleSetup *particleSetup,
 							  MagEngine::SkyboxSetup *skyboxSetup,
 							  MagEngine::CloudSetup *cloudSetup,
-							  MagEngine::TrailEffectSetup *trailEffectSetup) {
+							  MagEngine::TrailEffectSetup *trailEffectSetup,
+							  MagEngine::TrailEffectManager *trailEffectManager) {
 	//========================================
 	// 2D共通部
 	spriteSetup_ = spriteSetup;
@@ -28,9 +29,11 @@ void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	cloudSetup_ = cloudSetup;
 	// TrailEffect共通部
 	trailEffectSetup_ = trailEffectSetup;
-	// 初期シーンを設定（例としてDebugSceneを設定）
+	// TrailEffectManagerを保慕
+	trailEffectManager_ = trailEffectManager;
+	// 初期シーンを設定（例としてTitleSceneを設定）
 	nowScene_ = std::make_unique<TitleScene>();
-	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_);
+	nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_, trailEffectManager_);
 
 	// シーンの初期設定
 	currentSceneNo_ = 0;
@@ -63,7 +66,7 @@ void SceneManager::Update() {
 		// シーンの生成
 		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_);
 		// シーンの初期化
-		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_);
+		nowScene_->Initialize(spriteSetup_, object3dSetup_, particleSetup_, skyboxSetup_, cloudSetup_, trailEffectSetup_, trailEffectManager_);
 	}
 
 	//========================================

@@ -17,7 +17,8 @@ void TitleScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							MagEngine::ParticleSetup *particleSetup,
 							MagEngine::SkyboxSetup *skyboxSetup,
 							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup) {
+							MagEngine::TrailEffectSetup *trailEffectSetup,
+							MagEngine::TrailEffectManager *trailEffectManager) {
 
 	//========================================
 	// 読み込み関係

@@ -21,7 +21,8 @@ public:
 					MagEngine::ParticleSetup *particleSetup,
 					MagEngine::SkyboxSetup *skyboxSetup,
 					MagEngine::CloudSetup *cloudSetup,
-					MagEngine::TrailEffectSetup *trailEffectSetup) override;
+					MagEngine::TrailEffectSetup *trailEffectSetup,
+					MagEngine::TrailEffectManager *trailEffectManager) override;
 
 	/// \brief 終了処理
 	void Finalize() override;

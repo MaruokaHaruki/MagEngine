@@ -9,6 +9,7 @@
 #pragma once
 #include "AbstractSceneFactory.h"
 #include "BaseScene.h"
+#include "TrailEffectManager.h"
 #include <memory>
 
 ///=============================================================================
@@ -23,7 +24,8 @@ public:
 					MagEngine::ParticleSetup *particleSetup,
 					MagEngine::SkyboxSetup *skyboxSetup,
 					MagEngine::CloudSetup *cloudSetup,
-					MagEngine::TrailEffectSetup *trailEffectSetup);
+					MagEngine::TrailEffectSetup *trailEffectSetup,
+					MagEngine::TrailEffectManager *trailEffectManager);
 
 	/// @brief 終了処理
 	void Finalize();
@@ -89,4 +91,6 @@ private:
 	MagEngine::CloudSetup *cloudSetup_ = nullptr;
 	// TrailEffect共通部
 	MagEngine::TrailEffectSetup *trailEffectSetup_ = nullptr;
+	// TrailEffectManager
+	MagEngine::TrailEffectManager *trailEffectManager_ = nullptr;
 };

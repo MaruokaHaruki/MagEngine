@@ -99,6 +99,11 @@ namespace MagEngine {
 			return isEndRequest_;
 		}
 
+		/// \brief トレイルエフェクトマネージャーの取得
+		TrailEffectManager *GetTrailEffectManager() const {
+			return trailEffectManager_.get();
+		}
+
 		///--------------------------------------------------------------
 		///							メンバ変数
 	protected:

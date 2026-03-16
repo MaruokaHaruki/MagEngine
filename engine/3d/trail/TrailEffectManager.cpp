@@ -72,13 +72,39 @@ namespace MagEngine {
 		ImGui::Separator();
 
 		//========================================
+		// 新規作成セクション
+		if (ImGui::CollapsingHeader("Create New Preset", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::BeginChild("CreatePreset", ImVec2(0, 100), true);
+
+			ImGui::Text("New Preset Name:");
+			ImGui::InputText("##newPresetName", presetNameBuffer_, IM_ARRAYSIZE(presetNameBuffer_));
+
+			if (ImGui::Button("Create Preset", ImVec2(150, 0))) {
+				if (strlen(presetNameBuffer_) > 0) {
+					TrailEffectPreset newPreset;
+					newPreset.name = presetNameBuffer_;
+					RegisterPreset(newPreset);
+					// 作成後、メインファイルに保存
+					SaveAllPresetsToJson("resources/trail/test_preset.json");
+					Log("Preset created and saved: " + newPreset.name, LogLevel::Success);
+					memset(presetNameBuffer_, 0, sizeof(presetNameBuffer_));
+				}
+			}
+
+			ImGui::EndChild();
+		}
+
+		ImGui::Separator();
+
+		//========================================
 		// プリセット管理セクション
 		if (ImGui::CollapsingHeader("Preset Management", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::BeginChild("PresetManagement", ImVec2(0, 300), true);
 
 			//========================================
 			// プリセット一覧と操作
-			for (const auto &presetName : GetPresetNames()) {
+			std::vector<std::string> presetNamesList = GetPresetNames();
+			for (const auto &presetName : presetNamesList) {
 				bool isCurrent = (editingPresetName_ == presetName && editingPresetActive_);
 
 				ImGui::PushID(presetName.c_str());
@@ -99,17 +125,22 @@ namespace MagEngine {
 							TrailEffectPreset copy = *original;
 							copy.name = presetName + "_copy";
 							RegisterPreset(copy);
+							// 複製後、メインファイルに保存
+							SaveAllPresetsToJson("resources/trail/test_preset.json");
+							Log("Preset duplicated and saved: " + copy.name, LogLevel::Success);
 						}
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("Save to JSON")) {
-						std::string jsonPath = "resources/presets/" + presetName + ".json";
-						SavePresetToJson(presetName, jsonPath);
 					}
 					ImGui::SameLine();
 					std::string deleteLabel = "Delete##" + presetName;
 					if (ImGui::Button(deleteLabel.c_str())) {
 						UnregisterPreset(presetName);
+						if (editingPresetName_ == presetName) {
+							editingPresetActive_ = false;
+							editingPresetName_ = "";
+						}
+						// 削除後、メインファイルに保存
+						SaveAllPresetsToJson("resources/trail/test_preset.json");
+						Log("Preset deleted and saved", LogLevel::Success);
 					}
 					ImGui::TreePop();
 				}
@@ -127,6 +158,41 @@ namespace MagEngine {
 			ImGui::BeginChild("PresetEditor", ImVec2(0, 500), true);
 
 			ImGui::Text("Editing: %s", editingPresetName_.c_str());
+
+			//========================================
+			// プリセット名変更
+			static char renamingBuffer[128] = {};
+			if (editingPresetActive_) {
+				if (ImGui::Button("Rename Preset")) {
+					strncpy_s(renamingBuffer, editingPresetName_.c_str(), sizeof(renamingBuffer) - 1);
+				}
+			}
+			if (strlen(renamingBuffer) > 0) {
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(200);
+				ImGui::InputText("##renameBuffer", renamingBuffer, IM_ARRAYSIZE(renamingBuffer));
+				ImGui::SameLine();
+				if (ImGui::Button("Confirm##rename")) {
+					std::string newName = renamingBuffer;
+					if (newName != editingPresetName_ && presets_.find(newName) == presets_.end()) {
+						TrailEffectPreset preset = editingPresetCopy_;
+						preset.name = newName;
+						UnregisterPreset(editingPresetName_);
+						RegisterPreset(preset);
+						editingPresetName_ = newName;
+						editingPresetCopy_ = preset;
+						// 名前変更後、メインファイルに保存
+						SaveAllPresetsToJson("resources/trail/test_preset.json");
+						Log("Preset renamed and saved: " + newName, LogLevel::Success);
+						memset(renamingBuffer, 0, sizeof(renamingBuffer));
+					}
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel##rename")) {
+					memset(renamingBuffer, 0, sizeof(renamingBuffer));
+				}
+			}
+
 			ImGui::Separator();
 
 			//========================================
@@ -198,64 +264,47 @@ namespace MagEngine {
 			}
 
 			//========================================
-			// コーナー・細分化設定
-			if (ImGui::TreeNodeEx("Corner & Subdivision", ImGuiTreeNodeFlags_DefaultOpen)) {
+			// その他の設定
+			if (ImGui::TreeNodeEx("Other Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
 				ImGui::SliderFloat("Corner Smooth##editor", &editingPresetCopy_.cornerSmooth, 0.0f, 1.0f);
-				ImGui::SliderInt("Subdivisions##editor", (int *)&editingPresetCopy_.subdivisions, 1, 4);
-				ImGui::TreePop();
-			}
-
-			//========================================
-			// ノイズ設定
-			if (ImGui::TreeNodeEx("Noise Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-				ImGui::SliderFloat("Noise Amplitude##editor", &editingPresetCopy_.noiseAmplitude, 0.0f, 1.0f);
+				ImGui::SliderInt("Subdivisions##editor", (int *)&editingPresetCopy_.subdivisions, 1, 8);
+				ImGui::SliderFloat("Noise Amplitude##editor", &editingPresetCopy_.noiseAmplitude, 0.0f, 5.0f);
 				ImGui::SliderFloat("Noise Frequency##editor", &editingPresetCopy_.noiseFrequency, 0.1f, 10.0f);
-				ImGui::TreePop();
-			}
-
-			//========================================
-			// フェード設定
-			if (ImGui::TreeNodeEx("Fade Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-				const char *fadeModeItems[] = {"Linear", "EaseOut", "EaseIn"};
-				ImGui::Combo("Fade Mode##editor", (int *)&editingPresetCopy_.fadeMode, fadeModeItems, IM_ARRAYSIZE(fadeModeItems));
-				ImGui::TreePop();
-			}
-
-			//========================================
-			// 物理パラメータ
-			if (ImGui::TreeNodeEx("Physics", ImGuiTreeNodeFlags_DefaultOpen)) {
 				ImGui::SliderFloat("Velocity Damping##editor", &editingPresetCopy_.velocityDamping, 0.0f, 1.0f);
 				ImGui::SliderFloat("Gravity Influence##editor", &editingPresetCopy_.gravityInfluence, 0.0f, 1.0f);
+
+				const char *fadeModeItems[] = {"Linear", "EaseOut", "EaseIn"};
+				ImGui::Combo("Fade Mode##editor", (int *)&editingPresetCopy_.fadeMode, fadeModeItems, IM_ARRAYSIZE(fadeModeItems));
+
+				char shaderBuffer[64] = {};
+				strncpy_s(shaderBuffer, editingPresetCopy_.shaderName.c_str(), sizeof(shaderBuffer) - 1);
+				if (ImGui::InputText("Shader Name##editor", shaderBuffer, IM_ARRAYSIZE(shaderBuffer))) {
+					editingPresetCopy_.shaderName = shaderBuffer;
+				}
 				ImGui::TreePop();
 			}
 
-			ImGui::Separator();
-
 			//========================================
-			// リアルタイム反映： 編集中のプリセットをアクティブなエフェクトに適用
-			{
-				// プリセットを更新
-				UpdatePreset(editingPresetName_, editingPresetCopy_);
-
-				// 編集中のプリセット名で生成されたインスタンスを探して更新
-				for (auto &pair : activeEffects_) {
-					// インスタンス名が"debug_"で始ま場合、編集中のプリセットを適用
-					if (pair.first.find("debug_") == 0) {
-						pair.second->ApplyPreset(editingPresetCopy_);
-					}
+			// リアルタイム反映テスト用
+			if (ImGui::Button("Create Preview Instance##editor", ImVec2(200, 0))) {
+				std::string previewName = "debug_" + editingPresetName_;
+				TrailEffect *existingEffect = GetEffect(previewName);
+				if (!existingEffect) {
+					CreateFromPreset(editingPresetName_, previewName);
 				}
 			}
-
 			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.5f, 1.0f), "(Changes are applied in real-time)");
 
 			ImGui::Separator();
 
 			//========================================
+			//========================================
 			// 保存・キャンセルボタン
-			if (ImGui::Button("Save to JSON##editor", ImVec2(200, 0))) {
-				std::string jsonPath = "resources/presets/" + editingPresetName_ + ".json";
-				SavePresetToJson(editingPresetName_, jsonPath);
-				Log("Preset saved to JSON: " + jsonPath, LogLevel::Success);
+			if (ImGui::Button("Save Preset", ImVec2(150, 0))) {
+				UpdatePreset(editingPresetName_, editingPresetCopy_);
+				// メモリに確定後、すぐにメインファイルに保存
+				SaveAllPresetsToJson("resources/trail/test_preset.json");
+				Log("Preset updated and saved: " + editingPresetName_, LogLevel::Success);
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Close##editor", ImVec2(100, 0))) {
@@ -268,25 +317,9 @@ namespace MagEngine {
 		ImGui::Separator();
 
 		//========================================
-		// JSON操作セクション
-		if (ImGui::CollapsingHeader("JSON Import/Export")) {
-			static char jsonPathBuffer[256] = "resources/trail/test_preset.json";
-			ImGui::InputText("JSON File Path##import", jsonPathBuffer, IM_ARRAYSIZE(jsonPathBuffer));
-
-			if (ImGui::Button("Load Preset from JSON")) {
-				if (LoadPresetFromJson(jsonPathBuffer)) {
-					Log("Preset loaded successfully", LogLevel::Success);
-				}
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Load All Presets from JSON")) {
-				LoadAllPresetsFromJson(jsonPathBuffer);
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Save All Presets to JSON")) {
-				SaveAllPresetsToJson(jsonPathBuffer);
-			}
-		}
+		// JSON状態表示
+		ImGui::Text("Main Preset File: resources/trail/test_preset.json");
+		ImGui::Text("(Changes are auto-saved to this file)");
 
 		ImGui::Separator();
 
@@ -528,15 +561,15 @@ namespace MagEngine {
 
 			//========================================
 			// ファイルに保存
-			std::ofstream file(filePath);
+			std::ofstream file(filePath, std::ios::out);
 			if (!file.is_open()) {
-				Log("Failed to open file: " + filePath, LogLevel::Error);
+				Log("Failed to open file for writing: " + filePath + " (Check path and permissions)", LogLevel::Error);
 				return false;
 			}
 			file << j.dump(2);
 			file.close();
 
-			Log("Preset saved to JSON: " + filePath, LogLevel::Success);
+			Log("Preset saved successfully: " + filePath, LogLevel::Success);
 			return true;
 		} catch (const std::exception &e) {
 			Log(std::string("JSON save error: ") + e.what(), LogLevel::Error);
@@ -686,15 +719,15 @@ namespace MagEngine {
 
 			//========================================
 			// ファイルに保存
-			std::ofstream file(filePath);
+			std::ofstream file(filePath, std::ios::out);
 			if (!file.is_open()) {
-				Log("Failed to open file: " + filePath, LogLevel::Error);
+				Log("Failed to open file for writing: " + filePath + " (Check path and permissions)", LogLevel::Error);
 				return false;
 			}
 			file << j.dump(2);
 			file.close();
 
-			Log("All presets saved to JSON: " + filePath, LogLevel::Success);
+			Log("All presets saved successfully: " + filePath, LogLevel::Success);
 			return true;
 		} catch (const std::exception &e) {
 			Log(std::string("JSON save error: ") + e.what(), LogLevel::Error);

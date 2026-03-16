@@ -23,6 +23,7 @@
 #include "Cloud.h"
 #include "CloudSetup.h"
 // TrailEffect
+#include "TrailEffectManager.h"
 #include "TrailEffectSetup.h"
 // ========================================
 // 2D系
@@ -68,7 +69,8 @@ public:
 							MagEngine::ParticleSetup *particleSetup,
 							MagEngine::SkyboxSetup *skyboxSetup,
 							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup) = 0;
+							MagEngine::TrailEffectSetup *trailEffectSetup,
+							MagEngine::TrailEffectManager *trailEffectManager) = 0;
 
 	/// \brief 終了処理
 	virtual void Finalize() = 0;

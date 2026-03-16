@@ -27,7 +27,8 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 							MagEngine::ParticleSetup *particleSetup,
 							MagEngine::SkyboxSetup *skyboxSetup,
 							MagEngine::CloudSetup *cloudSetup,
-							MagEngine::TrailEffectSetup *trailEffectSetup) {
+							MagEngine::TrailEffectSetup *trailEffectSetup,
+							MagEngine::TrailEffectManager *trailEffectManager) {
 	spriteSetup;
 	particleSetup;
 
@@ -109,20 +110,10 @@ void DebugScene::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	///--------------------------------------------------------------
 	///						 TrailEffect系
-	trailEffectManager_ = std::make_unique<TrailEffectManager>();
-	trailEffectManager_->Initialize(trailEffectSetup);
+	// 受け取ったマネージャーポインターを保存
+	trailEffectManager_ = trailEffectManager;
 
-	// JSONからすべてのプリセットを読み込み
-	bool loadPresetSuccess = trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
-	if (loadPresetSuccess) {
-		Logger::Log("Successfully loaded trail presets from JSON", Logger::LogLevel::Success);
-		auto presetNames = trailEffectManager_->GetPresetNames();
-		for (const auto &name : presetNames) {
-			Logger::Log("Loaded preset: " + name, Logger::LogLevel::Info);
-		}
-	} else {
-		Logger::Log("Failed to load trail presets from JSON", Logger::LogLevel::Error);
-	}
+	///--------------------------------------------------------------
 }
 
 ///=============================================================================
@@ -179,16 +170,6 @@ void DebugScene::Update() {
 	//========================================
 	// TrailEffectの更新
 	if (trailEffectManager_) {
-		// 初回のみトレイルインスタンスを生成
-		if (!trailInitialized_) {
-			TrailEffect *trailEffect = trailEffectManager_->CreateFromPreset("test_trail", "debug_test_trail");
-			if (trailEffect) {
-				Logger::Log("Successfully created trail from preset: test_trail", Logger::LogLevel::Success);
-				trailInitialized_ = true;
-			} else {
-				Logger::Log("Failed to create trail from preset: test_trail - Preset not found", Logger::LogLevel::Error);
-			}
-		}
 
 		trailEffectManager_->Update(1.0f / 60.0f);
 
@@ -205,7 +186,7 @@ void DebugScene::Update() {
 			trailLoopCenter_.z + sin(angle) * trailLoopRadius_};
 
 		// トレイルを発生させる
-		auto trailEffect = trailEffectManager_->GetEffect("debug_test_trail");
+		auto trailEffect = trailEffectManager_->GetEffect("test_trail");
 		if (trailEffect) {
 			Vector3 velocity = Vector3{-sin(angle) * trailLoopSpeed_ * trailLoopRadius_, cos(angle) * 3.0f, cos(angle) * trailLoopSpeed_ * trailLoopRadius_};
 			trailEffect->EmitAt(currentPos, velocity);
@@ -367,10 +348,8 @@ void DebugScene::ImGuiDraw() {
 
 	//========================================
 	// TrailEffectのデバッグ表示
+	// トレイルループテスト用UI
 	if (trailEffectManager_) {
-		trailEffectManager_->DrawImGui();
-
-		// トレイルループテスト用UI
 		ImGui::Begin("Trail Loop Test");
 		ImGui::Text("Trail Loop Animation");
 		ImGui::SliderFloat("Loop Radius##trail", &trailLoopRadius_, 5.0f, 50.0f);

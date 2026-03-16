@@ -48,7 +48,8 @@ public:
 					MagEngine::ParticleSetup *particleSetup,
 					MagEngine::SkyboxSetup *skyboxSetup,
 					MagEngine::CloudSetup *cloudSetup,
-					MagEngine::TrailEffectSetup *trailEffectSetup) override;
+					MagEngine::TrailEffectSetup *trailEffectSetup,
+					MagEngine::TrailEffectManager *trailEffectManager) override;
 	void Finalize() override;
 
 	void Update() override;

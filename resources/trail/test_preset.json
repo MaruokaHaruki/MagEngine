@@ -23,7 +23,7 @@
       "material": "Default",
       "maxPoints": 128,
       "minPointDistance": 0.10000000149011612,
-      "name": "Unnamed",
+      "name": "test_trail",
       "noiseAmplitude": 0.0,
       "noiseFrequency": 1.0,
       "offset": {
@@ -47,55 +47,6 @@
       },
       "velocityDamping": 0.949999988079071,
       "width": 2.0,
-      "widthMultiplier": 1.0
-    },
-    {
-      "alignment": 2,
-      "autoClear": false,
-      "color": {
-        "x": 0.0,
-        "y": 1.0,
-        "z": 0.5
-      },
-      "cornerSmooth": 0.10000000149011612,
-      "emissionRate": 30.0,
-      "emitting": true,
-      "endColor": {
-        "x": 0.0,
-        "y": 0.5,
-        "z": 0.20000000298023224
-      },
-      "endWidth": 0.5,
-      "fadeMode": 1,
-      "gravityInfluence": 0.0,
-      "lifeTime": 2.0,
-      "material": "Trail",
-      "maxPoints": 128,
-      "minPointDistance": 0.10000000149011612,
-      "name": "test_trail",
-      "noiseAmplitude": 0.0,
-      "noiseFrequency": 1.0,
-      "offset": {
-        "x": 0.0,
-        "y": 0.0
-      },
-      "opacity": 0.800000011920929,
-      "shaderName": "Trail",
-      "simulationSpace": 0,
-      "startColor": {
-        "x": 0.0,
-        "y": 1.0,
-        "z": 0.5
-      },
-      "startWidth": 3.0,
-      "subdivisions": 1,
-      "textureMode": 0,
-      "tiling": {
-        "x": 1.0,
-        "y": 1.0
-      },
-      "velocityDamping": 0.949999988079071,
-      "width": 2.5,
       "widthMultiplier": 1.0
     }
   ]
