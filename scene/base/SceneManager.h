@@ -100,4 +100,5 @@ private:
 	MagEngine::TrailEffectSetup *trailEffectSetup_ = nullptr;
 	// TrailEffectManager
 	MagEngine::TrailEffectManager *trailEffectManager_ = nullptr;
+
 };
