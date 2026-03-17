@@ -20,6 +20,7 @@ namespace {
 	constexpr float kShakeFrequency = 25.0f;
 	constexpr float kKnockbackStrength = 3.0f;
 	constexpr int kDefaultMaxHP = 3;
+	constexpr float kOutOfBoundsDistance = 150.0f;
 }
 
 ///=============================================================================
@@ -72,6 +73,9 @@ void EnemyBase::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::s
 	// プレイヤー参照
 	player_ = nullptr;
 
+	// 移動速度
+	currentVelocity_ = {0.0f, 0.0f, 0.0f};
+
 	// BaseObjectの初期化
 	BaseObject::Initialize(transform_.translate, radius_);
 }
@@ -110,6 +114,13 @@ void EnemyBase::Update() {
 	// 生存時間の更新
 	lifeTimer_ += 1.0f / 60.0f;
 	if (lifeTimer_ >= maxLifeTime_) {
+		destroyState_ = DestroyState::Dead;
+		isAlive_ = false;
+		return;
+	}
+
+	// プレイヤーから離れすぎたら消滅（退却後の画面外キャラを削除）
+	if (player_ && GetDistanceTo(player_->GetPosition()) > kOutOfBoundsDistance) {
 		destroyState_ = DestroyState::Dead;
 		isAlive_ = false;
 		return;
@@ -368,4 +379,42 @@ void EnemyBase::CreateDestroyParticle() {
 	particle_->Emit("ExplosionSparks", enemyPos, 60);
 
 	particleCreated_ = true;
+}
+
+///=============================================================================
+///                        目標座標へのイージング移動
+void EnemyBase::MoveToward(const Vector3 &target, float speed, float smoothing) {
+	const float deltaTime = 1.0f / 60.0f;
+
+	Vector3 dir = {
+		target.x - transform_.translate.x,
+		target.y - transform_.translate.y,
+		target.z - transform_.translate.z};
+
+	float dist = std::sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+	if (dist < 0.001f)
+		return;
+
+	dir.x /= dist;
+	dir.y /= dist;
+	dir.z /= dist;
+
+	Vector3 targetVel = {dir.x * speed, dir.y * speed, dir.z * speed};
+
+	currentVelocity_.x += (targetVel.x - currentVelocity_.x) * smoothing;
+	currentVelocity_.y += (targetVel.y - currentVelocity_.y) * smoothing;
+	currentVelocity_.z += (targetVel.z - currentVelocity_.z) * smoothing;
+
+	transform_.translate.x += currentVelocity_.x * deltaTime;
+	transform_.translate.y += currentVelocity_.y * deltaTime;
+	transform_.translate.z += currentVelocity_.z * deltaTime;
+}
+
+///=============================================================================
+///                        ２点間の距離
+float EnemyBase::GetDistanceTo(const Vector3 &pos) const {
+	float dx = pos.x - transform_.translate.x;
+	float dy = pos.y - transform_.translate.y;
+	float dz = pos.z - transform_.translate.z;
+	return std::sqrt(dx * dx + dy * dy + dz * dz);
 }

@@ -1,10 +1,9 @@
 /*********************************************************************
  * \file   EnemyManager.h
- * \brief  敵の一括管理管理クラス
+ * \brief  敵の一括管理クラス（ウェーブシステム管理）
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
@@ -21,11 +20,13 @@ class CollisionManager;
 class Player;
 class EnemyBullet;
 
-namespace EnemyManagerConstants {
-	constexpr float kDefaultSpawnInterval = 3.0f;
-	constexpr int kDefaultMaxEnemies = 10;
-	constexpr int kDefaultTargetDefeatedCount = 15;
-}
+///=============================================================================
+///						ウェーブ設定
+struct WaveConfig {
+	int enemyCount;		 // 通常エネミー数
+	int gunnerCount;	 // ガンナー数
+	float spawnInterval; // スポーン間隔（秒）
+};
 
 ///=============================================================================
 ///						EnemyManagerクラス
@@ -59,21 +60,6 @@ public:
 	void Clear();
 
 	///--------------------------------------------------------------
-	///							静的メンバ関数
-private:
-	/// \brief 敵のスポーン処理
-	void UpdateSpawning();
-
-	/// \brief 敵の生成
-	void SpawnEnemy(const Vector3 &position);
-
-	/// \brief ガンナータイプの生成
-	void SpawnGunner(const Vector3 &position);
-
-	/// \brief 死んだ敵の削除
-	void RemoveDeadEnemies();
-
-	///--------------------------------------------------------------
 	///							入出力関数
 public:
 	/// \brief 生存敵数の取得
@@ -84,14 +70,19 @@ public:
 		return defeatedCount_;
 	}
 
-	/// \brief 目標撃破数の設定
-	void SetTargetDefeatedCount(int count) {
-		targetDefeatedCount_ = count;
-	}
-
 	/// \brief 目標撃破数の取得
 	int GetTargetDefeatedCount() const {
 		return targetDefeatedCount_;
+	}
+
+	/// \brief 現在ウェーブ番号の取得（1始まり）
+	int GetCurrentWave() const {
+		return currentWave_ + 1;
+	}
+
+	/// \brief 総ウェーブ数の取得
+	int GetTotalWaves() const {
+		return static_cast<int>(waveConfigs_.size());
 	}
 
 	/// \brief クリア条件達成チェック
@@ -108,6 +99,24 @@ public:
 	std::vector<EnemyBullet *> GetAllEnemyBullets();
 
 	///--------------------------------------------------------------
+	///							静的メンバ関数
+private:
+	/// \brief ウェーブ進行管理
+	void UpdateWave();
+
+	/// \brief 敵の生成
+	void SpawnEnemy(const Vector3 &position);
+
+	/// \brief ガンナータイプの生成
+	void SpawnGunner(const Vector3 &position);
+
+	/// \brief スポーン位置の生成
+	Vector3 GenerateSpawnPosition() const;
+
+	/// \brief 死んだ敵の削除
+	void RemoveDeadEnemies();
+
+	///--------------------------------------------------------------
 	///							メンバ変数
 private:
 	//========================================
@@ -115,10 +124,27 @@ private:
 	std::vector<std::unique_ptr<EnemyBase>> enemies_;
 
 	//========================================
-	// スポーン管理
-	float gameTime_;	  // ゲーム経過時間
-	float lastSpawnTime_; // 最後のスポーン時間
-	float spawnInterval_; // スポーン間隔
+	// ウェーブシステム
+	enum class WavePhase {
+		Spawning,	 // ウェーブ内の敵をスポーン中
+		Active,		 // 全スポーン完了・撃破待ち
+		BetweenWaves // ウェーブ間インターバル
+	};
+	std::vector<WaveConfig> waveConfigs_; // ウェーブ定義
+	int currentWave_;					  // 現在のウェーブ番号（0始まり）
+	WavePhase wavePhase_;				  // ウェーブフェーズ
+	float waveTimer_;					  // ウェーブ内タイマー（スポーン間隔用）
+	float betweenWaveTimer_;			  // ウェーブ間待機タイマー
+	int spawnedInWave_;					  // 現在ウェーブでスポーン済みの総数
+
+	//========================================
+	// ゲーム進行管理
+	int defeatedCount_;		  // 撃破数
+	int targetDefeatedCount_; // 目標撃破数（全ウェーブ合計）
+
+	//========================================
+	// ゲーム経過時間
+	float gameTime_;
 
 	//========================================
 	// システム参照
@@ -126,14 +152,4 @@ private:
 	MagEngine::Particle *particle_;
 	MagEngine::ParticleSetup *particleSetup_;
 	Player *player_;
-
-	//========================================
-	// 設定パラメータ
-	int maxEnemies_; // 最大敵数
-	bool autoSpawn_; // 自動スポーンフラグ
-
-	//========================================
-	// ゲーム進行管理
-	int defeatedCount_;		  // 撃破数
-	int targetDefeatedCount_; // 目標撃破数
 };

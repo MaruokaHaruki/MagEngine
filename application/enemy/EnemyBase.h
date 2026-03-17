@@ -118,6 +118,12 @@ protected:
 	/// \brief 破壊演出の更新
 	bool UpdateDestroy(); // 破壊完了したらtrueを返す
 
+	/// \brief 目標座標へのイージング移動（currentVelocity_ を smooth して translate に適用）
+	void MoveToward(const Vector3 &target, float speed, float smoothing);
+
+	/// \brief ２点間の距離を返す
+	float GetDistanceTo(const Vector3 &pos) const;
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 protected:
@@ -128,6 +134,7 @@ protected:
 	//========================================
 	// 移動・位置関連
 	Transform transform_;
+	Vector3 currentVelocity_;
 
 	//========================================
 	// 基本パラメータ

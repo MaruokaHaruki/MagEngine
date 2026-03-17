@@ -30,7 +30,6 @@ void EnemyGunner::Update() {
 	EnemyBase::Update();
 
 	if (destroyState_ != DestroyState::Alive || isHitReacting_) {
-		// 弾の更新のみ
 		for (auto &bullet : bullets_) {
 			if (bullet)
 				bullet->Update();
@@ -49,34 +48,19 @@ void EnemyGunner::Update() {
 	case GunnerState::Approach: {
 		if (player_) {
 			Vector3 playerPos = player_->GetPosition();
-
-			// Enemyと同じ目標位置計算（プレイヤーの前方）
 			targetPosition_ = {
 				playerPos.x,
 				playerPos.y,
-				playerPos.z + EnemyGunnerConstants::kCombatDepth}; // プラス記号に修正
+				playerPos.z + EnemyGunnerConstants::kCombatDepth};
 
-			Vector3 direction = {
-				targetPosition_.x - transform_.translate.x,
-				targetPosition_.y - transform_.translate.y,
-				targetPosition_.z - transform_.translate.z};
-
-			float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
-
-			if (distance < EnemyGunnerConstants::kShootingDistance) {
+			if (GetDistanceTo(targetPosition_) < EnemyGunnerConstants::kShootingDistance) {
 				state_ = GunnerState::Shooting;
 				combatTimer_ = 0.0f;
 				shootTimer_ = 0.0f;
 				combatCenter_ = playerPos;
 				moveTimer_ = 0.0f;
 			} else {
-				direction.x /= distance;
-				direction.y /= distance;
-				direction.z /= distance;
-
-				transform_.translate.x += direction.x * EnemyGunnerConstants::kApproachSpeed * deltaTime;
-				transform_.translate.y += direction.y * EnemyGunnerConstants::kApproachSpeed * deltaTime;
-				transform_.translate.z += direction.z * EnemyGunnerConstants::kApproachSpeed * deltaTime;
+				MoveToward(targetPosition_, EnemyGunnerConstants::kApproachSpeed, 1.0f);
 			}
 		}
 		break;
@@ -86,7 +70,6 @@ void EnemyGunner::Update() {
 		combatTimer_ += deltaTime;
 		moveTimer_ += deltaTime;
 
-		// 戦闘時間終了で退却
 		if (combatTimer_ >= EnemyGunnerConstants::kCombatDuration) {
 			state_ = GunnerState::Retreat;
 			break;
@@ -100,82 +83,59 @@ void EnemyGunner::Update() {
 			combatCenter_.z += (currentPlayerPos.z - combatCenter_.z) * 0.05f;
 		}
 
-		// 一定間隔で新しい目標位置を設定
+		// 一定間隔で周回目標位置を更新
 		if (moveTimer_ >= 2.5f) {
 			float angle = combatTimer_ * 1.2f;
-			float offsetX = std::sin(angle) * EnemyGunnerConstants::kCombatRadius;
-			float offsetY = std::cos(angle * 0.7f) * 5.0f;
-
-			// Enemyと同じ位置計算（プレイヤーの前方を周回）
 			targetPosition_ = {
-				combatCenter_.x + offsetX,
-				combatCenter_.y + offsetY,
+				combatCenter_.x + std::sin(angle) * EnemyGunnerConstants::kCombatRadius,
+				combatCenter_.y + std::cos(angle * 0.7f) * 5.0f,
 				combatCenter_.z + EnemyGunnerConstants::kCombatDepth};
-
 			moveTimer_ = 0.0f;
 		}
 
-		// 目標位置への移動
-		Vector3 direction = {
-			targetPosition_.x - transform_.translate.x,
-			targetPosition_.y - transform_.translate.y,
-			targetPosition_.z - transform_.translate.z};
-
-		float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
-
-		// 停止閾値を設定してガクガクを防ぐ
-		const float stopThreshold = 2.0f;
-		if (distance > stopThreshold) {
-			direction.x /= distance;
-			direction.y /= distance;
-			direction.z /= distance;
-
-			transform_.translate.x += direction.x * 18.0f * deltaTime;
-			transform_.translate.y += direction.y * 18.0f * deltaTime;
-			transform_.translate.z += direction.z * 18.0f * deltaTime;
+		// 目標位置への移動（停止閾値以内なら固定）
+		float distToTarget = GetDistanceTo(targetPosition_);
+		if (distToTarget > 2.0f) {
+			MoveToward(targetPosition_, EnemyGunnerConstants::kDefaultSpeed, 0.8f);
 		} else {
-			// 目標位置に到達したら位置を固定
 			transform_.translate = targetPosition_;
 		}
 
 		// 射撃処理
 		if (shootTimer_ >= EnemyGunnerConstants::kShootInterval && player_) {
 			Vector3 playerPos = player_->GetPosition();
-			Vector3 shootDirection = {
+			Vector3 shootDir = {
 				playerPos.x - transform_.translate.x,
 				playerPos.y - transform_.translate.y,
 				playerPos.z - transform_.translate.z};
 
-			float shootDistance = std::sqrt(shootDirection.x * shootDirection.x + shootDirection.y * shootDirection.y + shootDirection.z * shootDirection.z);
-			shootDirection.x /= shootDistance;
-			shootDirection.y /= shootDistance;
-			shootDirection.z /= shootDistance;
+			float dist = std::sqrt(shootDir.x * shootDir.x + shootDir.y * shootDir.y + shootDir.z * shootDir.z);
+			shootDir.x /= dist;
+			shootDir.y /= dist;
+			shootDir.z /= dist;
 
 			auto bullet = std::make_unique<EnemyBullet>();
-			bullet->Initialize(object3dSetup_, "Bullet.obj", transform_.translate, shootDirection);
+			bullet->Initialize(object3dSetup_, "Bullet.obj", transform_.translate, shootDir);
 			bullet->SetParticleSystem(particle_, particleSetup_);
 			bullets_.push_back(std::move(bullet));
 
 			shootTimer_ = 0.0f;
 		}
-
 		break;
 	}
 
 	case GunnerState::Retreat: {
 		transform_.translate.y += 8.0f * deltaTime;
-		transform_.translate.z += EnemyGunnerConstants::kRetreatSpeed * deltaTime; // マイナスをプラスに修正
+		transform_.translate.z += EnemyGunnerConstants::kRetreatSpeed * deltaTime;
 		break;
 	}
 	}
 
-	// 弾の更新
+	// 弾の更新・削除
 	for (auto &bullet : bullets_) {
 		if (bullet)
 			bullet->Update();
 	}
-
-	// 死んだ弾を削除
 	bullets_.erase(
 		std::remove_if(bullets_.begin(), bullets_.end(),
 					   [](const std::unique_ptr<EnemyBullet> &b) { return !b || !b->IsAlive(); }),

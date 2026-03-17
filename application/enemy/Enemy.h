@@ -22,7 +22,12 @@ namespace EnemyConstants {
 	constexpr float kMoveInterval = 2.5f; // 移動間隔
 	constexpr float kRetreatSpeed = 25.0f;
 	constexpr float kPlayerTrackingSpeed = 0.05f;
-	constexpr float kMovementSmoothing = 0.15f; // きれいなイージング
+	constexpr float kMovementSmoothing = 0.15f;
+	// Dash（突進攻撃）パラメータ
+	constexpr float kDashCooldown = 5.0f;  // Dash 発動までのクールダウン
+	constexpr float kDashSpeed = 45.0f;	   // Dash 時の速度
+	constexpr float kDashDuration = 1.2f;  // Dash 持続時間
+	constexpr float kDashHitRadius = 5.0f; // Dash 終了判定距離
 }
 
 ///=============================================================================
@@ -31,8 +36,8 @@ namespace EnemyConstants {
  * @brief 近接戦闘を行う敵キャラクター
  *
  * 責務：
- * - 接近、戦闘、退却の3ステート行動パターン
- * - プレイヤーを中心に円周軌道上を移動
+ * - 接近、戦闘（周回＋突進）、退却の行動パターン
+ * - Dash フェーズでプレイヤーに体当たり攻撃
  * - スムーズな移動と位置追尾
  */
 class Enemy : public EnemyBase {
@@ -49,6 +54,9 @@ public:
 	/// \brief ImGui描画
 	void DrawImGui() override;
 
+	/// \brief 衝突処理（Dash 中の体当たりダメージ）
+	void OnCollisionEnter(BaseObject *other) override;
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
@@ -56,7 +64,8 @@ private:
 	// 行動ステート関連
 	enum class BehaviorState {
 		Approach, // 接近中
-		Combat,	  // 戦闘中
+		Combat,	  // 戦闘中（周回）
+		Dash,	  // 突進攻撃中
 		Retreat	  // 退却中
 	};
 	BehaviorState behaviorState_;
@@ -66,7 +75,12 @@ private:
 
 	//========================================
 	// 移動関連
-	float moveTimer_; // 移動タイマー
-	Vector3 currentVelocity_;
+	float moveTimer_;
 	Vector3 targetPosition_;
+
+	//========================================
+	// Dash 関連
+	float dashTimer_;
+	float dashCooldownTimer_;
+	Vector3 dashTargetPos_;
 };
