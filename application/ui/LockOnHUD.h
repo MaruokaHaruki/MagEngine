@@ -61,14 +61,14 @@ private:
 	/// @param isLocked ロックオン中かどうか
 	void DrawEnemyMarker(EnemyBase *enemy, MagEngine::Camera *camera, bool isLocked);
 
-	/// @brief 敵の三角形を描画（ビルボード対応）
+	/// @brief 敵の4コーナーブラケットを描画（ビルボード対応）
 	/// @param markerPos マーカー位置（3D）
 	/// @param cameraPos カメラ位置（ビルボード用）
 	/// @param size マーカーサイズ
 	/// @param color マーカー色
 	/// @param isLocked ロック状態
-	/// @param accentColor アクセントカラー
-	void DrawTriangleMarker(const Vector3 &markerPos, const Vector3 &cameraPos, float size, const Vector4 &color, bool isLocked = false, const Vector4 &accentColor = Vector4{0.0f, 0.0f, 0.0f, 0.0f});
+	/// @param accentColor アクセントカラー（ロック時ドット用）
+	void DrawBracketMarker(const Vector3 &markerPos, const Vector3 &cameraPos, float size, const Vector4 &color, bool isLocked = false, const Vector4 &accentColor = Vector4{0.0f, 0.0f, 0.0f, 0.0f});
 
 	/// @brief ロックオンラインの描画（複数敵への結線）
 	void DrawLockOnLines();
@@ -95,10 +95,10 @@ private:
 	float pulseSpeed_ = 4.0f; // パルス周期
 
 	// マーカー設定
-	Vector4 normalMarkerColor_ = {1.0f, 0.6f, 0.0f, 0.8f};	// オレンジ（未ロック）
-	Vector4 lockOnMarkerColor_ = {1.0f, 0.0f, 0.0f, 1.0f};	// 赤（ロック時）
-	Vector4 lockOnAccentColor_ = {1.0f, 0.3f, 0.0f, 0.8f};	// 赤系アクセント（ロック時）
-	Vector4 warningMarkerColor_ = {1.0f, 0.5f, 0.0f, 0.7f}; // 警告色（未ロック敵）
+	Vector4 normalMarkerColor_ = {0.9f, 0.7f, 0.15f, 0.75f}; // ダムアンバー（未ロック）
+	Vector4 lockOnMarkerColor_ = {1.0f, 0.28f, 0.05f, 1.0f}; // 鮮烈オレンジレッド（ロック時）
+	Vector4 lockOnAccentColor_ = {1.0f, 0.85f, 0.6f, 1.0f};	 // ウォームホワイト（ロック中心ドット）
+	Vector4 warningMarkerColor_ = {1.0f, 0.5f, 0.0f, 0.7f};	 // 警告色（未ロック敵）
 
 	float markerSize_ = 1.0f;
 	float lockOnMarkerSize_ = 2.0f;

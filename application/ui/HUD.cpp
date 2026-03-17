@@ -407,12 +407,6 @@ void HUD::Draw() {
 		DrawVelocityVector(velocityProgress);
 	}
 
-	// フライトパス
-	float flightPathProgress = std::max(0.0f, (deployProgress_ - velocityVectorDeployStart_) / (1.0f - velocityVectorDeployStart_));
-	if (showFlightPath_ && flightPathProgress > 0.0f) {
-		DrawFlightPathMarker(flightPathProgress);
-	}
-
 	// ロールスケール
 	float rollProgress = std::max(0.0f, (deployProgress_ - rollScaleDeployStart_) / (1.0f - rollScaleDeployStart_));
 	if (showRollScale_ && rollProgress > 0.0f) {
@@ -442,18 +436,12 @@ void HUD::Draw() {
 	if (showLockOnReticle_ && lockOnTarget_) {
 		DrawLockOnReticle(deployProgress_);
 	}
-
-	// 敵位置インジケーター
-	if (showEnemyIndicators_) {
-		DrawEnemyIndicators(deployProgress_);
-	}
 }
 
 ///=============================================================================
-///                        ガンボアサイト（見やすさ重視）
+///                        ガンボアサイト（ミリタリー照準 / クリーン4ティック式）
 void HUD::DrawBoresight(float progress) {
 	LineManager *lineManager = LineManager::GetInstance();
-	float size = 2.2f * hudScale_;
 
 	// 弾発射方向オフセット計算
 	Vector3 playerForward = {
@@ -464,70 +452,54 @@ void HUD::DrawBoresight(float progress) {
 	float offsetX = Dot(fireOffset, Vector3{cosf(playerRotation_.y), 0.0f, -sinf(playerRotation_.y)}) * 12.0f;
 	float offsetY = -Dot(fireOffset, Vector3{sinf(playerRotation_.y) * sinf(playerRotation_.x), cosf(playerRotation_.x), cosf(playerRotation_.y) * sinf(playerRotation_.x)}) * 12.0f;
 
-	Vector3 centerPos = GetPlayerFrontPositionWithOffset(
-		boresightOffset_.x + offsetX * 0.4f,
-		boresightOffset_.y + offsetY * 0.4f,
-		boresightOffset_);
+	// 照準中心 (HUDローカル座標)
+	float cx = boresightOffset_.x + offsetX * 0.4f;
+	float cy = boresightOffset_.y + offsetY * 0.4f;
 
-	// === 外側の大きな円（ロック範囲を示唆） ===
+	Vector4 col = hudColor_;
+	col.w *= progress;
+	const float gapR = 0.55f * hudScale_;	// 中心からの隙間
+	const float tickLen = 1.2f * hudScale_; // ティックの長さ
+	const float thick = 2.5f;
+
+	// === 水平ティック (左右) ===
 	if (progress > 0.0f) {
-		float circleProgress = std::min(progress / 0.3f, 1.0f);
-		int segments = static_cast<int>(32 * circleProgress);
-		if (segments > 0) {
-			Vector4 outlineColor = {hudColor_.x, hudColor_.y, hudColor_.z, 0.5f};
-			lineManager->DrawCircle(centerPos, size * 1.5f, outlineColor, 1.0f, {0.0f, 0.0f, 1.0f}, segments);
-		}
+		Vector3 r0 = GetPlayerFrontPositionWithOffset(cx + gapR, cy, boresightOffset_);
+		Vector3 r1 = GetPlayerFrontPositionWithOffset(cx + gapR + tickLen, cy, boresightOffset_);
+		Vector3 l0 = GetPlayerFrontPositionWithOffset(cx - gapR, cy, boresightOffset_);
+		Vector3 l1 = GetPlayerFrontPositionWithOffset(cx - gapR - tickLen, cy, boresightOffset_);
+		lineManager->DrawLine(r0, Lerp(r0, r1, progress), col, thick);
+		lineManager->DrawLine(l0, Lerp(l0, l1, progress), col, thick);
 	}
 
-	// === 水平線（中央から左右に展開） ===
-	if (progress > 0.2f) {
-		float hProgress = (progress - 0.2f) / 0.3f;
-		Vector3 leftPos = GetPlayerFrontPositionWithOffset(
-			-size + boresightOffset_.x + offsetX * 0.5f,
-			0.0f + boresightOffset_.y + offsetY * 0.5f,
-			boresightOffset_);
-		Vector3 rightPos = GetPlayerFrontPositionWithOffset(
-			size + boresightOffset_.x + offsetX * 0.5f,
-			0.0f + boresightOffset_.y + offsetY * 0.5f,
-			boresightOffset_);
-		Vector3 leftDraw = Lerp(centerPos, leftPos, hProgress);
-		Vector3 rightDraw = Lerp(centerPos, rightPos, hProgress);
-		lineManager->DrawLine(leftDraw, rightDraw, hudColor_, 2.0f);
+	// === 垂直ティック (上下) ===
+	if (progress > 0.25f) {
+		float p2 = (progress - 0.25f) / 0.75f;
+		Vector3 t0 = GetPlayerFrontPositionWithOffset(cx, cy + gapR, boresightOffset_);
+		Vector3 t1 = GetPlayerFrontPositionWithOffset(cx, cy + gapR + tickLen, boresightOffset_);
+		Vector3 b0 = GetPlayerFrontPositionWithOffset(cx, cy - gapR, boresightOffset_);
+		Vector3 b1 = GetPlayerFrontPositionWithOffset(cx, cy - gapR - tickLen, boresightOffset_);
+		lineManager->DrawLine(t0, Lerp(t0, t1, p2), col, thick);
+		lineManager->DrawLine(b0, Lerp(b0, b1, p2), col, thick);
 	}
 
-	// === 垂直線（中央から上下に展開） ===
-	if (progress > 0.4f) {
-		float vProgress = (progress - 0.4f) / 0.3f;
-		Vector3 topPos = GetPlayerFrontPositionWithOffset(
-			0.0f + boresightOffset_.x + offsetX * 0.5f,
-			size + boresightOffset_.y + offsetY * 0.5f,
-			boresightOffset_);
-		Vector3 bottomPos = GetPlayerFrontPositionWithOffset(
-			0.0f + boresightOffset_.x + offsetX * 0.5f,
-			-size + boresightOffset_.y + offsetY * 0.5f,
-			boresightOffset_);
-		Vector3 topDraw = Lerp(centerPos, topPos, vProgress);
-		Vector3 bottomDraw = Lerp(centerPos, bottomPos, vProgress);
-		lineManager->DrawLine(topDraw, bottomDraw, hudColor_, 2.0f);
-	}
-
-	// === 中央の小さな円 ===
+	// === 中央の小さなドット ===
 	if (progress > 0.6f) {
-		float circleProgress = (progress - 0.6f) / 0.4f;
-		float averageSize = (hudSizeX_ + hudSizeY_) * 0.5f;
-		int segments = static_cast<int>(16 * circleProgress);
-		if (segments > 0) {
-			lineManager->DrawCircle(centerPos, 0.3f * hudScale_ * averageSize, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, segments);
+		float p3 = (progress - 0.6f) / 0.4f;
+		int segs = static_cast<int>(8 * p3);
+		if (segs > 0) {
+			float avgS = (hudSizeX_ + hudSizeY_) * 0.5f;
+			Vector3 centerPos = GetPlayerFrontPositionWithOffset(cx, cy, boresightOffset_);
+			lineManager->DrawCircle(centerPos, 0.14f * hudScale_ * avgS, col, 1.5f, {0.0f, 0.0f, 1.0f}, segs);
 		}
 	}
 
 // === デバッグ用：発射方向インジケーター ===
 #ifdef _DEBUG
 	if (offsetX != 0.0f || offsetY != 0.0f) {
-		Vector3 offsetStart = GetPlayerFrontPositionWithOffset(0.0f, 0.0f, boresightOffset_);
-		Vector3 offsetEnd = centerPos;
-		Vector4 debugColor = {1.0f, 1.0f, 0.0f, 0.5f}; // 黄色
-		lineManager->DrawLine(offsetStart, offsetEnd, debugColor, 1.0f);
+		Vector3 offsetStart = GetPlayerFrontPositionWithOffset(boresightOffset_.x, boresightOffset_.y, boresightOffset_);
+		Vector3 offsetEnd = GetPlayerFrontPositionWithOffset(cx, cy, boresightOffset_);
+		lineManager->DrawLine(offsetStart, offsetEnd, {1.0f, 1.0f, 0.0f, 0.5f}, 1.0f);
 	}
 #endif
 }
@@ -985,15 +957,6 @@ void HUD::DrawBoostBarrel(float progress) {
 		lineManager->DrawLine(gaugeLeft, gaugeRightDraw, gaugeColor, 5.0f);
 	}
 
-	// ブーストテキスト風マーク
-	if (progress > 0.5f) {
-		float textProgress = (progress - 0.5f) / 0.25f;
-		Vector3 boostLabel1 = GetHUDPosition(boostX - 3.2f, boostY + 1.0f);
-		Vector3 boostLabel2 = GetHUDPosition(boostX + 3.2f, boostY + 1.0f);
-		Vector3 boostLabel1Draw = Lerp(boostLabel1, boostLabel1, textProgress);
-		lineManager->DrawLine(boostLabel1Draw, boostLabel2, hudColor_, 1.0f);
-	}
-
 	// === バレルロール回避インジケーター（右側） ===
 	float barrelX = centerX + spacing;
 	float barrelY = centerY;
@@ -1095,78 +1058,65 @@ void HUD::DrawImGui() {
 }
 
 ///=============================================================================
-/// ロックオン用レティクル描画
+/// ロックオン用レティクル描画（ワールド空間 4コーナーブラケット）
 void HUD::DrawLockOnReticle(float progress) {
 	if (!lockOnTarget_)
 		return;
 
 	LineManager *lineManager = LineManager::GetInstance();
 
-	// 画面中央（照準）
-	Vector3 screenCenter = {SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f, 0.0f};
+	// ボアサイト中心 (HUDローカル座標)
+	float cx = boresightOffset_.x;
+	float cy = boresightOffset_.y;
 
-	// レティクルのサイズ
-	float reticleSize = 30.0f;
+	// ブラケットサイズ
+	float lockSize = 1.9f * hudScale_;
+	float armLen = lockSize * 0.52f;
 
-	// シアン色で描画
-	Vector4 reticleColor = {0.0f, 1.0f, 1.0f, 0.9f};
+	// ロック時のパルスアニメーション
+	float pulse = 0.55f + 0.45f * sinf(animationTime_ * 5.0f);
+	Vector4 lockCol = hudColorCyan_;
+	lockCol.w = pulse * progress;
+	const float th = 2.0f;
 
-	// 外側の四角形（ロック中は点滅）
-	float blinkAlpha = 0.5f + 0.5f * std::sin(animationTime_ * 6.0f);
-	Vector4 blinkingColor = {reticleColor.x, reticleColor.y, reticleColor.z, blinkAlpha};
+	// ─── 左上コーナー ───
+	{
+		Vector3 c = GetPlayerFrontPositionWithOffset(cx - lockSize, cy + lockSize, boresightOffset_);
+		Vector3 cR = GetPlayerFrontPositionWithOffset(cx - lockSize + armLen, cy + lockSize, boresightOffset_);
+		Vector3 cD = GetPlayerFrontPositionWithOffset(cx - lockSize, cy + lockSize - armLen, boresightOffset_);
+		lineManager->DrawLine(c, cR, lockCol, th);
+		lineManager->DrawLine(c, cD, lockCol, th);
+	}
+	// ─── 右上コーナー ───
+	{
+		Vector3 c = GetPlayerFrontPositionWithOffset(cx + lockSize, cy + lockSize, boresightOffset_);
+		Vector3 cL = GetPlayerFrontPositionWithOffset(cx + lockSize - armLen, cy + lockSize, boresightOffset_);
+		Vector3 cD = GetPlayerFrontPositionWithOffset(cx + lockSize, cy + lockSize - armLen, boresightOffset_);
+		lineManager->DrawLine(c, cL, lockCol, th);
+		lineManager->DrawLine(c, cD, lockCol, th);
+	}
+	// ─── 左下コーナー ───
+	{
+		Vector3 c = GetPlayerFrontPositionWithOffset(cx - lockSize, cy - lockSize, boresightOffset_);
+		Vector3 cR = GetPlayerFrontPositionWithOffset(cx - lockSize + armLen, cy - lockSize, boresightOffset_);
+		Vector3 cU = GetPlayerFrontPositionWithOffset(cx - lockSize, cy - lockSize + armLen, boresightOffset_);
+		lineManager->DrawLine(c, cR, lockCol, th);
+		lineManager->DrawLine(c, cU, lockCol, th);
+	}
+	// ─── 右下コーナー ───
+	{
+		Vector3 c = GetPlayerFrontPositionWithOffset(cx + lockSize, cy - lockSize, boresightOffset_);
+		Vector3 cL = GetPlayerFrontPositionWithOffset(cx + lockSize - armLen, cy - lockSize, boresightOffset_);
+		Vector3 cU = GetPlayerFrontPositionWithOffset(cx + lockSize, cy - lockSize + armLen, boresightOffset_);
+		lineManager->DrawLine(c, cL, lockCol, th);
+		lineManager->DrawLine(c, cU, lockCol, th);
+	}
 
-	// 4つのL字型レティクルを描画
-	// 左上
-	lineManager->DrawLine(
-		{screenCenter.x - reticleSize, screenCenter.y - reticleSize, 0.0f},
-		{screenCenter.x - reticleSize + 15.0f, screenCenter.y - reticleSize, 0.0f},
-		blinkingColor);
-	lineManager->DrawLine(
-		{screenCenter.x - reticleSize, screenCenter.y - reticleSize, 0.0f},
-		{screenCenter.x - reticleSize, screenCenter.y - reticleSize + 15.0f, 0.0f},
-		blinkingColor);
-
-	// 右上
-	lineManager->DrawLine(
-		{screenCenter.x + reticleSize, screenCenter.y - reticleSize, 0.0f},
-		{screenCenter.x + reticleSize - 15.0f, screenCenter.y - reticleSize, 0.0f},
-		blinkingColor);
-	lineManager->DrawLine(
-		{screenCenter.x + reticleSize, screenCenter.y - reticleSize, 0.0f},
-		{screenCenter.x + reticleSize, screenCenter.y - reticleSize + 15.0f, 0.0f},
-		blinkingColor);
-
-	// 左下
-	lineManager->DrawLine(
-		{screenCenter.x - reticleSize, screenCenter.y + reticleSize, 0.0f},
-		{screenCenter.x - reticleSize + 15.0f, screenCenter.y + reticleSize, 0.0f},
-		blinkingColor);
-	lineManager->DrawLine(
-		{screenCenter.x - reticleSize, screenCenter.y + reticleSize, 0.0f},
-		{screenCenter.x - reticleSize, screenCenter.y + reticleSize - 15.0f, 0.0f},
-		blinkingColor);
-
-	// 右下
-	lineManager->DrawLine(
-		{screenCenter.x + reticleSize, screenCenter.y + reticleSize, 0.0f},
-		{screenCenter.x + reticleSize - 15.0f, screenCenter.y + reticleSize, 0.0f},
-		blinkingColor);
-	lineManager->DrawLine(
-		{screenCenter.x + reticleSize, screenCenter.y + reticleSize, 0.0f},
-		{screenCenter.x + reticleSize, screenCenter.y + reticleSize - 15.0f, 0.0f},
-		blinkingColor);
-
-	// 中央円
-	lineManager->DrawCircle(screenCenter, 10.0f, blinkingColor);
-
-	// ロック数表示（左上）
-	if (lockedEnemyCount_ > 0) {
-		// テキスト表示（簡易的にLineで表現）
-		Vector4 lockCountColor = {1.0f, 0.0f, 0.0f, 1.0f}; // 赤
-		lineManager->DrawLine(
-			{20.0f, 20.0f, 0.0f},
-			{80.0f, 20.0f, 0.0f},
-			lockCountColor);
+	// ─── 中心に小さなドット ───
+	{
+		float avgS = (hudSizeX_ + hudSizeY_) * 0.5f;
+		Vector3 center = GetPlayerFrontPositionWithOffset(cx, cy, boresightOffset_);
+		lineManager->DrawCircle(center, 0.1f * hudScale_ * avgS, lockCol, 2.0f, {0.0f, 0.0f, 1.0f}, 8);
 	}
 }
 

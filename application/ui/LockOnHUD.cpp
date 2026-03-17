@@ -131,110 +131,77 @@ void LockOnHUD::DrawEnemyMarker(EnemyBase *enemy, MagEngine::Camera *camera, boo
 	Vector4 finalAccentColor = accentColor;
 	finalAccentColor.w *= alpha;
 
-	// 三角形マーカーを描画（ビルボード対応）
-	DrawTriangleMarker(markerPos, cameraPos, size, finalColor, isLocked, finalAccentColor);
+	// ブラケットマーカーを描画（ビルボード対応）
+	DrawBracketMarker(markerPos, cameraPos, size, finalColor, isLocked, finalAccentColor);
 }
 
 ///=============================================================================
-///                        三角形マーカーの描画（ビルボード対応）
-void LockOnHUD::DrawTriangleMarker(const Vector3 &markerPos, const Vector3 &cameraPos, float size, const Vector4 &color, bool isLocked, const Vector4 &accentColor) {
+///                        4コーナーブラケットマーカー（ビルボード対応）
+void LockOnHUD::DrawBracketMarker(const Vector3 &markerPos, const Vector3 &cameraPos, float size, const Vector4 &color, bool isLocked, const Vector4 &accentColor) {
 	if (!lineManager_) {
 		return;
 	}
 
-	// ローカル関数: Cross積
+	// ---- ビルボード用基底ベクトルを構築 ----
 	auto Cross = [](const Vector3 &a, const Vector3 &b) -> Vector3 {
-		return {
-			a.y * b.z - a.z * b.y,
-			a.z * b.x - a.x * b.z,
-			a.x * b.y - a.y * b.x};
+		return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 	};
 
-	// マーカーからカメラへの向き（ビルボード用）
-	Vector3 toCameraDir = Normalize(cameraPos - markerPos);
-
-	// カメラの上方向を推定（Y軸を上とする）
+	Vector3 toCam = Normalize(cameraPos - markerPos);
 	Vector3 upDir = {0.0f, 1.0f, 0.0f};
-
-	// toCameraDirと上方向から右ベクトルを計算
-	Vector3 rightDir = Cross(upDir, toCameraDir);
-	if (Length(rightDir) > 0.0f) {
-		rightDir = Normalize(rightDir);
-	} else {
-		// toCameraDirがY軸と平行な場合の処理
+	Vector3 rightDir = Cross(upDir, toCam);
+	if (Length(rightDir) < 0.001f) {
 		rightDir = {1.0f, 0.0f, 0.0f};
+	} else {
+		rightDir = Normalize(rightDir);
 	}
+	upDir = Normalize(Cross(toCam, rightDir));
 
-	// 最終的な上方向を再計算（直交系を保証）
-	upDir = Normalize(Cross(toCameraDir, rightDir));
+	// ---- 4コーナーL字ブラケットを描く汎用ラムダ ----
+	auto DrawCorners = [&](float s, const Vector4 &col, float thick) {
+		float arm = s * 0.52f; // アームの長さ (ブラケット辺の比率)
 
-	// ========== 未ロック時：正三角形 ==========
+		// 左上
+		Vector3 tl = markerPos - rightDir * s + upDir * s;
+		lineManager_->DrawLine(tl, tl + rightDir * arm, col, thick);
+		lineManager_->DrawLine(tl, tl - upDir * arm, col, thick);
+		// 右上
+		Vector3 tr = markerPos + rightDir * s + upDir * s;
+		lineManager_->DrawLine(tr, tr - rightDir * arm, col, thick);
+		lineManager_->DrawLine(tr, tr - upDir * arm, col, thick);
+		// 左下
+		Vector3 bl = markerPos - rightDir * s - upDir * s;
+		lineManager_->DrawLine(bl, bl + rightDir * arm, col, thick);
+		lineManager_->DrawLine(bl, bl + upDir * arm, col, thick);
+		// 右下
+		Vector3 br = markerPos + rightDir * s - upDir * s;
+		lineManager_->DrawLine(br, br - rightDir * arm, col, thick);
+		lineManager_->DrawLine(br, br + upDir * arm, col, thick);
+	};
+
+	// ========== 未ロック：薄いアンバーの細いブラケット ==========
 	if (!isLocked) {
-		// 正三角形の頂点を計算（中心：markerPos）
-		// 上、左下、右下の順で60度間隔
-		Vector3 vertex1 = markerPos + upDir * size;									  // 上
-		Vector3 vertex2 = markerPos - rightDir * size * 0.866f - upDir * size * 0.5f; // 左下 (√3/2)
-		Vector3 vertex3 = markerPos + rightDir * size * 0.866f - upDir * size * 0.5f; // 右下
-
-		// 三角形の枠線を描画（線幅1.0px）
-		lineManager_->DrawLine(vertex1, vertex2, color, 1.0f);
-		lineManager_->DrawLine(vertex2, vertex3, color, 1.0f);
-		lineManager_->DrawLine(vertex3, vertex1, color, 1.0f);
+		DrawCorners(size, color, 1.5f);
 	}
-	// ========== ロック時：ダブルマーカー（二重三角形） ==========
+	// ========== ロック時：内側タイトブラケット＋外パルス＋中心ドット ==========
 	else {
-		float innerSize = size * 0.7f;
-		float outerSize = size * 1.2f;
+		// 内側（タイトで太い）
+		DrawCorners(size * 0.72f, color, 2.0f);
 
-		// 外側の大きな正三角形
-		Vector3 outer1 = markerPos + upDir * outerSize;
-		Vector3 outer2 = markerPos - rightDir * outerSize * 0.866f - upDir * outerSize * 0.5f;
-		Vector3 outer3 = markerPos + rightDir * outerSize * 0.866f - upDir * outerSize * 0.5f;
-
-		// 内側の小さな正三角形
-		Vector3 inner1 = markerPos + upDir * innerSize;
-		Vector3 inner2 = markerPos - rightDir * innerSize * 0.866f - upDir * innerSize * 0.5f;
-		Vector3 inner3 = markerPos + rightDir * innerSize * 0.866f - upDir * innerSize * 0.5f;
-
-		// 外側の三角形を描画（太い線で目立たせる）
-		lineManager_->DrawLine(outer1, outer2, color, 2.0f);
-		lineManager_->DrawLine(outer2, outer3, color, 2.0f);
-		lineManager_->DrawLine(outer3, outer1, color, 2.0f);
-
-		// 内側の三角形をアクセントカラーで描画
-		lineManager_->DrawLine(inner1, inner2, accentColor, 1.5f);
-		lineManager_->DrawLine(inner2, inner3, accentColor, 1.5f);
-		lineManager_->DrawLine(inner3, inner1, accentColor, 1.5f);
-
-		// ロック固定を示す中央の小さな十字
-		float crossSize = size * 0.25f;
-		Vector4 crossColor = accentColor;
-		crossColor.w *= 0.8f;
-
-		lineManager_->DrawLine(
-			markerPos - rightDir * crossSize,
-			markerPos + rightDir * crossSize,
-			crossColor, 1.0f);
-		lineManager_->DrawLine(
-			markerPos - upDir * crossSize * 0.7f,
-			markerPos + upDir * crossSize * 0.7f,
-			crossColor, 1.0f);
-
-		// ロック状態を示すパルスする外枠（控えめに）
+		// 外側パルスブラケット
 		if (debugSettings_.enableAnimation) {
-			float pulse = 0.3f + 0.3f * sinf(pulseTime_ * pulseSpeed_);
-			Vector4 pulseColor = color;
-			pulseColor.w *= pulse;
-
-			float pulseSize = outerSize * 1.3f;
-			Vector3 pulse1 = markerPos + upDir * pulseSize;
-			Vector3 pulse2 = markerPos - rightDir * pulseSize * 0.866f - upDir * pulseSize * 0.5f;
-			Vector3 pulse3 = markerPos + rightDir * pulseSize * 0.866f - upDir * pulseSize * 0.5f;
-
-			lineManager_->DrawLine(pulse1, pulse2, pulseColor, 1.0f);
-			lineManager_->DrawLine(pulse2, pulse3, pulseColor, 1.0f);
-			lineManager_->DrawLine(pulse3, pulse1, pulseColor, 1.0f);
+			float pulse = 0.25f + 0.35f * sinf(pulseTime_ * pulseSpeed_);
+			Vector4 outerCol = color;
+			outerCol.w = pulse;
+			DrawCorners(size * 1.3f, outerCol, 1.5f);
 		}
+
+		// 中心ドット (小さな十字)
+		float dotR = size * 0.17f;
+		Vector4 dotCol = accentColor;
+		dotCol.w = 1.0f;
+		lineManager_->DrawLine(markerPos - rightDir * dotR, markerPos + rightDir * dotR, dotCol, 2.5f);
+		lineManager_->DrawLine(markerPos - upDir * dotR, markerPos + upDir * dotR, dotCol, 2.5f);
 	}
 }
 
