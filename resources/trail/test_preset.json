@@ -19,7 +19,7 @@
       "endWidth": 0.0,
       "fadeMode": 1,
       "gravityInfluence": 0.20000000298023224,
-      "lifeTime": 3.0,
+      "lifeTime": 0.5,
       "material": "Default",
       "maxPoints": 128,
       "minPointDistance": 0.10000000149011612,
@@ -84,8 +84,8 @@
       "simulationSpace": 0,
       "startColor": {
         "x": 1.0,
-        "y": 1.0,
-        "z": 1.0
+        "y": 0.37974679470062256,
+        "z": 0.0
       },
       "startWidth": 1.0,
       "subdivisions": 1,
