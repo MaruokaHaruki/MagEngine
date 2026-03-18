@@ -115,7 +115,7 @@ void EnemyGunner::Update() {
 			shootDir.z /= dist;
 
 			auto bullet = std::make_unique<EnemyBullet>();
-			bullet->Initialize(object3dSetup_, "Bullet.obj", transform_.translate, shootDir);
+			bullet->Initialize(object3dSetup_, "Missile.obj", transform_.translate, shootDir);
 			bullet->SetParticleSystem(particle_, particleSetup_);
 			bullets_.push_back(std::move(bullet));
 
