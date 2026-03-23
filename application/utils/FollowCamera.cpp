@@ -42,6 +42,13 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	crashRotationSmoothness_ = 0.001f; // 墜落時はさらに滑らかに
 	limitCrashRotation_ = true;		   // デフォルトで回転制限を有効化
 
+	// 回避時のパラメータ
+	barrelRollRollSmoothness_ = 0.005f; // バレルロール時のロール追従滑らかさ（通常の0.5倍）
+	barrelRollRollFollowRate_ = 0.2f;   // バレルロール時のロール追従率（20%に抑制）
+	isBarrelRolling_ = false;
+	barrelRollExitFadeTimer_ = 0.0f;    // バレルロール終了後のフェードタイマー
+	barrelRollExitFadeDuration_ = 0.3f; // フェード期間：0.3秒
+
 	// 固定位置モードの初期化
 	isFixedPositionMode_ = false;
 	fixedPosition_ = {0.0f, 5.0f, -10.0f}; // デフォルトの固定位置
@@ -83,6 +90,27 @@ void FollowCamera::Update() {
 		return;
 	}
 
+	// プレイヤーの回避状態を取得
+	bool playerBarrelRolling = target_->IsBarrelRolling();
+
+	// バレルロール状態の遷移を検出
+	if (playerBarrelRolling && !isBarrelRolling_) {
+		// バレルロール開始
+		isBarrelRolling_ = true;
+	} else if (!playerBarrelRolling && isBarrelRolling_) {
+		// バレルロール終了 - フェード開始
+		isBarrelRolling_ = false;
+		barrelRollExitFadeTimer_ = 0.0f;
+	}
+
+	// バレルロール終了後のフェードを処理（徐々に滑らかさを復帰）
+	if (!isBarrelRolling_ && barrelRollExitFadeTimer_ < barrelRollExitFadeDuration_) {
+		barrelRollExitFadeTimer_ += 0.016f; // 約60FPS基準（deltaTimeの代わり）
+		if (barrelRollExitFadeTimer_ > barrelRollExitFadeDuration_) {
+			barrelRollExitFadeTimer_ = barrelRollExitFadeDuration_;
+		}
+	}
+
 	// カメラ操作の入力処理（有効な場合のみ）
 	if (isCameraOperationEnabled_ && !isFixedPositionMode_) {
 		HandleCameraInput();
@@ -101,7 +129,19 @@ void FollowCamera::Update() {
 
 	// プレイヤーが墜落中かチェック
 	bool isCrashing = target_->IsDefeated();
-	float currentRotationSmoothness = isCrashing && limitCrashRotation_ ? crashRotationSmoothness_ : rotationSmoothness_;
+	
+	// 現在のロール追従滑らかさを計算
+	float currentRollSmoothness = rotationSmoothness_;
+	if (isBarrelRolling_) {
+		// バレルロール中は滑らかさを下げる（傾きを抑制）
+		currentRollSmoothness = barrelRollRollSmoothness_;
+	} else if (barrelRollExitFadeTimer_ < barrelRollExitFadeDuration_) {
+		// フェード中：段階的に滑らかさを復帰
+		float fadeProgress = barrelRollExitFadeTimer_ / barrelRollExitFadeDuration_;
+		currentRollSmoothness = Lerp(barrelRollRollSmoothness_, rotationSmoothness_, fadeProgress);
+	}
+	
+	float currentRotationSmoothness = isCrashing && limitCrashRotation_ ? crashRotationSmoothness_ : currentRollSmoothness;
 
 	// 回転は常に滑らかに補間（墜落中はさらに滑らかに）
 	currentRotation_ = LerpVector3(currentRotation_, targetRotation_, currentRotationSmoothness);
@@ -189,6 +229,11 @@ void FollowCamera::UpdateCameraTransform() {
 	// A キーでの傾きを追加（カメラ操作が有効な場合のみ）
 	if (isCameraOperationEnabled_ && !isFixedPositionMode_) {
 		roll += tiltAmount_;
+	}
+
+	// バレルロール中は追従率を下げてロール傾きを抑制
+	if (isBarrelRolling_) {
+		roll = currentRotation_.z + (roll - currentRotation_.z) * barrelRollRollFollowRate_;
 	}
 
 	// カメラの傾き追従が無効の場合はロールを0にする

@@ -100,6 +100,13 @@ private:
 	float crashRotationSmoothness_; // 墜落時の回転の滑らかさ
 	bool limitCrashRotation_;		// 墜落時の回転制限フラグ
 
+	// 回避時の追従パラメータ
+	float barrelRollRollSmoothness_; // バレルロール時のロール追従滑らかさ
+	float barrelRollRollFollowRate_; // バレルロール時のロール追従率（0.0-1.0）
+	bool isBarrelRolling_;			// プレイヤーのバレルロール状態を追跡
+	float barrelRollExitFadeTimer_; // バレルロール終了後のフェードタイマー
+	float barrelRollExitFadeDuration_; // フェード期間
+
 	// 固定位置モード
 	bool isFixedPositionMode_; // 固定位置モードのフラグ
 	Vector3 fixedPosition_;	   // 固定位置
