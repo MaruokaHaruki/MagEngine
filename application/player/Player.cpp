@@ -46,6 +46,7 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 	healthComponent_.Initialize(100);
 	combatComponent_.Initialize(object3dSetup);
 	lockedOnComponent_.Initialize(nullptr);
+	justAvoidanceComponent_.Initialize();
 	defeatComponent_.Initialize();
 
 	// === ミサイルボタン長押し管理の初期化 ===
@@ -84,6 +85,7 @@ void Player::Update() {
 	// === コンポーネント更新 ===
 	healthComponent_.Update(kFrameDelta);
 	combatComponent_.Update(kFrameDelta);
+	justAvoidanceComponent_.Update(kFrameDelta);
 
 	// === プレイヤー移動関連処理 ===
 	UpdateMovement();
@@ -222,6 +224,7 @@ void Player::UpdateBarrelRollAndBoost() {
 	if (barrelRollTriggered && movementComponent_.CanBarrelRoll()) {
 		movementComponent_.StartBarrelRoll(barrelRollRight);
 		healthComponent_.SetBarrelRollInvincible(true);
+		justAvoidanceComponent_.OnBarrelRollStarted();
 		// 入力状態をリセット
 		directionKeyHoldTime = 0.0f;
 		stickDirectionHoldTime = 0.0f;
@@ -683,7 +686,20 @@ void Player::Heal(int healAmount) {
 void Player::OnCollisionEnter(BaseObject *other) {
 	// 敵の弾との衝突チェック
 	if (dynamic_cast<EnemyBullet *>(other)) {
-		TakeDamage(15); // 敵の弾のダメージ
+		// Just Avoidanceチェック：敵弾が迫ってきたことを登録
+		justAvoidanceComponent_.RegisterIncomingDamage();
+		
+		// Just Avoidance成功判定
+		bool wasJustAvoidanceSuccess = false;
+		float boostReward = justAvoidanceComponent_.CheckJustAvoidanceSuccess(wasJustAvoidanceSuccess);
+		
+		if (wasJustAvoidanceSuccess) {
+			// ジャスト回避成功：ダメージを受けずにボーストゲージを回復
+			movementComponent_.AddBoostGaugeReward(boostReward);
+		} else {
+			// ジャスト回避失敗：通常通りダメージを受ける
+			TakeDamage(15); // 敵の弾のダメージ
+		}
 		return;
 	}
 

@@ -49,6 +49,11 @@ public:
 	float GetBoostGaugeRatio() const {
 		return boostGauge_ / maxBoostGauge_;
 	}
+	
+	/// @brief ブーストゲージを報酬で回復（ジャスト回避用）
+	void AddBoostGaugeReward(float reward) {
+		boostGauge_ = std::min(boostGauge_ + reward, maxBoostGauge_);
+	}
 
 	///--------------------------------------------------------------
 	///                        ゲッター

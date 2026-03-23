@@ -26,6 +26,7 @@
 #include "component/PlayerCombatComponent.h"
 #include "component/PlayerDefeatComponent.h"
 #include "component/PlayerHealthComponent.h"
+#include "component/PlayerJustAvoidanceComponent.h"
 #include "component/PlayerLockedOnComponent.h"
 #include "component/PlayerMovementComponent.h"
 #include <memory>
@@ -162,6 +163,33 @@ public:
 	/// @brief 敗北演出開始
 	void StartDefeatAnimation() {
 		defeatComponent_.StartDefeatAnimation();
+	}
+
+	///--------------------------------------------------------------
+	///                        Just Avoidance（PlayerJustAvoidanceComponentに委譲）
+	/// @brief ジャスト回避ウィンドウ内かどうか
+	bool IsInJustAvoidanceWindow() const {
+		return justAvoidanceComponent_.IsInJustAvoidanceWindow();
+	}
+	/// @brief ジャスト回避ウィンドウの残り時間を取得
+	float GetJustAvoidanceWindowTimeRemaining() const {
+		return justAvoidanceComponent_.GetJustAvoidanceWindowTimeRemaining();
+	}
+	/// @brief 直近のジャスト回避成功率を取得（0-1）
+	float GetJustAvoidanceSuccessRate() const {
+		return justAvoidanceComponent_.GetJustAvoidanceSuccessRate();
+	}
+	/// @brief ジャスト回避ウィンドウサイズを設定
+	void SetJustAvoidanceWindowSize(float windowSize) {
+		justAvoidanceComponent_.SetJustAvoidanceWindowSize(windowSize);
+	}
+	/// @brief 敵の攻撃通知タイムアウトを設定
+	void SetJustAvoidanceTimeout(float timeout) {
+		justAvoidanceComponent_.SetIncomingDamageTimeout(timeout);
+	}
+	/// @brief ジャスト回避ボーストゲージ報酬を設定
+	void SetJustAvoidanceBoostReward(float reward) {
+		justAvoidanceComponent_.SetJustAvoidanceBoostReward(reward);
 	}
 
 	///--------------------------------------------------------------
@@ -418,11 +446,12 @@ private:
 
 	//========================================
 	// コンポーネント群
-	PlayerHealthComponent healthComponent_;		// HP管理
-	PlayerCombatComponent combatComponent_;		// 射撃・ミサイル管理
-	PlayerMovementComponent movementComponent_; // 移動・バレルロール
-	PlayerLockedOnComponent lockedOnComponent_; // ロックオン管理
-	PlayerDefeatComponent defeatComponent_;		// 敗北演出
+	PlayerHealthComponent healthComponent_;			// HP管理
+	PlayerCombatComponent combatComponent_;			// 射撃・ミサイル管理
+	PlayerMovementComponent movementComponent_;		// 移動・バレルロール
+	PlayerJustAvoidanceComponent justAvoidanceComponent_; // ジャスト回避管理
+	PlayerLockedOnComponent lockedOnComponent_;		// ロックオン管理
+	PlayerDefeatComponent defeatComponent_;			// 敗北演出
 
 	//========================================
 	// システム参照
