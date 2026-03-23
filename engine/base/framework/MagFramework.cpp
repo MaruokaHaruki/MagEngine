@@ -214,6 +214,8 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 エディターレイアウトの初期化
 		editorLayout_ = std::make_unique<EditorLayout>();
+		/// COMMENT: ImGui 除外時はエディターレイアウト初期化をスキップ
+#if ENABLE_IMGUI
 		editorLayout_->Initialize(dxCore_.get(), postEffectManager_.get(), imguiSetup_.get());
 
 		///--------------------------------------------------------------
@@ -228,6 +230,7 @@ namespace MagEngine {
 				editorLayout_->GetViewportPanel()->SetRenderTextureHandle((void *)textureHandle);
 			}
 		}
+#endif // ENABLE_IMGUI
 	}
 
 	///=============================================================================
@@ -294,8 +297,11 @@ namespace MagEngine {
 			editorLayout_->Finalize();
 		}
 		//========================================
+		// COMMENT: ImGui 条件付き終了処理
+#if ENABLE_IMGUI
 		// ImGuiの終了処理
 		imguiSetup_->Finalize();
+#endif // ENABLE_IMGUI
 		//========================================
 		// audioの終了処理
 		MAudioG::GetInstance()->Finalize();
@@ -344,8 +350,11 @@ namespace MagEngine {
 	///						フレームワーク共通後処理
 	void MagFramework::PostDraw() {
 		//========================================
+		// COMMENT: ImGui 条件付き描画
+#if ENABLE_IMGUI
 		// ImGui描画
 		imguiSetup_->Draw();
+#endif // ENABLE_IMGUI
 		//========================================
 		// ループ後処理
 		dxCore_->PostDraw();
