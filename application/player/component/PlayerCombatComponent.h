@@ -2,6 +2,7 @@
 #include "PlayerBullet.h"
 #include "PlayerMissile.h"
 #include "Vector3.h"
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -56,14 +57,23 @@ public:
 	float GetShootCoolTime() const {
 		return shootCoolTime_;
 	}
-	float GetMissileCoolTime() const {
-		return missileCoolTime_;
-	}
 	bool CanShootBullet() const {
 		return shootCoolTime_ <= 0.0f;
 	}
 	bool CanShootMissile() const {
-		return missileCoolTime_ <= 0.0f;
+		return missileAmmo_ > 0;
+	}
+	int GetMissileAmmo() const {
+		return missileAmmo_;
+	}
+	int GetMaxMissileAmmo() const {
+		return maxMissileAmmo_;
+	}
+	float GetMissileRecoveryTimer() const {
+		return missileRecoveryTimer_;
+	}
+	float GetMissileRecoveryTime() const {
+		return maxMissileRecoveryTime_;
 	}
 	Vector3 GetBulletFireDirection() const {
 		return bulletFireDirection_;
@@ -77,8 +87,12 @@ public:
 	void SetMaxShootCoolTime(float coolTime) {
 		maxShootCoolTime_ = coolTime;
 	}
-	void SetMaxMissileCoolTime(float coolTime) {
-		maxMissileCoolTime_ = coolTime;
+	void SetMaxMissileAmmo(int ammo) {
+		maxMissileAmmo_ = ammo;
+		missileAmmo_ = std::min(missileAmmo_, maxMissileAmmo_);
+	}
+	void SetMissileRecoveryTime(float recoveryTime) {
+		maxMissileRecoveryTime_ = recoveryTime;
 	}
 	void SetBulletModelPath(const std::string &modelPath) {
 		bulletModelPath_ = modelPath;
@@ -100,10 +114,12 @@ private:
 	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト
 	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // ミサイルリスト
 
-	float shootCoolTime_;	   // 現在のクールタイム
-	float maxShootCoolTime_;   // 最大クールタイム
-	float missileCoolTime_;	   // ミサイルクールタイム
-	float maxMissileCoolTime_; // 最大ミサイルクールタイム
+	float shootCoolTime_;		   // 現在のクールタイム
+	float maxShootCoolTime_;	   // 最大クールタイム
+	int missileAmmo_;			   // 現在のミサイル残弾
+	int maxMissileAmmo_;		   // 最大ミサイル残弾数
+	float missileRecoveryTimer_;   // ミサイル回復タイマー
+	float maxMissileRecoveryTime_; // ミサイル回復時間（3秒で1発）
 
 	Vector3 bulletFireDirection_; // 弾の発射方向（HUD用）
 

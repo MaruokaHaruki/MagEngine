@@ -21,42 +21,83 @@ void PlayerLockedOnComponent::Initialize(EnemyManager *enemyManager) {
 	enemyManager_ = enemyManager;
 	lockOnTargets_.clear();
 	primaryLockOnTarget_ = nullptr;
+	aimingTarget_ = nullptr;
 
 	// デフォルト設定
 	lockOnRange_ = 50.0f;  // 50メートル範囲
-	lockOnFOV_ = 90.0f;	   // 視野角90度（左右45度ずつ）
-	maxLockOnTargets_ = 8; // 最大8敵同時ロック
+	lockOnFOV_ = 18.0f;	   // 照準中心ベースのロック用に狭める
+	maxLockOnTargets_ = 3; // 最大3敵同時ロック
 	lockOnMode_ = false;
+	lockOnAcquireTimer_ = 0.0f;
+	lockOnAcquireInterval_ = 0.35f;
 }
 
 //=============================================================================
-// ロックオン更新
-void PlayerLockedOnComponent::Update(const Vector3 &playerPos, const Vector3 &playerForward) {
-	if (!enemyManager_) {
-		lockOnTargets_.clear();
-		primaryLockOnTarget_ = nullptr;
-		lockOnMode_ = false;
+// ロックオン開始
+void PlayerLockedOnComponent::BeginLockOn() {
+	lockOnMode_ = true;
+	lockOnAcquireTimer_ = 0.0f;
+	aimingTarget_ = nullptr;
+	lockOnTargets_.clear();
+	primaryLockOnTarget_ = nullptr;
+}
+
+//=============================================================================
+// ロックオン更新（長押し中の逐次追加）
+void PlayerLockedOnComponent::UpdateLockOn(const Vector3 &playerPos, const Vector3 &playerForward, float deltaTime) {
+	if (!lockOnMode_ || !enemyManager_) {
 		return;
 	}
 
-	// 範囲内の敵を取得
-	std::vector<EnemyBase *> enemiesInRange = GetEnemiesInRange(playerPos, playerForward);
+	// 無効になったターゲットを除去
+	lockOnTargets_.erase(
+		std::remove_if(lockOnTargets_.begin(), lockOnTargets_.end(),
+					   [&](EnemyBase *target) {
+						   if (!target || !target->IsAlive() || !target->IsCollisionEnabled()) {
+							   return true;
+						   }
+						   const Vector3 targetPos = target->GetPosition();
+						   const Vector3 toEnemy = {
+							   targetPos.x - playerPos.x,
+							   targetPos.y - playerPos.y,
+							   targetPos.z - playerPos.z};
+						   const float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+						   return (distance > lockOnRange_) || !IsEnemyInFOV(playerPos, playerForward, targetPos);
+					   }),
+		lockOnTargets_.end());
 
-	// ロック対象を範囲内の敵で更新（最大数まで）
-	lockOnTargets_.clear();
-	int lockCount = std::min((int)enemiesInRange.size(), maxLockOnTargets_);
-	for (int i = 0; i < lockCount; ++i) {
-		lockOnTargets_.push_back(enemiesInRange[i]);
+	primaryLockOnTarget_ = lockOnTargets_.empty() ? nullptr : lockOnTargets_.front();
+
+	// 照準中心にある候補を毎フレーム更新
+	aimingTarget_ = FindBestTargetInReticle(playerPos, playerForward);
+
+	if (static_cast<int>(lockOnTargets_.size()) >= maxLockOnTargets_) {
+		return;
 	}
 
-	// メインターゲットの更新
-	if (!lockOnTargets_.empty()) {
-		primaryLockOnTarget_ = lockOnTargets_[0];
-		lockOnMode_ = true;
-	} else {
-		primaryLockOnTarget_ = nullptr;
-		lockOnMode_ = false;
+	if (!aimingTarget_) {
+		return;
 	}
+
+	lockOnAcquireTimer_ += deltaTime;
+	if (lockOnAcquireTimer_ < lockOnAcquireInterval_) {
+		return;
+	}
+
+	if (!IsAlreadyLocked(aimingTarget_)) {
+		lockOnTargets_.push_back(aimingTarget_);
+		if (!primaryLockOnTarget_) {
+			primaryLockOnTarget_ = aimingTarget_;
+		}
+	}
+	lockOnAcquireTimer_ = 0.0f;
+}
+
+//=============================================================================
+// ロックオン終了
+void PlayerLockedOnComponent::EndLockOn() {
+	lockOnMode_ = false;
+	aimingTarget_ = nullptr;
 }
 
 //=============================================================================
@@ -195,4 +236,64 @@ EnemyBase *PlayerLockedOnComponent::GetNearestEnemy(
 	}
 
 	return nearestEnemy;
+}
+
+//=============================================================================
+// 照準中心に最も近い候補を取得（未ロック対象のみ）
+EnemyBase *PlayerLockedOnComponent::FindBestTargetInReticle(
+	const Vector3 &playerPos,
+	const Vector3 &playerForward) {
+	EnemyBase *bestTarget = nullptr;
+	float bestScore = -10000.0f;
+
+	const auto &enemies = enemyManager_->GetEnemies();
+	for (const auto &enemy : enemies) {
+		if (!enemy || !enemy->IsAlive() || !enemy->IsCollisionEnabled()) {
+			continue;
+		}
+
+		EnemyBase *candidate = enemy.get();
+		if (IsAlreadyLocked(candidate)) {
+			continue;
+		}
+
+		const Vector3 enemyPos = candidate->GetPosition();
+		const Vector3 toEnemy = {
+			enemyPos.x - playerPos.x,
+			enemyPos.y - playerPos.y,
+			enemyPos.z - playerPos.z};
+
+		const float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+		if (distance > lockOnRange_ || distance < 0.001f) {
+			continue;
+		}
+
+		if (!IsEnemyInFOV(playerPos, playerForward, enemyPos)) {
+			continue;
+		}
+
+		const float invDist = 1.0f / distance;
+		const float dirX = toEnemy.x * invDist;
+		const float dirY = toEnemy.y * invDist;
+		const float dirZ = toEnemy.z * invDist;
+		const float dot = dirX * playerForward.x + dirY * playerForward.y + dirZ * playerForward.z;
+
+		// 中心に近いほど高評価、距離が近いほどわずかに優遇
+		const float score = dot * 10.0f - distance * 0.02f;
+		if (score > bestScore) {
+			bestScore = score;
+			bestTarget = candidate;
+		}
+	}
+
+	return bestTarget;
+}
+
+//=============================================================================
+// 既にロック済みか判定
+bool PlayerLockedOnComponent::IsAlreadyLocked(EnemyBase *target) const {
+	if (!target) {
+		return false;
+	}
+	return std::find(lockOnTargets_.begin(), lockOnTargets_.end(), target) != lockOnTargets_.end();
 }

@@ -48,6 +48,11 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 	lockedOnComponent_.Initialize(nullptr);
 	defeatComponent_.Initialize();
 
+	// === ミサイルボタン長押し管理の初期化 ===
+	missileButtonHeldTime_ = 0.0f;
+	isInLockOnMode_ = false;
+	prevMissileButtonPressed_ = false;
+
 	// === 武装設定をコンポーネントに適用 ===
 	ApplyWeaponConfigToCombatComponent();
 
@@ -83,9 +88,6 @@ void Player::Update() {
 	// === プレイヤー移動関連処理 ===
 	UpdateMovement();
 	UpdateBarrelRollAndBoost();
-
-	// === ロックオン機能（コンポーネント委譲） ===
-	lockedOnComponent_.Update(GetPosition(), GetForwardVector());
 
 	// === 射撃処理 ===
 	ProcessShooting();
@@ -256,7 +258,7 @@ void Player::ProcessShooting() {
 	Input *input = Input::GetInstance();
 
 	const Vector3 playerPos = obj_->GetPosition();
-	const Vector3 forward{0.0f, 0.0f, 1.0f};
+	const Vector3 forward = GetForwardVector();
 
 	// トリガー入力閾値
 	constexpr float kTriggerThreshold = 0.3f;
@@ -267,25 +269,45 @@ void Player::ProcessShooting() {
 		combatComponent_.ShootBullet(playerPos, forward);
 	}
 
-	// ミサイル発射（キーボード：M または コントローラー：Lトリガー/Bボタン）
-	bool shootMissile = input->PushKey(DIK_M) || input->GetLeftTrigger() > kTriggerThreshold ||
-						input->TriggerButton(XINPUT_GAMEPAD_B);
+	// ===== ミサイル長押しロジック（新仕様） =====
+	// ミサイルボタン入力判定（キーボード：M または コントローラー：Lトリガー/Bボタン）
+	bool missileButtonPressed = input->PushKey(DIK_M) || input->GetLeftTrigger() > kTriggerThreshold ||
+								input->PushButton(XINPUT_GAMEPAD_B);
+	bool missileButtonTriggered = missileButtonPressed && !prevMissileButtonPressed_;
 
-	if (shootMissile && combatComponent_.CanShootMissile()) {
-		// マルチロックオン対応（コンポーネント委譲）
-		const auto &lockOnTargets = lockedOnComponent_.GetAllTargets();
-		if (!lockOnTargets.empty()) {
-			// ロックオン中：すべてのロックオン対象にミサイルを発射
-			combatComponent_.ShootMultipleMissiles(playerPos, forward, lockOnTargets);
-		} else {
-			// ロックオン外：最寄りの敵に発射（互換性保持）
-			// 最寄り敵検索は lockedOnComponent_ に委譲
-			EnemyBase *targetEnemy = lockedOnComponent_.GetPrimaryTarget();
-			if (targetEnemy) {
-				combatComponent_.ShootMissile(playerPos, forward, targetEnemy);
-			}
-		}
+	// ボタンが離された（前フレーム押下 → 今フレーム未押）
+	bool missileButtonReleased = prevMissileButtonPressed_ && !missileButtonPressed;
+
+	// 押下開始時にロックオンモードへ遷移
+	if (missileButtonTriggered && combatComponent_.CanShootMissile()) {
+		isInLockOnMode_ = true;
+		missileButtonHeldTime_ = 0.0f;
+		lockedOnComponent_.BeginLockOn();
 	}
+
+	// ボタン長押し中
+	if (missileButtonPressed && isInLockOnMode_) {
+		missileButtonHeldTime_ += kFrameDelta;
+		lockedOnComponent_.UpdateLockOn(playerPos, forward, kFrameDelta);
+	}
+	// ボタン離した（リリース）
+	if (missileButtonReleased) {
+		// ロックオン中の敵にミサイル発射
+		const auto &lockOnTargets = lockedOnComponent_.GetAllTargets();
+		if (isInLockOnMode_ && !lockOnTargets.empty()) {
+			// 複数ロック敵に同時発射
+			combatComponent_.ShootMultipleMissiles(playerPos, forward, lockOnTargets);
+		}
+
+		// ロックオンモード終了
+		lockedOnComponent_.EndLockOn();
+		isInLockOnMode_ = false;
+		lockedOnComponent_.ClearLockOn();
+		missileButtonHeldTime_ = 0.0f;
+	}
+
+	// 前フレームの状態を保存
+	prevMissileButtonPressed_ = missileButtonPressed;
 }
 
 //=============================================================================
@@ -547,17 +569,22 @@ void Player::DrawImGui() {
 		if (ImGui::SliderFloat("Shoot Cool Time", &maxShootCoolTime, 0.05f, 1.0f)) {
 			combatComponent_.SetMaxShootCoolTime(maxShootCoolTime);
 		}
-		float maxMissileCoolTime = 1.0f;
-		if (ImGui::SliderFloat("Missile Cool Time", &maxMissileCoolTime, 0.5f, 5.0f)) {
-			combatComponent_.SetMaxMissileCoolTime(maxMissileCoolTime);
+		int maxMissileAmmo = combatComponent_.GetMaxMissileAmmo();
+		if (ImGui::SliderInt("Max Missile Ammo", &maxMissileAmmo, 1, 10)) {
+			combatComponent_.SetMaxMissileAmmo(maxMissileAmmo);
 		}
+		float missileRecoveryTime = combatComponent_.GetMissileRecoveryTime();
+		if (ImGui::SliderFloat("Missile Recovery Time (sec)", &missileRecoveryTime, 0.5f, 10.0f)) {
+			combatComponent_.SetMissileRecoveryTime(missileRecoveryTime);
+		}
+		ImGui::Text("Missile Ammo: %d / %d", combatComponent_.GetMissileAmmo(), combatComponent_.GetMaxMissileAmmo());
 		ImGui::Text("Controls:");
-		ImGui::Text("  Keyboard: SPACE = Gun, M = Missile");
-		ImGui::Text("  Controller: R-Trigger = Gun, L-Trigger/B = Missile");
+		ImGui::Text("  Keyboard: SPACE = Gun, Hold M = Lock, Release M = Fire");
+		ImGui::Text("  Controller: R-Trigger = Gun, Hold LT/B = Lock, Release = Fire");
 
 		// === ロックオン情報（マルチロック） ===
 		ImGui::Text("=== Auto Lock-On Status ===");
-		ImGui::Text("Lock-On Mode: %s", lockedOnComponent_.HasLockOnTarget() ? "ACTIVE" : "INACTIVE");
+		ImGui::Text("Lock-On Mode: %s", isInLockOnMode_ ? "ACTIVE" : "INACTIVE");
 		ImGui::Text("Locked Enemies: %zu / %d", lockedOnComponent_.GetTargetCount(), lockedOnComponent_.GetMaxLockOnTargets());
 
 		// ロック敵の詳細情報

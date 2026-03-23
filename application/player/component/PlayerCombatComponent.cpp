@@ -35,8 +35,10 @@ void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup,
 
 	shootCoolTime_ = 0.0f;
 	maxShootCoolTime_ = 0.1f;
-	missileCoolTime_ = 0.0f;
-	maxMissileCoolTime_ = 1.0f;
+	missileAmmo_ = 3;
+	maxMissileAmmo_ = 3;
+	missileRecoveryTimer_ = 0.0f;
+	maxMissileRecoveryTime_ = 3.0f; // 3秒で1発回復
 	bulletFireDirection_ = {0.0f, 0.0f, 1.0f};
 
 	// デフォルトモデルパス
@@ -47,9 +49,19 @@ void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup,
 //=============================================================================
 // 更新
 void PlayerCombatComponent::Update(float deltaTime) {
-	// クールタイムの更新
+	// 弾のクールタイム更新
 	shootCoolTime_ = std::max(0.0f, shootCoolTime_ - deltaTime);
-	missileCoolTime_ = std::max(0.0f, missileCoolTime_ - deltaTime);
+
+	// ミサイルの回復タイマー更新（3秒ごとに1発回復）
+	if (missileAmmo_ < maxMissileAmmo_) {
+		missileRecoveryTimer_ += deltaTime;
+		if (missileRecoveryTimer_ >= maxMissileRecoveryTime_) {
+			missileAmmo_++;
+			missileRecoveryTimer_ = 0.0f;
+			// 最大残弾数を超えないようにクリップ
+			missileAmmo_ = std::min(missileAmmo_, maxMissileAmmo_);
+		}
+	}
 }
 
 //=============================================================================
@@ -85,7 +97,8 @@ void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 
 	}
 
 	missiles_.push_back(std::move(missile));
-	missileCoolTime_ = maxMissileCoolTime_;
+	missileAmmo_--;				  // 残弾を消費
+	missileRecoveryTimer_ = 0.0f; // 回復タイマーをリセット
 }
 
 //=============================================================================
@@ -139,7 +152,9 @@ void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const
 	// printf("ShootMultipleMissiles: Firing %zu missiles\n", targets.size());
 
 	// ロック対象の敵の数分だけミサイルを発射（1体=1ミサイル）
-	for (size_t i = 0; i < targets.size(); ++i) {
+	const size_t fireCount = std::min(targets.size(), static_cast<size_t>(missileAmmo_));
+	int firedMissileCount = 0;
+	for (size_t i = 0; i < fireCount; ++i) {
 		if (!targets[i]) {
 			continue;
 		}
@@ -176,8 +191,11 @@ void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const
 		}
 
 		missiles_.push_back(std::move(missile));
+		++firedMissileCount;
 	}
 
-	// クールタイムを設定（複数敵発射でもクールタイムは1回分）
-	missileCoolTime_ = maxMissileCoolTime_;
+	if (firedMissileCount > 0) {
+		missileAmmo_ = std::max(0, missileAmmo_ - firedMissileCount); // 発射数分だけ残弾を消費
+		missileRecoveryTimer_ = 0.0f;								  // 回復タイマーをリセット
+	}
 }

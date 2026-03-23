@@ -355,9 +355,10 @@ void HUD::Update(const Player *player) {
 	lockOnTarget_ = player->GetLockOnTarget();
 	lockOnRange_ = player->GetLockOnRange();
 	lockOnFOV_ = player->GetLockOnFOV();
+	isMissileLockOnMode_ = player->IsMissileLockOnMode();
 
 	// ロックオン中の敵数をカウント
-	lockedEnemyCount_ = lockOnTarget_ ? 1 : 0;
+	lockedEnemyCount_ = static_cast<int>(player->GetLockOnTargetCount());
 }
 
 ///=============================================================================
@@ -432,8 +433,8 @@ void HUD::Draw() {
 		DrawBoostBarrel(boostBarrelProgress);
 	}
 
-	// ロックオン用レティクル
-	if (showLockOnReticle_ && lockOnTarget_) {
+	// ロックオン用レティクル（長押しモード中も表示）
+	if (showLockOnReticle_ && (isMissileLockOnMode_ || lockOnTarget_)) {
 		DrawLockOnReticle(deployProgress_);
 	}
 }

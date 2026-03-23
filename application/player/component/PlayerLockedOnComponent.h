@@ -29,10 +29,17 @@ public:
 	/// @param enemyManager 敵管理マネージャー
 	void Initialize(EnemyManager *enemyManager);
 
-	/// @brief ロックオン更新（毎フレーム呼び出し）
+	/// @brief ロックオン開始（ミサイルボタン押下時）
+	void BeginLockOn();
+
+	/// @brief ロックオン更新（長押し中に呼び出し）
 	/// @param playerPos プレイヤーの位置
 	/// @param playerForward プレイヤーの前方ベクトル
-	void Update(const Vector3 &playerPos, const Vector3 &playerForward);
+	/// @param deltaTime フレーム時間
+	void UpdateLockOn(const Vector3 &playerPos, const Vector3 &playerForward, float deltaTime);
+
+	/// @brief ロックオン終了（ミサイルボタン解放時）
+	void EndLockOn();
 
 	///--------------------------------------------------------------
 	///                        ロックオン状態取得
@@ -49,6 +56,11 @@ public:
 	/// @brief 全ロックオン対象を取得
 	const std::vector<EnemyBase *> &GetAllTargets() const {
 		return lockOnTargets_;
+	}
+
+	/// @brief 現在照準内にいる候補ターゲットを取得
+	EnemyBase *GetAimingTarget() const {
+		return aimingTarget_;
 	}
 
 	/// @brief ロックオン対象数を取得
@@ -92,6 +104,13 @@ public:
 	void ClearLockOn() {
 		lockOnTargets_.clear();
 		primaryLockOnTarget_ = nullptr;
+		aimingTarget_ = nullptr;
+		lockOnAcquireTimer_ = 0.0f;
+	}
+
+	/// @brief ロックオンモード中か
+	bool IsLockOnMode() const {
+		return lockOnMode_;
 	}
 
 	/// @brief 敵マネージャーを設定
@@ -111,14 +130,23 @@ private:
 	/// @brief 最寄りの敵を取得
 	EnemyBase *GetNearestEnemy(const Vector3 &playerPos, const Vector3 &playerForward);
 
+	/// @brief 照準中心に最も近い候補を取得（未ロック対象のみ）
+	EnemyBase *FindBestTargetInReticle(const Vector3 &playerPos, const Vector3 &playerForward);
+
+	/// @brief 既にロック済みか判定
+	bool IsAlreadyLocked(EnemyBase *target) const;
+
 	///--------------------------------------------------------------
 	///                        メンバ変数
 	EnemyManager *enemyManager_;			 // 敵管理マネージャーへの参照
 	std::vector<EnemyBase *> lockOnTargets_; // ロックオン対象敵のリスト
 	EnemyBase *primaryLockOnTarget_;		 // メインのロックオン対象
 
-	float lockOnRange_;	   // ロックオン探索範囲（メートル）
-	float lockOnFOV_;	   // ロックオン視野角（度数法）
-	int maxLockOnTargets_; // 同時ロック可能な最大敵数
-	bool lockOnMode_;	   // ロックオン中フラグ
+	float lockOnRange_;			  // ロックオン探索範囲（メートル）
+	float lockOnFOV_;			  // ロックオン視野角（度数法）
+	int maxLockOnTargets_;		  // 同時ロック可能な最大敵数
+	bool lockOnMode_;			  // ロックオン中フラグ
+	float lockOnAcquireTimer_;	  // 次のロック取得までの経過時間
+	float lockOnAcquireInterval_; // 1体ずつロックする間隔（秒）
+	EnemyBase *aimingTarget_;	  // 現在照準中心にいる候補ターゲット
 };

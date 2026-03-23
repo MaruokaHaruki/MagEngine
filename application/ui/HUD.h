@@ -7,7 +7,6 @@ using namespace MagMath;
 #include "LineManager.h"
 #include "Player.h"
 #include <memory>
-#include "Camera.h"
 
 class HUD {
 public:
@@ -108,6 +107,7 @@ private:
 	float lockOnRange_;
 	float lockOnFOV_;
 	int lockedEnemyCount_;
+	bool isMissileLockOnMode_ = false;
 
 	// アニメーション状態
 	bool isAnimating_;

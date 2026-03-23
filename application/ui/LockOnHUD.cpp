@@ -22,7 +22,7 @@ void LockOnHUD::Initialize(Player *player, EnemyManager *enemyManager) {
 	pulseTime_ = 0.0f;
 
 	// デバッグ設定のデフォルト値
-	debugSettings_.showAllMarkers = true;
+	debugSettings_.showAllMarkers = false;
 	debugSettings_.showLockOnLines = false; // ロックオンライン非表示
 	debugSettings_.enableAnimation = true;
 }
@@ -66,11 +66,18 @@ void LockOnHUD::Draw() {
 
 	// ロックオン情報を取得
 	const auto &lockedEnemies = player_->GetAllLockOnTargets();
+	const bool isLockOnMode = player_->IsMissileLockOnMode();
+	EnemyBase *aimingTarget = player_->GetAimingLockOnTarget();
+
+	// ロックオンモード外でロック済みもない場合は描画しない
+	if (!isLockOnMode && lockedEnemies.empty()) {
+		return;
+	}
 
 	// すべての敵を取得
 	const auto &allEnemies = enemyManager_->GetEnemies();
 
-	// すべての敵にマーカーを描画
+	// デバッグ時のみ、すべての敵にマーカーを描画
 	if (debugSettings_.showAllMarkers) {
 		for (const auto &enemyPtr : allEnemies) {
 			EnemyBase *enemy = enemyPtr.get();
@@ -83,6 +90,20 @@ void LockOnHUD::Draw() {
 
 			DrawEnemyMarker(enemy, camera, isLocked);
 		}
+	}
+
+	// ロック済みターゲットは常に描画
+	for (EnemyBase *enemy : lockedEnemies) {
+		if (!enemy || !enemy->IsAlive()) {
+			continue;
+		}
+		DrawEnemyMarker(enemy, camera, true);
+	}
+
+	// 長押し中の照準候補（未ロック）を描画
+	if (isLockOnMode && aimingTarget &&
+		std::find(lockedEnemies.begin(), lockedEnemies.end(), aimingTarget) == lockedEnemies.end()) {
+		DrawEnemyMarker(aimingTarget, camera, false);
 	}
 
 	// ロックオンラインを描画
@@ -279,6 +300,7 @@ void LockOnHUD::DrawImGui() {
 
 		if (player_) {
 			ImGui::Separator();
+			ImGui::Text("LockOn Mode: %s", player_->IsMissileLockOnMode() ? "ACTIVE" : "INACTIVE");
 			ImGui::Text("LockOn Targets: %zu", player_->GetLockOnTargetCount());
 		}
 

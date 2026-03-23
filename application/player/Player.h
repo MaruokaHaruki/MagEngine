@@ -56,7 +56,8 @@ struct WeaponConfig {
 	float missileSpeed = 50.0f;					  // ミサイルの速度
 	float missileMaxTurnRate = 120.0f;			  // ミサイルの最大旋回速度（度/秒）
 	float missileMaxLifeTime = 15.0f;			  // ミサイルの生存時間（秒）
-	float missileCoolTime = 1.0f;				  // ミサイル発射クールタイム
+	int missileMaxAmmo = 3;						  // ミサイル最大残弾数
+	float missileRecoveryTime = 3.0f;			  // ミサイル1発の回復時間（秒）
 
 	// 拡張用：マシンガンなど他の武装タイプはここに追加
 };
@@ -126,6 +127,14 @@ public:
 	/// @brief ロックオン対象の数を取得
 	size_t GetLockOnTargetCount() const {
 		return lockedOnComponent_.GetTargetCount();
+	}
+	/// @brief ミサイル長押しロックオンモード中か
+	bool IsMissileLockOnMode() const {
+		return isInLockOnMode_;
+	}
+	/// @brief 現在照準内にいるロック候補を取得
+	EnemyBase *GetAimingLockOnTarget() const {
+		return lockedOnComponent_.GetAimingTarget();
 	}
 	/// @brief ロックオン範囲のセッター
 	void SetLockOnRange(float range) {
@@ -273,7 +282,8 @@ public:
 		combatComponent_.SetBulletModelPath(weaponConfig_.bulletModelPath);
 		combatComponent_.SetMissileModelPath(weaponConfig_.missileModelPath);
 		combatComponent_.SetMaxShootCoolTime(weaponConfig_.shootCoolTime);
-		combatComponent_.SetMaxMissileCoolTime(weaponConfig_.missileCoolTime);
+		combatComponent_.SetMaxMissileAmmo(weaponConfig_.missileMaxAmmo);
+		combatComponent_.SetMissileRecoveryTime(weaponConfig_.missileRecoveryTime);
 	}
 
 	//---- 弾（銃）の設定 ----
@@ -362,14 +372,29 @@ public:
 		return weaponConfig_.missileMaxLifeTime;
 	}
 
-	/// @brief ミサイル発射クールタイムを設定
-	void SetMissileCoolTime(float coolTime) {
-		weaponConfig_.missileCoolTime = coolTime;
-		combatComponent_.SetMaxMissileCoolTime(coolTime);
+	/// @brief ミサイル回復時間を設定（秒）
+	void SetMissileRecoveryTime(float recoveryTime) {
+		weaponConfig_.missileRecoveryTime = recoveryTime;
+		combatComponent_.SetMissileRecoveryTime(recoveryTime);
 	}
-	/// @brief ミサイル発射クールタイムを取得
-	float GetMissileCoolTime() const {
-		return weaponConfig_.missileCoolTime;
+	/// @brief ミサイル回復時間を取得（秒）
+	float GetMissileRecoveryTime() const {
+		return weaponConfig_.missileRecoveryTime;
+	}
+
+	/// @brief ミサイル最大残弾数を設定
+	void SetMissileMaxAmmo(int maxAmmo) {
+		weaponConfig_.missileMaxAmmo = maxAmmo;
+		combatComponent_.SetMaxMissileAmmo(maxAmmo);
+	}
+	/// @brief ミサイル最大残弾数を取得
+	int GetMissileMaxAmmo() const {
+		return weaponConfig_.missileMaxAmmo;
+	}
+
+	/// @brief ミサイル現在残弾数を取得
+	int GetMissileAmmo() const {
+		return combatComponent_.GetMissileAmmo();
 	}
 
 	///--------------------------------------------------------------
@@ -402,6 +427,12 @@ private:
 	//========================================
 	// システム参照
 	EnemyManager *enemyManager_;
+
+	//========================================
+	// ミサイルボタン長押し管理
+	float missileButtonHeldTime_;	// ミサイルボタンが押されている時間
+	bool isInLockOnMode_;			// ロックオンモード中フラグ
+	bool prevMissileButtonPressed_; // 前フレームのミサイルボタン状態
 
 	//========================================
 	// 武装設定（一元管理）
