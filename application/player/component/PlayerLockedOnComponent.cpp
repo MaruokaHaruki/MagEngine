@@ -24,9 +24,9 @@ void PlayerLockedOnComponent::Initialize(EnemyManager *enemyManager) {
 	aimingTarget_ = nullptr;
 
 	// デフォルト設定
-	lockOnRange_ = 50.0f;  // 50メートル範囲
-	lockOnFOV_ = 18.0f;	   // 照準中心ベースのロック用に狭める
-	maxLockOnTargets_ = 3; // 最大3敵同時ロック
+	lockOnRange_ = 50.0f;   // 50メートル範囲
+	lockOnFOV_ = 180.0f;    // 前方180度（後ろ以外ほぼ全周）でロック可能に拡大
+	maxLockOnTargets_ = 3;  // 最大3敵同時ロック
 	lockOnMode_ = false;
 	lockOnAcquireTimer_ = 0.0f;
 	lockOnAcquireInterval_ = 0.35f;

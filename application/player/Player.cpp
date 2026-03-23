@@ -261,7 +261,8 @@ void Player::ProcessShooting() {
 	Input *input = Input::GetInstance();
 
 	const Vector3 playerPos = obj_->GetPosition();
-	const Vector3 forward = GetForwardVector();
+	// プレイヤーの正面は常にZ軸正方向（カメラから見てプレイヤーの前方）
+	const Vector3 shootDirection = {0.0f, 0.0f, 1.0f};
 
 	// トリガー入力閾値
 	constexpr float kTriggerThreshold = 0.3f;
@@ -269,7 +270,7 @@ void Player::ProcessShooting() {
 	// マシンガン発射（キーボード：SPACE または コントローラー：Rトリガー）
 	bool shootBullet = input->PushKey(DIK_SPACE) || input->GetRightTrigger() > kTriggerThreshold;
 	if (shootBullet && combatComponent_.CanShootBullet()) {
-		combatComponent_.ShootBullet(playerPos, forward);
+		combatComponent_.ShootBullet(playerPos, shootDirection);
 	}
 
 	// ===== ミサイル長押しロジック（新仕様） =====
@@ -291,7 +292,7 @@ void Player::ProcessShooting() {
 	// ボタン長押し中
 	if (missileButtonPressed && isInLockOnMode_) {
 		missileButtonHeldTime_ += kFrameDelta;
-		lockedOnComponent_.UpdateLockOn(playerPos, forward, kFrameDelta);
+		lockedOnComponent_.UpdateLockOn(playerPos, shootDirection, kFrameDelta);
 	}
 	// ボタン離した（リリース）
 	if (missileButtonReleased) {
@@ -299,7 +300,7 @@ void Player::ProcessShooting() {
 		const auto &lockOnTargets = lockedOnComponent_.GetAllTargets();
 		if (isInLockOnMode_ && !lockOnTargets.empty()) {
 			// 複数ロック敵に同時発射
-			combatComponent_.ShootMultipleMissiles(playerPos, forward, lockOnTargets);
+			combatComponent_.ShootMultipleMissiles(playerPos, shootDirection, lockOnTargets);
 		}
 
 		// ロックオンモード終了

@@ -74,7 +74,7 @@ void PlayerMissile::Initialize(
 	lockedTarget_ = nullptr;
 	trackingStrength_ = 0.0f;	// 初期は追尾なし
 	lockOnRange_ = 50.0f;		// ロックオン範囲を広げる
-	lockOnFOV_ = 90.0f;			// 視野角90度（左右45度ずつ）
+	lockOnFOV_ = 180.0f;		// 視野角180度（前方ほぼ全周でロック可能）
 	trackingStartTime_ = 0.05f; // 即座に追尾開始（0.05秒後）
 	isTracking_ = false;
 	isLockedOn_ = false;
