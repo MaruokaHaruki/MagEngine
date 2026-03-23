@@ -142,9 +142,9 @@ void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, fl
 							: 1.0f - (-2.0f * progress + 2.0f) * (-2.0f * progress + 2.0f) / 2.0f;
 	}
 
-	// ロール回転（540度 = 1.5回転）- より派手でかっこいい回転
+	// ロール回転（360度 = 1回転）- 元の姿勢に戻る
 	float rollDirection = barrelRollDirection_ ? -1.0f : 1.0f;	 // 右=負の回転、左=正の回転
-	float rollAngle = easedProgress * 3.0f * PI * rollDirection; // 2π → 3π（360度 → 540度）
+	float rollAngle = easedProgress * 2.0f * PI * rollDirection; // 2π（360度）
 	transform->rotate.z = barrelRollStartRotation_.z + rollAngle;
 
 	// 進行方向への加速処理 - より指数的でダイナミック
