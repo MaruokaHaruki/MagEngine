@@ -12,15 +12,15 @@ namespace MagEngine {
 		Emit(); // 初期化時に即時発生
 	}
 
-	void ParticleEmitter::Update() {
-		// パーティクルの更新
+	void ParticleEmitter::Update(float deltaTime) {
+		// COMMENT: パーティクルの更新 (GPU インスタンシング時にはスキップ可能)
 		particle_->Update();
 
 		if(!repeat_)
 			return; // 繰り返しフラグがfalseの場合は処理をスキップ
 
-		// 時間経過によるエミット処理
-		elapsedTime_ += 1.0f / 60.0f; // フレーム単位の経過時間を加算
+		// COMMENT: 可変 deltaTime で フレームレートに依存しない更新
+		elapsedTime_ += deltaTime;
 
 		if(elapsedTime_ >= frequency_) {
 			Emit();

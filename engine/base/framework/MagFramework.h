@@ -8,10 +8,20 @@
  *********************************************************************/
 #pragma once
 //========================================
+// COMMENT: リリースビルド時に ImGui を完全に除外する
+#ifdef _DEBUG
+#define ENABLE_IMGUI 1
+#else
+#define ENABLE_IMGUI 0
+#endif
+
+//========================================
 // Framework
 #include "Camera.h"
 #include "DirectXCore.h"
+#if ENABLE_IMGUI
 #include "ImguiSetup.h"
+#endif
 #include "Input.h"
 #include "SrvSetup.h"
 #include "WinApp.h"
@@ -118,7 +128,10 @@ namespace MagEngine {
 		std::unique_ptr<DirectXCore> dxCore_;
 		//========================================
 		// ImGui
+		/// COMMENT: リリースビルド（NDEBUG）では ImGui を除外してメモリ節約
+#if ENABLE_IMGUI
 		std::unique_ptr<ImguiSetup> imguiSetup_;
+#endif
 		//========================================
 		// SrvSetup
 		std::unique_ptr<SrvSetup> srvSetup_;

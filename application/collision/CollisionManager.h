@@ -115,9 +115,11 @@ public:
 	void Reset();
 
 	/// \brief オブジェクト登録
+	/// COMMENT: 衝突判定対象に追加。内部的にはアクティブリストと検索キャッシュを更新
 	void RegisterObject(BaseObject *obj);
 
 	/// \brief オブジェクト登録解除
+	/// COMMENT: メモリ解放の前に必ず呼び出し。オブジェクトプール（再利用ポール）から削除
 	void UnregisterObject(BaseObject *obj);
 
 	/// \brief 全ての当たり判定をチェック
@@ -190,8 +192,10 @@ private:
 
 	//========================================
 	// オブジェクト管理
+	/// COMMENT: アクティブなオブジェクトリスト（衝突判定対象）
 	std::vector<BaseObject *> activeObjects_;
-	std::vector<BaseObject *> objectPool_; // 再利用プール
+	/// COMMENT: 削除されたオブジェクトの再利用プール（メモリ割り当て最適化）
+	std::vector<BaseObject *> objectPool_;
 
 	//========================================
 	// 衝突状態管理（軽量化）

@@ -15,7 +15,7 @@ void CollisionManager::Initialize(float cellSize, int maxObjects) {
 	debugGroupFilter_ = 0;
 	collisionChecksThisFrame_ = 0;
 
-	// メモリ予約（パフォーマンス最適化）
+	// COMMENT: メモリ予約（パフォーマンス最適化）アロケーション回数を削減
 	activeObjects_.reserve(maxObjects);
 	objectPool_.reserve(maxObjects);
 	grid_.reserve(maxObjects / 8);			  // より小さい初期容量

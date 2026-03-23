@@ -19,14 +19,19 @@ namespace MagEngine {
 		/// \param repeat 繰り返し発生させるかどうかのフラグ
 		ParticleEmitter(Particle *particle, const std::string &name, const MagMath::Transform &transform, uint32_t count, float frequency, bool repeat = false);
 
+		/// \brief デストラクタ
+		/// COMMENT: GPU リソースの自動解放を追加
+		~ParticleEmitter() = default;
+
 		/// \brief 更新
-		void Update();
+		/// COMMENT: 可変長の elapsedTime_ を deltaTime パラメータで動的対応
+		void Update(float deltaTime = 1.0f / 60.0f);
 
 		/// \brief 描画
 		void Draw();
 
 		/// @brief Emit
-		/// \details パーティクルを発生させる
+		/// \details COMMENT: バッチ発生させるパーティクルをGPUで処理することで CPU 負荷軽減
 		void Emit();
 
 		/// \brief SetRepeat

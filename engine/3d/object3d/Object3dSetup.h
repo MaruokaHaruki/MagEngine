@@ -23,8 +23,9 @@ namespace MagEngine {
 		/// @param dxCore DirectXCoreポインタ
 		void Initialize(DirectXCore *dxCore);
 
-		/// @brief 共通描画設定
-		void CommonDrawSetup();
+	/// @brief 共通描画設定
+	/// COMMENT: GPU の描画状態切り替えを最小化。複数オブジェクトの連続描画効率を向上
+	void CommonDrawSetup();
 
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
@@ -73,22 +74,27 @@ namespace MagEngine {
 	private:
 		//========================================
 		// DirectXCoreポインタ
+		/// COMMENT: GPU リソースとコマンドリスト管理
 		DirectXCore *dxCore_ = nullptr;
 
 		//=======================================
 		// LightManagerポインタ
+		/// COMMENT: ライティング情報を複数オブジェクトで共有（バッチ処理最適化）
 		LightManager *lightManager_ = nullptr;
 
 		//========================================
 		// RootSignature
+		/// COMMENT: GPU パイプラインの設定。複数フレーム間で再利用
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 
 		//========================================
 		// グラフィックスパイプライン
+		/// COMMENT: PSO キャッシング。ドロー呼び出し前の状態設定を削減
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;
 
 		//========================================
 		// デフォルトカメラ
+		/// COMMENT: カメラバッファを複数オブジェクト間で共有（メモリ最適化）
 		Camera *defaultCamera_ = nullptr;
 	};
 }
