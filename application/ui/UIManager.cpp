@@ -104,7 +104,8 @@ void UIManager::Draw() {
 	if (gameClearAnimation_) {
 		gameClearAnimation_->Draw();
 	}
-	if (operationGuideUI_) {
+	// ゲームオーバー/クリア時は操作ガイドUIを描画しない
+	if (operationGuideUI_ && !isGameOver_ && !isGameClear_) {
 		operationGuideUI_->Draw();
 	}
 	if (startAnimation_) {

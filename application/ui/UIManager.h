@@ -69,6 +69,18 @@ public:
 	}
 
 	///--------------------------------------------------------------
+	///                        ゲーム状態管理
+	/// \brief ゲームオーバー状態を設定
+	void SetGameOver(bool isGameOver) {
+		isGameOver_ = isGameOver;
+	}
+
+	/// \brief ゲームクリア状態を設定
+	void SetGameClear(bool isGameClear) {
+		isGameClear_ = isGameClear;
+	}
+
+	///--------------------------------------------------------------
 	///                        メンバ変数
 private:
 	// スプライト設定
@@ -82,4 +94,8 @@ private:
 	std::unique_ptr<HUD> hud_;
 	std::unique_ptr<MenuUI> menuUI_;
 	std::unique_ptr<LockOnHUD> lockOnHUD_;
+
+	// ゲーム状態
+	bool isGameOver_ = false;
+	bool isGameClear_ = false;
 };

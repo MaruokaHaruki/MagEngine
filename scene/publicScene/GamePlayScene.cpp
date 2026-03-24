@@ -358,6 +358,10 @@ void GamePlayScene::Update() {
 		// プレイヤーの敗北演出が完了したらゲーム終了演出開始
 		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
+			// UIManagerにゲームオーバー状態を通知
+			if (uiManager_) {
+				uiManager_->SetGameOver(true);
+			}
 			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
 				gameOverUI->Play(0.8f, 2.5f, 1.2f);
 			}
@@ -379,6 +383,10 @@ void GamePlayScene::Update() {
 	if (enemyManager_ && !isGameOver_ && !isGameClear_) {
 		if (enemyManager_->IsGameClear()) {
 			isGameClear_ = true;
+			// UIManagerにゲームクリア状態を通知
+			if (uiManager_) {
+				uiManager_->SetGameClear(true);
+			}
 			// クリア演出を開始
 			if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
 				gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
@@ -389,15 +397,27 @@ void GamePlayScene::Update() {
 					hud->StartRetractAnimation(1.0f);
 				}
 			}
+			// 操作ガイドUIを格納
+			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+				operationGuide->StartRetractAnimation(0.6f);
+			}
 		}
 	}
 
 	// デバック用にキーボードでゲームクリアを強制発動
 	if (Input::GetInstance()->TriggerKey(DIK_C)) {
 		isGameClear_ = true;
+		// UIManagerにゲームクリア状態を通知
+		if (uiManager_) {
+			uiManager_->SetGameClear(true);
+		}
 		// HUDを格納
 		if (auto hud = uiManager_->GetHUD()) {
 			hud->StartRetractAnimation(1.0f);
+		}
+		// 操作ガイドUIを格納
+		if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+			operationGuide->StartRetractAnimation(0.6f);
 		}
 		// クリア演出を開始
 		if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
