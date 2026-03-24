@@ -444,7 +444,6 @@ void Player::DrawImGui() {
 			if (confirmCount >= 2) {
 				healthComponent_.TakeDamage(healthComponent_.GetCurrentHP());
 				defeatComponent_.StartDefeatAnimation();
-				gameOverAnimation_.StartGameOverAnimation(); // ゲームオーバー演出開始
 				confirmCount = 0;
 			} else {
 				ImGui::OpenPopup("Confirm Debug Action");
@@ -661,7 +660,6 @@ void Player::DrawImGui() {
 		if (ImGui::Button("Test Animation Sequence")) {
 			healthComponent_.TakeDamage(healthComponent_.GetCurrentHP());
 			defeatComponent_.StartDefeatAnimation();
-			gameOverAnimation_.StartGameOverAnimation(); // ゲームオーバー演出開始
 		}
 
 		ImGui::End();
@@ -681,7 +679,6 @@ void Player::TakeDamage(int damage) {
 	// HP0になったら敗北演出開始
 	if (!healthComponent_.IsAlive()) {
 		defeatComponent_.StartDefeatAnimation();
-		gameOverAnimation_.StartGameOverAnimation(); // ゲームオーバー演出開始
 	}
 }
 

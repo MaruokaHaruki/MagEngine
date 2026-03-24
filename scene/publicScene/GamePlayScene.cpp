@@ -100,6 +100,8 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	// FollowCameraをメインカメラに設定
 	CameraManager::GetInstance()->SetCurrentCamera("FollowCamera");
 
+
+
 	//========================================
 	// 雲
 	cloud_ = std::make_unique<Cloud>();
@@ -171,9 +173,10 @@ void GamePlayScene::Initialize(SceneContext *context) {
 
 	// ゲームオーバーUI の設定
 	if (auto gameOverUI = uiManager_->GetGameOverUI()) {
-		gameOverUI->SetTextTexture("WolfOne_GameOver.png");
-		gameOverUI->SetBackgroundColor({0.0f, 0.0f, 0.0f, 1.0f});
-		gameOverUI->SetTextSize({1000.0f, 200.0f});
+		gameOverUI->SetTextTexture("WolfOne_GameOver.dds");
+		gameOverUI->SetTextSize({1000.0f, 250.0f});
+		gameOverUI->SetTextColor({1.0f, 0.2f, 0.2f, 1.0f}); // 鮮やかな赤
+		gameOverUI->SetFadeBackgroundColor({0.0f, 0.0f, 0.0f, 0.7f}); // 濃い黒
 		gameOverUI->SetOnComplete([this]() {
 			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 				sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
@@ -356,13 +359,17 @@ void GamePlayScene::Update() {
 		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
 			isGameOver_ = true;
 			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
-				gameOverUI->Play(2.0f, 3.0f);
+				gameOverUI->Play(0.8f, 2.5f, 1.2f);
 			}
 			// HUDを格納
 			if (auto hud = uiManager_->GetHUD()) {
 				if (!hud->IsAnimating()) {
 					hud->StartRetractAnimation(1.0f);
 				}
+			}
+			// 操作ガイドUIを格納
+			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+				operationGuide->StartRetractAnimation(0.6f);
 			}
 		}
 	}
