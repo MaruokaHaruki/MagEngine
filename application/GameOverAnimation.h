@@ -1,10 +1,11 @@
 /*********************************************************************
  * \file   GameOverAnimation.h
- * \brief  ゲームオーバー演出管理
+ * \brief  ゲームオーバー演出管理（改良版：豪華な演出）
  *
  * \author Harukichimaru
  * \date   March 2026
  * \note   敗北時のテキスト表示とフェードアウト演出を制御
+ *         複数のエフェクトで、かっこいいおしゃれな演出を実現
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
@@ -14,12 +15,13 @@ using namespace MagMath;
 #include <memory>
 #include <string>
 #include <functional>
+#include <vector>
 
 ///=============================================================================
 ///                        ゲームオーバー演出状態
 enum class GameOverAnimationState {
 	Idle,	   // 待機中
-	Appearing, // テキスト出現中
+	Appearing, // テキスト出現中（爆発＆スライドイン）
 	Displaying, // テキスト表示中
 	Fading,	   // フェードアウト中
 	Done,	   // 完了
@@ -53,9 +55,9 @@ public:
 	/// \param displayDuration テキスト表示時間（秒）
 	/// \param fadeDuration フェードアウト時間（秒）
 	void StartGameOverAnimation(
-		float appearDuration = 0.5f,
-		float displayDuration = 2.0f,
-		float fadeDuration = 1.0f);
+		float appearDuration = 0.8f,
+		float displayDuration = 2.5f,
+		float fadeDuration = 1.2f);
 
 	/// \brief アニメーションのリセット
 	void Reset();
@@ -111,9 +113,25 @@ private:
 	void UpdateDisplaying();
 	void UpdateFading();
 
+	void UpdateParticles();
+	void GenerateParticles();
+
 	float EaseInOut(float t);
 	float EaseOut(float t);
 	float EaseIn(float t);
+	float EaseOutBounce(float t);
+
+	///--------------------------------------------------------------
+	///                        パーティクル構造体
+	struct Particle {
+		Vector2 position;
+		Vector2 velocity;
+		float lifetime;
+		float maxLifetime;
+		float scale;
+		Vector4 color;
+		bool active;
+	};
 
 	///--------------------------------------------------------------
 	///                        メンバ変数
@@ -122,6 +140,13 @@ private:
 	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
 	std::unique_ptr<MagEngine::Sprite> textSprite_ = nullptr;
 	std::unique_ptr<MagEngine::Sprite> fadeBackgroundSprite_ = nullptr;
+	std::unique_ptr<MagEngine::Sprite> glowSprite_ = nullptr;	  // グロー効果
+	std::unique_ptr<MagEngine::Sprite> borderSprite1_ = nullptr; // 上部ボーダー
+	std::unique_ptr<MagEngine::Sprite> borderSprite2_ = nullptr; // 下部ボーダー
+
+	// パーティクル
+	std::vector<Particle> particles_;
+	static constexpr int kMaxParticles = 30;
 
 	// アニメーション状態
 	GameOverAnimationState state_ = GameOverAnimationState::Idle;
@@ -129,15 +154,15 @@ private:
 	float progress_ = 0.0f;
 
 	// タイミング設定
-	float appearDuration_ = 0.5f;
-	float displayDuration_ = 2.0f;
-	float fadeDuration_ = 1.0f;
+	float appearDuration_ = 0.8f;
+	float displayDuration_ = 2.5f;
+	float fadeDuration_ = 1.2f;
 
 	// 表示設定
-	Vector4 textColor_ = {1.0f, 0.0f, 0.0f, 1.0f}; // デフォルトは赤
-	Vector2 textSize_ = {800.0f, 200.0f};
-	std::string textTexture_ = "white1x1.png"; // 白いテクスチャ（色で染めて使用）
-	Vector4 fadeBackgroundColor_ = {0.0f, 0.0f, 0.0f, 0.5f}; // 半透明の黒
+	Vector4 textColor_ = {1.0f, 0.2f, 0.2f, 1.0f};			  // 鮮やかな赤
+	Vector2 textSize_ = {1000.0f, 250.0f};
+	std::string textTexture_ = "white1x1.dds";
+	Vector4 fadeBackgroundColor_ = {0.0f, 0.0f, 0.0f, 0.7f}; // 濃い黒
 
 	// 画面サイズ
 	float screenWidth_ = 1280.0f;
