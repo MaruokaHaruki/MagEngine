@@ -27,12 +27,11 @@ namespace MagEngine {
 	///=============================================================================
 	///						 共通描画設定
 	void CloudSetup::CommonDrawSetup() {
-		// コマンドリストの取得
-		// NOTE:Getを複数回呼び出すのは非効率的なので、変数に保持しておく
+		// COMMENT: コマンドリストを複数回取得するのは非効率的（フレーム毎に1回キャッシュすること）
 		auto commandList = dxCore_->GetCommandList();
 		// ルートシグネイチャのセット
 		commandList->SetGraphicsRootSignature(rootSignature_.Get());
-		// グラフィックスパイプラインステートをセット
+		// COMMENT: パイプラインステート（PSO）キャッシング - 複数フレーム間で再利用可能
 		commandList->SetPipelineState(pipelineState_.Get());
 		// プリミティブトポロジーをセット（三角形リスト）
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

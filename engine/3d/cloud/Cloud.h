@@ -130,8 +130,13 @@ namespace MagEngine {
 		/// @brief 描画
 		void Draw();
 
-		/// @brief ImGui描画
-		void DrawImGui();
+	/// @brief ImGui描画
+	/// COMMENT: DEBUG ビルド時のみ実行。UI は Release では不要
+#if ENABLE_IMGUI
+#ifdef _DEBUG
+	void DrawImGui();
+#endif // _DEBUG
+#endif // ENABLE_IMGUI
 		/**----------------------------------------------------------------------------
 		 * \brief  弾痕を追加する（円錐形状）
 		 * \param  origin 弾の開始位置

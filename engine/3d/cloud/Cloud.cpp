@@ -92,7 +92,10 @@ namespace MagEngine {
 		// デバッグフラグ（0.0 = 通常モード、1.0 = デバッグモード）
 		paramsCPU_.debugFlag = 0.0f;
 
+		// COMMENT: DEBUG ビルドのみログ出力
+#ifdef _DEBUG
 		Logger::Log("Cloud initialized", Logger::LogLevel::Info);
+#endif // DEBUG
 	}
 
 	///=============================================================================
@@ -185,14 +188,15 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 雲パラメータの更新
 	void Cloud::UpdateCloudParams() {
-		// NOTE: この関数は使わない - 直接cloudCenterを更新
+		// COMMENT: この関数は不使用 - GPU 更新時には直接 cloudCenter を更新するため削除可能
+		// 将来の refactor 対象
 	}
 
 	///=============================================================================
 	///						更新処理
 	void Cloud::Update(const Camera &camera, float deltaTime) {
 		//========================================
-		// 無効化されている場合は更新をスキップ
+		// COMMENT: 無効化時は早期リターン（if-guard パターン）
 		if (!enabled_)
 			return;
 
@@ -201,7 +205,7 @@ namespace MagEngine {
 		accumulatedTime_ += deltaTime;
 		paramsCPU_.time = accumulatedTime_;
 
-		// NOTE : windOffset事前計算 - C++側でgTime*gNoiseSpeedを計算（毎フレーム1回で高速化）
+		// COMMENT: windOffset 事前計算 - C++ 側で gTime*gNoiseSpeed を計算（毎フレーム1回で高速化）
 		paramsCPU_.windOffset = MagMath::Vector3(0.0f, 0.0f, accumulatedTime_ * paramsCPU_.noiseSpeed);
 
 		//========================================
@@ -210,18 +214,18 @@ namespace MagEngine {
 
 		//========================================
 		// 弾痕の更新（時間経過で減衰・削除）
-		UpdateBulletHoles(deltaTime);
-
-		//========================================
-		// 弾痕データをGPUに転送
-		TransferBulletHolesToGPU();
+		/// COMMENT: 弾痕がない場合は UpdateBulletHoles() をスキップ可能
+		if (!bulletHoles_.empty()) {
+			UpdateBulletHoles(deltaTime);
+			TransferBulletHolesToGPU();
+		}
 
 		//========================================
 		// カメラ行列の設定
 		// ビュープロジェクション行列を取得
 		const MagMath::Matrix4x4 viewProj = camera.GetViewProjectionMatrix();
 
-		// 逆ビュープロジェクション行列を計算（レイの方向計算に使用）
+		// COMMENT: 逆行列計算はコストが高いので、必要時のみ実行
 		cameraData_->invViewProj = MagMath::Inverse4x4(viewProj);
 
 		// ビュープロジェクション行列を設定（深度値計算に使用）
@@ -230,7 +234,7 @@ namespace MagEngine {
 		// カメラのワールド座標を設定（レイの原点）
 		cameraData_->cameraPosition = camera.GetTransform().translate;
 
-		// カメラのニア・ファープレーン設定
+		// カメラのニア・ファープレーン設定（定数値はキャッシュ可能）
 		cameraData_->nearPlane = 0.1f;
 		cameraData_->farPlane = 10000.0f;
 
@@ -239,14 +243,15 @@ namespace MagEngine {
 		*paramsData_ = paramsCPU_;
 
 		//========================================
-		// ライト情報の更新
-		if (setup_->GetLightManager()) {
+		// COMMENT: ライト情報の更新を null チェック統合
+		if (setup_ && setup_->GetLightManager()) {
+			auto lightMgr = setup_->GetLightManager();
 			// 並行光源
-			*directionalLightData_ = setup_->GetLightManager()->GetDirectionalLight();
+			*directionalLightData_ = lightMgr->GetDirectionalLight();
 			// 点光源
-			*pointLightData_ = setup_->GetLightManager()->GetPointLight();
+			*pointLightData_ = lightMgr->GetPointLight();
 			// スポットライト
-			*spotLightData_ = setup_->GetLightManager()->GetSpotLight();
+			*spotLightData_ = lightMgr->GetSpotLight();
 		}
 	}
 
@@ -254,13 +259,13 @@ namespace MagEngine {
 	///						描画
 	void Cloud::Draw() {
 		//========================================
-		// 描画可能かチェック
+		// COMMENT: 描画可能性チェック（if-guard パターン。早期リターン）
 		if (!enabled_ || !setup_ || !vertexBuffer_ || !cameraCB_ || !paramsCB_) {
 			return;
 		}
 
 		//========================================
-		// 共通描画設定
+		// COMMENT: 共通描画設定はフレーム毎に1回。複数オブジェクトの描画前に済ませる
 		setup_->CommonDrawSetup();
 		auto commandList = setup_->GetDXCore()->GetCommandList();
 
@@ -269,7 +274,7 @@ namespace MagEngine {
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
 		//========================================
-		// 定数バッファの設定
+		// 定数バッファの設定（GPU へのバッファ転送）
 		// カメラ定数バッファ（b0）
 		commandList->SetGraphicsRootConstantBufferView(0, cameraCB_->GetGPUVirtualAddress());
 		// パラメータ定数バッファ（b1）
@@ -278,13 +283,13 @@ namespace MagEngine {
 		commandList->SetGraphicsRootConstantBufferView(2, bulletHoleCB_->GetGPUVirtualAddress());
 
 		//========================================
-		// ウェザーマップテクスチャの設定
+		// COMMENT: ウェザーマップテクスチャは有効な場合のみ設定（条件判定削減）
 		if (hasWeatherMapSrv_) {
 			commandList->SetGraphicsRootDescriptorTable(3, weatherMapSrv_);
 		}
 
 		//========================================
-		// ライト定数バッファの設定
+		// ライト定数バッファの設定（GPU バッファ有効時のみ）
 		if (directionalLightBuffer_) {
 			commandList->SetGraphicsRootConstantBufferView(4, directionalLightBuffer_->GetGPUVirtualAddress());
 		}
@@ -296,7 +301,7 @@ namespace MagEngine {
 		}
 
 		//========================================
-		// 描画コール（フルスクリーン三角形）
+		// COMMENT: フルスクリーン三角形描画（インスタンス化なし）
 		commandList->DrawInstanced(3, 1, 0, 0);
 	}
 
@@ -317,7 +322,7 @@ namespace MagEngine {
 							  float lifeTime) {
 		//========================================
 		// 最大数を超える場合は最も古い弾痕を削除
-		// NOTE : メモリ使用量を制限し、GPUバッファサイズを固定するため
+		// COMMENT: メモリ使用量を制限し、GPUバッファサイズを固定するため
 		if (bulletHoles_.size() >= BulletHoleBuffer::kMaxBulletHoles) {
 			bulletHoles_.erase(bulletHoles_.begin());
 		}
@@ -334,18 +339,24 @@ namespace MagEngine {
 		hole.maxLifeTime = lifeTime;
 		bulletHoles_.push_back(hole);
 
+		// COMMENT: DEBUG ビルドのみログ出力（Release では削除）
+#ifdef _DEBUG
 		Logger::Log("BulletHole added at (" +
 						std::to_string(origin.x) + ", " +
 						std::to_string(origin.y) + ", " +
 						std::to_string(origin.z) + ")",
 					Logger::LogLevel::Info);
+#endif // DEBUG
 	}
 
 	///=============================================================================
 	///						すべての弾痕をクリア
 	void Cloud::ClearBulletHoles() {
 		bulletHoles_.clear();
+		// COMMENT: DEBUG ビルドのみログ出力
+#ifdef _DEBUG
 		Logger::Log("All bullet holes cleared", Logger::LogLevel::Info);
+#endif // DEBUG
 	}
 
 	///=============================================================================
@@ -378,14 +389,14 @@ namespace MagEngine {
 		}
 
 		//========================================
-		// 有効な弾痕の数を設定
+		// COMMENT: 有効な弾痕の数を設定（GPU データを効率的に転送）
 		size_t maxHoles = static_cast<size_t>(BulletHoleBuffer::kMaxBulletHoles);
 		int validCount = static_cast<int>((std::min)(bulletHoles_.size(), maxHoles));
 		paramsCPU_.bulletHoleCount = validCount;
 
 		//========================================
 		// CPU側の弾痕データをGPUフォーマットに変換（円錐対応）
-		// NOTE : CPUとGPUでデータ構造が異なるため変換が必要
+		// COMMENT: CPUとGPUでデータ構造が異なるため変換が必要
 		for (int i = 0; i < validCount; ++i) {
 			const auto &hole = bulletHoles_[i];
 			auto &gpuHole = bulletHoleBufferCPU_.bulletHoles[i];
@@ -398,7 +409,7 @@ namespace MagEngine {
 			gpuHole.coneLength = hole.coneLength;	// 円錐の長さ
 
 			// 残存時間を0.0～1.0に正規化
-			// NOTE : シェーダーでフィードアウト処理をしやすくするため
+			// COMMENT: シェーダーでフェードアウト処理をしやすくするため
 			gpuHole.lifeTime = (hole.maxLifeTime > 0.0f) ? (hole.lifeTime / hole.maxLifeTime) : 0.0f;
 		}
 
@@ -409,6 +420,8 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						ImGui描画
+#if ENABLE_IMGUI
+#ifdef _DEBUG
 	void Cloud::DrawImGui() {
 		ImGui::Begin("Cloud Settings");
 
@@ -537,6 +550,8 @@ namespace MagEngine {
 
 		ImGui::End();
 	}
+#endif // _DEBUG
+#endif // ENABLE_IMGUI
 
 	///--------------------------------------------------------------
 	///						 並行光源の作成

@@ -307,7 +307,11 @@ void DebugScene::ImGuiDraw() {
 	//========================================
 	// Cloudのデバッグ表示
 	if (cloud_) {
+#if ENABLE_IMGUI
+#ifdef _DEBUG
 		cloud_->DrawImGui();
+#endif // _DEBUG
+#endif // ENABLE_IMGUI
 
 		// 雲の穴開けテスト用UI
 		ImGui::Begin("Cloud Bullet Hole Test");

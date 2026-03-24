@@ -719,7 +719,11 @@ void GamePlayScene::ImGuiDraw() {
 			ImGui::SetNextWindowPos(ImVec2(0.0f, 300.0f), ImGuiCond_FirstUseEver);
 			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
 			ImGui::Begin("Cloud Debug");
+#if ENABLE_IMGUI
+#ifdef _DEBUG
 			cloud_->DrawImGui();
+#endif // _DEBUG
+#endif // ENABLE_IMGUI
 
 			// 弾痕テスト用のImGui
 			ImGui::Separator();
