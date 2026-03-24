@@ -29,6 +29,7 @@
 #include "component/PlayerJustAvoidanceComponent.h"
 #include "component/PlayerLockedOnComponent.h"
 #include "component/PlayerMovementComponent.h"
+#include "GameOverAnimation.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -452,6 +453,7 @@ private:
 	PlayerJustAvoidanceComponent justAvoidanceComponent_; // ジャスト回避管理
 	PlayerLockedOnComponent lockedOnComponent_;		// ロックオン管理
 	PlayerDefeatComponent defeatComponent_;			// 敗北演出
+	GameOverAnimation gameOverAnimation_;			// ゲームオーバー演出
 
 	//========================================
 	// システム参照

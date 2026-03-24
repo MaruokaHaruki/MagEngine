@@ -155,6 +155,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\SceneTransition.cpp" />
     <ClCompile Include="application\ui\GameOverUI.cpp" />
     <ClCompile Include="application\GameClearAnimation.cpp" />
+    <ClCompile Include="application\GameOverAnimation.cpp" />
     <ClCompile Include="application\player\component\PlayerCombatComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerHealthComponent.cpp" />
@@ -249,11 +250,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\postEffect\grayscale\GrayscaleEffect.h" />
     <ClInclude Include="engine\postEffect\PostEffectManager.h" />
     <ClInclude Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.h" />
-    <ClInclude Include="application\ui\HUD.h" />
-    <ClInclude Include="application\SceneTransition.h" />
-    <ClInclude Include="application\ui\GameOverUI.h" />
-    <ClInclude Include="application\GameClearAnimation.h" />
-    <ClInclude Include="application\player\component\PlayerCombatComponent.h" />
+     <ClInclude Include="application\ui\HUD.h" />
+     <ClInclude Include="application\SceneTransition.h" />
+     <ClInclude Include="application\ui\GameOverUI.h" />
+     <ClInclude Include="application\GameClearAnimation.h" />
+     <ClInclude Include="application\GameOverAnimation.h" />
+     <ClInclude Include="application\player\component\PlayerCombatComponent.h" />
     <ClInclude Include="application\player\component\PlayerHealthComponent.h" />
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />

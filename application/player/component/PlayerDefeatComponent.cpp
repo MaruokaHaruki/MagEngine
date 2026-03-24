@@ -5,6 +5,7 @@
  * \author Harukichimaru
  * \date   February 2026
  * \note   敗北時の落下・回転アニメーション演出を制御
+ *         改良版：自然な墜落演出（機首下向き → 後半回転）
  *********************************************************************/
 #include "PlayerDefeatComponent.h"
 #include "Transform.h"
@@ -17,13 +18,14 @@ void PlayerDefeatComponent::Initialize() {
 	isDefeated_ = false;
 	defeatAnimationComplete_ = false;
 	defeatAnimationTime_ = 0.0f;
-	animationDuration_ = 2.0f; // 2秒間の敗北演出
+	animationDuration_ = 3.0f; // 3秒間の敗北演出
 
 	// 物理パラメータ初期化
 	defeatVelocity_ = {0.0f, 0.0f, 0.0f};
 	defeatRotationSpeed_ = {0.0f, 0.0f, 0.0f};
-	gravity_ = 9.8f;	  // 重力加速度
-	deadHeight_ = -10.0f; // -10m以下で演出完了
+	localRotation_ = {0.0f, 0.0f, 0.0f}; // ローカル回転を初期化
+	gravity_ = 15.0f;	  // 重力加速度（強め）
+	deadHeight_ = -50.0f; // -50m以下で演出完了
 
 	animationProgress_ = 0.0f;
 }
@@ -40,24 +42,23 @@ void PlayerDefeatComponent::StartDefeatAnimation() {
 	defeatAnimationTime_ = 0.0f;
 	animationProgress_ = 0.0f;
 
-	// 演出用の疑似ランダム速度を生成
-	unsigned int seed = static_cast<unsigned int>(defeatAnimationTime_ * 1000.0f);
+	// ローカル回転をリセット
+	localRotation_ = {0.0f, 0.0f, 0.0f};
 
-	// 横方向の速度（ランダム）
-	float randomX = GeneratePseudoRandom(seed, 1, static_cast<int>(50.0f)) - 0.5f;
-	float randomZ = GeneratePseudoRandom(seed, 7, static_cast<int>(500.0f)) - 0.1f;
+	// 初期速度：小さい横移動（ランダム）
+	float randomX = (rand() % 100 - 50) * 0.01f; // -0.5 ~ 0.5
+	float randomZ = (rand() % 100 - 50) * 0.01f;
 
-	// 落下速度は固定（重力で加速）
 	defeatVelocity_ = {
-		randomX * 1.5f,
-		0.0f, // 重力で動的に変わる
-		randomZ * 0.5f};
+		randomX * 5.0f,  // 小さい横方向速度
+		0.0f,			 // 初期はY速度なし（重力で落ちる）
+		randomZ * 5.0f};
 
-	// 回転速度（ランダム）
+	// 回転速度：機首を下に向ける（X軸回転）のに使う
 	defeatRotationSpeed_ = {
-		GeneratePseudoRandom(seed, 13, static_cast<int>(1000.0f)) - 0.05f,
-		GeneratePseudoRandom(seed, 19, static_cast<int>(333.0f)) - 0.15f,
-		GeneratePseudoRandom(seed, 23, static_cast<int>(250.0f)) - 0.02f};
+		-30.0f,  // 機首を下向き（ラジアン/秒）
+		15.0f,	 // ヨー（左右回転）
+		0.0f};	 // ロール（左右転回）
 }
 
 //=============================================================================
@@ -78,18 +79,61 @@ void PlayerDefeatComponent::UpdateAnimation(MagMath::Transform *transform, float
 	defeatAnimationTime_ += kFrameDelta;
 	animationProgress_ = std::min(defeatAnimationTime_ / animationDuration_, 1.0f);
 
-	// 重力による加速
-	defeatVelocity_.y -= gravity_ * kFrameDelta * (1.0f + animationProgress_);
+	// ===================================================================
+	// フェーズ分け：
+	// Phase 1 (0.0 ~ 0.6): 機首下向きで加速落下
+	// Phase 2 (0.6 ~ 1.0): 回転しながら最終落下
+	// ===================================================================
+	
+	if (animationProgress_ < 0.6f) {
+		// === Phase 1: 機首下向き落下 ===
+		float phase1Progress = animationProgress_ / 0.6f; // 0.0 ~ 1.0
+		
+		// 重力による加速
+		defeatVelocity_.y -= gravity_ * kFrameDelta;
 
-	// 位置更新（移動）
-	transform->translate.x += defeatVelocity_.x * kFrameDelta;
-	transform->translate.y += defeatVelocity_.y * kFrameDelta;
-	transform->translate.z += defeatVelocity_.z * kFrameDelta;
+		// 位置更新（移動）
+		transform->translate.x += defeatVelocity_.x * kFrameDelta;
+		transform->translate.y += defeatVelocity_.y * kFrameDelta;
+		transform->translate.z += defeatVelocity_.z * kFrameDelta;
 
-	// 回転更新（加速度付き）
-	transform->rotate.x += defeatRotationSpeed_.x * (1.0f + animationProgress_ * 2.0f);
-	transform->rotate.y += defeatRotationSpeed_.y * (1.0f + animationProgress_ * 2.0f);
-	transform->rotate.z += defeatRotationSpeed_.z * (1.0f + animationProgress_ * 2.0f);
+		// 回転：機首を下に向ける（スムーズに）
+		float targetPitchAngle = -1.57f; // -90度（ラジアン）
+		localRotation_.x = targetPitchAngle * phase1Progress;
+		
+		// わずかなヨー（進行方向の変化）
+		localRotation_.y = defeatRotationSpeed_.y * phase1Progress * 0.3f;
+		
+		// ロールはなし
+		localRotation_.z = 0.0f;
+
+	} else {
+		// === Phase 2: 回転落下 (0.6 ~ 1.0) ===
+		float phase2Progress = (animationProgress_ - 0.6f) / 0.4f; // 0.0 ~ 1.0
+		
+		// 重力による加速を継続
+		defeatVelocity_.y -= gravity_ * kFrameDelta;
+
+		// 位置更新（移動）
+		transform->translate.x += defeatVelocity_.x * kFrameDelta * 0.8f; // 落下が速くなるので横移動は抑える
+		transform->translate.y += defeatVelocity_.y * kFrameDelta;
+		transform->translate.z += defeatVelocity_.z * kFrameDelta * 0.8f;
+
+		// 回転：機体がくるくる回転する
+		float targetPitchAngle = -1.57f; // 機首下を保持
+		localRotation_.x = targetPitchAngle;
+		
+		// ヨー（左右回転）を加速
+		localRotation_.y = defeatRotationSpeed_.y * (0.3f + phase2Progress * 1.5f);
+		
+		// ロール（左右転回）を追加
+		localRotation_.z = phase2Progress * 6.28f; // 1回転（2π）
+	}
+
+	// ローカル回転をtransform->rotateに反映
+	transform->rotate.x = localRotation_.x;
+	transform->rotate.y = localRotation_.y;
+	transform->rotate.z = localRotation_.z;
 
 	// 演出完了判定（指定高さに到達 または 時間満了）
 	if (transform->translate.y <= deadHeight_ || animationProgress_ >= 1.0f) {

@@ -83,6 +83,7 @@ private:
 	// 物理パラメータ
 	Vector3 defeatVelocity_;	  // 敗北時の速度（横移動・落下）
 	Vector3 defeatRotationSpeed_; // 敗北時の回転速度
+	Vector3 localRotation_;		  // ローカル座標系での回転（世界座標の傾きを防ぐ）
 	float gravity_;				  // 重力加速度
 	float deadHeight_;			  // 終了判定高さ
 

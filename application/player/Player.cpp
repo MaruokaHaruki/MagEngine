@@ -48,6 +48,7 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 	lockedOnComponent_.Initialize(nullptr);
 	justAvoidanceComponent_.Initialize();
 	defeatComponent_.Initialize();
+	gameOverAnimation_.Initialize(nullptr); // SpriteSetupはシーン側から設定
 
 	// === ミサイルボタン長押し管理の初期化 ===
 	missileButtonHeldTime_ = 0.0f;
@@ -100,6 +101,9 @@ void Player::Update() {
 	if (defeatComponent_.IsDefeated()) {
 		defeatComponent_.Update(objTransform, kFrameDelta);
 	}
+
+	// === ゲームオーバー演出の更新 ===
+	gameOverAnimation_.Update();
 
 	// === 基本的なオブジェクト更新（敗北演出中以外） ===
 	if (!defeatComponent_.IsDefeated()) {
@@ -440,6 +444,7 @@ void Player::DrawImGui() {
 			if (confirmCount >= 2) {
 				healthComponent_.TakeDamage(healthComponent_.GetCurrentHP());
 				defeatComponent_.StartDefeatAnimation();
+				gameOverAnimation_.StartGameOverAnimation(); // ゲームオーバー演出開始
 				confirmCount = 0;
 			} else {
 				ImGui::OpenPopup("Confirm Debug Action");
@@ -656,6 +661,7 @@ void Player::DrawImGui() {
 		if (ImGui::Button("Test Animation Sequence")) {
 			healthComponent_.TakeDamage(healthComponent_.GetCurrentHP());
 			defeatComponent_.StartDefeatAnimation();
+			gameOverAnimation_.StartGameOverAnimation(); // ゲームオーバー演出開始
 		}
 
 		ImGui::End();
@@ -675,6 +681,7 @@ void Player::TakeDamage(int damage) {
 	// HP0になったら敗北演出開始
 	if (!healthComponent_.IsAlive()) {
 		defeatComponent_.StartDefeatAnimation();
+		gameOverAnimation_.StartGameOverAnimation(); // ゲームオーバー演出開始
 	}
 }
 
