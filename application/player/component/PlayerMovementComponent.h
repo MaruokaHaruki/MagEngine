@@ -20,6 +20,7 @@ public:
 	///--------------------------------------------------------------
 	///                        バレルロール処理
 	void StartBarrelRoll(bool isRight);
+	void StartAdaptiveBarrelRoll(); // 移動状況に応じた回避アクション
 	void UpdateBarrelRoll(MagMath::Transform *transform, float deltaTime);
 	bool IsBarrelRolling() const {
 		return isBarrelRolling_;

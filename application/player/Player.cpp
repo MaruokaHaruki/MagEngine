@@ -148,90 +148,38 @@ void Player::UpdateMovement() {
 void Player::UpdateBarrelRollAndBoost() {
 	Input *input = Input::GetInstance();
 
-	// === バレルロール入力（方向キー+Shift または 左スティック+Aボタン） ===
-	static float directionKeyHoldTime = 0.0f; // 方向キーを押している時間
-	static bool leftKeyHeld = false;
-	static bool rightKeyHeld = false;
+	// === バレルロール入力（Shift または Aボタンのみ） ===
 	static bool wasBarrelRolling = false; // 前フレームでバレルロール中だったか
 
 	bool barrelRollTriggered = false;
-	bool barrelRollRight = false;
 
 	// === キーボード入力 ===
-	bool currentLeftKey = input->PushKey(DIK_LEFT);
-	bool currentRightKey = input->PushKey(DIK_RIGHT);
-	bool shiftPressed = input->PushKey(DIK_LSHIFT);
 	bool shiftTriggered = input->TriggerKey(DIK_LSHIFT);
-
-	// 方向キーの状態を更新
-	if (currentLeftKey || currentRightKey) {
-		directionKeyHoldTime += kFrameDelta;
-		leftKeyHeld = currentLeftKey;
-		rightKeyHeld = currentRightKey;
-	} else {
-		directionKeyHoldTime = 0.0f;
-		leftKeyHeld = false;
-		rightKeyHeld = false;
-	}
 
 	// バレルロール判定（キーボード）
 	if (!movementComponent_.IsBarrelRolling()) {
-		// パターン1: 方向キー+Shiftの同時押し
-		if (shiftPressed && (input->TriggerKey(DIK_LEFT) || input->TriggerKey(DIK_RIGHT))) {
+		// Shiftキートリガーで回避発動
+		if (shiftTriggered) {
 			barrelRollTriggered = true;
-			barrelRollRight = input->TriggerKey(DIK_RIGHT);
-		}
-		// パターン2: 方向キーを押した後にShiftトリガー（0.5秒以内）
-		else if (shiftTriggered && directionKeyHoldTime > 0.0f && directionKeyHoldTime < 0.5f) {
-			barrelRollTriggered = true;
-			barrelRollRight = rightKeyHeld;
 		}
 	}
 
 	// === コントローラー入力 ===
-	bool aButtonPressed = input->PushButton(XINPUT_GAMEPAD_A);
 	bool aButtonTriggered = input->TriggerButton(XINPUT_GAMEPAD_A);
-	float stickX = input->GetLeftStickX();
-
-	static float stickDirectionHoldTime = 0.0f;
-	static bool stickLeftHeld = false;
-	static bool stickRightHeld = false;
-
-	// スティックの方向状態を更新
-	bool currentStickTilted = std::abs(stickX) > 0.5f;
-
-	if (currentStickTilted) {
-		stickDirectionHoldTime += kFrameDelta;
-		stickLeftHeld = stickX < -0.5f;
-		stickRightHeld = stickX > 0.5f;
-	} else {
-		stickDirectionHoldTime = 0.0f;
-		stickLeftHeld = false;
-		stickRightHeld = false;
-	}
 
 	// コントローラーでのバレルロール判定
 	if (!movementComponent_.IsBarrelRolling() && !barrelRollTriggered) {
-		// パターン1: Aボタン押した瞬間にスティックが倒されている
-		if (aButtonTriggered && currentStickTilted) {
+		// Aボタントリガーで回避発動
+		if (aButtonTriggered) {
 			barrelRollTriggered = true;
-			barrelRollRight = stickX > 0.0f;
-		}
-		// パターン2: スティックを倒した後にAボタン（0.5秒以内）
-		else if (aButtonTriggered && stickDirectionHoldTime > 0.0f && stickDirectionHoldTime < 0.5f) {
-			barrelRollTriggered = true;
-			barrelRollRight = stickRightHeld;
 		}
 	}
 
-	// バレルロール実行
+	// バレルロール実行（移動状況に応じた適応的回避）
 	if (barrelRollTriggered && movementComponent_.CanBarrelRoll()) {
-		movementComponent_.StartBarrelRoll(barrelRollRight);
+		movementComponent_.StartAdaptiveBarrelRoll();
 		healthComponent_.SetBarrelRollInvincible(true);
 		justAvoidanceComponent_.OnBarrelRollStarted();
-		// 入力状態をリセット
-		directionKeyHoldTime = 0.0f;
-		stickDirectionHoldTime = 0.0f;
 	}
 
 	// バレルロール終了時に無敵解除
@@ -243,14 +191,16 @@ void Player::UpdateBarrelRollAndBoost() {
 
 	// === ブースト入力（Shift長押し または Aボタン長押し） ===
 	bool boostInput = false;
+	bool shiftPressed = input->PushKey(DIK_LSHIFT);
+	bool aButtonPressed = input->PushButton(XINPUT_GAMEPAD_A);
 
 	// バレルロール中はブースト不可
 	if (!currentlyBarrelRolling) {
-		// キーボード：Shift長押し（方向キー不要）
+		// キーボード：Shift長押し
 		if (shiftPressed) {
 			boostInput = true;
 		}
-		// コントローラー：Aボタン長押し（スティック方向不問）
+		// コントローラー：Aボタン長押し
 		else if (aButtonPressed) {
 			boostInput = true;
 		}
@@ -536,9 +486,9 @@ void Player::DrawImGui() {
 			movementComponent_.SetBarrelRollCost(rollCost);
 		}
 		ImGui::Text("Controls:");
-		ImGui::Text("  Keyboard: Arrow(hold) + Shift = Roll, Shift Hold = Boost");
-		ImGui::Text("  Controller: L-Stick(hold) + A = Roll/Boost");
-		ImGui::Text("  Note: Direction key/stick can be pressed before Roll button");
+		ImGui::Text("  Keyboard: Shift(Press) = Roll, Shift(Hold) = Boost");
+		ImGui::Text("  Controller: A(Press) = Roll, A(Hold) = Boost");
+		ImGui::Text("  Note: Roll adapts to movement - Stationary = Spin, Moving = Dash");
 
 		ImGui::Separator();
 

@@ -115,6 +115,49 @@ void PlayerMovementComponent::StartBarrelRoll(bool isRight) {
 }
 
 //=============================================================================
+// 移動状況に応じた適応的バレルロール開始
+void PlayerMovementComponent::StartAdaptiveBarrelRoll() {
+	// ゲージ不足、クールダウン中、すでにバレルロール中は開始できない
+	if (!CanBarrelRoll() || isBarrelRolling_) {
+		return;
+	}
+
+	// ゲージを消費
+	boostGauge_ -= barrelRollCost_;
+	if (boostGauge_ < 0.0f) {
+		boostGauge_ = 0.0f;
+	}
+
+	isBarrelRolling_ = true;
+	barrelRollTime_ = 0.0f;
+	
+	// 現在の速度から移動状況を判定
+	float speedMagnitude = std::sqrt(
+		currentVelocity_.x * currentVelocity_.x +
+		currentVelocity_.y * currentVelocity_.y +
+		currentVelocity_.z * currentVelocity_.z);
+	
+	// 移動速度がほぼ無い場合はその場回避（右回転）
+	if (speedMagnitude < 0.5f) {
+		barrelRollDirection_ = true; // その場回避は右回転
+		barrelRollStartVelocity_ = {}; // 速度なし
+	} else {
+		// 移動方向を判定して回転方向を決定
+		// X方向の移動が大きい場合、その方向に回転
+		if (std::abs(currentVelocity_.x) > std::abs(currentVelocity_.y)) {
+			barrelRollDirection_ = currentVelocity_.x > 0.0f; // 右移動なら右回転
+		} else {
+			// Y方向の移動が大きい場合、または前方移動の場合は右回転
+			barrelRollDirection_ = true;
+		}
+		barrelRollStartVelocity_ = currentVelocity_; // 現在の移動方向を記録
+	}
+	
+	barrelRollStartRotation_ = targetRotationEuler_;
+	barrelRollCoolTimer_ = barrelRollCooldown_;
+}
+
+//=============================================================================
 // バレルロール更新
 void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, float deltaTime) {
 	if (!transform) {
