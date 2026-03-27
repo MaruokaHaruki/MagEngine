@@ -1,5 +1,6 @@
 #define _USE_MATH_DEFINES
 #include "PlayerMovementComponent.h"
+#include "PlayerConstants.h"
 #include "Transform.h"
 #include <cmath>
 
@@ -11,31 +12,38 @@ void PlayerMovementComponent::Initialize() {
 	targetVelocity_ = zero;
 	targetRotationEuler_ = zero;
 
-	moveSpeed_ = 5.0f;
-	acceleration_ = 0.1f;
-	rotationSmoothing_ = 0.1f;
-	maxRollAngle_ = 30.0f;
-	maxPitchAngle_ = 15.0f;
+	//========================================
+	//          移動パラメータ
+	//========================================
+	moveSpeed_ = PlayerConstants::Movement::DEFAULT_MOVE_SPEED;
+	acceleration_ = PlayerConstants::Movement::DEFAULT_ACCELERATION;
+	rotationSmoothing_ = PlayerConstants::Movement::DEFAULT_ROTATION_SMOOTHING;
+	maxRollAngle_ = PlayerConstants::Movement::MAX_ROLL_ANGLE;
+	maxPitchAngle_ = PlayerConstants::Movement::MAX_PITCH_ANGLE;
 
-	// ブースト関連の初期化
-	maxBoostGauge_ = 100.0f;
+	//========================================
+	//          ブースト関連の初期化
+	//========================================
+	maxBoostGauge_ = PlayerConstants::Boost::MAX_GAUGE;
 	boostGauge_ = maxBoostGauge_;
-	boostSpeed_ = 2.0f;
-	boostConsumption_ = 30.0f;
-	boostRecovery_ = 15.0f;
+	boostSpeed_ = PlayerConstants::Boost::SPEED_MULTIPLIER;
+	boostConsumption_ = PlayerConstants::Boost::CONSUMPTION_RATE;
+	boostRecovery_ = PlayerConstants::Boost::RECOVERY_RATE;
 	isBoosting_ = false;
 
-	// バレルロール関連の初期化
+	//========================================
+	//          バレルロール関連の初期化
+	//========================================
 	isBarrelRolling_ = false;
 	barrelRollTime_ = 0.0f;
-	barrelRollDuration_ = 0.6f; // 0.8秒 → 0.6秒に短縮 & より反応が良い
-	barrelRollCooldown_ = 1.2f; // 1.5秒 → 1.2秒に短縮
+	barrelRollDuration_ = PlayerConstants::BarrelRoll::DURATION;
+	barrelRollCooldown_ = PlayerConstants::BarrelRoll::COOLDOWN;
 	barrelRollCoolTimer_ = 0.0f;
-	barrelRollCost_ = 30.0f; // バレルロール1回で30ゲージ消費
+	barrelRollCost_ = PlayerConstants::BarrelRoll::COST;
 	barrelRollDirection_ = true;
 	barrelRollStartRotation_ = zero;
 	barrelRollStartVelocity_ = zero;
-	barrelRollAcceleration_ = 2.0f; // 進行方向への加速倍率を強化（1.5f → 2.0f）
+	barrelRollAcceleration_ = PlayerConstants::BarrelRoll::ACCELERATION_MULTIPLIER;
 }
 
 //=============================================================================
@@ -70,13 +78,11 @@ void PlayerMovementComponent::ProcessInput(float inputX, float inputY) {
 		return;
 	}
 
-	const float deadZone = 0.1f;
-
 	// デッドゾーン処理
-	if (std::fabs(inputX) < deadZone) {
+	if (std::fabs(inputX) < PlayerConstants::STICK_DEADZONE) {
 		inputX = 0.0f;
 	}
-	if (std::fabs(inputY) < deadZone) {
+	if (std::fabs(inputY) < PlayerConstants::STICK_DEADZONE) {
 		inputY = 0.0f;
 	}
 

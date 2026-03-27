@@ -23,6 +23,8 @@
 #include "MagMath.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
+#include "PlayerConstants.h"
+#include "ResourcePaths.h"
 #include "component/PlayerCombatComponent.h"
 #include "component/PlayerDefeatComponent.h"
 #include "component/PlayerHealthComponent.h"
@@ -44,24 +46,55 @@ class EnemyBullet;
 ///=============================================================================
 ///						武装設定構造体
 struct WeaponConfig {
-	// 弾（銃）の設定
-	std::string bulletModelPath = "Bullet.obj"; // 弾のモデルパス
-	std::string bulletTexturePath = "";			// 弾のテクスチャパス（未使用）
-	float bulletSpeed = 128.0f;					// 弾の速度
-	float bulletMaxLifeTime = 3.0f;				// 弾の生存時間（秒）
-	float bulletRadius = 0.5f;					// 弾の当たり判定半径
-	float shootCoolTime = 0.1f;					// 連射クールタイム
+	//========================================
+	//          弾（銃）の設定
+	//========================================
+	/// @brief 弾のモデルパス
+	std::string bulletModelPath = ResourcePath::Model::BULLET;
+	
+	/// @brief 弾のテクスチャパス（未使用時は空文字列）
+	std::string bulletTexturePath = ResourcePath::Texture::BULLET_DEFAULT;
+	
+	/// @brief 弾の速度（units/秒）
+	float bulletSpeed = PlayerConstants::Weapon::BULLET_SPEED;
+	
+	/// @brief 弾の生存時間（秒）
+	float bulletMaxLifeTime = PlayerConstants::Weapon::BULLET_LIFETIME;
+	
+	/// @brief 弾の当たり判定半径（units）
+	float bulletRadius = PlayerConstants::Weapon::BULLET_RADIUS;
+	
+	/// @brief 連射クールタイム（秒）
+	float shootCoolTime = PlayerConstants::Weapon::SHOOT_COOLDOWN;
 
-	// ミサイルの設定
-	std::string missileModelPath = "Missile.obj"; // ミサイルのモデルパス
-	std::string missileTexturePath = "";		  // ミサイルのテクスチャパス（未使用）
-	float missileSpeed = 50.0f;					  // ミサイルの速度
-	float missileMaxTurnRate = 120.0f;			  // ミサイルの最大旋回速度（度/秒）
-	float missileMaxLifeTime = 15.0f;			  // ミサイルの生存時間（秒）
-	int missileMaxAmmo = 3;						  // ミサイル最大残弾数
-	float missileRecoveryTime = 3.0f;			  // ミサイル1発の回復時間（秒）
+	//========================================
+	//          ミサイルの設定
+	//========================================
+	/// @brief ミサイルのモデルパス
+	std::string missileModelPath = ResourcePath::Model::MISSILE;
+	
+	/// @brief ミサイルのテクスチャパス（未使用時は空文字列）
+	std::string missileTexturePath = ResourcePath::Texture::MISSILE_DEFAULT;
+	
+	/// @brief ミサイルの速度（units/秒）
+	float missileSpeed = PlayerConstants::Weapon::MISSILE_SPEED;
+	
+	/// @brief ミサイルの最大旋回速度（度/秒）
+	float missileMaxTurnRate = PlayerConstants::Weapon::MISSILE_TURN_RATE;
+	
+	/// @brief ミサイルの生存時間（秒）
+	float missileMaxLifeTime = PlayerConstants::Weapon::MISSILE_LIFETIME;
+	
+	/// @brief ミサイル最大残弾数
+	int missileMaxAmmo = PlayerConstants::Weapon::MISSILE_MAX_AMMO;
+	
+	/// @brief ミサイル1発の回復時間（秒）
+	float missileRecoveryTime = PlayerConstants::Weapon::MISSILE_RECOVERY_TIME;
 
-	// 拡張用：マシンガンなど他の武装タイプはここに追加
+	//========================================
+	//          拡張用
+	//========================================
+	// マシンガンなど他の武装タイプはここに追加
 };
 
 ///=============================================================================
