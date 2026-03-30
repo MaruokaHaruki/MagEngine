@@ -24,9 +24,27 @@ class EnemyBullet;
 ///=============================================================================
 ///						ウェーブ設定
 struct WaveConfig {
+	// ===== 敵の数 =====
 	int enemyCount;		 // 通常エネミー数
 	int gunnerCount;	 // ガンナー数
 	float spawnInterval; // スポーン間隔（秒）
+
+	// ===== 編隊設定 =====
+	float formationRatio;	  // 編隊敵の割合（0.0 - 1.0）
+	int maxGroupSize;		  // グループの最大メンバ数（デフォルト: 8）
+	int formationPattern;	  // 編隊パターン選択用インデックス（0-4）
+
+	// ===== 敵の基本パラメータ =====
+	float enemySpeedMultiplier;	  // 敵の速度倍率（デフォルト: 1.0）
+	float enemyDamageMultiplier;   // 敵の攻撃力倍率（デフォルト: 1.0）
+	float gunnerSpeedMultiplier;   // ガンナーの速度倍率（デフォルト: 1.0）
+	float gunnerDamageMultiplier;  // ガンナーの攻撃力倍率（デフォルト: 1.0）
+
+	// ===== 群動作パラメータ =====
+	float separationStrength;	// 敵同士の分離力（デフォルト: 1.0）
+	float cohesionStrength;		// 結集力（デフォルト: 0.8）
+	float alignmentStrength;	// 整列力（デフォルト: 0.6）
+	float formationSpacing;		// 編隊内の間隔（デフォルト: 30.0）
 };
 
 ///=============================================================================

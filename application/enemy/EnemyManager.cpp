@@ -37,12 +37,46 @@ void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 
 	//========================================
 	// ウェーブ定義（5ウェーブ固定）
+	// 形式: {敵数, ガンナー数, スポーン間隔,
+	//        編隊率, グループサイズ, 編隊パターン,
+	//        敵速度倍率, 敵攻撃力倍率, ガンナー速度倍率, ガンナー攻撃力倍率,
+	//        分離力, 結集力, 整列力, 編隊間隔}
 	waveConfigs_ = {
-		{3, 2, 1.0f},	// Wave 1: 通常×0、ガンナー×16、間隔1.0秒
-		{6, 4, 2.5f},	// Wave 2: 通常×6、ガンナー×4、間隔2.5秒
-		{8, 8, 2.5f},	// Wave 3: 通常×8、ガンナー×8、間隔2.5秒
-		{8, 8, 2.0f},	// Wave 4: 通常×8、ガンナー×8、間隔2.0秒
-		{10, 16, 2.0f}, // Wave 5: 通常×10、ガンナー×16、間隔2.0秒
+		// ===== Wave 1: チュートリアル - 編隊なし（全単独敵）=====
+		{
+			6, 0, 1.0f,              // 6敵、ガンナー0、間隔1.0秒
+			0.0f,   8, 0,            // 編隊率0%、グループサイズ8、パターン0(V字)
+			1.0f, 1.0f, 1.0f, 1.0f, // 敵1.0x, 敵1.0x, ガンナー1.0x, ガンナー1.0x
+			1.0f, 0.8f, 0.6f, 30.0f  // 分離1.0, 結集0.8, 整列0.6, 間隔30
+		},
+		// ===== Wave 2: チュートリアル続行 - 編隊敵少量（20%）=====
+		{
+			8, 2, 1.5f,              // 8敵、ガンナー2、間隔1.5秒
+			0.2f,   4, 0,            // 編隊率20%、グループサイズ4、パターン0(V字)
+			1.0f, 1.0f, 1.0f, 1.0f, // 敵1.0x, 敵1.0x, ガンナー1.0x, ガンナー1.0x
+			1.0f, 0.8f, 0.6f, 30.0f  // 分離1.0, 結集0.8, 整列0.6, 間隔30
+		},
+		// ===== Wave 3: 本格化 - 編隊敵30%、複合パターン導入 =====
+		{
+			10, 4, 2.0f,             // 10敵、ガンナー4、間隔2.0秒
+			0.3f,   5, 1,            // 編隊率30%、グループサイズ5、パターン1(直線)
+			1.1f, 1.1f, 1.0f, 1.0f, // 敵1.1x, 敵1.1x, ガンナー1.0x, ガンナー1.0x
+			1.2f, 0.8f, 0.6f, 30.0f  // 分離1.2, 結集0.8, 整列0.6, 間隔30
+		},
+		// ===== Wave 4: 難易度上昇 - 編隊敵50%、速度・火力上昇 =====
+		{
+			12, 6, 2.0f,             // 12敵、ガンナー6、間隔2.0秒
+			0.5f,   6, 2,            // 編隊率50%、グループサイズ6、パターン2(円形)
+			1.2f, 1.2f, 1.1f, 1.1f, // 敵1.2x, 敵1.2x, ガンナー1.1x, ガンナー1.1x
+			1.4f, 0.9f, 0.7f, 28.0f  // 分離1.4, 結集0.9, 整列0.7, 間隔28
+		},
+		// ===== Wave 5: 最難 - 編隊敵70%、フルパワー =====
+		{
+			14, 8, 2.0f,             // 14敵、ガンナー8、間隔2.0秒
+			0.7f,   8, 3,            // 編隊率70%、グループサイズ8、パターン3(菱形)
+			1.3f, 1.3f, 1.2f, 1.2f, // 敵1.3x, 敵1.3x, ガンナー1.2x, ガンナー1.2x
+			1.6f, 1.0f, 0.8f, 26.0f  // 分離1.6, 結集1.0, 整列0.8, 間隔26
+		},
 	};
 
 	// 目標撃破数 = 全ウェーブの総敵数（退却分は上振れするが目安として使用）
@@ -229,16 +263,21 @@ void EnemyManager::SpawnEnemy(const Vector3 &position) {
 		defeatedCount_++;
 	});
 
-	// Wave 3 以降は編隊生成を試みる
-	if (currentWave_ >= 2) {
+	// 現在のウェーブ設定を取得
+	const WaveConfig &currentWaveConfig = waveConfigs_[currentWave_];
+
+	// 編隊比率に基づいて編隊敵か単独敵かを決定
+	bool shouldFormation = (rand() % 100) < (currentWaveConfig.formationRatio * 100.0f);
+
+	if (shouldFormation) {
 		bool addedToExistingGroup = false;
 
-		// 既存のアクティブなグループにメンバを追加試行（30%の確率）
-		if ((rand() % 100) < 30) {
+		// 既存のアクティブなグループにメンバを追加試行
+		if ((rand() % 100) < 60) { // 60%の確率で既存グループに追加
 			for (auto &group : groups_) {
 				if (group && group->IsActive()) {
 					int memberCount = static_cast<int>(group->GetMembers().size());
-					if (memberCount < 5) { // 最大5敵までに制限
+					if (memberCount < currentWaveConfig.maxGroupSize) {
 						group->AddMember(enemy.get(), memberCount);
 						enemy->SetGroupId(group->GetGroupId());
 						enemy->SetFormationFollowing(true);
@@ -249,11 +288,15 @@ void EnemyManager::SpawnEnemy(const Vector3 &position) {
 			}
 		}
 
-		// 新規グループを作成（20%の確率でリーダーになり新規グループを作成）
-		if (!addedToExistingGroup && (rand() % 100) < 20) {
+		// 新規グループを作成（既存に追加されなかった場合）
+		if (!addedToExistingGroup) {
 			auto group = std::make_unique<EnemyGroup>();
 			group->SetGroupId(nextGroupId_);
-			group->Initialize(enemy.get(), FormationType::VFormation);
+			
+			// Wave設定のパターンに基づいてフォーメーションを選択
+			FormationType formationType = static_cast<FormationType>(currentWaveConfig.formationPattern);
+			group->Initialize(enemy.get(), formationType);
+			
 			groups_.push_back(std::move(group));
 			enemy->SetGroupId(nextGroupId_);
 			nextGroupId_++;
