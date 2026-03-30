@@ -78,9 +78,13 @@ void EnemyGroup::Update(const Vector3 &playerPosition) {
 ///=============================================================================
 /// グループ内の敵削除処理
 void EnemyGroup::RemoveDeadMembers() {
+	// nullptr チェック付きで死敵を削除
+	// NOTE: ダングリングポインタの参照を防ぐため、IsAlive() 呼び出し前に nullptr チェック
 	memberEnemies_.erase(
 		std::remove_if(memberEnemies_.begin(), memberEnemies_.end(),
-					   [](EnemyBase *enemy) { return !enemy->IsAlive(); }),
+					   [](EnemyBase *enemy) { 
+					       return !enemy || !enemy->IsAlive();
+					   }),
 		memberEnemies_.end());
 }
 
@@ -229,6 +233,8 @@ FormationConfig EnemyGroup::CalculateDynamicFormation(const Vector3 &playerPosit
 void EnemyGroup::CalculateMemberTargetPositions(const Vector3 &leaderPos, const Vector3 &playerPos) {
 	for (int i = 0; i < static_cast<int>(memberEnemies_.size()); i++) {
 		if (i >= currentFormation_.maxMemberCount) break;
+		// NOTE: nullptr チェック追加（RemoveDeadMembers の前に呼ばれる可能性）
+		if (!memberEnemies_[i]) continue;
 
 		memberTargetPositions_[i] = leaderPos + currentFormation_.offsets[i];
 	}
@@ -327,7 +333,8 @@ Vector3 EnemyGroup::CalculateCohesion(EnemyBase *member, const Vector3 &targetPo
 /// 方向整列処理（敵の向きを揃える）
 Vector3 EnemyGroup::CalculateAlignment(EnemyBase *member) {
 	// リーダー敵から他敵への方向を計算
-	if (!leaderEnemy_) {
+	// NOTE: nullptr と IsAlive チェック追加（敵削除時の安全性確保）
+	if (!leaderEnemy_ || !leaderEnemy_->IsAlive()) {
 		return Vector3{0.0f, 0.0f, 0.0f};
 	}
 

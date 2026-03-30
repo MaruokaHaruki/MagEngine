@@ -107,12 +107,18 @@ void EnemyManager::Update() {
 	}
 
 	// グループ更新（編隊制御）
+	// NOTE: 順序重要！RemoveDeadMembers() → Update() の順に変更
+	//       敵が削除されたメモリへのアクセスを防ぐため
 	if (player_) {
 		Vector3 playerPos = player_->GetPosition();
 		for (auto &group : groups_) {
-			if (group && group->IsActive()) {
-				group->Update(playerPos);
+			if (group) {
+				// 1. 先に死んだメンバを削除（ポインタの無効化を防止）
 				group->RemoveDeadMembers();
+				// 2. その後に編隊更新を実行
+				if (group->IsActive()) {
+					group->Update(playerPos);
+				}
 			}
 		}
 	}

@@ -215,6 +215,8 @@
     <ClCompile Include="engine\3d\trail\TrailEffectPreset.cpp" />
     <ClCompile Include="engine\3d\trail\TrailEffectManager.cpp" />
     <ClCompile Include="engine\3d\trail\TrailEmitter.cpp" />
+    <ClCompile Include="application\GameOverAnimation.cpp" />
+    <ClCompile Include="application\player\component\PlayerJustAvoidanceComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -489,6 +491,8 @@
     <ClInclude Include="engine\3d\trail\TrailEffectPreset.h" />
     <ClInclude Include="engine\3d\trail\TrailEffectManager.h" />
     <ClInclude Include="engine\3d\trail\TrailEmitter.h" />
+    <ClInclude Include="application\GameOverAnimation.h" />
+    <ClInclude Include="application\player\component\PlayerJustAvoidanceComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
