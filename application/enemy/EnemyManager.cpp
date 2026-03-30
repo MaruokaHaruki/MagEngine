@@ -10,6 +10,7 @@
 #include "Enemy.h"
 #include "EnemyBullet.h"
 #include "EnemyGunner.h"
+#include "EnemyGroup.h"
 #include "ImguiSetup.h"
 #include "Player.h"
 #include <algorithm>
@@ -32,6 +33,7 @@ void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 
 	gameTime_ = 0.0f;
 	defeatedCount_ = 0;
+	nextGroupId_ = 0;
 
 	//========================================
 	// ウェーブ定義（5ウェーブ固定）
@@ -68,6 +70,17 @@ void EnemyManager::Update() {
 	for (auto &enemy : enemies_) {
 		if (enemy)
 			enemy->Update();
+	}
+
+	// グループ更新（編隊制御）
+	if (player_) {
+		Vector3 playerPos = player_->GetPosition();
+		for (auto &group : groups_) {
+			if (group && group->IsActive()) {
+				group->Update(playerPos);
+				group->RemoveDeadMembers();
+			}
+		}
 	}
 
 	RemoveDeadEnemies();
@@ -140,6 +153,8 @@ void EnemyManager::RegisterCollisions(CollisionManager *collisionManager) {
 ///                        全敵削除
 void EnemyManager::Clear() {
 	enemies_.clear();
+	groups_.clear();
+	nextGroupId_ = 0;
 }
 
 ///=============================================================================
@@ -213,6 +228,38 @@ void EnemyManager::SpawnEnemy(const Vector3 &position) {
 	enemy->SetDefeatCallback([this]() {
 		defeatedCount_++;
 	});
+
+	// Wave 3 以降は編隊生成を試みる
+	if (currentWave_ >= 2) {
+		bool addedToExistingGroup = false;
+
+		// 既存のアクティブなグループにメンバを追加試行（30%の確率）
+		if ((rand() % 100) < 30) {
+			for (auto &group : groups_) {
+				if (group && group->IsActive()) {
+					int memberCount = static_cast<int>(group->GetMembers().size());
+					if (memberCount < 5) { // 最大5敵までに制限
+						group->AddMember(enemy.get(), memberCount);
+						enemy->SetGroupId(group->GetGroupId());
+						enemy->SetFormationFollowing(true);
+						addedToExistingGroup = true;
+						break;
+					}
+				}
+			}
+		}
+
+		// 新規グループを作成（20%の確率でリーダーになり新規グループを作成）
+		if (!addedToExistingGroup && (rand() % 100) < 20) {
+			auto group = std::make_unique<EnemyGroup>();
+			group->SetGroupId(nextGroupId_);
+			group->Initialize(enemy.get(), FormationType::VFormation);
+			groups_.push_back(std::move(group));
+			enemy->SetGroupId(nextGroupId_);
+			nextGroupId_++;
+		}
+	}
+
 	enemies_.push_back(std::move(enemy));
 }
 

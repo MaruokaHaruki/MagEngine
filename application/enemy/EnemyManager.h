@@ -19,6 +19,7 @@ class ParticleSetup;
 class CollisionManager;
 class Player;
 class EnemyBullet;
+#include "EnemyGroup.h"
 
 ///=============================================================================
 ///						ウェーブ設定
@@ -122,6 +123,11 @@ private:
 	//========================================
 	// 敵管理
 	std::vector<std::unique_ptr<EnemyBase>> enemies_;
+
+	//========================================
+	// 編隊管理
+	std::vector<std::unique_ptr<EnemyGroup>> groups_;
+	int nextGroupId_;
 
 	//========================================
 	// ウェーブシステム

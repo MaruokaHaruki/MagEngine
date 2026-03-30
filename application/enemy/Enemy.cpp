@@ -16,6 +16,11 @@ void Enemy::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::strin
 	currentHP_ = maxHP_;
 	speed_ = EnemyConstants::kDefaultSpeed;
 
+	// グループ関連初期化
+	groupId_ = -1; // 初期状態は単独
+	isFollowingFormation_ = false;
+	formationTargetPosition_ = position;
+
 	// 行動ステート初期化
 	behaviorState_ = BehaviorState::Approach;
 	combatTimer_ = 0.0f;
@@ -141,6 +146,18 @@ void Enemy::Update() {
 		transform_.translate.x += currentVelocity_.x * deltaTime;
 		transform_.translate.y += currentVelocity_.y * deltaTime;
 		transform_.translate.z += currentVelocity_.z * deltaTime;
+		break;
+	}
+
+	case BehaviorState::FormationFollow: {
+		// 編隊内での相対位置追尾
+		if (isFollowingFormation_) {
+			// 目標位置への移動
+			MoveToward(formationTargetPosition_, EnemyConstants::kCombatSpeed, EnemyConstants::kMovementSmoothing);
+		} else {
+			// フォロー終了時は通常の行動に戻す
+			behaviorState_ = BehaviorState::Combat;
+		}
 		break;
 	}
 	}

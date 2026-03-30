@@ -49,9 +49,25 @@ public:
 		return bullets_;
 	}
 
+	/// \brief グループIDを設定
+	void SetGroupId(int groupId) {
+		groupId_ = groupId;
+	}
+
+	/// \brief グループIDを取得
+	int GetGroupId() const {
+		return groupId_;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	//========================================
+	// グループ編隊関連
+	int groupId_; // 属するグループのID（-1=単独）
+
+	//========================================
+	// 行動ステート関連
 	enum class GunnerState {
 		Approach,
 		Shooting,

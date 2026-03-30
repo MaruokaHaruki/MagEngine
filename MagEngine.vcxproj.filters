@@ -158,6 +158,9 @@
     <ClCompile Include="application\enemy\EnemyManager.cpp">
       <Filter>application</Filter>
     </ClCompile>
+    <ClCompile Include="application\enemy\EnemyGroup.cpp">
+      <Filter>application</Filter>
+    </ClCompile>
     <ClCompile Include="application\utils\FollowCamera.cpp">
       <Filter>application</Filter>
     </ClCompile>
@@ -422,6 +425,9 @@
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="application\enemy\EnemyManager.h">
+      <Filter>application</Filter>
+    </ClInclude>
+    <ClInclude Include="application\enemy\EnemyGroup.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="application\utils\FollowCamera.h">

@@ -15,6 +15,9 @@ void EnemyGunner::Initialize(MagEngine::Object3dSetup *object3dSetup, const std:
 	currentHP_ = maxHP_;
 	speed_ = EnemyGunnerConstants::kDefaultSpeed;
 
+	// グループ関連初期化
+	groupId_ = -1; // 初期状態は単独
+
 	state_ = GunnerState::Approach;
 	shootTimer_ = 0.0f;
 	combatTimer_ = 0.0f;
