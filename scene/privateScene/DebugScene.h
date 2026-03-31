@@ -19,7 +19,7 @@ using namespace MagMath;
 class SceneContext;
 
 class DebugScene : public BaseScene {
-	///--------------------------------------------------------------
+	///-----------l---------------------------------------------------
 	///                            メンバ関数
 public:
 	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
