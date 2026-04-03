@@ -30,11 +30,6 @@ void Enemy::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::strin
 	// 移動関連初期化
 	moveTimer_ = 0.0f;
 	targetPosition_ = position;
-
-	// Dash 関連初期化
-	dashTimer_ = 0.0f;
-	dashCooldownTimer_ = 0.0f;
-	dashTargetPos_ = {0.0f, 0.0f, 0.0f};
 }
 
 ///=============================================================================
@@ -60,7 +55,6 @@ void Enemy::Update() {
 			if (GetDistanceTo(targetPosition_) < 20.0f) {
 				behaviorState_ = BehaviorState::Combat;
 				combatTimer_ = 0.0f;
-				dashCooldownTimer_ = 0.0f;
 				combatCenter_ = playerPos;
 				moveTimer_ = 0.0f;
 			} else {
@@ -75,18 +69,9 @@ void Enemy::Update() {
 	case BehaviorState::Combat: {
 		combatTimer_ += deltaTime;
 		moveTimer_ += deltaTime;
-		dashCooldownTimer_ += deltaTime;
 
 		if (combatTimer_ >= combatDuration_) {
 			behaviorState_ = BehaviorState::Retreat;
-			break;
-		}
-
-		// Dash クールダウン完了 → 突進攻撃へ
-		if (dashCooldownTimer_ >= EnemyConstants::kDashCooldown && player_) {
-			behaviorState_ = BehaviorState::Dash;
-			dashTimer_ = 0.0f;
-			dashTargetPos_ = player_->GetPosition();
 			break;
 		}
 
@@ -109,32 +94,6 @@ void Enemy::Update() {
 		}
 
 		MoveToward(targetPosition_, EnemyConstants::kCombatSpeed, EnemyConstants::kMovementSmoothing);
-		break;
-	}
-
-	case BehaviorState::Dash: {
-		dashTimer_ += deltaTime;
-
-		// 直線突進（currentVelocity_ は不要なので直接移動）
-		Vector3 dir = {
-			dashTargetPos_.x - transform_.translate.x,
-			dashTargetPos_.y - transform_.translate.y,
-			dashTargetPos_.z - transform_.translate.z};
-		float dist = std::sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-
-		if (dist > EnemyConstants::kDashHitRadius && dashTimer_ < EnemyConstants::kDashDuration) {
-			dir.x /= dist;
-			dir.y /= dist;
-			dir.z /= dist;
-			transform_.translate.x += dir.x * EnemyConstants::kDashSpeed * deltaTime;
-			transform_.translate.y += dir.y * EnemyConstants::kDashSpeed * deltaTime;
-			transform_.translate.z += dir.z * EnemyConstants::kDashSpeed * deltaTime;
-		} else {
-			// Dash 終了 → Combat に戻る
-			behaviorState_ = BehaviorState::Combat;
-			dashCooldownTimer_ = 0.0f;
-			currentVelocity_ = {0.0f, 0.0f, 0.0f}; // 速度リセット
-		}
 		break;
 	}
 
@@ -164,30 +123,14 @@ void Enemy::Update() {
 }
 
 ///=============================================================================
-///                        衝突処理（Dash 中の体当たり攻撃）
-void Enemy::OnCollisionEnter(BaseObject *other) {
-	if (behaviorState_ == BehaviorState::Dash) {
-		if (Player *player = dynamic_cast<Player *>(other)) {
-			player->TakeDamage(1);
-			// Dash 終了 → Combat に戻る
-			behaviorState_ = BehaviorState::Combat;
-			dashCooldownTimer_ = 0.0f;
-			currentVelocity_ = {0.0f, 0.0f, 0.0f};
-			return;
-		}
-	}
-	// 通常の被弾処理は基底クラスに委譲
-	EnemyBase::OnCollisionEnter(other);
-}
-
-///=============================================================================
 ///                        ImGui描画
 void Enemy::DrawImGui() {
 	EnemyBase::DrawImGui();
 #ifdef _DEBUG
-	const char *stateNames[] = {"Approach", "Combat", "Dash", "Retreat"};
+	const char *stateNames[] = {"Approach", "Combat", "Retreat", "FormationFollow"};
 	ImGui::Text("State: %s", stateNames[static_cast<int>(behaviorState_)]);
 	ImGui::Text("Combat Timer: %.1f / %.1f", combatTimer_, combatDuration_);
-	ImGui::Text("Dash Cooldown: %.1f / %.1f", dashCooldownTimer_, EnemyConstants::kDashCooldown);
+	ImGui::Text("Group ID: %d", groupId_);
+	ImGui::Text("Following Formation: %s", isFollowingFormation_ ? "Yes" : "No");
 #endif
 }

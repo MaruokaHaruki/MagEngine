@@ -16,9 +16,6 @@ namespace {
 	constexpr float kDefaultLifeTime = 60.0f;
 	constexpr float kDestroyDuration = 2.0f;
 	constexpr float kHitReactionDuration = 0.3f;
-	constexpr float kShakeAmplitude = 0.2f;
-	constexpr float kShakeFrequency = 25.0f;
-	constexpr float kKnockbackStrength = 3.0f;
 	constexpr int kDefaultMaxHP = 3;
 	constexpr float kOutOfBoundsDistance = 150.0f;
 }
@@ -56,17 +53,10 @@ void EnemyBase::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::s
 	particle_ = nullptr;
 	particleCreated_ = false;
 
-	// ヒットリアクション関連の初期化
+	// ヒットリアクション関連の初期化（簡略化）
 	isHitReacting_ = false;
 	hitReactionTimer_ = 0.0f;
 	hitReactionDuration_ = kHitReactionDuration;
-	hitFlashCount_ = 0;
-	originalScale_ = transform_.scale;
-	hitScale_ = {1.5f, 1.5f, 1.5f};
-	shouldRenderThisFrame_ = true;
-	knockbackVelocity_ = {0.0f, 0.0f, 0.0f};
-	shakeAmplitude_ = kShakeAmplitude;
-	shakeFrequency_ = kShakeFrequency;
 	hitStartPosition_ = {0.0f, 0.0f, 0.0f};
 	isInvincible_ = false;
 
@@ -107,8 +97,6 @@ void EnemyBase::Update() {
 	// ヒットリアクションの更新
 	if (isHitReacting_) {
 		UpdateHitReaction();
-	} else {
-		shouldRenderThisFrame_ = true;
 	}
 
 	// 生存時間の更新
@@ -138,7 +126,7 @@ void EnemyBase::Update() {
 ///=============================================================================
 ///                        描画
 void EnemyBase::Draw() {
-	if (destroyState_ == DestroyState::Alive && obj_ && shouldRenderThisFrame_) {
+	if (destroyState_ == DestroyState::Alive && obj_) {
 		obj_->Draw();
 	}
 }
@@ -190,89 +178,19 @@ void EnemyBase::StartHitReaction() {
 	isHitReacting_ = true;
 	isInvincible_ = true;
 	hitReactionTimer_ = 0.0f;
-	hitFlashCount_ = 0;
 	hitStartPosition_ = transform_.translate;
-
-	// ランダムなノックバック方向を生成
-	knockbackVelocity_ = {
-		(static_cast<float>(rand() % 200) - 100.0f) / 100.0f * kKnockbackStrength,
-		(static_cast<float>(rand() % 100)) / 100.0f * kKnockbackStrength * 0.3f,
-		-kKnockbackStrength * 1.5f};
 }
 
 ///=============================================================================
-///                        ヒットリアクション更新
+///                        ヒットリアクション更新（簡略化）
 void EnemyBase::UpdateHitReaction() {
 	hitReactionTimer_ += 1.0f / 60.0f;
-
-	// 点滅効果
-	int flashInterval = static_cast<int>(hitReactionTimer_ / 0.03f);
-	shouldRenderThisFrame_ = (flashInterval % 2 == 0);
-
-	float t = std::clamp(hitReactionTimer_ / hitReactionDuration_, 0.0f, 1.0f);
-	const float knockbackPhase = 0.5f;
-
-	if (t < knockbackPhase) {
-		// ノックバックフェーズ
-		float knockbackT = t / knockbackPhase;
-		float easeOut = 1.0f - std::pow(1.0f - knockbackT, 2.0f);
-
-		Vector3 knockbackOffset = {
-			knockbackVelocity_.x * easeOut * (1.0f - knockbackT),
-			knockbackVelocity_.y * easeOut * (1.0f - knockbackT),
-			knockbackVelocity_.z * easeOut * (1.0f - knockbackT)};
-
-		transform_.translate = {
-			hitStartPosition_.x + knockbackOffset.x,
-			hitStartPosition_.y + knockbackOffset.y,
-			hitStartPosition_.z + knockbackOffset.z};
-
-		float scaleEase = 1.0f - std::pow(1.0f - knockbackT, 3.0f);
-		transform_.scale = {
-			hitScale_.x + (originalScale_.x - hitScale_.x) * scaleEase,
-			hitScale_.y + (originalScale_.y - hitScale_.y) * scaleEase,
-			hitScale_.z + (originalScale_.z - hitScale_.z) * scaleEase};
-	} else {
-		// 復帰フェーズ
-		float returnT = (t - knockbackPhase) / (1.0f - knockbackPhase);
-		float easeIn = returnT * returnT;
-
-		Vector3 knockbackEndPos = {
-			hitStartPosition_.x + knockbackVelocity_.x,
-			hitStartPosition_.y + knockbackVelocity_.y,
-			hitStartPosition_.z + knockbackVelocity_.z};
-
-		float timeElapsed = hitReactionTimer_;
-		Vector3 targetPos = {
-			hitStartPosition_.x,
-			hitStartPosition_.y,
-			hitStartPosition_.z + speed_ * timeElapsed};
-
-		transform_.translate = {
-			knockbackEndPos.x + (targetPos.x - knockbackEndPos.x) * easeIn,
-			knockbackEndPos.y + (targetPos.y - knockbackEndPos.y) * easeIn,
-			knockbackEndPos.z + (targetPos.z - knockbackEndPos.z) * easeIn};
-
-		float scaleEase = 1.0f - std::pow(1.0f - returnT, 3.0f);
-		transform_.scale = {
-			hitScale_.x + (originalScale_.x - hitScale_.x) * scaleEase,
-			hitScale_.y + (originalScale_.y - hitScale_.y) * scaleEase,
-			hitScale_.z + (originalScale_.z - hitScale_.z) * scaleEase};
-	}
-
-	// 揺れ効果
-	float shakeFade = 1.0f - t;
-	float shakeOffset = std::sin(hitReactionTimer_ * shakeFrequency_) * shakeAmplitude_ * shakeFade;
-	transform_.translate.x += shakeOffset;
-	transform_.translate.y += shakeOffset * 0.5f;
 
 	// ヒットリアクション終了
 	if (hitReactionTimer_ >= hitReactionDuration_) {
 		isHitReacting_ = false;
 		isInvincible_ = false;
 		hitReactionTimer_ = 0.0f;
-		transform_.scale = originalScale_;
-		shouldRenderThisFrame_ = true;
 	}
 }
 

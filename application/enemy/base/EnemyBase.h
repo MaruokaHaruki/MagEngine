@@ -167,17 +167,10 @@ protected:
 	float destroyDuration_;
 
 	//========================================
-	// ヒットリアクション関連
+	// ヒットリアクション関連（簡略化）
 	bool isHitReacting_;
 	float hitReactionTimer_;
 	float hitReactionDuration_;
-	int hitFlashCount_;
-	Vector3 originalScale_;
-	Vector3 hitScale_;
-	bool shouldRenderThisFrame_;
-	Vector3 knockbackVelocity_;
-	float shakeAmplitude_;
-	float shakeFrequency_;
 	Vector3 hitStartPosition_;
 	bool isInvincible_;
 
