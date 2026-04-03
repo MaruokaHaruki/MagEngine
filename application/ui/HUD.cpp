@@ -1,8 +1,8 @@
 #define _USE_MATH_DEFINES
 #define NOMINMAX
 #include "HUD.h"
-#include "../enemy/EnemyBase.h"
-#include "../enemy/EnemyManager.h"
+#include "EnemyBase.h"
+#include "EnemyManager.h"
 #include "Camera.h"
 #include "ImguiSetup.h"
 #include "LineManager.h"

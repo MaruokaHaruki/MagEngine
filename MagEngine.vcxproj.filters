@@ -152,13 +152,13 @@
     <ClCompile Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
-    <ClCompile Include="application\enemy\Enemy.cpp">
+    <ClCompile Include="application\enemy\type\Enemy.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\enemy\EnemyManager.cpp">
+    <ClCompile Include="application\enemy\manager\EnemyManager.cpp">
       <Filter>application</Filter>
     </ClCompile>
-    <ClCompile Include="application\enemy\EnemyGroup.cpp">
+    <ClCompile Include="application\enemy\manager\EnemyGroup.cpp">
       <Filter>application</Filter>
     </ClCompile>
     <ClCompile Include="application\utils\FollowCamera.cpp">
@@ -195,9 +195,9 @@
     <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerHealthComponent.cpp" />
     <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
-    <ClCompile Include="application\enemy\EnemyBase.cpp" />
-    <ClCompile Include="application\enemy\EnemyBullet.cpp" />
-    <ClCompile Include="application\enemy\EnemyGunner.cpp" />
+    <ClCompile Include="application\enemy\base\EnemyBase.cpp" />
+    <ClCompile Include="application\enemy\type\EnemyBullet.cpp" />
+    <ClCompile Include="application\enemy\type\EnemyGunner.cpp" />
     <ClCompile Include="application\ui\OperationGuideUI.cpp" />
     <ClCompile Include="engine\postEffect\Vignetting.cpp" />
     <ClCompile Include="application\ui\UIManager.cpp" />
@@ -423,13 +423,13 @@
     <ClInclude Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
-    <ClInclude Include="application\enemy\Enemy.h">
+    <ClInclude Include="application\enemy\type\Enemy.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\enemy\EnemyManager.h">
+    <ClInclude Include="application\enemy\manager\EnemyManager.h">
       <Filter>application</Filter>
     </ClInclude>
-    <ClInclude Include="application\enemy\EnemyGroup.h">
+    <ClInclude Include="application\enemy\manager\EnemyGroup.h">
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="application\utils\FollowCamera.h">
@@ -468,9 +468,9 @@
     <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
     <ClInclude Include="application\player\component\PlayerHealthComponent.h" />
     <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
-    <ClInclude Include="application\enemy\EnemyBase.h" />
-    <ClInclude Include="application\enemy\EnemyBullet.h" />
-    <ClInclude Include="application\enemy\EnemyGunner.h" />
+    <ClInclude Include="application\enemy\base\EnemyBase.h" />
+    <ClInclude Include="application\enemy\type\EnemyBullet.h" />
+    <ClInclude Include="application\enemy\type\EnemyGunner.h" />
     <ClInclude Include="engine\math\MagMath.h" />
     <ClInclude Include="application\ui\OperationGuideUI.h" />
     <ClInclude Include="engine\postEffect\Vignetting.h" />
