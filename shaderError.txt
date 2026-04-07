@@ -1,6 +1,0 @@
-resources/shader/Object3d.PS.hlsl:147:65: error: no member named 'cosFalloffStart' in 'SpotLight'
-            spotLightVector_S, gSpotLight.direction, gSpotLight.cosFalloffStart, gSpotLight.cosFalloffEnd,
-                                                     ~~~~~~~~~~ ^
-resources/shader/Object3d.PS.hlsl:147:93: error: no member named 'cosFalloffEnd' in 'SpotLight'
-            spotLightVector_S, gSpotLight.direction, gSpotLight.cosFalloffStart, gSpotLight.cosFalloffEnd,
-                                                                                 ~~~~~~~~~~ ^
