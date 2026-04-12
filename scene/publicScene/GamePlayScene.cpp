@@ -347,14 +347,18 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
+	// タイムスケール計算（ジャスト回避スロー効果）
+	gameTimeScale_ = 1.0f; // デフォルト: 通常速度
+	if (player_) {
+		gameTimeScale_ = player_->GetJustAvoidanceComponent()->GetGameTimeScale();
+	}
+	const float baseDeltaTime = 1.0f / 60.0f;
+	const float effectiveDeltaTime = baseDeltaTime * gameTimeScale_;
+
+	//========================================
 	// 雲の更新
 	if (cloud_) {
-		float deltaTime = 1.0f / 60.0f;
-		// ジャスト回避中のスロー効果を適用
-		if (player_) {
-			deltaTime *= player_->GetJustAvoidanceComponent()->GetGameTimeScale();
-		}
-		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), deltaTime);
+		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), effectiveDeltaTime);
 	}
 
 	//========================================

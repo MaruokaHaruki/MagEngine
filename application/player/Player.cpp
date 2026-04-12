@@ -83,14 +83,29 @@ void Player::Update() {
 		return;
 	}
 
-	// === コンポーネント更新 ===
-	healthComponent_.Update(kFrameDelta);
-	combatComponent_.Update(kFrameDelta);
+	// === ジャスト回避コンポーネントは常に実時間で更新（タイマーカウント用） ===
 	justAvoidanceComponent_.Update(kFrameDelta);
 
+	// === スロー倍率を計算し、他のコンポーネントに適用 ===
+	float slowMultiplier = justAvoidanceComponent_.GetGameTimeScale();
+	float effectiveDeltaTime = kFrameDelta * slowMultiplier;
+
+	// === 強化バフを適用 ===
+	// 移動速度倍率をMovementコンポーネントに反映
+	// スロー状態でも速度が維持されるように、speedMultiplierを乗算
+	float speedMultiplier = justAvoidanceComponent_.GetSpeedMultiplier();
+	if (speedMultiplier > 1.0f) {
+		// 速度倍率がある場合、deltaTimeを調整して速度を上げる
+		effectiveDeltaTime *= speedMultiplier;
+	}
+
+	// === コンポーネント更新（スロー適用） ===
+	healthComponent_.Update(effectiveDeltaTime);
+	combatComponent_.Update(effectiveDeltaTime);
+
 	// === プレイヤー移動関連処理 ===
-	UpdateMovement();
-	UpdateBarrelRollAndBoost();
+	UpdateMovement(effectiveDeltaTime);
+	UpdateBarrelRollAndBoost(effectiveDeltaTime);
 
 	// === 射撃処理 ===
 	ProcessShooting();
@@ -114,7 +129,7 @@ void Player::Update() {
 
 //=============================================================================
 // プレイヤーの動作関係処理（入力処理、移動、回転を統合）
-void Player::UpdateMovement() {
+void Player::UpdateMovement(float deltaTime) {
 	// 入力情報を取得
 	Input *input = Input::GetInstance();
 	float moveX = 0.0f;
@@ -140,12 +155,12 @@ void Player::UpdateMovement() {
 
 	// 移動コンポーネントで処理
 	movementComponent_.ProcessInput(moveX, moveY);
-	movementComponent_.Update(GetTransformSafe(), kFrameDelta);
+	movementComponent_.Update(GetTransformSafe(), deltaTime);
 }
 
 //=============================================================================
 // バレルロールとブーストの更新
-void Player::UpdateBarrelRollAndBoost() {
+void Player::UpdateBarrelRollAndBoost(float deltaTime) {
 	Input *input = Input::GetInstance();
 
 	// === バレルロール入力（Shift または Aボタンのみ） ===
@@ -206,7 +221,7 @@ void Player::UpdateBarrelRollAndBoost() {
 		}
 	}
 
-	movementComponent_.ProcessBoost(boostInput, kFrameDelta);
+	movementComponent_.ProcessBoost(boostInput, deltaTime);
 }
 
 //=============================================================================

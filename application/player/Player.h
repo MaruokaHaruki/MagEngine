@@ -505,9 +505,9 @@ public:
 	///                        内部処理（private）
 private:
 	/// @brief 移動更新
-	void UpdateMovement();
+	void UpdateMovement(float deltaTime);
 	/// @brief バレルロール・ブースト更新
-	void UpdateBarrelRollAndBoost();
+	void UpdateBarrelRollAndBoost(float deltaTime);
 	/// @brief 射撃処理
 	void ProcessShooting();
 	/// @brief Transform安全取得

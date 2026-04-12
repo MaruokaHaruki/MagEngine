@@ -128,4 +128,8 @@ private:
 	bool isGameOver_;
 	bool isGameClear_;
 	bool hasUIDeploymentStarted_ = false; // UI展開開始フラグ
+
+	//========================================
+	// タイムスケール（ジャスト回避スロー効果用）
+	float gameTimeScale_ = 1.0f; // デフォルト: 1.0x（通常速度）
 };
