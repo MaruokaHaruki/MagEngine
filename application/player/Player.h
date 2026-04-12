@@ -211,19 +211,56 @@ public:
 	}
 	/// @brief 直近のジャスト回避成功率を取得（0-1）
 	float GetJustAvoidanceSuccessRate() const {
-		return justAvoidanceComponent_.GetJustAvoidanceSuccessRate();
+		return justAvoidanceComponent_.GetLastSuccessRate();
 	}
+	/// @brief スロー演出中かどうか
+	bool IsSlowActive() const {
+		return justAvoidanceComponent_.IsSlowActive();
+	}
+	/// @brief 現在のスロー強度を取得（0.0～1.0）
+	float GetSlowStrength() const {
+		return justAvoidanceComponent_.GetSlowStrength();
+	}
+	/// @brief 機体強化バフ中かどうか
+	bool IsPowerUpActive() const {
+		return justAvoidanceComponent_.IsPowerUpActive();
+	}
+	/// @brief 現在の攻撃力倍率を取得
+	float GetAttackMultiplier() const {
+		return justAvoidanceComponent_.GetAttackMultiplier();
+	}
+	/// @brief 現在の移動速度倍率を取得
+	float GetSpeedMultiplier() const {
+		return justAvoidanceComponent_.GetSpeedMultiplier();
+	}
+	
 	/// @brief ジャスト回避ウィンドウサイズを設定
 	void SetJustAvoidanceWindowSize(float windowSize) {
 		justAvoidanceComponent_.SetJustAvoidanceWindowSize(windowSize);
 	}
-	/// @brief 敵の攻撃通知タイムアウトを設定
-	void SetJustAvoidanceTimeout(float timeout) {
-		justAvoidanceComponent_.SetIncomingDamageTimeout(timeout);
+	/// @brief 敵弾検出範囲を設定
+	void SetJustAvoidanceDetectionRadius(float radius) {
+		justAvoidanceComponent_.SetDetectionRadius(radius);
 	}
-	/// @brief ジャスト回避ボーストゲージ報酬を設定
-	void SetJustAvoidanceBoostReward(float reward) {
-		justAvoidanceComponent_.SetJustAvoidanceBoostReward(reward);
+	/// @brief スロー演出の持続時間を設定
+	void SetSlowDuration(float duration) {
+		justAvoidanceComponent_.SetSlowDuration(duration);
+	}
+	/// @brief スロー強度を設定（0.0～1.0）
+	void SetSlowStrength(float strength) {
+		justAvoidanceComponent_.SetSlowStrength(strength);
+	}
+	/// @brief 機体強化バフの持続時間を設定
+	void SetPowerUpDuration(float duration) {
+		justAvoidanceComponent_.SetPowerUpDuration(duration);
+	}
+	/// @brief 攻撃力倍率を設定
+	void SetAttackMultiplier(float multiplier) {
+		justAvoidanceComponent_.SetAttackMultiplier(multiplier);
+	}
+	/// @brief 移動速度倍率を設定
+	void SetSpeedMultiplier(float multiplier) {
+		justAvoidanceComponent_.SetSpeedMultiplier(multiplier);
 	}
 
 	///--------------------------------------------------------------

@@ -14,6 +14,7 @@ void EnemyBullet::Initialize(MagEngine::Object3dSetup *object3dSetup, const std:
 	obj_->SetModel(modelPath);
 
 	transform_.translate = position;
+	previousPosition_ = position;  //! 初期位置を前フレーム位置にセット
 	transform_.scale = {0.5f, 0.5f, 0.5f};
 
 	// 進行方向に向けて回転を設定
@@ -54,6 +55,10 @@ void EnemyBullet::Update() {
 		return;
 
 	const float deltaTime = 1.0f / 60.0f;
+	
+	//! ジャスト判定用：フレーム開始時に前フレームの位置を保存
+	previousPosition_ = transform_.translate;
+	
 	lifeTimer_ += deltaTime;
 
 	transform_.translate.x += velocity_.x * deltaTime;

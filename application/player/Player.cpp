@@ -640,19 +640,40 @@ void Player::Heal(int healAmount) {
 // 衝突処理
 void Player::OnCollisionEnter(BaseObject *other) {
 	// 敵の弾との衝突チェック
-	if (dynamic_cast<EnemyBullet *>(other)) {
-		// Just Avoidanceチェック：敵弾が迫ってきたことを登録
-		justAvoidanceComponent_.RegisterIncomingDamage();
+	if (EnemyBullet *bullet = dynamic_cast<EnemyBullet *>(other)) {
+		//! ===== ジャスト回避判定 =====
+		//! 敵弾がプレイヤーに接近中か、距離に基づいて判定
+		justAvoidanceComponent_.RegisterIncomingBullet(
+			bullet->GetPosition(),
+			bullet->GetPreviousPosition(),
+			bullet->GetRadius(),
+			this->GetPosition()  // プレイヤーの現在位置を渡す
+		);
 		
-		// Just Avoidance成功判定
+		// ジャスト回避成功判定
 		bool wasJustAvoidanceSuccess = false;
-		float boostReward = justAvoidanceComponent_.CheckJustAvoidanceSuccess(wasJustAvoidanceSuccess);
+		float successRate = 0.0f;
+		float slowStrength = justAvoidanceComponent_.CheckJustAvoidanceSuccess(
+			wasJustAvoidanceSuccess,
+			successRate
+		);
 		
 		if (wasJustAvoidanceSuccess) {
-			// ジャスト回避成功：ダメージを受けずにボーストゲージを回復
-			movementComponent_.AddBoostGaugeReward(boostReward);
+			//! ===== ジャスト回避成功 =====
+			//! - ダメージを受けずにボーストゲージ回復（30.0f）
+			//! - スロー演出開始
+			//! - 機体強化バフ開始
+			//! 詳細は PlayerJustAvoidanceComponent で管理
+			movementComponent_.AddBoostGaugeReward(30.0f);
+			
+			//! TODO: スロー演出の実装
+			//! - ゲーム全体の時間スケール変更
+			//! - 敵の動き、弾の動きが遅くなる
+			//! slowStrength を使用して時間スケール = 1.0 - slowStrength に設定
+			
 		} else {
-			// ジャスト回避失敗：通常通りダメージを受ける
+			//! ===== ジャスト回避失敗 =====
+			//! 通常通りダメージを受ける
 			TakeDamage(15); // 敵の弾のダメージ
 		}
 		return;
