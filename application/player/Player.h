@@ -233,6 +233,11 @@ public:
 	float GetSpeedMultiplier() const {
 		return justAvoidanceComponent_.GetSpeedMultiplier();
 	}
+
+	/// @brief ジャスト回避コンポーネントを取得（スロー効果適用用）
+	PlayerJustAvoidanceComponent *GetJustAvoidanceComponent() {
+		return &justAvoidanceComponent_;
+	}
 	
 	/// @brief ジャスト回避ウィンドウサイズを設定
 	void SetJustAvoidanceWindowSize(float windowSize) {

@@ -84,6 +84,12 @@ public:
 		return IsPowerUpActive() ? speedMultiplier_ : 1.0f;
 	}
 
+	/// @brief ゲーム全体に適用するタイム スケール倍率を取得（スロー用）
+	/// @details スロー中は0.5～1.0の値を返す（1.0 - slowStrength）
+	float GetGameTimeScale() const {
+		return IsSlowActive() ? (1.0f - GetSlowStrength()) : 1.0f;
+	}
+
 	///--------------------------------------------------------------
 	///                        セッター
 	/// @brief Just Avoidanceウィンドウのサイズを設定（秒）

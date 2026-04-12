@@ -129,7 +129,7 @@ float PlayerJustAvoidanceComponent::CheckJustAvoidanceSuccess(
 		// ウィンドウの中心（0秒）が最も完璧、端に行くほど低下
 		// ウィンドウの中心を狙い気味に設計する場合は調整可能
 		outSuccessRate = 1.0f - (timeSinceBarrelRoll / justAvoidanceWindowSize_) * 0.3f;
-		outSuccessRate = std::max(0.7f, outSuccessRate); // 最低でも70%
+		outSuccessRate = outSuccessRate > 0.7f ? outSuccessRate : 0.7f; // 最低でも70%
 
 		//! ===== スロー演出を開始 =====
 		slowTimer_ = slowDuration_;
@@ -167,7 +167,7 @@ float PlayerJustAvoidanceComponent::GetJustAvoidanceWindowTimeRemaining() const 
 	float timeSinceBarrelRoll = lastBarrelRollStartTime_;
 	float remaining = justAvoidanceWindowSize_ - timeSinceBarrelRoll;
 
-	return std::max(0.0f, remaining);
+	return remaining > 0.0f ? remaining : 0.0f;
 }
 
 //=============================================================================

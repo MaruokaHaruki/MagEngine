@@ -349,7 +349,12 @@ void GamePlayScene::Update() {
 	//========================================
 	// 雲の更新
 	if (cloud_) {
-		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
+		float deltaTime = 1.0f / 60.0f;
+		// ジャスト回避中のスロー効果を適用
+		if (player_) {
+			deltaTime *= player_->GetJustAvoidanceComponent()->GetGameTimeScale();
+		}
+		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), deltaTime);
 	}
 
 	//========================================
