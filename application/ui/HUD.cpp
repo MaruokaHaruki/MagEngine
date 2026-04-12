@@ -62,6 +62,12 @@ void HUD::Initialize() {
 	animationDuration_ = 1.2f;
 	deployProgress_ = 0.0f;
 
+	// ジャスト回避表示の初期化
+	justAvoidanceDisplayActive_ = false;
+	justAvoidanceNotificationTimer_ = 0.0f;
+	justAvoidanceNotificationDuration_ = 1.2f; // 1.2秒間表示
+	justAvoidanceSuccessRate_ = 0.0f;
+
 	// 展開タイミング（高速化）
 	frameDeployStart_ = 0.0f;
 	boresightDeployStart_ = 0.08f;
@@ -359,6 +365,14 @@ void HUD::Update(const Player *player) {
 
 	// ロックオン中の敵数をカウント
 	lockedEnemyCount_ = static_cast<int>(player->GetLockOnTargetCount());
+
+	// ジャスト回避演出の更新
+	if (justAvoidanceDisplayActive_) {
+		justAvoidanceNotificationTimer_ += 0.016f; // 約60FPS基準
+		if (justAvoidanceNotificationTimer_ >= justAvoidanceNotificationDuration_) {
+			justAvoidanceDisplayActive_ = false;
+		}
+	}
 }
 
 ///=============================================================================
@@ -436,6 +450,11 @@ void HUD::Draw() {
 	// ロックオン用レティクル（長押しモード中も表示）
 	if (showLockOnReticle_ && (isMissileLockOnMode_ || lockOnTarget_)) {
 		DrawLockOnReticle(deployProgress_);
+	}
+
+	// ジャスト回避成功通知を描画
+	if (justAvoidanceDisplayActive_) {
+		DrawJustAvoidanceNotification(deployProgress_);
 	}
 }
 
@@ -1212,4 +1231,72 @@ void HUD::DrawEnemyIndicators(float progress) {
 				{1.0f, 1.0f, 0.0f, 0.5f});
 		}
 	}
+}
+
+///=============================================================================
+///                        ジャスト回避成功演出を開始
+void HUD::PlayJustAvoidanceEffect(float successRate) {
+	justAvoidanceDisplayActive_ = true;
+	justAvoidanceNotificationTimer_ = 0.0f;
+	justAvoidanceSuccessRate_ = std::max(0.0f, std::min(1.0f, successRate));
+}
+
+///=============================================================================
+///                        ジャスト回避通知表示（画面上部中央）
+void HUD::DrawJustAvoidanceNotification(float progress) {
+	if (!justAvoidanceDisplayActive_ || justAvoidanceNotificationTimer_ >= justAvoidanceNotificationDuration_) {
+		justAvoidanceDisplayActive_ = false;
+		return;
+	}
+
+	// フェードアウト計算
+	float fadeOutStartTime = justAvoidanceNotificationDuration_ * 0.7f; // 70%経過後からフェードアウト開始
+	float alpha = 1.0f;
+	if (justAvoidanceNotificationTimer_ >= fadeOutStartTime) {
+		float fadeProgress = (justAvoidanceNotificationTimer_ - fadeOutStartTime) / (justAvoidanceNotificationDuration_ - fadeOutStartTime);
+		alpha = 1.0f - fadeProgress;
+	}
+
+	// テキスト表示位置（画面上部中央）
+	Vector3 textPos = {SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.2f, 0.0f};
+
+	// 成功率に基づいて色を決定
+	Vector4 textColor;
+	if (justAvoidanceSuccessRate_ >= 0.99f) {
+		// 100%: 金色
+		textColor = {1.0f, 0.84f, 0.0f, 0.95f * alpha};
+	} else if (justAvoidanceSuccessRate_ >= 0.90f) {
+		// 90%以上: 緑
+		textColor = {0.0f, 1.0f, 0.3f, 0.95f * alpha};
+	} else if (justAvoidanceSuccessRate_ >= 0.80f) {
+		// 80%以上: 黄
+		textColor = {1.0f, 1.0f, 0.0f, 0.95f * alpha};
+	} else {
+		// 80%未満: オレンジ
+		textColor = {1.0f, 0.65f, 0.0f, 0.95f * alpha};
+	}
+
+	// テキストを描画（LineManagerを使用）
+	// 簡略版：成功率をパーセンテージで表示
+	// NOTE: より詳細な実装にはDebugTextManagerやフォント描画システムの活用が必要
+	LineManager *lineManager = LineManager::GetInstance();
+
+	// パルス効果: スケールアニメーション
+	float pulseScale = 1.0f + 0.15f * sinf(animationTime_ * 8.0f);
+	
+	// 成功確認用の視覚的フィードバック
+	// スクリーン中央付近に成功ライン（円形フレーム）を描画
+	float circleRadius = 30.0f * pulseScale;
+	Vector4 frameColor = textColor;
+	frameColor.w *= 0.6f; // 枠線は少し薄く
+
+	lineManager->DrawCircle(textPos, circleRadius, frameColor);
+	
+	// チェックマーク的な視覚効果（2本の直線で簡易版）
+	Vector3 checkStart = {textPos.x - 15.0f * pulseScale, textPos.y, 0.0f};
+	Vector3 checkMid = {textPos.x - 5.0f * pulseScale, textPos.y + 10.0f * pulseScale, 0.0f};
+	Vector3 checkEnd = {textPos.x + 15.0f * pulseScale, textPos.y - 15.0f * pulseScale, 0.0f};
+	
+	lineManager->DrawLine(checkStart, checkMid, textColor);
+	lineManager->DrawLine(checkMid, checkEnd, textColor);
 }

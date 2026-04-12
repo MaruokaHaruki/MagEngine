@@ -128,4 +128,17 @@ private:
 	void UpdateAnimation();
 	float GetDeployProgress() const;
 	float EaseOutCubic(float t) const;
+
+	// ジャスト回避成功演出
+	void DrawJustAvoidanceNotification(float progress = 1.0f); // 新規: ジャスト回避表示
+	
+	// ジャスト回避状態
+	bool justAvoidanceDisplayActive_;			// 表示中フラグ
+	float justAvoidanceNotificationTimer_;		// 表示タイマー
+	float justAvoidanceNotificationDuration_;	// 表示期間（秒）
+	float justAvoidanceSuccessRate_;			// 成功率（0.0～1.0）
+	
+public:
+	/// ジャスト回避成功演出を開始
+	void PlayJustAvoidanceEffect(float successRate);
 };

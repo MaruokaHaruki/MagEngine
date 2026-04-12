@@ -511,6 +511,23 @@ void GamePlayScene::Update() {
 		Vector3 playerPos = player_->GetPosition();
 		playerPos.y += 2.0f; // プレイヤーの少し上に表示
 		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
+
+		// ジャスト回避成功時のカメラズーム演出を開始
+		if (player_->IsJustAvoidanceSuccessThisFrame() && followCamera_) {
+			float currentFov = followCamera_->GetCamera()->GetFovY();
+			float targetFov = currentFov * 0.85f; // 視野角を15%狭める（ズームイン）
+			float duration = 0.25f; // 0.25秒かけてズーム
+			followCamera_->StartFovZoomAnimation(targetFov, duration);
+
+			// HUDにジャスト回避成功演出を通知
+			if (uiManager_) {
+				auto hud = uiManager_->GetHUD();
+				if (hud) {
+					float successRate = player_->GetLastJustAvoidanceSuccessRate();
+					hud->PlayJustAvoidanceEffect(successRate);
+				}
+			}
+		}
 	}
 
 	// ゲームオーバーまたはクリア中は以降の更新をスキップ

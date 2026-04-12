@@ -83,6 +83,15 @@ public:
 		return isCameraOperationEnabled_;
 	}
 
+	/// \brief FOVアニメーションを開始（ジャスト回避成功時用）
+	void StartFovZoomAnimation(float targetFov, float duration) {
+		fovAnimationTargetFov_ = targetFov;
+		fovAnimationDuration_ = duration;
+		fovAnimationElapsedTime_ = 0.0f;
+		fovAnimationStartFov_ = camera_ ? camera_->GetFovY() : 0.785f; // デフォルトFOV = 45度 ≈ 0.785rad
+		isFovAnimating_ = true;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
@@ -129,4 +138,11 @@ private:
 	float targetPullMultiplier_;
 	float targetTiltAmount_;
 	bool isCameraOperationEnabled_; // カメラ操作が有効かどうか
+
+	// FOVアニメーション
+	bool isFovAnimating_;			// FOVアニメーション中かどうか
+	float fovAnimationStartFov_;	// アニメーション開始時のFOV
+	float fovAnimationTargetFov_;	// アニメーション目標FOV
+	float fovAnimationDuration_;	// アニメーション総時間
+	float fovAnimationElapsedTime_; // アニメーション経過時間
 };

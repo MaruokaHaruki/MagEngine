@@ -681,10 +681,9 @@ void Player::OnCollisionEnter(BaseObject *other) {
 			//! 詳細は PlayerJustAvoidanceComponent で管理
 			movementComponent_.AddBoostGaugeReward(30.0f);
 			
-			//! TODO: スロー演出の実装
-			//! - ゲーム全体の時間スケール変更
-			//! - 敵の動き、弾の動きが遅くなる
-			//! slowStrength を使用して時間スケール = 1.0 - slowStrength に設定
+			// 演出用フラグを設定
+			justAvoidanceSuccessThisFrame_ = true;
+			lastJustAvoidanceSuccessRate_ = successRate;
 			
 		} else {
 			//! ===== ジャスト回避失敗 =====

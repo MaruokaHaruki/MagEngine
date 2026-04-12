@@ -73,6 +73,13 @@ void FollowCamera::Initialize(const std::string &cameraName) {
 	targetTiltAmount_ = 0.0f;
 	isCameraOperationEnabled_ = true; // デフォルトで有効
 
+	// FOVアニメーションの初期化
+	isFovAnimating_ = false;
+	fovAnimationStartFov_ = 0.785f; // 約45度
+	fovAnimationTargetFov_ = 0.785f;
+	fovAnimationDuration_ = 0.0f;
+	fovAnimationElapsedTime_ = 0.0f;
+
 	// カメラに初期トランスフォームを設定
 	if (camera_) {
 		Transform initialTransform;
@@ -117,6 +124,20 @@ void FollowCamera::Update() {
 	}
 
 	UpdateCameraTransform();
+
+	// FOVアニメーション更新
+	if (isFovAnimating_) {
+		fovAnimationElapsedTime_ += 0.016f; // 約60FPS基準
+		if (fovAnimationElapsedTime_ >= fovAnimationDuration_) {
+			fovAnimationElapsedTime_ = fovAnimationDuration_;
+			isFovAnimating_ = false;
+		}
+
+		// 線形補間でFOVを更新
+		float progress = fovAnimationElapsedTime_ / fovAnimationDuration_;
+		float currentFov = Lerp(fovAnimationStartFov_, fovAnimationTargetFov_, progress);
+		camera_->SetFovY(currentFov);
+	}
 
 	// 固定位置モードの場合は位置を固定位置に設定
 	if (isFixedPositionMode_) {

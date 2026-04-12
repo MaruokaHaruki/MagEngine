@@ -238,6 +238,16 @@ public:
 	PlayerJustAvoidanceComponent *GetJustAvoidanceComponent() {
 		return &justAvoidanceComponent_;
 	}
+
+	/// @brief ジャスト回避が今フレーム成功したかどうか
+	bool IsJustAvoidanceSuccessThisFrame() const {
+		return justAvoidanceSuccessThisFrame_;
+	}
+
+	/// @brief 最後のジャスト回避成功率を取得
+	float GetLastJustAvoidanceSuccessRate() const {
+		return lastJustAvoidanceSuccessRate_;
+	}
 	
 	/// @brief ジャスト回避ウィンドウサイズを設定
 	void SetJustAvoidanceWindowSize(float windowSize) {
@@ -539,6 +549,11 @@ private:
 	float missileButtonHeldTime_;	// ミサイルボタンが押されている時間
 	bool isInLockOnMode_;			// ロックオンモード中フラグ
 	bool prevMissileButtonPressed_; // 前フレームのミサイルボタン状態
+
+	//========================================
+	// ジャスト回避演出管理
+	bool justAvoidanceSuccessThisFrame_ = false; // 今フレームでジャスト回避成功したか
+	float lastJustAvoidanceSuccessRate_ = 0.0f;  // 最後のジャスト回避成功率
 
 	//========================================
 	// 武装設定（一元管理）
