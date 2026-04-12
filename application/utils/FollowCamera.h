@@ -92,6 +92,11 @@ public:
 		isFovAnimating_ = true;
 	}
 
+	/// \brief FOVアニメーション中かどうかを取得
+	bool IsFovAnimating() const {
+		return isFovAnimating_;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:

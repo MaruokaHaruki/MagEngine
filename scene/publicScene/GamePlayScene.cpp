@@ -517,7 +517,10 @@ void GamePlayScene::Update() {
 			float currentFov = followCamera_->GetCamera()->GetFovY();
 			float targetFov = currentFov * 0.85f; // 視野角を15%狭める（ズームイン）
 			float duration = 0.25f; // 0.25秒かけてズーム
-			followCamera_->StartFovZoomAnimation(targetFov, duration);
+			// FOVアニメーション中は新しいアニメーションを開始しない
+			if (!followCamera_->IsFovAnimating()) {
+				followCamera_->StartFovZoomAnimation(targetFov, duration);
+			}
 
 			// HUDにジャスト回避成功演出を通知
 			if (uiManager_) {

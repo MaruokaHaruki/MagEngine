@@ -125,6 +125,10 @@ void Player::Update() {
 		BaseObject::Update(objTransform->translate);
 	}
 	obj_->Update();
+
+	// === ジャスト回避成功フラグをリセット（毎フレーム末尾） ===
+	// NOTE: このフラグは衝突検出時に設定され、1フレームだけ有効である必要がある
+	justAvoidanceSuccessThisFrame_ = false;
 }
 
 //=============================================================================

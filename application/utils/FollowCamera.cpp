@@ -131,12 +131,14 @@ void FollowCamera::Update() {
 		if (fovAnimationElapsedTime_ >= fovAnimationDuration_) {
 			fovAnimationElapsedTime_ = fovAnimationDuration_;
 			isFovAnimating_ = false;
+			// アニメーション完了後、目標FOVに設定して維持
+			camera_->SetFovY(fovAnimationTargetFov_);
+		} else {
+			// 線形補間でFOVを更新
+			float progress = fovAnimationElapsedTime_ / fovAnimationDuration_;
+			float currentFov = Lerp(fovAnimationStartFov_, fovAnimationTargetFov_, progress);
+			camera_->SetFovY(currentFov);
 		}
-
-		// 線形補間でFOVを更新
-		float progress = fovAnimationElapsedTime_ / fovAnimationDuration_;
-		float currentFov = Lerp(fovAnimationStartFov_, fovAnimationTargetFov_, progress);
-		camera_->SetFovY(currentFov);
 	}
 
 	// 固定位置モードの場合は位置を固定位置に設定
