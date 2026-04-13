@@ -31,10 +31,6 @@ MagMath::Transform *Player::GetTransformSafe() const {
 
 //=======================================================================
 // 初期化
-//=======================================================================
-/// 責務:
-/// - 3Dオブジェクト（ビジュアル）の生成と初期化
-/// - 全コンポーネント（移動・HP・射撃・ロックオン・敗北演出）の初期化
 void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath) {
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
@@ -72,11 +68,6 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 
 //=============================================================================
 // 毎フレーム更新
-//=============================================================================
-/// 責勑:
-/// - 蓮北機能を除く各コンポーネントを更新
-/// - 入力処理、移動、回転を处理
-/// 責務: 各コンポーネントを統合更新する
 void Player::Update() {
 	MagMath::Transform *objTransform = GetTransformSafe();
 	if (!objTransform) {
@@ -666,32 +657,31 @@ void Player::OnCollisionEnter(BaseObject *other) {
 			bullet->GetPosition(),
 			bullet->GetPreviousPosition(),
 			bullet->GetRadius(),
-			this->GetPosition()  // プレイヤーの現在位置を渡す
+			this->GetPosition() // プレイヤーの現在位置を渡す
 		);
-		
+
 		// ジャスト回避成功判定
 		bool wasJustAvoidanceSuccess = false;
 		float successRate = 0.0f;
 		float slowStrength = justAvoidanceComponent_.CheckJustAvoidanceSuccess(
 			wasJustAvoidanceSuccess,
-			successRate
-		);
-		
+			successRate);
+
 		if (wasJustAvoidanceSuccess) {
-			//! ===== ジャスト回避成功 =====
-			//! - ダメージを受けずにボーストゲージ回復（30.0f）
-			//! - スロー演出開始
-			//! - 機体強化バフ開始
-			//! 詳細は PlayerJustAvoidanceComponent で管理
+			// ===== ジャスト回避成功 =====
+			// - ダメージを受けずにブーストゲージ回復（30.0f）
+			// - スロー演出開始
+			// - 機体強化バフ開始
+			// 詳細は PlayerJustAvoidanceComponent で管理
 			movementComponent_.AddBoostGaugeReward(30.0f);
-			
+
 			// 演出用フラグを設定
 			justAvoidanceSuccessThisFrame_ = true;
 			lastJustAvoidanceSuccessRate_ = successRate;
-			
+
 		} else {
-			//! ===== ジャスト回避失敗 =====
-			//! 通常通りダメージを受ける
+			// ===== ジャスト回避失敗 =====
+			// 通常通りダメージを受ける
 			TakeDamage(15); // 敵の弾のダメージ
 		}
 		return;
