@@ -1,0 +1,59 @@
+{
+  "enemies": [
+    {
+      "id": "grunt",
+      "displayName": "Grunt",
+      "modelPath": "resources/models/enemy/grunt.fbx",
+      "maxHP": 2,
+      "baseSpeed": 18.0,
+      "scale": 1.0,
+      "primaryBehavior": "approach",
+      "secondaryBehaviors": ["shooting"],
+      "difficulty": 1
+    },
+    {
+      "id": "scout",
+      "displayName": "Scout",
+      "modelPath": "resources/models/enemy/scout.fbx",
+      "maxHP": 1,
+      "baseSpeed": 25.0,
+      "scale": 0.8,
+      "primaryBehavior": "orbit",
+      "secondaryBehaviors": ["shooting"],
+      "difficulty": 1
+    },
+    {
+      "id": "gunner",
+      "displayName": "Gunner",
+      "modelPath": "resources/models/enemy/gunner.fbx",
+      "maxHP": 3,
+      "baseSpeed": 12.0,
+      "scale": 1.2,
+      "primaryBehavior": "shooting",
+      "secondaryBehaviors": ["retreat"],
+      "difficulty": 2
+    },
+    {
+      "id": "tank",
+      "displayName": "Tank",
+      "modelPath": "resources/models/enemy/tank.fbx",
+      "maxHP": 5,
+      "baseSpeed": 10.0,
+      "scale": 1.5,
+      "primaryBehavior": "approach",
+      "secondaryBehaviors": ["shooting"],
+      "difficulty": 2
+    },
+    {
+      "id": "elite",
+      "displayName": "Elite",
+      "modelPath": "resources/models/enemy/elite.fbx",
+      "maxHP": 4,
+      "baseSpeed": 20.0,
+      "scale": 1.1,
+      "primaryBehavior": "approach",
+      "secondaryBehaviors": ["shooting", "orbit"],
+      "difficulty": 3
+    }
+  ]
+}

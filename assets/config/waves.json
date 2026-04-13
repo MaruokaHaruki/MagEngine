@@ -1,0 +1,127 @@
+{
+  "waves": [
+    {
+      "waveNumber": 1,
+      "difficulty": 1.0,
+      "enemySpawns": [
+        {
+          "enemyType": "grunt",
+          "count": 3,
+          "spawnPositions": [
+            { "x": -5, "y": 0, "z": 10 },
+            { "x": 0, "y": 0, "z": 12 },
+            { "x": 5, "y": 0, "z": 10 }
+          ],
+          "groupId": -1,
+          "spawnDelay": 0.5
+        },
+        {
+          "enemyType": "scout",
+          "count": 2,
+          "spawnPositions": [
+            { "x": -8, "y": 0, "z": 15 },
+            { "x": 8, "y": 0, "z": 15 }
+          ],
+          "groupId": -1,
+          "spawnDelay": 1.0
+        }
+      ],
+      "waveDelay": 0,
+      "minEnemyAliveToComplete": 0
+    },
+    {
+      "waveNumber": 2,
+      "difficulty": 1.2,
+      "enemySpawns": [
+        {
+          "enemyType": "grunt",
+          "count": 4,
+          "spawnPositions": [
+            { "x": -6, "y": 0, "z": 10 },
+            { "x": -2, "y": 0, "z": 10 },
+            { "x": 2, "y": 0, "z": 10 },
+            { "x": 6, "y": 0, "z": 10 }
+          ],
+          "groupId": -1,
+          "spawnDelay": 0.3
+        },
+        {
+          "enemyType": "gunner",
+          "count": 1,
+          "spawnPositions": [
+            { "x": 0, "y": 0, "z": 20 }
+          ],
+          "groupId": -1,
+          "spawnDelay": 2.0
+        }
+      ],
+      "waveDelay": 3.0,
+      "minEnemyAliveToComplete": 0
+    },
+    {
+      "waveNumber": 3,
+      "difficulty": 1.5,
+      "enemySpawns": [
+        {
+          "enemyType": "scout",
+          "count": 3,
+          "spawnPositions": [
+            { "x": -10, "y": 0, "z": 15 },
+            { "x": 0, "y": 0, "z": 18 },
+            { "x": 10, "y": 0, "z": 15 }
+          ],
+          "groupId": 1,
+          "spawnDelay": 0.5
+        },
+        {
+          "enemyType": "tank",
+          "count": 1,
+          "spawnPositions": [
+            { "x": 0, "y": 0, "z": 20 }
+          ],
+          "groupId": 1,
+          "spawnDelay": 1.5
+        }
+      ],
+      "waveDelay": 5.0,
+      "minEnemyAliveToComplete": 0
+    },
+    {
+      "waveNumber": 4,
+      "difficulty": 2.0,
+      "enemySpawns": [
+        {
+          "enemyType": "elite",
+          "count": 2,
+          "spawnPositions": [
+            { "x": -5, "y": 0, "z": 15 },
+            { "x": 5, "y": 0, "z": 15 }
+          ],
+          "groupId": 2,
+          "spawnDelay": 1.0
+        },
+        {
+          "enemyType": "gunner",
+          "count": 2,
+          "spawnPositions": [
+            { "x": -8, "y": 0, "z": 20 },
+            { "x": 8, "y": 0, "z": 20 }
+          ],
+          "groupId": 2,
+          "spawnDelay": 1.5
+        },
+        {
+          "enemyType": "tank",
+          "count": 1,
+          "spawnPositions": [
+            { "x": 0, "y": 0, "z": 25 }
+          ],
+          "groupId": -1,
+          "spawnDelay": 3.0
+        }
+      ],
+      "waveDelay": 8.0,
+      "minEnemyAliveToComplete": 0
+    }
+  ]
+}

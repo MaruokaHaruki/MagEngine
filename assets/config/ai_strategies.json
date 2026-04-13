@@ -1,0 +1,88 @@
+{
+  "strategies": [
+    {
+      "id": "approach",
+      "name": "Approach Behavior",
+      "description": "Enemy moves directly towards the player and tries to engage in melee combat",
+      "type": "ApproachBehavior",
+      "parameters": {
+        "targetDistance": 2.0,
+        "moveSpeed": 18.0,
+        "stopDistance": 1.5
+      }
+    },
+    {
+      "id": "orbit",
+      "name": "Orbit Behavior",
+      "description": "Enemy circles around the player at a fixed distance",
+      "type": "OrbitBehavior",
+      "parameters": {
+        "orbitRadius": 40.0,
+        "orbitDuration": 20.0,
+        "moveSpeed": 15.0
+      }
+    },
+    {
+      "id": "shooting",
+      "name": "Shooting Behavior",
+      "description": "Enemy stands at a distance and shoots at the player",
+      "type": "ShootingBehavior",
+      "parameters": {
+        "shootInterval": 0.5,
+        "preferredDistance": 15.0,
+        "attackPower": 1.0
+      }
+    },
+    {
+      "id": "retreat",
+      "name": "Retreat Behavior",
+      "description": "Enemy runs away from the player",
+      "type": "RetreatBehavior",
+      "parameters": {
+        "retreatSpeed": 25.0,
+        "retreatDistance": 50.0,
+        "triggerHPPercent": 0.3
+      }
+    },
+    {
+      "id": "patrol",
+      "name": "Patrol Behavior",
+      "description": "Enemy patrols along a predefined path",
+      "type": "PatrolBehavior",
+      "parameters": {
+        "patrolSpeed": 10.0,
+        "loopType": "pingpong"
+      }
+    }
+  ],
+  "combos": [
+    {
+      "name": "Aggressive",
+      "behaviors": ["approach", "shooting"],
+      "priority": ["approach", "shooting"],
+      "transitionConditions": {
+        "toApproach": "distance < 20.0 && hp > 50%",
+        "toShooting": "distance > 20.0"
+      }
+    },
+    {
+      "name": "Defensive",
+      "behaviors": ["orbit", "shooting", "retreat"],
+      "priority": ["orbit", "shooting", "retreat"],
+      "transitionConditions": {
+        "toOrbit": "alwaysActive",
+        "toShooting": "canSeePlayer",
+        "toRetreat": "hp < 30%"
+      }
+    },
+    {
+      "name": "Evasive",
+      "behaviors": ["orbit", "retreat"],
+      "priority": ["retreat", "orbit"],
+      "transitionConditions": {
+        "toRetreat": "hp < 40%",
+        "toOrbit": "otherwise"
+      }
+    }
+  ]
+}

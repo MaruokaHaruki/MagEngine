@@ -1,0 +1,50 @@
+{
+  "difficultySettings": {
+    "easy": {
+      "label": "Easy",
+      "enemyHealthMultiplier": 0.7,
+      "enemyDamageMultiplier": 0.7,
+      "enemySpeedMultiplier": 0.8,
+      "playerHealthMultiplier": 1.3,
+      "spawnRateMultiplier": 0.8,
+      "description": "Reduced enemy strength and health"
+    },
+    "normal": {
+      "label": "Normal",
+      "enemyHealthMultiplier": 1.0,
+      "enemyDamageMultiplier": 1.0,
+      "enemySpeedMultiplier": 1.0,
+      "playerHealthMultiplier": 1.0,
+      "spawnRateMultiplier": 1.0,
+      "description": "Balanced difficulty"
+    },
+    "hard": {
+      "label": "Hard",
+      "enemyHealthMultiplier": 1.5,
+      "enemyDamageMultiplier": 1.3,
+      "enemySpeedMultiplier": 1.2,
+      "playerHealthMultiplier": 0.8,
+      "spawnRateMultiplier": 1.2,
+      "description": "Increased enemy strength and more frequent spawning"
+    },
+    "insane": {
+      "label": "Insane",
+      "enemyHealthMultiplier": 2.0,
+      "enemyDamageMultiplier": 1.8,
+      "enemySpeedMultiplier": 1.5,
+      "playerHealthMultiplier": 0.6,
+      "spawnRateMultiplier": 1.5,
+      "description": "Extreme difficulty - enemies are much stronger and spawn faster"
+    }
+  },
+  "waveScaling": {
+    "baseMultiplier": 1.0,
+    "perWaveIncrease": 0.15,
+    "maxWaveMultiplier": 3.0
+  },
+  "defaults": {
+    "difficulty": "normal",
+    "waveSpeedProgression": true,
+    "enableGroupAI": true
+  }
+}
