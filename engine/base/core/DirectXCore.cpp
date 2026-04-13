@@ -389,16 +389,9 @@ namespace MagEngine {
 	///=============================================================================
 	///						Fenceの生成
 	void DirectXCore::FenceGeneration() {
-		fenceValue_++;
-		// GPUがここまでたどり着いついたときに、Fenceの値を指定した値に代入するようにSignalを送る
-		commandQueue_->Signal(fence_.Get(), fenceValue_);
-		// GetCompketedvalueの初期値はFence作成時に渡した初期値
-		if(fence_->GetCompletedValue() < fenceValue_) {
-			// 指定したSignalにたどり着いていないので、たどり着くまで待つようにイベントを設定する
-			fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
-			// イベントを待つ
-			WaitForSingleObject(fenceEvent_, INFINITE);
-		}
+		// フレーム Fence 値の記録と、次フレームのインデックス更新
+		// (実際の GPU 同期は ExecuteCommandList() で行われる)
+		currentFrameIndex_ = (currentFrameIndex_ + 1) % FRAME_BUFFER_COUNT;
 	}
 
 	///=============================================================================
@@ -477,20 +470,23 @@ namespace MagEngine {
 		// GPUにコマンドリストの実行を行わせる
 		Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { commandList_ };
 		commandQueue_->ExecuteCommandLists(1, commandLists->GetAddressOf());
+		
+		// 現在のフレーム Fence 値を割り当てて GPU に通知
+		fenceValue_++;
+		commandQueue_->Signal(fence_.Get(), fenceValue_);
+		frameFenceValues_[currentFrameIndex_] = fenceValue_;
+		
 		// GPUとOSに画面の交換を行うように通知する
 		swapChain_->Present(1, 0);
-		//=======================================
-		fenceValue_++;
-		// GPUがここまでたどり着いついたときに、Fenceの値を指定した値に代入するようにSignalを送る
-		commandQueue_->Signal(fence_.Get(), fenceValue_);
-		// GetCompketedvalueの初期値はFence作成時に渡した初期値
-		if(fence_->GetCompletedValue() < fenceValue_) {
-			// 指定したSignalにたどり着いていないので、たどり着くまで待つようにイベントを設定する
+		
+		// 次フレーム用のコマンドリストを準備する前に、
+		// 直前に実行したコマンドの完了を待つ
+		uint64_t completedValue = fence_->GetCompletedValue();
+		if (completedValue < fenceValue_) {
 			fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
-			// イベントを待つ
 			WaitForSingleObject(fenceEvent_, INFINITE);
 		}
-		//=======================================
+		
 		// 次フレーム用のコマンドリストを準備
 		hr_ = commandAllocator_->Reset();
 		assert(SUCCEEDED(hr_));
@@ -501,6 +497,16 @@ namespace MagEngine {
 	///=============================================================================
 	///						開放処理
 	void DirectXCore::ReleaseResources() {
+		// GPU処理の完了を待つ（リソース破棄前に必須）
+		if (fence_) {
+			fenceValue_++;
+			commandQueue_->Signal(fence_.Get(), fenceValue_);
+			if (fence_->GetCompletedValue() < fenceValue_) {
+				fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+				WaitForSingleObject(fenceEvent_, INFINITE);
+			}
+		}
+		
 		CloseHandle(fenceEvent_);
 #ifdef _DEBUG
 	// debugController_->Release();

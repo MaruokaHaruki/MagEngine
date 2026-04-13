@@ -450,6 +450,12 @@ namespace MagEngine {
 		HANDLE fenceEvent_ = nullptr; // Initialize to nullptr
 
 		//========================================
+		// フレームバッファリング（3フレーム先読み）
+		static constexpr uint32_t FRAME_BUFFER_COUNT = 3;
+		uint64_t frameFenceValues_[FRAME_BUFFER_COUNT] = {};
+		uint32_t currentFrameIndex_ = 0;
+
+		//========================================
 		// 深度バッファ
 		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};
 		Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource_;
