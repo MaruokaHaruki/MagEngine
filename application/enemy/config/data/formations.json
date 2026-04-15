@@ -1,0 +1,88 @@
+{
+  "formations": {
+    "v_formation": {
+      "type": 0,
+      "name": "V Formation",
+      "max_members": 5,
+      "spacing": 30.0,
+      "offsets": [
+        [0, 0, 0],
+        [-30, 0, -30],
+        [30, 0, -30],
+        [-50, 0, -50],
+        [50, 0, -50]
+      ],
+      "cohesion_strength": 0.7,
+      "separation_strength": 0.5,
+      "alignment_strength": 0.3
+    },
+    "line_formation": {
+      "type": 1,
+      "name": "Line Formation",
+      "max_members": 8,
+      "spacing": 25.0,
+      "offsets": [
+        [0, 0, 0],
+        [0, 0, -25],
+        [0, 0, -50],
+        [0, 0, -75],
+        [0, 0, -100],
+        [0, 0, -125],
+        [0, 0, -150],
+        [0, 0, -175]
+      ],
+      "cohesion_strength": 0.6,
+      "separation_strength": 0.4,
+      "alignment_strength": 0.5
+    },
+    "circle_formation": {
+      "type": 2,
+      "name": "Circle Formation",
+      "max_members": 6,
+      "spacing": 35.0,
+      "offsets": [
+        [0, 0, 0],
+        [35, 0, 0],
+        [17.5, 0, 30],
+        [-17.5, 0, 30],
+        [-35, 0, 0],
+        [0, 0, -35]
+      ],
+      "cohesion_strength": 0.8,
+      "separation_strength": 0.6,
+      "alignment_strength": 0.4
+    },
+    "diamond_formation": {
+      "type": 3,
+      "name": "Diamond Formation",
+      "max_members": 4,
+      "spacing": 40.0,
+      "offsets": [
+        [0, 0, 0],
+        [40, 0, 0],
+        [0, 0, -40],
+        [-40, 0, 0]
+      ],
+      "cohesion_strength": 0.75,
+      "separation_strength": 0.55,
+      "alignment_strength": 0.35
+    },
+    "dynamic_formation": {
+      "type": 4,
+      "name": "Dynamic Formation",
+      "max_members": 6,
+      "spacing": 30.0,
+      "offsets": [
+        [0, 0, 0],
+        [30, 0, -20],
+        [-30, 0, -20],
+        [30, 0, -50],
+        [-30, 0, -50],
+        [0, 0, -70]
+      ],
+      "cohesion_strength": 0.65,
+      "separation_strength": 0.5,
+      "alignment_strength": 0.4
+    }
+  }
+}

@@ -215,6 +215,10 @@
     <ClCompile Include="application\GameOverAnimation.cpp" />
     <ClCompile Include="application\player\component\PlayerJustAvoidanceComponent.cpp" />
     <ClCompile Include="application\enemy\type\Enemy.cpp" />
+    <ClCompile Include="application\enemy\config\ConfigLoader.cpp" />
+    <ClCompile Include="application\enemy\config\EnemyParamConfig.cpp" />
+    <ClCompile Include="application\enemy\config\FormationConfig.cpp" />
+    <ClCompile Include="application\enemy\config\WaveParamConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -489,6 +493,10 @@
     <ClInclude Include="application\GameOverAnimation.h" />
     <ClInclude Include="application\player\component\PlayerJustAvoidanceComponent.h" />
     <ClInclude Include="application\enemy\type\Enemy.h" />
+    <ClInclude Include="application\enemy\config\ConfigLoader.h" />
+    <ClInclude Include="application\enemy\config\EnemyParamConfig.h" />
+    <ClInclude Include="application\enemy\config\FormationConfig.h" />
+    <ClInclude Include="application\enemy\config\WaveParamConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

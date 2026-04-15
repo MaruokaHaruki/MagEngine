@@ -11,6 +11,8 @@ using namespace MagMath;
 #include "EnemyBase.h"
 #include <memory>
 #include <vector>
+#include "WaveParamConfig.h"
+#include "FormationConfig.h"
 
 // 前方宣言
 class Object3dSetup;

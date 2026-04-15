@@ -13,6 +13,7 @@
 #include "EnemyGunner.h"
 #include "ImguiSetup.h"
 #include "Player.h"
+#include "ConfigLoader.h"
 #include <algorithm>
 #include <cmath>
 using namespace MagEngine;
@@ -36,19 +37,32 @@ void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 	nextGroupId_ = 0;
 
 	//========================================
-	// ウェーブ定義（5ウェーブ固定）
-	waveConfigs_ = {
-		// ===== Wave 1: チュートリアル - 編隊なし（全単独敵）=====
-		{1, 1, 1.0f, 0.0f, 8, 0},
-		// ===== Wave 2: チュートリアル続行 - 編隊敵少量（20%）=====
-		{1, 1, 1.5f, 0.2f, 4, 0},
-		// ===== Wave 3: 本格化 - 編隊敵30%、複合パターン導入 =====
-		{1, 1, 1.0f, 0.3f, 5, 1},
-		// ===== Wave 4: 難易度上昇 - 編隊敵50%、速度・火力上昇 =====
-		{2, 2, 1.0f, 0.5f, 6, 2},
-		// ===== Wave 5: 最難 - 編隊敵70%、フルパワー =====
-		{2, 2, 1.0f, 0.7f, 8, 3},
-	};
+	// JSON から設定を読み込む
+	ConfigLoader::LoadAllConfigs("application/enemy/config/data");
+
+	// JSON から読み込んだウェーブ設定を WaveConfig に変換
+	waveConfigs_.clear();
+	const auto &jsonWaveConfigs = WaveParamManager::GetAllWaveConfigs();
+	for (const auto &jsonWave : jsonWaveConfigs) {
+		WaveConfig wc;
+		wc.enemyCount = jsonWave.enemy_count;
+		wc.gunnerCount = jsonWave.gunner_count;
+		wc.spawnInterval = jsonWave.spawn_interval;
+		wc.formationRatio = jsonWave.formation_ratio;
+		wc.maxGroupSize = jsonWave.max_group_size;
+		
+		// formation_pattern 文字列をインデックスに変換
+		const std::string &formationPatternName = jsonWave.formation_pattern;
+		const auto *formationConfig = FormationConfigManager::GetFormationConfig(formationPatternName);
+		if (formationConfig) {
+			wc.formationPattern = formationConfig->type;
+		} else {
+			// フォールバック: 見つからなければ V Formation (0) を使用
+			wc.formationPattern = 0;
+		}
+		
+		waveConfigs_.push_back(wc);
+	}
 
 	// 目標撃破数 = 全ウェーブの総敵数（退却分は上振れするが目安として使用）
 	targetDefeatedCount_ = 0;

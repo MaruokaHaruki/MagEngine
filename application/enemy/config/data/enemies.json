@@ -1,0 +1,47 @@
+{
+  "enemies": [
+    {
+      "id": "enemy_basic",
+      "type": "close_range",
+      "name": "Basic Enemy",
+      "model": "assets/models/enemy.mdl",
+      "stats": {
+        "hp": 3,
+        "speed": 4.0,
+        "radius": 1.0
+      },
+      "behavior": {
+        "approach_speed": 20.0,
+        "combat_speed": 18.0,
+        "combat_radius": 40.0,
+        "combat_depth": -45.0,
+        "combat_duration": 20.0,
+        "move_interval": 2.5,
+        "retreat_speed": 25.0,
+        "player_tracking_speed": 0.05,
+        "movement_smoothing": 0.15
+      }
+    },
+    {
+      "id": "enemy_gunner",
+      "type": "ranged",
+      "name": "Gunner Enemy",
+      "model": "assets/models/gunner.mdl",
+      "stats": {
+        "hp": 2,
+        "speed": 15.0,
+        "radius": 1.0
+      },
+      "gunner_behavior": {
+        "approach_speed": 18.0,
+        "combat_speed": 18.0,
+        "shooting_distance": 35.0,
+        "shoot_interval": 1.5,
+        "combat_duration": 15.0,
+        "combat_depth": 45.0,
+        "combat_radius": 40.0,
+        "retreat_speed": 20.0
+      }
+    }
+  ]
+}
