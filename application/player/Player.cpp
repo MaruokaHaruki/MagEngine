@@ -188,7 +188,8 @@ void Player::UpdateBarrelRollAndBoost(float deltaTime) {
 	// バレルロール実行（移動状況に応じた適応的回避）
 	if (barrelRollTriggered && movementComponent_.CanBarrelRoll()) {
 		movementComponent_.StartAdaptiveBarrelRoll();
-		healthComponent_.SetBarrelRollInvincible(true);
+		// NOTE: 無敵状態はジャスト回避成功時のみ付与する（OnCollisionEnterで処理）
+		// バレルロール開始時に無条件で無敵状態を付与するとバグが発生するため削除
 		justAvoidanceComponent_.OnBarrelRollStarted();
 	}
 
@@ -672,8 +673,12 @@ void Player::OnCollisionEnter(BaseObject *other) {
 			// - ダメージを受けずにブーストゲージ回復（30.0f）
 			// - スロー演出開始
 			// - 機体強化バフ開始
+			// - 回避後に短い無敵時間を付与（敵の追い討ちを防ぐ）
 			// 詳細は PlayerJustAvoidanceComponent で管理
 			movementComponent_.AddBoostGaugeReward(30.0f);
+			
+			// ジャスト回避成功時のみ無敵状態を付与
+			healthComponent_.SetBarrelRollInvincible(true);
 
 			// 演出用フラグを設定
 			justAvoidanceSuccessThisFrame_ = true;

@@ -42,6 +42,12 @@ void PlayerJustAvoidanceComponent::Initialize() {
 //=============================================================================
 // 更新
 void PlayerJustAvoidanceComponent::Update(float deltaTime) {
+	//! ===== バレルロール開始からの経過時間を更新 =====
+	// 重要: ジャスト回避判定に使用されるため、毎フレーム更新する必要がある
+	if (lastBarrelRollStartTime_ >= 0.0f && lastBarrelRollStartTime_ <= detectionTimeout_) {
+		lastBarrelRollStartTime_ += deltaTime;
+	}
+
 	//! ===== 敵弾検出状態の更新 =====
 	// 検出状態が古い場合はクリア
 	if (hasIncomingBullet_) {
@@ -140,6 +146,7 @@ float PlayerJustAvoidanceComponent::CheckJustAvoidanceSuccess(
 
 		//! ===== 次の判定に備える =====
 		hasIncomingBullet_ = false;
+		lastBarrelRollStartTime_ = -999.0f; // バレルロール状態をリセット
 		lastSuccessRate_ = outSuccessRate;
 	}
 
