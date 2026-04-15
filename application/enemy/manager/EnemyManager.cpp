@@ -307,6 +307,47 @@ void EnemyManager::SpawnGunner(const Vector3 &position) {
 	gunner->SetDefeatCallback([this]() {
 		defeatedCount_++;
 	});
+
+	// 現在のウェーブ設定を取得
+	const WaveConfig &currentWaveConfig = waveConfigs_[currentWave_];
+
+	// 編隊比率に基づいて編隊敵か単独敵かを決定
+	bool shouldFormation = (rand() % 100) < (currentWaveConfig.formationRatio * 100.0f);
+
+	if (shouldFormation) {
+		bool addedToExistingGroup = false;
+
+		// 既存のアクティブなグループにメンバを追加試行
+		if ((rand() % 100) < 60) { // 60%の確率で既存グループに追加
+			for (auto &group : groups_) {
+				if (group && group->IsActive()) {
+					int memberCount = static_cast<int>(group->GetMembers().size());
+					if (memberCount < currentWaveConfig.maxGroupSize) {
+						group->AddMember(gunner.get(), memberCount);
+						gunner->SetGroupId(group->GetGroupId());
+						gunner->SetFormationFollowing(true);
+						addedToExistingGroup = true;
+						break;
+					}
+				}
+			}
+		}
+
+		// 新規グループを作成（既存に追加されなかった場合）
+		if (!addedToExistingGroup) {
+			auto group = std::make_unique<EnemyGroup>();
+			group->SetGroupId(nextGroupId_);
+
+			// Wave設定のパターンに基づいてフォーメーションを選択
+			FormationType formationType = static_cast<FormationType>(currentWaveConfig.formationPattern);
+			group->Initialize(gunner.get(), formationType);
+
+			groups_.push_back(std::move(group));
+			gunner->SetGroupId(nextGroupId_);
+			nextGroupId_++;
+		}
+	}
+
 	enemies_.push_back(std::move(gunner));
 }
 

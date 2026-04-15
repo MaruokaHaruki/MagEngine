@@ -17,6 +17,8 @@ void EnemyGunner::Initialize(MagEngine::Object3dSetup *object3dSetup, const std:
 
 	// グループ関連初期化
 	groupId_ = -1; // 初期状態は単独
+	isFollowingFormation_ = false;
+	formationTargetPosition_ = position;
 
 	state_ = GunnerState::Approach;
 	shootTimer_ = 0.0f;
@@ -46,6 +48,30 @@ void EnemyGunner::Update() {
 
 	const float deltaTime = 1.0f / 60.0f;
 	shootTimer_ += deltaTime;
+
+	// フォーメーション中は編隊の目標位置に移動
+	if (isFollowingFormation_) {
+		Vector3 toTarget = formationTargetPosition_ - transform_.translate;
+		float distanceToTarget = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+		
+		if (distanceToTarget > 1.0f) {
+			MoveToward(formationTargetPosition_, EnemyGunnerConstants::kDefaultSpeed, 0.8f);
+		} else {
+			transform_.translate = formationTargetPosition_;
+		}
+		
+		// フォーメーション中は射撃しない（または低頻度で射撃）
+		// 弾の更新・削除のみ行う
+		for (auto &bullet : bullets_) {
+			if (bullet)
+				bullet->Update();
+		}
+		bullets_.erase(
+			std::remove_if(bullets_.begin(), bullets_.end(),
+						   [](const std::unique_ptr<EnemyBullet> &b) { return !b || !b->IsAlive(); }),
+			bullets_.end());
+		return;
+	}
 
 	switch (state_) {
 	case GunnerState::Approach: {

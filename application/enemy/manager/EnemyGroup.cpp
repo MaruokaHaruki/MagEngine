@@ -8,6 +8,7 @@
 #include "EnemyGroup.h"
 #include "EnemyBase.h"
 #include "Enemy.h"
+#include "EnemyGunner.h"
 #include "Player.h"
 #include <algorithm>
 #include <cmath>
@@ -243,6 +244,11 @@ void EnemyGroup::CalculateMemberTargetPositions(const Vector3 &leaderPos, const 
 ///=============================================================================
 /// メンバの相対位置追尾更新
 void EnemyGroup::UpdateMemberPositions() {
+	// リーダーが生存していることを確認
+	if (!leaderEnemy_ || !leaderEnemy_->IsAlive()) {
+		return;
+	}
+
 	for (int i = 1; i < static_cast<int>(memberEnemies_.size()); i++) {
 		if (!memberEnemies_[i] || !memberEnemies_[i]->IsAlive()) {
 			continue;
@@ -267,6 +273,11 @@ void EnemyGroup::UpdateMemberPositions() {
 			if (Enemy *enemy = dynamic_cast<Enemy *>(member)) {
 				enemy->SetFormationTargetPosition(targetPos);
 				enemy->SetFormationFollowing(true);
+			}
+			// EnemyGunner型にも対応
+			else if (EnemyGunner *gunner = dynamic_cast<EnemyGunner *>(member)) {
+				gunner->SetFormationTargetPosition(targetPos);
+				gunner->SetFormationFollowing(true);
 			}
 		}
 	}

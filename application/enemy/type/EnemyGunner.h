@@ -59,12 +59,29 @@ public:
 		return groupId_;
 	}
 
+	/// \brief 編隊内の目標位置を設定
+	void SetFormationTargetPosition(const Vector3 &targetPos) {
+		formationTargetPosition_ = targetPos;
+	}
+
+	/// \brief 編隊フォロー状態に切り替え
+	void SetFormationFollowing(bool following) {
+		isFollowingFormation_ = following;
+	}
+
+	/// \brief 編隊フォロー中かどうか
+	bool IsFollowingFormation() const {
+		return isFollowingFormation_;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
 	//========================================
 	// グループ編隊関連
 	int groupId_; // 属するグループのID（-1=単独）
+	bool isFollowingFormation_;       // 編隊フォロー中フラグ
+	Vector3 formationTargetPosition_; // 編隊内の目標位置
 
 	//========================================
 	// 行動ステート関連
