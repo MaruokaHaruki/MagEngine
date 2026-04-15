@@ -152,9 +152,6 @@
     <ClCompile Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.cpp">
       <Filter>engine\postEffect</Filter>
     </ClCompile>
-    <ClCompile Include="application\enemy\type\Enemy.cpp">
-      <Filter>application</Filter>
-    </ClCompile>
     <ClCompile Include="application\enemy\manager\EnemyManager.cpp">
       <Filter>application</Filter>
     </ClCompile>
@@ -217,6 +214,7 @@
     <ClCompile Include="engine\3d\trail\TrailEmitter.cpp" />
     <ClCompile Include="application\GameOverAnimation.cpp" />
     <ClCompile Include="application\player\component\PlayerJustAvoidanceComponent.cpp" />
+    <ClCompile Include="application\enemy\type\Enemy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -423,9 +421,6 @@
     <ClInclude Include="engine\postEffect\fullscreenPass\FullscreenPassRendere.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
-    <ClInclude Include="application\enemy\type\Enemy.h">
-      <Filter>application</Filter>
-    </ClInclude>
     <ClInclude Include="application\enemy\manager\EnemyManager.h">
       <Filter>application</Filter>
     </ClInclude>
@@ -493,6 +488,7 @@
     <ClInclude Include="engine\3d\trail\TrailEmitter.h" />
     <ClInclude Include="application\GameOverAnimation.h" />
     <ClInclude Include="application\player\component\PlayerJustAvoidanceComponent.h" />
+    <ClInclude Include="application\enemy\type\Enemy.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
