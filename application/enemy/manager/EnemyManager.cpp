@@ -34,6 +34,7 @@ void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 
 	gameTime_ = 0.0f;
 	defeatedCount_ = 0;
+	allWavesCompleted_ = false;
 	nextGroupId_ = 0;
 
 	//========================================
@@ -236,6 +237,9 @@ void EnemyManager::UpdateWave() {
 				// 新ウェーブの spawnInterval を waveTimer に設定して最初の敵を即スポーン
 				waveTimer_ = waveConfigs_[currentWave_].spawnInterval;
 				spawnedInWave_ = 0;
+			} else {
+				// 全ウェーブ完了
+				allWavesCompleted_ = true;
 			}
 		}
 		break;

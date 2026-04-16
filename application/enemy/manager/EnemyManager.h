@@ -91,9 +91,9 @@ public:
 		return static_cast<int>(waveConfigs_.size());
 	}
 
-	/// \brief クリア条件達成チェック
+	/// \brief クリア条件達成チェック（全ウェーブ完了で判定）
 	bool IsGameClear() const {
-		return defeatedCount_ >= targetDefeatedCount_;
+		return allWavesCompleted_;
 	}
 
 	/// \brief 敵リストの取得（当たり判定用）
@@ -152,6 +152,7 @@ private:
 	// ゲーム進行管理
 	int defeatedCount_;		  // 撃破数
 	int targetDefeatedCount_; // 目標撃破数（全ウェーブ合計）
+	bool allWavesCompleted_;  // 全ウェーブ完了フラグ
 
 	//========================================
 	// ゲーム経過時間
