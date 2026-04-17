@@ -1,6 +1,7 @@
 #pragma once
 #include "PlayerBullet.h"
 #include "PlayerMissile.h"
+#include "PlayerLockedOnComponent.h"
 #include "Vector3.h"
 #include <algorithm>
 #include <memory>
@@ -104,6 +105,48 @@ public:
 		trailEffectManager_ = trailEffectManager;
 	}
 
+	///--------------------------------------------------------------
+	///                        弾アシスト機能設定
+	/// @brief 弾アシストの有効化
+	void SetBulletAssistEnabled(bool enabled) {
+		isBulletAssistEnabled_ = enabled;
+	}
+
+	/// @brief 弾アシストが有効か取得
+	bool IsBulletAssistEnabled() const {
+		return isBulletAssistEnabled_;
+	}
+
+	/// @brief 弾アシスト視野角を設定（度数法）
+	void SetBulletAssistFOV(float fov) {
+		bulletAssistFOV_ = fov;
+	}
+
+	/// @brief 弾アシスト視野角を取得
+	float GetBulletAssistFOV() const {
+		return bulletAssistFOV_;
+	}
+
+	/// @brief 弾アシスト範囲を設定（メートル）
+	void SetBulletAssistRange(float range) {
+		bulletAssistRange_ = range;
+	}
+
+	/// @brief 弾アシスト範囲を取得
+	float GetBulletAssistRange() const {
+		return bulletAssistRange_;
+	}
+
+	/// @brief 弾アシスト強度を設定（0.0～1.0）
+	void SetBulletAssistStrength(float strength) {
+		bulletAssistStrength_ = (strength < 0.0f) ? 0.0f : (strength > 1.0f) ? 1.0f : strength;
+	}
+
+	/// @brief 弾アシスト強度を取得
+	float GetBulletAssistStrength() const {
+		return bulletAssistStrength_;
+	}
+
 private:
 	///--------------------------------------------------------------
 	///                        メンバ変数
@@ -125,4 +168,11 @@ private:
 
 	std::string bulletModelPath_;  // 弾のモデルパス
 	std::string missileModelPath_; // ミサイルのモデルパス
+
+	///--------------------------------------------------------------
+	///                        弾アシスト機能設定
+	bool isBulletAssistEnabled_ = true;	// 弾アシストが有効か
+	float bulletAssistFOV_ = 30.0f;		// 弾アシスト視野角（度数法）
+	float bulletAssistRange_ = 80.0f;	// 弾アシスト検出範囲（メートル）
+	float bulletAssistStrength_ = 0.8f; // アシスト強度（0.0～1.0）
 };

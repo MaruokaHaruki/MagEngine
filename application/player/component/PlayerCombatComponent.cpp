@@ -2,6 +2,7 @@
 // 以下はstd::maxを使用する場合に必要
 #define NOMINMAX
 #include "PlayerCombatComponent.h"
+#include "PlayerLockedOnComponent.h"
 #include "EnemyManager.h"
 #include "LineManager.h"
 #include <algorithm>
@@ -71,11 +72,57 @@ void PlayerCombatComponent::ShootBullet(const Vector3 &position, const Vector3 &
 		return;
 	}
 
-	// 発射方向を記録（HUD用）
-	bulletFireDirection_ = direction;
+	// 発射方向の計算（アシスト機能）
+	Vector3 finalDirection = direction;
+
+	// アシスト機能が有効かつコンポーネントが有効な場合
+	if (isBulletAssistEnabled_ && enemyManager_) {
+		// 敵検出用の簡易ロックオンコンポーネント（ローカルで使用）
+		PlayerLockedOnComponent bulletAssistComponent;
+		bulletAssistComponent.Initialize(enemyManager_);
+
+		// アシスト対象の敵を検出
+		EnemyBase *assistTarget = bulletAssistComponent.FindBulletAssistTarget(position, direction, bulletAssistFOV_, bulletAssistRange_);
+
+		if (assistTarget) {
+			// 敵への方向ベクトルを計算
+			const Vector3 targetPos = assistTarget->GetPosition();
+			const Vector3 toTarget = {
+				targetPos.x - position.x,
+				targetPos.y - position.y,
+				targetPos.z - position.z};
+
+			const float distance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+
+			if (distance > 0.001f) {
+				const float invDist = 1.0f / distance;
+				const Vector3 targetDir = {
+					toTarget.x * invDist,
+					toTarget.y * invDist,
+					toTarget.z * invDist};
+
+				// 元の方向とアシスト方向を補間
+				// bulletAssistStrength_ = 1.0で敵に直進、0.0で元の方向
+				finalDirection.x = direction.x * (1.0f - bulletAssistStrength_) + targetDir.x * bulletAssistStrength_;
+				finalDirection.y = direction.y * (1.0f - bulletAssistStrength_) + targetDir.y * bulletAssistStrength_;
+				finalDirection.z = direction.z * (1.0f - bulletAssistStrength_) + targetDir.z * bulletAssistStrength_;
+
+				// 正規化
+				const float finalLen = std::sqrt(finalDirection.x * finalDirection.x + finalDirection.y * finalDirection.y + finalDirection.z * finalDirection.z);
+				if (finalLen > 0.001f) {
+					finalDirection.x /= finalLen;
+					finalDirection.y /= finalLen;
+					finalDirection.z /= finalLen;
+				}
+			}
+		}
+	}
+
+	// 最終的な発射方向を記録（HUD用）
+	bulletFireDirection_ = finalDirection;
 
 	auto bullet = std::make_unique<PlayerBullet>();
-	bullet->Initialize(object3dSetup_, trailEffectManager_, bulletModelPath_, position, direction);
+	bullet->Initialize(object3dSetup_, trailEffectManager_, bulletModelPath_, position, finalDirection);
 	bullets_.push_back(std::move(bullet));
 	shootCoolTime_ = maxShootCoolTime_;
 }

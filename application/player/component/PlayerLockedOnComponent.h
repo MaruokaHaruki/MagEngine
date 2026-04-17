@@ -118,6 +118,16 @@ public:
 		enemyManager_ = enemyManager;
 	}
 
+	///--------------------------------------------------------------
+	///                        弾アシスト機能
+	/// @brief 弾の発射方向アシスト用敵検出（ロックオンと異なる軽い条件）
+	/// @param playerPos プレイヤーの位置
+	/// @param playerForward プレイヤーの前方ベクトル
+	/// @param assistFOV 弾アシストの視野角（度数法）
+	/// @param assistRange 弾アシストの検出範囲（メートル）
+	/// @return アシスト対象の敵、検出されない場合はnullptr
+	EnemyBase *FindBulletAssistTarget(const Vector3 &playerPos, const Vector3 &playerForward, float assistFOV, float assistRange);
+
 private:
 	///--------------------------------------------------------------
 	///                        内部処理

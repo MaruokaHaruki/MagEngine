@@ -297,3 +297,56 @@ bool PlayerLockedOnComponent::IsAlreadyLocked(EnemyBase *target) const {
 	}
 	return std::find(lockOnTargets_.begin(), lockOnTargets_.end(), target) != lockOnTargets_.end();
 }
+
+//=============================================================================
+// 弾の発射方向アシスト用敵検出
+EnemyBase *PlayerLockedOnComponent::FindBulletAssistTarget(const Vector3 &playerPos, const Vector3 &playerForward, float assistFOV, float assistRange) {
+	if (!enemyManager_) {
+		return nullptr;
+	}
+
+	const auto &enemies = enemyManager_->GetEnemies();
+
+	EnemyBase *bestTarget = nullptr;
+	float bestScore = -1.0f;
+
+	for (const auto &enemy : enemies) {
+		if (!enemy || !enemy->IsAlive() || !enemy->IsCollisionEnabled()) {
+			continue;
+		}
+
+		EnemyBase *candidate = enemy.get();
+		const Vector3 enemyPos = candidate->GetPosition();
+		const Vector3 toEnemy = {
+			enemyPos.x - playerPos.x,
+			enemyPos.y - playerPos.y,
+			enemyPos.z - playerPos.z};
+
+		const float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
+		if (distance > assistRange || distance < 0.001f) {
+			continue;
+		}
+
+		// FOVチェック（視野角内か確認）
+		const float fovRad = assistFOV * 0.5f * static_cast<float>(M_PI) / 180.0f;
+		const float invDist = 1.0f / distance;
+		const float dirX = toEnemy.x * invDist;
+		const float dirY = toEnemy.y * invDist;
+		const float dirZ = toEnemy.z * invDist;
+		const float dot = dirX * playerForward.x + dirY * playerForward.y + dirZ * playerForward.z;
+
+		// FOV内か判定（コサイン値で判定）
+		if (dot < std::cos(fovRad)) {
+			continue;
+		}
+
+		// 中心に近いほど高評価
+		const float score = dot;
+		if (score > bestScore) {
+			bestScore = score;
+			bestTarget = candidate;
+		}
+	}
+
+	return bestTarget;
+}

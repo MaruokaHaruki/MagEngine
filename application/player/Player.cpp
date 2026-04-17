@@ -551,6 +551,31 @@ void Player::DrawImGui() {
 		ImGui::Text("  Keyboard: SPACE = Gun, Hold M = Lock, Release M = Fire");
 		ImGui::Text("  Controller: R-Trigger = Gun, Hold LT/B = Lock, Release = Fire");
 
+		ImGui::Separator();
+
+		// === 弾アシスト機能 ===
+		ImGui::Text("=== Bullet Assist Settings ===");
+		bool assistEnabled = combatComponent_.IsBulletAssistEnabled();
+		if (ImGui::Checkbox("Enable Bullet Assist", &assistEnabled)) {
+			combatComponent_.SetBulletAssistEnabled(assistEnabled);
+		}
+
+		float assistFOV = combatComponent_.GetBulletAssistFOV();
+		if (ImGui::SliderFloat("Assist FOV (Degree)", &assistFOV, 5.0f, 120.0f)) {
+			combatComponent_.SetBulletAssistFOV(assistFOV);
+		}
+
+		float assistRange = combatComponent_.GetBulletAssistRange();
+		if (ImGui::SliderFloat("Assist Range (Meter)", &assistRange, 10.0f, 200.0f)) {
+			combatComponent_.SetBulletAssistRange(assistRange);
+		}
+
+		float assistStrength = combatComponent_.GetBulletAssistStrength();
+		if (ImGui::SliderFloat("Assist Strength", &assistStrength, 0.0f, 1.0f)) {
+			combatComponent_.SetBulletAssistStrength(assistStrength);
+		}
+		ImGui::Text("Assist Strength: %.1f%% (0=No Assist, 1=Direct Hit)", assistStrength * 100.0f);
+
 		// === ロックオン情報（マルチロック） ===
 		ImGui::Text("=== Auto Lock-On Status ===");
 		ImGui::Text("Lock-On Mode: %s", isInLockOnMode_ ? "ACTIVE" : "INACTIVE");

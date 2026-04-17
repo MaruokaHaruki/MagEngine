@@ -512,6 +512,48 @@ public:
 	}
 
 	///--------------------------------------------------------------
+	///                        弾アシスト機能設定
+	/// @brief 弾アシストの有効化
+	void SetBulletAssistEnabled(bool enabled) {
+		combatComponent_.SetBulletAssistEnabled(enabled);
+	}
+
+	/// @brief 弾アシストが有効か取得
+	bool IsBulletAssistEnabled() const {
+		return combatComponent_.IsBulletAssistEnabled();
+	}
+
+	/// @brief 弾アシスト視野角を設定（度数法）
+	void SetBulletAssistFOV(float fov) {
+		combatComponent_.SetBulletAssistFOV(fov);
+	}
+
+	/// @brief 弾アシスト視野角を取得
+	float GetBulletAssistFOV() const {
+		return combatComponent_.GetBulletAssistFOV();
+	}
+
+	/// @brief 弾アシスト範囲を設定（メートル）
+	void SetBulletAssistRange(float range) {
+		combatComponent_.SetBulletAssistRange(range);
+	}
+
+	/// @brief 弾アシスト範囲を取得
+	float GetBulletAssistRange() const {
+		return combatComponent_.GetBulletAssistRange();
+	}
+
+	/// @brief 弾アシスト強度を設定（0.0～1.0）
+	void SetBulletAssistStrength(float strength) {
+		combatComponent_.SetBulletAssistStrength(strength);
+	}
+
+	/// @brief 弾アシスト強度を取得
+	float GetBulletAssistStrength() const {
+		return combatComponent_.GetBulletAssistStrength();
+	}
+
+	///--------------------------------------------------------------
 	///                        内部処理（private）
 private:
 	/// @brief 移動更新
