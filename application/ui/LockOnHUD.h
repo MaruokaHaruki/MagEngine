@@ -96,8 +96,8 @@ private:
 
 	// マーカー設定
 	Vector4 normalMarkerColor_ = {0.9f, 0.7f, 0.15f, 0.75f}; // ダムアンバー（未ロック）
-	Vector4 lockOnMarkerColor_ = {1.0f, 0.28f, 0.05f, 1.0f}; // 鮮烈オレンジレッド（ロック時）
-	Vector4 lockOnAccentColor_ = {1.0f, 0.85f, 0.6f, 1.0f};	 // ウォームホワイト（ロック中心ドット）
+	Vector4 lockOnMarkerColor_ = {1.0f, 0.0f, 0.0f, 1.0f}; // 鮮烈レッド（ロック時）
+	Vector4 lockOnAccentColor_ = {1.0f, 0.3f, 0.3f, 1.0f};	 // ライトレッド（ロック中心ドット）
 	Vector4 warningMarkerColor_ = {1.0f, 0.5f, 0.0f, 0.7f};	 // 警告色（未ロック敵）
 
 	float markerSize_ = 1.0f;
