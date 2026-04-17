@@ -139,7 +139,11 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	//========================================
 	// 敵マネージャー
 	enemyManager_ = std::make_unique<EnemyManager>();
-	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup);
+	
+	// プレイヤーにTrailEffectManagerを設定（弾・ミサイルトレイル用）
+	MagEngine::TrailEffectManager *trailEffectManager = context->GetTrailEffectManager();
+	
+	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup, trailEffectManager);
 	// プレイヤー参照を設定
 	enemyManager_->SetPlayer(player_.get());
 
@@ -147,7 +151,6 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	player_->SetEnemyManager(enemyManager_.get());
 
 	// プレイヤーにTrailEffectManagerを設定（弾・ミサイルトレイル用）
-	MagEngine::TrailEffectManager *trailEffectManager = context->GetTrailEffectManager();
 	if (trailEffectManager) {
 		player_->SetTrailEffectManager(trailEffectManager);
 	}
@@ -711,6 +714,11 @@ void GamePlayScene::TrailEffectDraw() {
 	if (player_) {
 		player_->DrawBulletsTrails();
 		player_->DrawMissilesTrails();
+	}
+
+	// 敵の弾のトレイル描画
+	if (enemyManager_) {
+		enemyManager_->DrawTrail();
 	}
 }
 

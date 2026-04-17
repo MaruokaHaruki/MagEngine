@@ -6,8 +6,14 @@ using namespace MagMath;
 #include "Object3dSetup.h"
 #include "Particle.h"
 #include "ParticleSetup.h"
+#include "TrailEffect.h"
 #include <memory>
 #include <string>
+
+// Forward declarations
+namespace MagEngine {
+	class TrailEffectManager;
+}
 
 namespace EnemyBulletConstants {
 	constexpr float kSpeed = 35.0f; // 25.0f から 35.0f に変更
@@ -28,7 +34,7 @@ class EnemyBullet : public BaseObject {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, MagEngine::TrailEffectManager *trailEffectManager, const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
 
 	/// \brief パーティクルシステムの設定
 	void SetParticleSystem(MagEngine::Particle *particle, MagEngine::ParticleSetup *particleSetup);
@@ -38,6 +44,9 @@ public:
 
 	/// \brief 描画
 	void Draw();
+
+	/// \brief トレイル描画
+	void DrawTrail();
 
 	/// \brief 生存確認
 	bool IsAlive() const {
@@ -98,4 +107,8 @@ private:
 	bool isAlive_;
 	MagEngine::Particle *particle_;
 	MagEngine::ParticleSetup *particleSetup_;
+
+	//========================================
+	// トレイルエフェクト
+	std::unique_ptr<MagEngine::TrailEffect> trailEffect_;
 };

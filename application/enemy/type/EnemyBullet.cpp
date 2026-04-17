@@ -3,12 +3,13 @@
 #include "Object3dSetup.h"
 #include "Particle.h"
 #include "Player.h"
+#include "TrailEffectManager.h"
 #include <cmath>
 using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void EnemyBullet::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position, const Vector3 &direction) {
+void EnemyBullet::Initialize(MagEngine::Object3dSetup *object3dSetup, MagEngine::TrailEffectManager *trailEffectManager, const std::string &modelPath, const Vector3 &position, const Vector3 &direction) {
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
@@ -37,6 +38,14 @@ void EnemyBullet::Initialize(MagEngine::Object3dSetup *object3dSetup, const std:
 	isAlive_ = true;
 	particle_ = nullptr;
 	particleSetup_ = nullptr;
+
+	//========================================
+	// トレイルエフェクトの初期化
+	if (trailEffectManager) {
+		trailEffect_ = std::make_unique<TrailEffect>();
+		TrailEffectPreset bulletPreset = *trailEffectManager->GetPreset("EnemyBullet");
+		trailEffect_->Initialize(trailEffectManager->GetSetup(), bulletPreset);
+	}
 
 	BaseObject::Initialize(transform_.translate, radius_);
 }
@@ -76,6 +85,14 @@ void EnemyBullet::Update() {
 		obj_->Update();
 	}
 
+	// トレイルエフェクトの更新
+	if (trailEffect_) {
+		const float frameTime = 1.0f / 60.0f;
+		trailEffect_->Update(frameTime);
+		// 現在位置で軌跡を発生させる
+		trailEffect_->EmitAt(transform_.translate, velocity_);
+	}
+
 	BaseObject::Update(transform_.translate);
 }
 
@@ -84,6 +101,12 @@ void EnemyBullet::Update() {
 void EnemyBullet::Draw() {
 	if (isAlive_ && obj_) {
 		obj_->Draw();
+	}
+}
+
+void EnemyBullet::DrawTrail() {
+	if (trailEffect_) {
+		trailEffect_->Draw();
 	}
 }
 

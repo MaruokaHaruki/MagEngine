@@ -25,6 +25,7 @@ void EnemyGunner::Initialize(MagEngine::Object3dSetup *object3dSetup, const std:
 	combatTimer_ = 0.0f;
 	targetPosition_ = position;
 	object3dSetup_ = object3dSetup;
+	trailEffectManager_ = nullptr;
 	moveTimer_ = 0.0f;
 	combatCenter_ = {0.0f, 0.0f, 0.0f};
 }
@@ -144,7 +145,7 @@ void EnemyGunner::Update() {
 			shootDir.z /= dist;
 
 			auto bullet = std::make_unique<EnemyBullet>();
-			bullet->Initialize(object3dSetup_, "Missile.obj", transform_.translate, shootDir);
+			bullet->Initialize(object3dSetup_, trailEffectManager_, "Missile.obj", transform_.translate, shootDir);
 			bullet->SetParticleSystem(particle_, particleSetup_);
 			bullets_.push_back(std::move(bullet));
 
@@ -178,6 +179,13 @@ void EnemyGunner::Draw() {
 	for (auto &bullet : bullets_) {
 		if (bullet)
 			bullet->Draw();
+	}
+}
+
+void EnemyGunner::DrawTrail() {
+	for (auto &bullet : bullets_) {
+		if (bullet)
+			bullet->DrawTrail();
 	}
 }
 

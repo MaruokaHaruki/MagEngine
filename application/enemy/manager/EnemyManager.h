@@ -21,6 +21,9 @@ class ParticleSetup;
 class CollisionManager;
 class Player;
 class EnemyBullet;
+namespace MagEngine {
+	class TrailEffectManager;
+}
 #include "EnemyGroup.h"
 
 ///=============================================================================
@@ -43,7 +46,8 @@ public:
 	/// \brief 初期化
 	void Initialize(MagEngine::Object3dSetup *object3dSetup,
 					MagEngine::Particle *particle,
-					MagEngine::ParticleSetup *particleSetup);
+					MagEngine::ParticleSetup *particleSetup,
+					MagEngine::TrailEffectManager *trailEffectManager);
 
 	/// \brief プレイヤー参照の設定
 	void SetPlayer(Player *player) {
@@ -55,6 +59,9 @@ public:
 
 	/// \brief 描画
 	void Draw();
+
+	/// \brief トレイル描画
+	void DrawTrail();
 
 	/// \brief ImGui描画
 	void DrawImGui();
@@ -163,5 +170,6 @@ private:
 	MagEngine::Object3dSetup *object3dSetup_;
 	MagEngine::Particle *particle_;
 	MagEngine::ParticleSetup *particleSetup_;
+	MagEngine::TrailEffectManager *trailEffectManager_;
 	Player *player_;
 };

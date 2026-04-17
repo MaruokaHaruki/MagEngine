@@ -26,10 +26,12 @@ namespace {
 ///                        初期化
 void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 							  MagEngine::Particle *particle,
-							  MagEngine::ParticleSetup *particleSetup) {
+							  MagEngine::ParticleSetup *particleSetup,
+							  MagEngine::TrailEffectManager *trailEffectManager) {
 	object3dSetup_ = object3dSetup;
 	particle_ = particle;
 	particleSetup_ = particleSetup;
+	trailEffectManager_ = trailEffectManager;
 	player_ = nullptr;
 
 	gameTime_ = 0.0f;
@@ -118,6 +120,17 @@ void EnemyManager::Draw() {
 	for (auto &enemy : enemies_) {
 		if (enemy && enemy->IsAlive())
 			enemy->Draw();
+	}
+}
+
+void EnemyManager::DrawTrail() {
+	for (auto &enemy : enemies_) {
+		if (enemy && enemy->IsAlive()) {
+			// EnemyGunner の DrawTrail を呼び出す
+			if (auto *gunner = dynamic_cast<EnemyGunner *>(enemy.get())) {
+				gunner->DrawTrail();
+			}
+		}
 	}
 }
 
@@ -307,6 +320,7 @@ void EnemyManager::SpawnGunner(const Vector3 &position) {
 	auto gunner = std::make_unique<EnemyGunner>();
 	gunner->Initialize(object3dSetup_, "jet.obj", position);
 	gunner->SetParticleSystem(particle_, particleSetup_);
+	gunner->SetTrailEffectManager(trailEffectManager_);
 	gunner->SetPlayer(player_);
 	gunner->SetDefeatCallback([this]() {
 		defeatedCount_++;

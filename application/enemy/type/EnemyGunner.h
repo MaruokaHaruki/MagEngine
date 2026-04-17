@@ -6,6 +6,11 @@ using namespace MagMath;
 #include <memory>
 #include <vector>
 
+// Forward declarations
+namespace MagEngine {
+	class TrailEffectManager;
+}
+
 namespace EnemyGunnerConstants {
 	constexpr int kDefaultHP = 2;
 	constexpr float kDefaultSpeed = 15.0f;
@@ -41,6 +46,9 @@ public:
 	/// \brief 描画
 	void Draw() override;
 
+	/// \brief トレイル描画
+	void DrawTrail();
+
 	/// \brief ImGui描画
 	void DrawImGui() override;
 
@@ -74,6 +82,11 @@ public:
 		return isFollowingFormation_;
 	}
 
+	/// \brief TrailEffectManager設定
+	void SetTrailEffectManager(MagEngine::TrailEffectManager *trailEffectManager) {
+		trailEffectManager_ = trailEffectManager;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
@@ -99,4 +112,5 @@ private:
 	Vector3 combatCenter_;
 	std::vector<std::unique_ptr<EnemyBullet>> bullets_;
 	MagEngine::Object3dSetup *object3dSetup_;
+	MagEngine::TrailEffectManager *trailEffectManager_;
 };
