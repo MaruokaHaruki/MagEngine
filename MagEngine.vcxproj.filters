@@ -219,6 +219,7 @@
     <ClCompile Include="application\enemy\config\EnemyParamConfig.cpp" />
     <ClCompile Include="application\enemy\config\FormationConfig.cpp" />
     <ClCompile Include="application\enemy\config\WaveParamConfig.cpp" />
+    <ClCompile Include="MagVoiceBridge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\camera\CameraManager.h">
@@ -497,6 +498,7 @@
     <ClInclude Include="application\enemy\config\EnemyParamConfig.h" />
     <ClInclude Include="application\enemy\config\FormationConfig.h" />
     <ClInclude Include="application\enemy\config\WaveParamConfig.h" />
+    <ClInclude Include="MagVoiceBridge.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
