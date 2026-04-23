@@ -6,6 +6,9 @@
  * \date   January 2025
  * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
+#define _USE_MATH_DEFINES
+ // 以下はstd::maxを使用する場合に必要
+#define NOMINMAX
 #include "DebugScene.h"
 #include "CameraManager.h"
 #include "DebugTextManager.h"
@@ -118,11 +121,26 @@ void DebugScene::Initialize(SceneContext *context) {
 	trailEffectManager_ = trailEffectManager;
 
 	///--------------------------------------------------------------
+	///						 マイク入力系
+	// マイク入力ブリッジの初期化
+	voiceBridge_ = std::make_unique<MagVoiceBridge>();
+	if (voiceBridge_->Initialize()) {
+		Logger::Log("MagVoiceBridge initialized successfully", Logger::LogLevel::Info);
+	} else {
+		Logger::Log("Failed to initialize MagVoiceBridge", Logger::LogLevel::Error);
+	}
+
+	///--------------------------------------------------------------
 }
 
 ///=============================================================================
 ///						終了処理
 void DebugScene::Finalize() {
+	// マイク入力の停止とシャットダウン
+	if (voiceBridge_) {
+		voiceBridge_->Stop();
+		voiceBridge_->Shutdown();
+	}
 }
 
 ///=============================================================================
@@ -163,6 +181,18 @@ void DebugScene::Update() {
 
 	//========================================
 	// 音声の再生
+
+	//=========================================
+	// マイク入力データの取得と処理
+	if (voiceBridge_) {
+		// マイク入力を更新（フレーム毎に呼び出す）
+		voiceBridge_->Update();
+		
+		// 現在の記録中はサンプルバッファからデータを取得
+		if (voiceIsRecording_) {
+			voiceDisplaySamples_ = voiceBridge_->GetSamples();
+		}
+	}
 
 	//=========================================
 	// Skyboxの更新
@@ -413,6 +443,284 @@ void DebugScene::ImGuiDraw() {
 	}
 
 	ImGui::End();
+
+	//========================================
+	// SkyBoxの移動
+
+	//========================================
+	// マイク入力テスト用UI
+	if (voiceBridge_) {
+		ImGui::Begin("Voice Input Monitor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+		// ===== デバイス情報 =====
+		ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "DEVICE INFORMATION");
+		ImGui::Separator();
+		ImGui::Text("Sample Rate: %u Hz | Channels: %u | Bits: %u", 
+		           voiceBridge_->GetSampleRate(), voiceBridge_->GetChannelCount(), 
+		           16);  // WASAPI Shared Mode は常に 32-bit float
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		// ===== 記録制御 =====
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "RECORDING CONTROL");
+		ImGui::Separator();
+		
+		if (!voiceIsRecording_) {
+			if (ImGui::Button("Start Recording##voice", ImVec2(150, 35))) {
+				if (voiceBridge_->Start()) {
+					voiceIsRecording_ = true;
+					voiceDisplaySamples_.clear();
+					Logger::Log("Started microphone recording", Logger::LogLevel::Info);
+				} else {
+					Logger::Log("Failed to start microphone recording", Logger::LogLevel::Error);
+				}
+			}
+		} else {
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "●  RECORDING");
+			ImGui::SameLine();
+			if (ImGui::Button("Stop Recording##voice", ImVec2(150, 35))) {
+				voiceBridge_->Stop();
+				voiceIsRecording_ = false;
+				Logger::Log("Stopped microphone recording", Logger::LogLevel::Info);
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Clear Buffer##voice", ImVec2(120, 35))) {
+			voiceDisplaySamples_.clear();
+			voiceBridge_->ClearSamples();
+		}
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		// ===== リアルタイム音量分析 =====
+		ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "REAL-TIME ANALYSIS");
+		ImGui::Separator();
+
+		// VolumeStats 構造体から全ての値を取得
+		auto stats = voiceBridge_->GetVolumeStats();
+
+		// --- 現在の RMS 値 ---
+		ImGui::TextColored(ImVec4(0.8f, 0.8f, 1.0f, 1.0f), "RMS Volume (Current)");
+		ImGui::Text("  Normalized: %.4f (0.0 ~ 1.0)", stats.currentRMS);
+		ImGui::Text("  Decibels:   %.2f dB", stats.currentRMSDB);
+		ImGui::ProgressBar(stats.currentRMS, ImVec2(-1, 18.0f), "");
+		
+		ImGui::Spacing();
+
+		// --- ピークレベル ---
+		ImGui::TextColored(ImVec4(0.8f, 0.8f, 1.0f, 1.0f), "Peak Volume (Instantaneous Max)");
+		ImGui::Text("  Normalized: %.4f (0.0 ~ 1.0)", stats.peakValue);
+		ImGui::Text("  Decibels:   %.2f dB", stats.peakDB);
+		ImGui::ProgressBar(stats.peakValue, ImVec2(-1, 18.0f), "");
+
+		ImGui::Spacing();
+
+		// --- スムージング済み音量 ---
+		ImGui::TextColored(ImVec4(0.8f, 0.8f, 1.0f, 1.0f), "Smoothed Volume (UI-Friendly)");
+		ImGui::Text("  Normalized: %.4f (0.0 ~ 1.0)", stats.smoothedRMS);
+		ImGui::Text("  Decibels:   %.2f dB", stats.smoothedRMSDB);
+		ImGui::Text("  Percentage: %.1f %%", stats.percentage);
+		ImGui::ProgressBar(stats.smoothedRMS, ImVec2(-1, 18.0f), "");
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// ===== 音声検出情報 =====
+		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "VOICE DETECTION");
+		ImGui::Separator();
+
+		// 音声検出ステータス
+		if (stats.isVoiceDetected) {
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ Voice Detected: YES");
+		} else {
+			ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "✗ Voice Detected: NO");
+		}
+
+		// 音声特性スコア（0.0～1.0、1.0に近いほど人の声）
+		ImGui::Text("Voice Characteristic Score: %.2f (0.0 ~ 1.0)", stats.voiceScore);
+		ImGui::ProgressBar(stats.voiceScore, ImVec2(-1, 20.0f), "");
+		if (stats.voiceScore > 0.7f) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Human Voice");
+		} else if (stats.voiceScore > 0.4f) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Uncertain");
+		} else {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Noise");
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// ===== デバッグ情報 =====
+		ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "DEBUG INFORMATION");
+		ImGui::Separator();
+
+		// ゼロクロス率の詳細
+		float zeroCrossingRate = voiceBridge_->CalculateZeroCrossingRate();
+		ImGui::Text("Zero Crossing Rate: %.4f", zeroCrossingRate);
+		ImGui::SameLine();
+		ImGui::TextDisabled("(Threshold: 0.25)");
+		
+		// ZCR判定
+		if (zeroCrossingRate < 0.25f) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ OK (Low)");
+		} else {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "✗ NG (High)");
+		}
+
+		// 音量判定
+		ImGui::Text("RMS Volume:          %.2f dB", stats.currentRMSDB);
+		ImGui::SameLine();
+		ImGui::TextDisabled("(Threshold: -40dB)");
+		
+		if (stats.currentRMSDB > -40.0f) {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "✓ OK (Loud)");
+		} else {
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "✗ NG (Quiet)");
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// ===== パラメータ調整セクション =====
+		ImGui::TextColored(ImVec4(0.8f, 0.6f, 1.0f, 1.0f), "PARAMETER TUNING");
+		ImGui::Separator();
+
+		// スムージング係数
+		static float smoothingFactor = 0.4f;
+		if (ImGui::SliderFloat("Smoothing Factor##voice", &smoothingFactor, 0.0f, 1.0f, "%.3f")) {
+			voiceBridge_->SetSmoothingFactor(smoothingFactor);
+		}
+		ImGui::TextDisabled("Low: Responsive, High: Stable");
+
+		ImGui::Spacing();
+
+		// ノイズフロア設定
+		static float noiseFloor = -50.0f;
+		if (ImGui::SliderFloat("Noise Floor##voice", &noiseFloor, -80.0f, -20.0f, "%.1f dB")) {
+			voiceBridge_->SetNoiseFloor(noiseFloor);
+		}
+		ImGui::TextDisabled("Sounds below this level are ignored");
+
+		ImGui::Spacing();
+
+		// ゼロクロス率閾値
+		static float zcThreshold = 0.25f;
+		ImGui::SliderFloat("ZC Rate Threshold##voice", &zcThreshold, 0.05f, 0.5f, "%.3f");
+		ImGui::TextDisabled("Low = More selective for voice");
+
+		ImGui::Spacing();
+
+		// 音量判定閾値
+		static float volumeThreshold = -40.0f;
+		ImGui::SliderFloat("Volume Threshold##voice", &volumeThreshold, -80.0f, -10.0f, "%.1f dB");
+		ImGui::TextDisabled("Minimum volume to consider as voice");
+
+		// パラメータ適用ボタン
+		if (ImGui::Button("Apply Thresholds##voice", ImVec2(-1, 30))) {
+			voiceBridge_->SetVoiceDetectionThresholds(zcThreshold, volumeThreshold);
+			Logger::Log(
+				"Voice detection parameters updated - ZCR: " + std::to_string(zcThreshold) + 
+				", Volume: " + std::to_string(volumeThreshold) + " dB",
+				Logger::LogLevel::Info);
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// ===== 波形表示設定 =====
+		ImGui::TextColored(ImVec4(0.8f, 0.2f, 1.0f, 1.0f), "WAVEFORM DISPLAY");
+		ImGui::Separator();
+		
+		ImGui::SliderFloat("Waveform Scale##voice", &voiceWaveformScale_, 1.0f, 500.0f, "%.0f");
+		ImGui::SliderFloat("Waveform Sensitivity##voice", &voiceSensitivity_, 0.1f, 5.0f, "%.2f");
+
+		ImGui::Spacing();
+
+		// ===== 波形表示 =====
+		ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.8f, 1.0f), "WAVEFORM");
+		
+		ImDrawList *waveDrawList = ImGui::GetWindowDrawList();
+		ImVec2 waveCanvasPos = ImGui::GetCursorScreenPos();
+		ImVec2 waveCanvasSize(ImGui::GetContentRegionAvail().x, 150.0f);
+
+		// 背景
+		waveDrawList->AddRectFilled(
+			waveCanvasPos, 
+			ImVec2(waveCanvasPos.x + waveCanvasSize.x, waveCanvasPos.y + waveCanvasSize.y),
+			ImGui::GetColorU32(ImVec4(0.05f, 0.05f, 0.1f, 1.0f)));
+		
+		// 枠線
+		waveDrawList->AddRect(
+			waveCanvasPos, 
+			ImVec2(waveCanvasPos.x + waveCanvasSize.x, waveCanvasPos.y + waveCanvasSize.y),
+			ImGui::GetColorU32(ImGuiCol_Border));
+
+		if (voiceDisplaySamples_.size() > 1) {
+			// 中央線（ゼロライン）
+			float centerY = waveCanvasPos.y + waveCanvasSize.y * 0.5f;
+			waveDrawList->AddLine(
+				ImVec2(waveCanvasPos.x, centerY), 
+				ImVec2(waveCanvasPos.x + waveCanvasSize.x, centerY),
+				ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.3f, 0.5f)), 
+				1.0f);
+
+			// +1.0 / -1.0 ラインを描画
+			float topLineY = waveCanvasPos.y + (waveCanvasSize.y * 0.1f);
+			float bottomLineY = waveCanvasPos.y + (waveCanvasSize.y * 0.9f);
+			waveDrawList->AddLine(
+				ImVec2(waveCanvasPos.x, topLineY), 
+				ImVec2(waveCanvasPos.x + waveCanvasSize.x, topLineY),
+				ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.5f, 0.3f)), 
+				1.0f);
+			waveDrawList->AddLine(
+				ImVec2(waveCanvasPos.x, bottomLineY), 
+				ImVec2(waveCanvasPos.x + waveCanvasSize.x, bottomLineY),
+				ImGui::GetColorU32(ImVec4(0.3f, 0.3f, 0.5f, 0.3f)), 
+				1.0f);
+
+			// ダウンサンプリング
+			size_t displaySamples = std::min(voiceDisplaySamples_.size(), size_t(waveCanvasSize.x * 2));
+			size_t skipSamples = std::max(size_t(1), voiceDisplaySamples_.size() / displaySamples);
+
+			// 波形描画
+			for (size_t i = 0; i + skipSamples < displaySamples; ++i) {
+				float x1 = waveCanvasPos.x + (i * waveCanvasSize.x) / displaySamples;
+				float y1 = centerY - voiceDisplaySamples_[i * skipSamples] * voiceWaveformScale_ * voiceSensitivity_;
+				y1 = std::max(waveCanvasPos.y, std::min(y1, waveCanvasPos.y + waveCanvasSize.y));
+
+				float x2 = waveCanvasPos.x + ((i + 1) * waveCanvasSize.x) / displaySamples;
+				float y2 = centerY - voiceDisplaySamples_[(i + 1) * skipSamples] * voiceWaveformScale_ * voiceSensitivity_;
+				y2 = std::max(waveCanvasPos.y, std::min(y2, waveCanvasPos.y + waveCanvasSize.y));
+
+				waveDrawList->AddLine(
+					ImVec2(x1, y1), 
+					ImVec2(x2, y2),
+					ImGui::GetColorU32(ImVec4(0.0f, 1.0f, 0.5f, 0.9f)), 
+					1.5f);
+			}
+		} else {
+			ImGui::SetCursorScreenPos(ImVec2(waveCanvasPos.x + 10, waveCanvasPos.y + 60));
+			ImGui::TextDisabled("Waiting for audio data...");
+		}
+
+		ImGui::Dummy(waveCanvasSize);
+
+		ImGui::End();
+	}
 
 	//========================================
 	// SkyBoxの移動

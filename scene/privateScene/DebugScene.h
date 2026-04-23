@@ -14,6 +14,7 @@ using namespace MagMath;
 // Game
 #include "Cloud.h"
 #include "TrailEffectManager.h"
+#include "MagVoiceBridge.h"
 
 // Forward declaration
 class SceneContext;
@@ -122,4 +123,12 @@ private:
 	float bulletHoleLifeTime_ = 15.0f;				   // 弾痕の持続時間
 	Vector3 manualBulletOrigin_{0.0f, 180.0f, 300.0f}; // マニュアル追加用の原点
 	Vector3 manualBulletDirection_{0.0f, 0.0f, 1.0f};  // マニュアル追加用の方向
+
+	//========================================
+	// マイク入力テスト用
+	std::unique_ptr<MagVoiceBridge> voiceBridge_;  // マイク入力ブリッジ
+	bool voiceIsRecording_ = false;                // 録音中フラグ
+	std::vector<float> voiceDisplaySamples_;       // 表示用サンプルバッファ
+	float voiceWaveformScale_ = 100.0f;            // 波形スケール（倍率）
+	float voiceSensitivity_ = 1.0f;                // 感度調整
 };
