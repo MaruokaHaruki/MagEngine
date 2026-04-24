@@ -1,15 +1,18 @@
 /*********************************************************************
-* \file   MAudioG.h
-* \brief
-*  _____ _____ _____
-* |     |     |   __| MA.h
-* | | | |  |  |  |_ | Ver4.10
-* |_|_|_|__|__|_____| 2024/09/23
-*
-* \author Harukichimaru
-* \date   January 2025
-* \note
-*********************************************************************/
+ * \file   MAudioG.h
+ * \brief
+ *
+ * ███╗   ███╗ █████╗  ██████╗
+ * ████╗ ████║██╔══██╗██╔════╝ 	MA.h
+ * ██╔████╔██║███████║██║  ███╗	Ver5.10
+ * ██║╚██╔╝██║██╔══██║██║   ██║	2026/04/23
+ * ██║ ╚═╝ ██║██║  ██║╚██████╔╝
+ * ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝
+ *
+ * \author Harukichimaru
+ * \date   January 2025
+ * \note
+ *********************************************************************/
 
 #pragma once
 #define XAUDIO2_HELPER_FUNCTIONS
@@ -29,8 +32,8 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
-///=============================================================================
-///						クラス
+	///=============================================================================
+	///						クラス
 	class MAudioG {
 		///--------------------------------------------------------------
 		///							メンバ構造体
@@ -49,23 +52,23 @@ namespace MagEngine {
 		//========================================
 		// 音声データを表す構造体
 		struct SoundData {
-			WAVEFORMATEX wfex;           // 波形フォーマット
+			WAVEFORMATEX wfex;			 // 波形フォーマット
 			std::vector<uint8_t> buffer; // 音声データのバッファ
-			std::string name;            // 音声ファイルの名前
+			std::string name;			 // 音声ファイルの名前
 		};
 
 		//========================================
 		// 再生データを表す構造体
 		struct Voice {
 			IXAudio2SourceVoice *sourceVoice = nullptr; // XAudio2のソースボイス
-			float oldVolume = 1.0f;                     // 最後に設定したボリューム
-			float oldSpeed = 1.0f;                      // 最後に設定した再生速度
+			float oldVolume = 1.0f;						// 最後に設定したボリューム
+			float oldSpeed = 1.0f;						// 最後に設定した再生速度
 		};
 
 		//========================================
 		// チャンクヘッダーを表す構造体
 		struct ChunkHeader {
-			char id[4];    // チャンクのID（"RIFF", "fmt ", "data"など）
+			char id[4];	   // チャンクのID（"RIFF", "fmt ", "data"など）
 			uint32_t size; // チャンクのサイズ
 		};
 
@@ -73,7 +76,7 @@ namespace MagEngine {
 		// RIFFヘッダーを表す構造体
 		struct RiffHeader {
 			ChunkHeader chunk; // チャンクヘッダー
-			char type[4];      // ファイルタイプ（"WAVE"）
+			char type[4];	   // ファイルタイプ（"WAVE"）
 		};
 
 		//========================================
@@ -87,13 +90,23 @@ namespace MagEngine {
 		// オーディオコールバックを表すクラス
 		class XAudio2VoiceCallback : public IXAudio2VoiceCallback {
 		public:
-			STDMETHOD_(void, OnVoiceProcessingPassStart)( UINT32 BytesRequired ) override { UNREFERENCED_PARAMETER(BytesRequired); }
-			STDMETHOD_(void, OnVoiceProcessingPassEnd)( ) override {}
-			STDMETHOD_(void, OnStreamEnd)( ) override {}
-			STDMETHOD_(void, OnBufferStart)( void *pBufferContext ) override { UNREFERENCED_PARAMETER(pBufferContext); }
-			STDMETHOD_(void, OnBufferEnd)( void *pBufferContext ) override { UNREFERENCED_PARAMETER(pBufferContext); }
-			STDMETHOD_(void, OnLoopEnd)( void *pBufferContext ) override { UNREFERENCED_PARAMETER(pBufferContext); }
-			STDMETHOD_(void, OnVoiceError)( void *pBufferContext, HRESULT Error ) override {
+			STDMETHOD_(void, OnVoiceProcessingPassStart)(UINT32 BytesRequired) override {
+				UNREFERENCED_PARAMETER(BytesRequired);
+			}
+			STDMETHOD_(void, OnVoiceProcessingPassEnd)() override {
+			}
+			STDMETHOD_(void, OnStreamEnd)() override {
+			}
+			STDMETHOD_(void, OnBufferStart)(void *pBufferContext) override {
+				UNREFERENCED_PARAMETER(pBufferContext);
+			}
+			STDMETHOD_(void, OnBufferEnd)(void *pBufferContext) override {
+				UNREFERENCED_PARAMETER(pBufferContext);
+			}
+			STDMETHOD_(void, OnLoopEnd)(void *pBufferContext) override {
+				UNREFERENCED_PARAMETER(pBufferContext);
+			}
+			STDMETHOD_(void, OnVoiceError)(void *pBufferContext, HRESULT Error) override {
 				UNREFERENCED_PARAMETER(pBufferContext);
 				std::cerr << "Voice error: " << std::hex << Error << std::endl;
 			}
@@ -102,7 +115,9 @@ namespace MagEngine {
 		//========================================
 		// コンストラクタとデストラクタ
 		MAudioG() = default;
-		~MAudioG() { Finalize(); }
+		~MAudioG() {
+			Finalize();
+		}
 		MAudioG(const MAudioG &) = delete;
 		MAudioG &operator=(const MAudioG &) = delete;
 
@@ -110,110 +125,110 @@ namespace MagEngine {
 		///						 メンバ関数
 	public:
 		/**----------------------------------------------------------------------------
-		* \brief  GetInstance		シングルトンインスタンス
-		* \return
-		*/
+		 * \brief  GetInstance		シングルトンインスタンス
+		 * \return
+		 */
 		static MAudioG *GetInstance();
 
 		/**----------------------------------------------------------------------------
-		* \brief  GetAudioDevices	接続デバイスの検知
-		*/
+		 * \brief  GetAudioDevices	接続デバイスの検知
+		 */
 		void GetAudioDevices();
 
 		/**----------------------------------------------------------------------------
-		* \brief  Initialize		初期化
-		* \param  directoryPath	ディレクトリパス
-		* \param  deviceId			デバイスID
-		*/
+		 * \brief  Initialize		初期化
+		 * \param  directoryPath	ディレクトリパス
+		 * \param  deviceId			デバイスID
+		 */
 		void Initialize(const std::string &directoryPath = "Resources/", const std::wstring &deviceId = L"");
 
 		/**----------------------------------------------------------------------------
-		* \brief  Finalize		終了処理
-		*/
+		 * \brief  Finalize		終了処理
+		 */
 		void Finalize();
 
 		/**----------------------------------------------------------------------------
-		* \brief  LoadWav	サウンドのロード
-		* \param  filename		ファイル名
-		* \return
-		*/
+		 * \brief  LoadWav	サウンドのロード
+		 * \param  filename		ファイル名
+		 * \return
+		 */
 		void LoadWav(const std::string &filename);
 
 		/**----------------------------------------------------------------------------
-		* \brief  Unload		サウンドのアンロード
-		* \param  soundData	サウンドデータ
-		*/
+		 * \brief  Unload		サウンドのアンロード
+		 * \param  soundData	サウンドデータ
+		 */
 		void Unload(SoundData *soundData);
 
 		/**----------------------------------------------------------------------------
-		* \brief  PlayWav		ファイル名でWAVファイルを再生
-		* \param  filename		ファイル名
-		* \param  loopFlag		ループするかどうか
-		* \param  volume		ボリューム
-		* \param  maxPlaySpeed	最大再生速度
-		*/
+		 * \brief  PlayWav		ファイル名でWAVファイルを再生
+		 * \param  filename		ファイル名
+		 * \param  loopFlag		ループするかどうか
+		 * \param  volume		ボリューム
+		 * \param  maxPlaySpeed	最大再生速度
+		 */
 		void PlayWav(const std::string &filename,
-			bool loopFlag = false,
-			float volume = 1.0f,
-			float maxPlaySpeed = 2.0f);
+					 bool loopFlag = false,
+					 float volume = 1.0f,
+					 float maxPlaySpeed = 2.0f);
 
 		/**----------------------------------------------------------------------------
-		* \brief  PlayWavReverse		ファイル名でWAVファイルを逆再生
-		* \param  filename		ファイル名
-		* \param  loopFlag		ループするかどうか
-		* \param  volume		ボリューム
-		* \param  maxPlaySpeed	最大再生速度
-		*/
+		 * \brief  PlayWavReverse		ファイル名でWAVファイルを逆再生
+		 * \param  filename		ファイル名
+		 * \param  loopFlag		ループするかどうか
+		 * \param  volume		ボリューム
+		 * \param  maxPlaySpeed	最大再生速度
+		 */
 		void PlayWavReverse(const std::string &filename,
-			bool loopFlag = false,
-			float volume = 1.0f,
-			float maxPlaySpeed = 2.0f);
+							bool loopFlag = false,
+							float volume = 1.0f,
+							float maxPlaySpeed = 2.0f);
 
 		/**----------------------------------------------------------------------------
-		* \brief  StopWav		ファイル名で再生を停止
-		* \param  filename		ファイル名
-		*/
+		 * \brief  StopWav		ファイル名で再生を停止
+		 * \param  filename		ファイル名
+		 */
 		void StopWav(const std::string &filename);
 
 		/**----------------------------------------------------------------------------
-		* \brief  IsWavPlaying		ファイル名で再生中かどうかを確認
-		* \param  filename		ファイル名
-		* \return
-		*/
+		 * \brief  IsWavPlaying		ファイル名で再生中かどうかを確認
+		 * \param  filename		ファイル名
+		 * \return
+		 */
 		bool IsWavPlaying(const std::string &filename);
 
 		/**----------------------------------------------------------------------------
-		* \brief  PauseWav		ファイル名で再生一時停止
-		* \param  filename		ファイル名
-		*/
+		 * \brief  PauseWav		ファイル名で再生一時停止
+		 * \param  filename		ファイル名
+		 */
 		void PauseWav(const std::string &filename);
 
 		/**----------------------------------------------------------------------------
-		* \brief  ResumeWav		ファイル名で再生再開
-		* \param  filename		ファイル名
-		*/
+		 * \brief  ResumeWav		ファイル名で再生再開
+		 * \param  filename		ファイル名
+		 */
 		void ResumeWav(const std::string &filename);
 
 		/**----------------------------------------------------------------------------
-		* \brief  SetVolume	ファイル名で音量を設定
-		* \brief  NOTE: 0が無音,1が元の音源そのまま,0.3fくらいから判断
-		* \param  filename		ファイル名
-		* \param  volume		音量
-		*/
+		 * \brief  SetVolume	ファイル名で音量を設定
+		 * \brief  NOTE: 0が無音,1が元の音源そのまま,0.3fくらいから判断
+		 * \param  filename		ファイル名
+		 * \param  volume		音量
+		 */
 		void SetVolume(const std::string &filename, float volume);
 
 		/**----------------------------------------------------------------------------
-		* \brief  SetVolumeDecibel ファイル名で音量を設定(デシベル)
-		* \param  filename		ファイル名
-		* \param  dB			デシベル
-		*/
+		 * \brief  SetVolumeDecibel ファイル名で音量を設定(デシベル)
+		 * \param  filename		ファイル名
+		 * \param  dB			デシベル
+		 */
 		void SetVolumeDecibel(const std::string &filename, float dB);
 
 		/**----------------------------------------------------------------------------
-		* \brief  SetPlaybackSpeed ファイル名で再生速度を設定
-		* \param  filename		ファイル名
-		* \param  speed		再生速度
-		*/
+		 * \brief  SetPlaybackSpeed ファイル名で再生速度を設定
+		 * \param  filename		ファイル名
+		 * \param  speed		再生速度
+		 */
 		void SetPlaybackSpeed(const std::string &filename, float speed);
 
 		///--------------------------------------------------------------

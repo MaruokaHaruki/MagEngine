@@ -1,6 +1,21 @@
+/*********************************************************************
+ * \file   MagVoiceBridge.cpp
+ * \brief
+ *
+ * ███╗   ███╗ █████╗  ██████╗ ██╗   ██╗██████═╗
+ * ████╗ ████║██╔══██╗██╔════╝ ██║   ██║██╔══██╝	MagVoiceBridge.h
+ * ██╔████╔██║███████║██║  ███╗██║   ██║█████║		Ver1.00
+ * ██║╚██╔╝██║██╔══██║██║   ██║╚██╗ ██╔╝██╔══██╗	2026/04/23
+ * ██║ ╚═╝ ██║██║  ██║╚██████╔╝ ╚████╔╝ ██████╔╝
+ * ╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═══╝  ╚═════╝
+ *
+ * \author Harukichimaru
+ * \note
+ *********************************************************************/
 // MagVoiceBridge.h
 // 目的: WASAPI を使用してデフォルトマイクから音声入力を取得し、
 //      リアルタイム音声分析（音量・音声検出）を行うクラス
+
 #pragma once
 
 #include <atomic>
@@ -117,15 +132,15 @@ public:
 	// 目的: 現在の音量統計情報を取得する
 	// なぜ必要か: ゲーム内で音量の統計情報を利用するため
 	struct VolumeStats {
-		float currentRMS{};      // 現在の RMS 値（0.0～1.0）
-		float currentRMSDB{};    // 現在の RMS 値（dB）
-		float peakValue{};       // ピーク値（0.0～1.0）
-		float peakDB{};          // ピーク値（dB）
-		float smoothedRMS{};     // スムージング済み RMS（0.0～1.0）
-		float smoothedRMSDB{};   // スムージング済み RMS（dB）
-		float percentage{};      // パーセンテージ（0～100）
-		float voiceScore{};      // 音声特性スコア（0.0～1.0）
-		bool isVoiceDetected{};  // 音声検出フラグ
+		float currentRMS{};		// 現在の RMS 値（0.0～1.0）
+		float currentRMSDB{};	// 現在の RMS 値（dB）
+		float peakValue{};		// ピーク値（0.0～1.0）
+		float peakDB{};			// ピーク値（dB）
+		float smoothedRMS{};	// スムージング済み RMS（0.0～1.0）
+		float smoothedRMSDB{};	// スムージング済み RMS（dB）
+		float percentage{};		// パーセンテージ（0～100）
+		float voiceScore{};		// 音声特性スコア（0.0～1.0）
+		bool isVoiceDetected{}; // 音声検出フラグ
 	};
 
 	// 目的: 音量統計情報を一括取得する
@@ -150,19 +165,19 @@ private:
 	// 目的: デバイスの列挙に使用
 	// なぜ必要か: デフォルト録音デバイスを取得するため
 	IMMDeviceEnumerator *deviceEnumerator_ = nullptr;
-	
+
 	// 目的: デフォルト録音デバイスを表す
 	// なぜ必要か: マイク入力にアクセスするため
 	IMMDevice *captureDevice_ = nullptr;
-	
+
 	// 目的: オーディオストリームを制御する
 	// なぜ必要か: GetMixFormat、Initialize、Start/Stop を呼ぶため
 	IAudioClient *audioClient_ = nullptr;
-	
+
 	// 目的: キャプチャされたデータを取得する
 	// なぜ必要か: GetBuffer で PCM データを取得するため
 	IAudioCaptureClient *captureClient_ = nullptr;
-	
+
 	// 目的: WASAPI が使用するオーディオフォーマット
 	// なぜ必要か: サンプルレート、チャンネル数、ビット深度の情報を保持するため
 	WAVEFORMATEX *waveFormat_ = nullptr;
@@ -171,7 +186,7 @@ private:
 	// 目的: Initialize() が完了したかを示す
 	// なぜ atomic か: メインスレッドからアクセスするため
 	std::atomic<bool> isInitialized_ = false;
-	
+
 	// 目的: Start() が完了し、キャプチャ中かを示す
 	// なぜ atomic か: メインスレッドからアクセスするため
 	std::atomic<bool> isCapturing_ = false;
@@ -180,7 +195,7 @@ private:
 	// 目的: スレッド安全なアクセスのためのミューテックス
 	// なぜ必要か: Update() と GetSamples() 間の競合を回避するため
 	std::mutex sampleMutex_;
-	
+
 	// 目的: キャプチャされた音声サンプル（正規化済み float [-1.0f, 1.0f]）
 	// なぜ必要か: 波形表示や分析に使用するため
 	std::vector<float> sampleBuffer_;
@@ -189,11 +204,11 @@ private:
 	// 目的: GetMixFormat() から取得したサンプリングレート（Hz）
 	// なぜ必要か: 時間計算や周波数分析に必要
 	uint32_t sampleRate_ = 0;
-	
+
 	// 目的: GetMixFormat() から取得したチャンネル数
 	// なぜ必要か: マルチチャンネル対応に必要
 	uint16_t channelCount_ = 0;
-	
+
 	// 目的: GetMixFormat() から取得したビット深度
 	// なぜ必要か: PCM データの正規化計算に必要（16bit なら 32768.0f で除算）
 	uint16_t bitsPerSample_ = 0;
@@ -202,7 +217,7 @@ private:
 	// 目的: 現在の RMS レベル（0.0～1.0、スレッドセーフ）
 	// なぜ atomic か: Update() と GetCurrentVolume() 間での競合回避
 	std::atomic<float> currentVolume_ = 0.0f;
-	
+
 	// 目的: 現在の RMS レベル（dB、スレッドセーフ）
 	// なぜ atomic か: Update() と GetCurrentVolumeDB() 間での競合回避
 	std::atomic<float> currentVolumeDB_ = -80.0f;
@@ -243,7 +258,7 @@ private:
 	// なぜ必要か: ノイズ（高周波）と音声（低周波）を区別するため
 	// 典型値: 音声は 10～20%、ノイズは 30～50%
 	static constexpr float ZERO_CROSSING_RATE_THRESHOLD = 0.25f;
-	
+
 	// 目的: 人の声判定のための閾値（RMS 音量）
 	// なぜ必要か: 無音や小さすぎる音を除外するため
 	// 典型値: -40dB （正規化値の約 0.01）
