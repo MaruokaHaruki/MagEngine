@@ -41,7 +41,7 @@ void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 
 	//========================================
 	// JSON から設定を読み込む
-	ConfigLoader::LoadAllConfigs("application/enemy/config/data");
+	ConfigLoader::LoadAllConfigs("resources/config/enemy");
 
 	// JSON から読み込んだウェーブ設定を WaveConfig に変換
 	waveConfigs_.clear();

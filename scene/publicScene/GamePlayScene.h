@@ -15,7 +15,7 @@
 #include "Cloud.h"
 #include "CloudSetup.h"
 #include "Object3d.h"
-#include "Object3dSetup.h"lll
+#include "Object3dSetup.h"
 #include "Particle.h"
 #include "ParticleSetup.h"
 #include "Skybox.h"
