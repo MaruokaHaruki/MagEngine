@@ -42,6 +42,14 @@ namespace ResourcePath {
 	}
 
 	//========================================
+	//          設定ファイルパス
+	//========================================
+	namespace Config {
+		/// @brief プレイヤー設定JSON
+		constexpr const char *PLAYER_CONFIG = "resources/config/player/player_config.json";
+	}
+
+	//========================================
 	//          サウンドパス（将来拡張用）
 	//========================================
 	namespace Sound {

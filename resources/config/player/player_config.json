@@ -1,0 +1,71 @@
+{
+  "timing": {
+    "frameTime": 0.016666666666667,
+    "frameRate": 60.0
+  },
+  "input": {
+    "stickDeadzone": 0.1,
+    "triggerThreshold": 0.3
+  },
+  "weapon": {
+    "bullet": {
+      "speed": 128.0,
+      "lifetime": 3.0,
+      "radius": 0.5,
+      "shootCooldown": 0.1
+    },
+    "missile": {
+      "speed": 50.0,
+      "turnRate": 120.0,
+      "lifetime": 15.0,
+      "maxAmmo": 3,
+      "recoveryTime": 3.0
+    }
+  },
+  "movement": {
+    "defaultSpeed": 5.0,
+    "defaultAcceleration": 0.1,
+    "defaultRotationSmoothing": 0.1,
+    "maxRollAngle": 30.0,
+    "maxPitchAngle": 15.0
+  },
+  "boost": {
+    "maxGauge": 100.0,
+    "speedMultiplier": 2.0,
+    "consumptionRate": 30.0,
+    "recoveryRate": 15.0
+  },
+  "barrelRoll": {
+    "duration": 0.6,
+    "cooldown": 1.2,
+    "cost": 30.0,
+    "accelerationMultiplier": 2.0,
+    "rotationAngleRadians": 6.283185307
+  },
+  "lockOn": {
+    "range": 50.0,
+    "fovDegrees": 180.0,
+    "acquisitionInterval": 0.35,
+    "maxTargets": 3,
+    "retentionTime": 0.5
+  },
+  "justAvoidance": {
+    "windowSize": 0.3,
+    "boostReward": 30.0,
+    "damageTimeout": 1.0,
+    "perfectTimingThreshold": 0.8
+  },
+  "health": {
+    "defaultMaxHP": 100,
+    "invincibilityDuration": 1.0,
+    "enemyBulletDamage": 15,
+    "collisionDamage": 10
+  },
+  "defeat": {
+    "animationDuration": 3.0,
+    "phase1Ratio": 0.6,
+    "gravityAcceleration": 15.0,
+    "groundYThreshold": -50.0,
+    "noseDiveAngle": -90.0
+  }
+}
