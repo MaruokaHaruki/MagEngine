@@ -1,6 +1,5 @@
 // MagVoiceBridge.cpp
-// PURPOSE: WASAPI を使用したマイク入力のリアルタイム処理を実装
-// REASON: Windows でのマイク入力と音声分析機能を提供するため
+// NOTE: WASAPI を使用したマイク入力のリアルタイム処理を実装
 #define _USE_MATH_DEFINES
 #define NOMINMAX
 #include "MagVoiceBridge.h"
@@ -17,13 +16,11 @@
 //========================================
 
 MagVoiceBridge::MagVoiceBridge() {
-	// PURPOSE: メンバ変数を初期化する
-	// REASON: 全メンバ変数は宣言時に初期化リスト経由で初期化されます
+	// NOTE: メンバ変数は宣言時に初期化リスト経由で初期化されます
 }
 
 MagVoiceBridge::~MagVoiceBridge() {
-	// PURPOSE: リソースをクリーンアップする
-	// REASON: Shutdown() は冪等性を持つため、二重解放の心配なく呼び出せます
+	// NOTE: Shutdown() は冪等性を持つため、二重解放の心配なく呼び出せます
 	Shutdown();
 }
 
@@ -34,15 +31,13 @@ MagVoiceBridge::~MagVoiceBridge() {
 bool MagVoiceBridge::Initialize() {
 	HRESULT result = S_OK;
 
-	// PURPOSE: COM ライブラリを初期化する
-	// REASON: WASAPI 使用前の必須初期化処理
+	// NOTE: COM ライブラリを初期化する
 	result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 	if (FAILED(result)) {
 		return false;
 	}
 
-	// PURPOSE: デバイス列挙用オブジェクトを生成する
-	// REASON: デフォルト録音デバイスを取得するために必須
+	// NOTE: デバイス列挙用オブジェクトを生成する
 	result = CoCreateInstance(
 		__uuidof(MMDeviceEnumerator),
 		nullptr,
@@ -54,8 +49,7 @@ bool MagVoiceBridge::Initialize() {
 		return false;
 	}
 
-	// PURPOSE: デフォルトの録音デバイスを取得する
-	// REASON: ユーザが指定したマイクから入力を取得するため
+	// NOTE: デフォルトの録音デバイスを取得する
 	result = deviceEnumerator_->GetDefaultAudioEndpoint(
 		eCapture,
 		eConsole,
@@ -65,8 +59,7 @@ bool MagVoiceBridge::Initialize() {
 		return false;
 	}
 
-	// PURPOSE: 録音デバイスの IAudioClient インターフェースを取得する
-	// REASON: WASAPI のオーディオクライアント機能を使用するため
+	// NOTE: 録音デバイスの IAudioClient インターフェースを取得する
 	result = captureDevice_->Activate(
 		__uuidof(IAudioClient),
 		CLSCTX_ALL,
@@ -77,15 +70,13 @@ bool MagVoiceBridge::Initialize() {
 		return false;
 	}
 
-	// PURPOSE: マイクのネイティブオーディオフォーマットを取得する
-	// REASON: サンプリングレート、チャンネル数、ビット深度の情報が必須
+	// NOTE: マイクのネイティブオーディオフォーマットを取得する
 	result = audioClient_->GetMixFormat(&waveFormat_);
 	if (FAILED(result)) {
 		return false;
 	}
 
-	// PURPOSE: オーディオフォーマット情報をメンバ変数に保存する
-	// REASON: PCM データの正規化や時間計算で使用するため
+	// NOTE: オーディオフォーマット情報をメンバ変数に保存する
 	sampleRate_ = waveFormat_->nSamplesPerSec;
 	channelCount_ = waveFormat_->nChannels;
 	bitsPerSample_ = waveFormat_->wBitsPerSample;
@@ -95,8 +86,7 @@ bool MagVoiceBridge::Initialize() {
 		return false;
 	}
 
-	// PURPOSE: shared mode でオーディオクライアントを初期化する
-	// REASON: 他のアプリと同時にマイクを使用できるようにするため
+	// NOTE: shared mode でオーディオクライアントを初期化する
 	// OPTIMIZE: バッファ期間 10000000 (1秒) は環境に応じて調整可能
 	REFERENCE_TIME bufferDuration = 10000000;
 
@@ -112,8 +102,7 @@ bool MagVoiceBridge::Initialize() {
 		return false;
 	}
 
-	// PURPOSE: IAudioCaptureClient インターフェースを取得する
-	// REASON: GetBuffer で PCM データを取得するため
+	// NOTE: IAudioCaptureClient インターフェースを取得する
 	result = audioClient_->GetService(
 		__uuidof(IAudioCaptureClient),
 		reinterpret_cast<void **>(&captureClient_));
@@ -122,8 +111,7 @@ bool MagVoiceBridge::Initialize() {
 		return false;
 	}
 
-	// PURPOSE: 初期化完了フラグを設定する
-	// REASON: 他の関数が Initialize() 完了を確認する必要があるため
+	// NOTE: 初期化完了フラグを設定する
 	isInitialized_ = true;
 	return true;
 }
@@ -141,15 +129,13 @@ bool MagVoiceBridge::Start() {
 		return false;
 	}
 
-	// PURPOSE: キャプチャ中フラグを設定する
-	// REASON: Update() が実際に処理を行うべき状態を管理するため
+	// NOTE: キャプチャ中フラグを設定する
 	isCapturing_ = true;
 	return true;
 }
 
 void MagVoiceBridge::Stop() {
-	// PURPOSE: オーディオストリームを停止する
-	// REASON: キャプチャを一時停止する必要があるため
+	// NOTE: オーディオストリームを停止する
 	if (audioClient_ && isCapturing_) {
 		audioClient_->Stop();
 		isCapturing_ = false;
@@ -157,12 +143,10 @@ void MagVoiceBridge::Stop() {
 }
 
 void MagVoiceBridge::Shutdown() {
-	// PURPOSE: キャプチャを停止する
-	// REASON: リソース解放前にストリームを止める必要があるため
+	// NOTE: キャプチャを停止する
 	Stop();
 
-	// PURPOSE: COM インターフェースをリリースする
-	// REASON: メモリリークを防ぐため
+	// NOTE: COM インターフェースをリリースする
 	if (captureClient_) {
 		captureClient_->Release();
 		captureClient_ = nullptr;
@@ -183,19 +167,16 @@ void MagVoiceBridge::Shutdown() {
 		deviceEnumerator_ = nullptr;
 	}
 
-	// PURPOSE: waveFormat_ のメモリを解放する
-	// REASON: CoTaskMemFree で確保されたメモリを明示的に解放する必須
+	// NOTE: waveFormat_ のメモリを解放する
 	if (waveFormat_) {
 		CoTaskMemFree(waveFormat_);
 		waveFormat_ = nullptr;
 	}
 
-	// PURPOSE: COM ライブラリをクリーンアップする
-	// REASON: COM 初期化（CoInitializeEx）に対応する必須処理
+	// NOTE: COM ライブラリをクリーンアップする
 	CoUninitialize();
 
-	// PURPOSE: 初期化フラグをリセットする
-	// REASON: Shutdown() の冪等性を確保し、二重解放を防ぐため
+	// NOTE: 初期化フラグをリセットする
 	isInitialized_ = false;
 	isCapturing_ = false;
 }
@@ -205,40 +186,31 @@ void MagVoiceBridge::Shutdown() {
 //========================================
 
 void MagVoiceBridge::Update() {
-	// PURPOSE: Start() 前の無駄な処理を回避する
-	// REASON: Start() 前に Update() が呼ばれることを想定
+	// NOTE: Start() 前の無駄な処理を回避する
 	if (!isCapturing_) {
 		return;
 	}
 
-	// PURPOSE: WASAPI からリアルタイムのオーディオデータを取得する
-	// REASON: 毎フレーム呼び出してリアルタイムに音声データを更新するため
+	// NOTE: WASAPI からリアルタイムのオーディオデータを取得する
 	CaptureAudioData();
 
-	// PURPOSE: 最新のサンプルから音量を計算する
-	// REASON: Update() の中核処理
+	// NOTE: 最新のサンプルから音量を計算する
 	float rmsLevel = CalculateRMSLevel();
 	currentVolume_ = rmsLevel;
 
-	// PURPOSE: RMS をデシベルに変換する
-	// REASON: dB 単位での音量表示に必要。log(0) エラー回避のため最小値チェック
-	// NOTE: 計算式: dB = 20 * log10(RMS)
+	// NOTE: RMS をデシベルに変換する（計算式: dB = 20 * log10(RMS)）
 	float volumeDB = 20.0f * std::log10(std::max(0.00001f, rmsLevel));
 	currentVolumeDB_ = volumeDB;
 
-	// PURPOSE: ピークレベル（最大振幅）を計算する
-	// REASON: 瞬間的な最大音量を把握するため
+	// NOTE: ピークレベル（最大振幅）を計算する
 	float peakLevel = CalculatePeakLevel();
 	peakVolume_ = peakLevel;
 
-	// PURPOSE: ピークレベルを dB に変換する
-	// REASON: dB 単位でのピークレベル表示に必要
+	// NOTE: ピークレベルを dB に変換する
 	float peakDB = 20.0f * std::log10(std::max(0.00001f, peakLevel));
 	peakVolumeDB_ = peakDB;
 
-	// PURPOSE: スムージング処理を適用する
-	// REASON: リアルタイム値の変動を平滑化し、UI ちらつきを防ぐため
-	// NOTE: 式: smoothed = smoothed * (1 - factor) + current * factor
+	// NOTE: スムージング処理を適用する（式: smoothed = smoothed * (1 - factor) + current * factor）
 	float currentSmoothed = smoothedVolume_.load();
 	float newSmoothed = currentSmoothed * (1.0f - smoothingFactor_) + rmsLevel * smoothingFactor_;
 	smoothedVolume_ = newSmoothed;
@@ -247,22 +219,19 @@ void MagVoiceBridge::Update() {
 	float newSmoothedDB = currentSmoothedDB * (1.0f - smoothingFactor_) + volumeDB * smoothingFactor_;
 	smoothedVolumeDB_ = newSmoothedDB;
 
-	// PURPOSE: 音声特性スコアを計算する
-	// REASON: ゼロクロス率に基づいて人の声らしさを定量化するため
+	// NOTE: 音声特性スコアを計算する
 	// NOTE: ZCR が低い（0.0に近い）ほど高スコア（1.0に近い）= 人の声らしい
 	float zeroCrossingRate = CalculateZeroCrossingRate();
 	float voiceScore = std::max(0.0f, 1.0f - (zeroCrossingRate / ZERO_CROSSING_RATE_THRESHOLD));
 	voiceCharacteristicScore_ = voiceScore;
 
-	// PURPOSE: ゼロクロス率と音量から人の声かどうかを判定する
-	// REASON: 正確な音声検出のため、複数の指標を組み合わせる
+	// NOTE: ゼロクロス率と音量から人の声かどうかを判定する
 	bool voiceDetected = IsVoiceDetected();
 	isVoiceDetected_ = voiceDetected;
 }
 
 void MagVoiceBridge::CaptureAudioData() {
-	// PURPOSE: WASAPI バッファに利用可能なフレーム数を取得する
-	// REASON: GetBuffer で取得すべきデータサイズを判定するため
+	// NOTE: WASAPI バッファに利用可能なフレーム数を取得する
 	uint32_t packetLength = 0;
 	HRESULT result = captureClient_->GetNextPacketSize(&packetLength);
 
@@ -271,8 +240,7 @@ void MagVoiceBridge::CaptureAudioData() {
 		return;
 	}
 
-	// PURPOSE: WASAPI バッファからオーディオデータを取得する
-	// REASON: PCM サンプルにアクセスするため
+	// NOTE: WASAPI バッファからオーディオデータを取得する
 	BYTE *pData = nullptr;
 	DWORD flags = 0;
 	uint32_t numFramesAvailable = 0;
@@ -289,86 +257,70 @@ void MagVoiceBridge::CaptureAudioData() {
 		return;
 	}
 
-	// PURPOSE: フレーム数を更新する
-	// REASON: 内部処理を統一した形式で行うため
+	// NOTE: フレーム数を更新する
 	packetLength = numFramesAvailable;
 
 	{
 		std::lock_guard<std::mutex> lock(sampleMutex_);
 
-		// PURPOSE: WASAPI Shared Mode では 32-bit float でデータが返される
-		// REASON: GetMixFormat() で取得したフォーマットに関わらず必ず float
+		// NOTE: WASAPI Shared Mode では 32-bit float でデータが返される
 		float *pFloatData = reinterpret_cast<float *>(pData);
 
-		// PURPOSE: マルチチャンネルの場合、全チャンネルを合成する
-		// REASON: モノラル処理に統一するため（ステレオの場合は左右の平均値を取る）
+		// NOTE: マルチチャンネルの場合、全チャンネルを合成する
 		for (uint32_t frame = 0; frame < packetLength; ++frame) {
 			float channelAverage = 0.0f;
 
-			// PURPOSE: 全チャンネルの絶対値を加算する
-			// REASON: 各チャンネルの振幅を集約するため
+			// NOTE: 全チャンネルの絶対値を加算する
 			for (uint16_t ch = 0; ch < channelCount_; ++ch) {
 				uint32_t sampleIndex = frame * channelCount_ + ch;
 				channelAverage += std::abs(pFloatData[sampleIndex]);
 			}
 
-			// PURPOSE: チャンネル数で平均化してモノラルに統一する
-			// REASON: RMS 計算やゼロクロス判定を統一化するため
+			// NOTE: チャンネル数で平均化してモノラルに統一する
 			channelAverage /= static_cast<float>(channelCount_);
 
-			// PURPOSE: サンプルをバッファに追加する
-			// REASON: 分析用バッファにリアルタイムデータを蓄積
-			// NOTE: WASAPI が返すのは既に正規化された [-1.0, 1.0] 範囲の値
+			// NOTE: サンプルをバッファに追加する
 			sampleBuffer_.push_back(channelAverage);
 		}
 
-		// PURPOSE: サンプルバッファが肥大化しないようサイズを制限する
-		// REASON: メモリ使用量を抑えるため最大 10 秒分のサンプルのみ保持
+		// NOTE: サンプルバッファが肥大化しないようサイズを制限する
 		if (sampleBuffer_.size() > MAX_SAMPLE_BUFFER_SIZE) {
-			// PURPOSE: 古いサンプルを削除して新しいサンプルのみを保持
-			// REASON: メモリ使用量を制限するため
+			// NOTE: 古いサンプルを削除して新しいサンプルのみを保持
 			sampleBuffer_.erase(
 				sampleBuffer_.begin(),
 				sampleBuffer_.end() - MAX_SAMPLE_BUFFER_SIZE);
 		}
 	}
 
-	// PURPOSE: WASAPI バッファを解放する
-	// REASON: GetBuffer で確保したバッファを使用済みにマークするため
+	// NOTE: WASAPI バッファを解放する
 	captureClient_->ReleaseBuffer(packetLength);
 }
 
 float MagVoiceBridge::CalculateZeroCrossingRate() {
 	std::lock_guard<std::mutex> lock(sampleMutex_);
 
-	// PURPOSE: サンプルバッファが空の場合は 0 を返す
-	// REASON: 分析対象がない場合の適切なデフォルト値
+	// NOTE: サンプルバッファが空の場合は 0 を返す
 	if (sampleBuffer_.size() < 2) {
 		return 0.0f;
 	}
 
-	// PURPOSE: 最新の 2048 サンプルでゼロクロス率を計算する
-	// REASON: リアルタイム判定のため全サンプルではなく最新部分を使用
+	// NOTE: 最新の 2048 サンプルでゼロクロス率を計算する
 	const size_t ANALYSIS_WINDOW = 2048;
 	const size_t startIdx = sampleBuffer_.size() > ANALYSIS_WINDOW
 								? sampleBuffer_.size() - ANALYSIS_WINDOW
 								: 0;
 
-	// PURPOSE: ゼロクロッシング（符号変化）の回数を数える
-	// REASON: 周波数情報を得るため（高周波はゼロクロッシング多い、低周波は少ない）
+	// NOTE: ゼロクロッシング（符号変化）の回数を数える
 	int zeroCrossingCount = 0;
 	for (size_t i = startIdx + 1; i < sampleBuffer_.size(); ++i) {
-		// PURPOSE: 前後のサンプルで符号が変わっているかを確認
-		// REASON: ゼロクロッシングイベントを検出
+		// NOTE: 前後のサンプルで符号が変わっているかを確認
 		if ((sampleBuffer_[i - 1] < 0.0f && sampleBuffer_[i] >= 0.0f) ||
 			(sampleBuffer_[i - 1] >= 0.0f && sampleBuffer_[i] < 0.0f)) {
 			zeroCrossingCount++;
 		}
 	}
 
-	// PURPOSE: ゼロクロス率を計算する（0.0～1.0）
-	// REASON: 周波数特性を定量化するため
-	// NOTE: 計算式: ZCR = (ゼロクロッシング数) / (サンプル数 - 1)
+	// NOTE: ゼロクロス率を計算する（0.0～1.0、計算式: ZCR = ゼロクロッシング数 / (サンプル数 - 1)）
 	size_t sampleCount = sampleBuffer_.size() - startIdx;
 	float zeroCrossingRate = static_cast<float>(zeroCrossingCount) / static_cast<float>(sampleCount);
 
@@ -378,22 +330,18 @@ float MagVoiceBridge::CalculateZeroCrossingRate() {
 float MagVoiceBridge::CalculateRMSLevel() {
 	std::lock_guard<std::mutex> lock(sampleMutex_);
 
-	// PURPOSE: サンプルバッファが空の場合は 0 を返す
-	// REASON: 分析対象がない場合の適切なデフォルト値
+	// NOTE: サンプルバッファが空の場合は 0 を返す
 	if (sampleBuffer_.empty()) {
 		return 0.0f;
 	}
 
-	// PURPOSE: 最新の 2048 サンプルで RMS を計算する
-	// REASON: リアルタイム音量表示のため全サンプルではなく最新部分を使用
+	// NOTE: 最新の 2048 サンプルで RMS を計算する
 	const size_t ANALYSIS_WINDOW = 2048;
 	const size_t startIdx = sampleBuffer_.size() > ANALYSIS_WINDOW
 								? sampleBuffer_.size() - ANALYSIS_WINDOW
 								: 0;
 
-	// PURPOSE: RMS（二乗平均平方根）を計算する
-	// REASON: 音量を正確に計測するため
-	// NOTE: 計算式: RMS = sqrt( sum(sample^2) / N )
+	// NOTE: RMS（二乗平均平方根）を計算する（計算式: RMS = sqrt( sum(sample^2) / N )）
 	float sumOfSquares = 0.0f;
 	for (size_t i = startIdx; i < sampleBuffer_.size(); ++i) {
 		float sample = sampleBuffer_[i];
@@ -409,21 +357,18 @@ float MagVoiceBridge::CalculateRMSLevel() {
 float MagVoiceBridge::CalculatePeakLevel() {
 	std::lock_guard<std::mutex> lock(sampleMutex_);
 
-	// PURPOSE: サンプルバッファが空の場合は 0 を返す
-	// REASON: 分析対象がない場合の適切なデフォルト値
+	// NOTE: サンプルバッファが空の場合は 0 を返す
 	if (sampleBuffer_.empty()) {
 		return 0.0f;
 	}
 
-	// PURPOSE: 最新の 2048 サンプルで最大振幅を計算する
-	// REASON: リアルタイム表示のため全サンプルではなく最新部分を使用
+	// NOTE: 最新の 2048 サンプルで最大振幅を計算する
 	const size_t ANALYSIS_WINDOW = 2048;
 	const size_t startIdx = sampleBuffer_.size() > ANALYSIS_WINDOW
 								? sampleBuffer_.size() - ANALYSIS_WINDOW
 								: 0;
 
-	// PURPOSE: 最大振幅を見つける
-	// REASON: ピークメーター表示などに使用
+	// NOTE: 最大振幅を見つける
 	float maxAbsValue = 0.0f;
 	for (size_t i = startIdx; i < sampleBuffer_.size(); ++i) {
 		float absValue = std::abs(sampleBuffer_[i]);
@@ -440,67 +385,56 @@ float MagVoiceBridge::CalculatePeakLevel() {
 //========================================
 
 std::vector<float> MagVoiceBridge::GetSamples() {
-	// PURPOSE: 現在のサンプルバッファをコピーして返す
-	// REASON: 外部で波形表示など用途に音声データを使用する必要があるため
+	// NOTE: 現在のサンプルバッファをコピーして返す
 	std::lock_guard<std::mutex> lock(sampleMutex_);
 	return sampleBuffer_;
 }
 
 void MagVoiceBridge::ClearSamples() {
-	// PURPOSE: サンプルバッファをクリアする
-	// REASON: メモリ肥大化防止と新しい記録開始時のリセット用
+	// NOTE: サンプルバッファをクリアする
 	std::lock_guard<std::mutex> lock(sampleMutex_);
 	sampleBuffer_.clear();
 }
 
 float MagVoiceBridge::GetCurrentVolume() {
-	// PURPOSE: 現在の RMS 音量を 0.0～1.0 で返す
-	// REASON: UI 表示やゲーム処理で直感的に扱える正規化値が必要
+	// NOTE: 現在の RMS 音量を 0.0～1.0 で返す
 	return currentVolume_.load();
 }
 
 float MagVoiceBridge::GetCurrentVolumeDB() {
-	// PURPOSE: 現在の RMS 音量を dB 単位で返す
-	// REASON: デシベル単位での詳細な音量分析に必要
+	// NOTE: 現在の RMS 音量を dB 単位で返す
 	return currentVolumeDB_.load();
 }
 
 uint32_t MagVoiceBridge::GetSampleRate() const {
-	// PURPOSE: オーディオフォーマットのサンプリングレートを返す
-	// REASON: 周波数分析や時間計算に必須の情報
+	// NOTE: オーディオフォーマットのサンプリングレートを返す
 	// WARNING: Initialize() 前に呼び出すと 0 が返されます
 	return sampleRate_;
 }
 
 uint16_t MagVoiceBridge::GetChannelCount() const {
-	// PURPOSE: オーディオフォーマットのチャンネル数を返す
-	// REASON: マルチチャンネル対応の処理判定に必要
+	// NOTE: オーディオフォーマットのチャンネル数を返す
 	// WARNING: Initialize() 前に呼び出すと 0 が返されます
 	return channelCount_;
 }
 
 bool MagVoiceBridge::IsVoiceDetected() {
-	// PURPOSE: ゼロクロス率と音量から人の声かどうかを判定する
-	// REASON: ノイズと音声を区別するため、複数指標を組み合わせた判定が正確
+	// NOTE: ゼロクロス率と音量から人の声かどうかを判定する
 
-	// PURPOSE: ゼロクロス率を計算する
-	// REASON: 周波数情報を提供（低周波 = 人の声、高周波 = ノイズ）
+	// NOTE: ゼロクロス率を計算する
 	float zeroCrossingRate = CalculateZeroCrossingRate();
 
-	// PURPOSE: 音量（dB）を取得する
-	// REASON: 無音や小さすぎる音を除外するため
+	// NOTE: 音量（dB）を取得する
 	float volumeDB = GetCurrentVolumeDB();
 
-	// PURPOSE: ノイズフロアより大きいかを確認する
-	// REASON: 背景ノイズを除外するため
+	// NOTE: ノイズフロアより大きいかを確認する
 	if (volumeDB < noiseFloorDB_) {
 		return false;
 	}
 
-	// PURPOSE: 人の声判定
-	// REASON: 両方の条件を満たすときのみ音声と判定する必要がある
-	// 条件 1: ゼロクロス率が閾値未満（高周波成分が少ない）
-	// 条件 2: 音量が閾値以上（無音や小さすぎる音を除外）
+	// NOTE: 人の声判定 - 両方の条件を満たすときのみ音声と判定する
+	// NOTE: 条件 1: ゼロクロス率が閾値未満（高周波成分が少ない）
+	// NOTE: 条件 2: 音量が閾値以上（無音や小さすぎる音を除外）
 	bool isVoice = (zeroCrossingRate < zcRateThreshold_) &&
 				   (volumeDB > volumeThresholdDB_);
 
@@ -508,36 +442,30 @@ bool MagVoiceBridge::IsVoiceDetected() {
 }
 
 float MagVoiceBridge::GetPeakVolume() {
-	// PURPOSE: ピークレベルを 0.0～1.0 で返す
-	// REASON: ゲーム UI で音量のピークメーター表示に使用
+	// NOTE: ピークレベルを 0.0～1.0 で返す
 	return peakVolume_.load();
 }
 
 float MagVoiceBridge::GetPeakVolumeDB() {
-	// PURPOSE: ピークレベルを dB 単位で返す
-	// REASON: dB 単位での詳細な音量分析に必要
+	// NOTE: ピークレベルを dB 単位で返す
 	return peakVolumeDB_.load();
 }
 
 float MagVoiceBridge::GetSmoothedVolume() {
-	// PURPOSE: スムージング済み音量を 0.0～1.0 で返す
-	// REASON: UI のちらつき低減と視認性向上のため
+	// NOTE: スムージング済み音量を 0.0～1.0 で返す
 	return smoothedVolume_.load();
 }
 
 float MagVoiceBridge::GetSmoothedVolumeDB() {
-	// PURPOSE: スムージング済み音量を dB 単位で返す
-	// REASON: UI のちらつき低減と dB 単位での安定した表示に必要
+	// NOTE: スムージング済み音量を dB 単位で返す
 	return smoothedVolumeDB_.load();
 }
 
 float MagVoiceBridge::GetVolumePercentage() {
-	// PURPOSE: 現在の音量をパーセンテージ（0～100）で返す
-	// REASON: ゲーム UI でパーセンテージ表示する場合に直感的
+	// NOTE: 現在の音量をパーセンテージ（0～100）で返す
 	float volumeDB = currentVolumeDB_.load();
 
-	// PURPOSE: dB値を 0～100% の範囲に正規化する
-	// REASON: UI に合わせた直感的な表示にするため
+	// NOTE: dB値を 0～100% の範囲に正規化する
 	float normalized = (volumeDB - volumeMinDB_) / (volumeMaxDB_ - volumeMinDB_);
 	normalized = std::clamp(normalized, 0.0f, 1.0f);
 
@@ -545,21 +473,19 @@ float MagVoiceBridge::GetVolumePercentage() {
 }
 
 float MagVoiceBridge::GetVoiceCharacteristicScore() {
-	// PURPOSE: 音声特性スコアを返す（0.0～1.0）
-	// REASON: 1.0に近いほど人の声、0.0に近いほどノイズ。判定根拠の可視化に使用
+	// NOTE: 音声特性スコアを返す（0.0～1.0）
+	// NOTE: 1.0に近いほど人の声、0.0に近いほどノイズ
 	return voiceCharacteristicScore_.load();
 }
 
 void MagVoiceBridge::SetSmoothingFactor(float factor) {
-	// PURPOSE: スムージング係数を設定する（0.0～1.0）
-	// REASON: リアルタイム性と安定性のバランスを調整するため
+	// NOTE: スムージング係数を設定する（0.0～1.0）
 	// NOTE: デフォルト: 0.4。0.1=より反応的、0.9=より安定
 	smoothingFactor_ = std::clamp(factor, 0.0f, 1.0f);
 }
 
 void MagVoiceBridge::SetVolumeRange(float minDb, float maxDb) {
-	// PURPOSE: 音量の正規化範囲を設定する
-	// REASON: マイク感度に応じた動的調整が必要
+	// NOTE: 音量の正規化範囲を設定する
 	// NOTE: GetVolumePercentage() の計算に使用されます
 	if (minDb < maxDb) {
 		volumeMinDB_ = minDb;
@@ -568,23 +494,21 @@ void MagVoiceBridge::SetVolumeRange(float minDb, float maxDb) {
 }
 
 void MagVoiceBridge::SetNoiseFloor(float noiseFloorDB) {
-	// PURPOSE: ノイズフロアを設定する
-	// REASON: 背景ノイズを除外するため、IsVoiceDetected() で使用
+	// NOTE: ノイズフロアを設定する
 	// NOTE: この値より小さい音量は音声判定から除外されます
 	noiseFloorDB_ = noiseFloorDB;
 }
 
 void MagVoiceBridge::SetVoiceDetectionThresholds(float zcRateThreshold, float volumeThresholdDB) {
-	// PURPOSE: 音声検出の閾値パラメータを設定する
-	// REASON: IsVoiceDetected() の判定精度を環境に応じて調整するため
+	// NOTE: 音声検出の閾値パラメータを設定する
 	// NOTE: デフォルト: zcRate=0.25, volume=-40dB
 	zcRateThreshold_ = std::clamp(zcRateThreshold, 0.0f, 1.0f);
 	volumeThresholdDB_ = volumeThresholdDB;
 }
 
 MagVoiceBridge::VolumeStats MagVoiceBridge::GetVolumeStats() {
-	// PURPOSE: 全ての音量統計情報を一括取得する
-	// REASON: ImGui など UI 表示で複数の値を効率的に取得できる（atomic読み込みコスト削減）
+	// NOTE: 全ての音量統計情報を一括取得する
+	// NOTE: ImGui など UI 表示で複数の値を効率的に取得できます
 	VolumeStats stats{};
 	stats.currentRMS = currentVolume_.load();
 	stats.currentRMSDB = currentVolumeDB_.load();
@@ -595,8 +519,7 @@ MagVoiceBridge::VolumeStats MagVoiceBridge::GetVolumeStats() {
 	stats.voiceScore = voiceCharacteristicScore_.load();
 	stats.isVoiceDetected = isVoiceDetected_.load();
 
-	// PURPOSE: パーセンテージを計算して追加する
-	// REASON: 統計情報に含める必要があるため
+	// NOTE: パーセンテージを計算して追加する
 	stats.percentage = GetVolumePercentage();
 
 	return stats;
