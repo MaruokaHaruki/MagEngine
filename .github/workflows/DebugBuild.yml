@@ -11,45 +11,49 @@ env:
   SOLUTION_FILE_PATH: MagEngine.sln
   CONFIGURATION: Debug
   PLATFORM: x64
+  TOOLSET: v145
+  WINDOWS_SDK_VERSION: 10.0.26100.0
 
 jobs:
 
   build:
 
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
 
     steps:
 
+      # ソース取得
       - name: Checkout
         uses: actions/checkout@v4
 
-
+      # NuGetキャッシュ
       - name: Cache NuGet
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.config') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-
+      # MSBuildセットアップ
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-
+      # NuGet復元
       - name: Restore
         run: nuget restore ${{ env.SOLUTION_FILE_PATH }}
 
-
+      # Debugビルド
       - name: Build Debug
         run: |
           msbuild $env:SOLUTION_FILE_PATH `
             /m `
             /p:Configuration=$env:CONFIGURATION `
             /p:Platform=$env:PLATFORM `
-            /p:WindowsTargetPlatformVersion=10.0
+            /p:PlatformToolset=$env:TOOLSET `
+            /p:WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION
 
-
+      # Artifactアップロード
       - name: Upload Debug Artifacts
         uses: actions/upload-artifact@v4
         with:
