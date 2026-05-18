@@ -1,10 +1,10 @@
 /*********************************************************************
- * \file   MagFramework .cpp
- * \brief
+ * \file   MagFramework.cpp
+ * \brief  エンジンフレームワークの基本クラスの実装
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note
+ * \note   ゲームループと初期化・終了処理の実装
  *********************************************************************/
 #include "MagFramework.h"
 #include "WinApp.h"

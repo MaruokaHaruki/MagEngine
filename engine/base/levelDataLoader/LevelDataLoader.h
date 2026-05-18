@@ -1,5 +1,6 @@
 /*********************************************************************
  * \file   LevelDataLoader.h
+ * \brief  レベルデータローダークラス
  *
  * \author Harukichimaru
  * \date   May 2025

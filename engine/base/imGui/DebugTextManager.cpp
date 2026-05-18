@@ -1,3 +1,11 @@
+/*********************************************************************
+ * \file   DebugTextManager.cpp
+ * \brief  デバッグテキスト表示管理クラスの実装
+ *
+ * \author Harukichimaru
+ * \date   February 2025
+ * \note   3D空間とスクリーン空間のテキスト表示を実装
+ *********************************************************************/
 #include "DebugTextManager.h"
 #include "WinApp.h"
 #include "imgui.h"

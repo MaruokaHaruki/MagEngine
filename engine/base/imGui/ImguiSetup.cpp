@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   ImguiSetup.cpp
- * \brief
+ * \brief  ImGui セットアップと管理クラスの実装
  *
  * \author Harukichimaru
  * \date   December 2024
- * \note
+ * \note   ImGui初期化、スタイル設定、イベント処理の実装
  *********************************************************************/
 #include "ImguiSetup.h"
 #include <psapi.h>

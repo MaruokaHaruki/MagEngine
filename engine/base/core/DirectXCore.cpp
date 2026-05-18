@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   DirectXCore.cpp
- * \brief
+ * \brief  DirectX 12のコア機能を管理するクラスの実装
  *
  * \author Harukichimaru
  * \date   November 2024
- * \note
+ * \note   デバイス、コマンドキューなどの初期化・管理処理を実装
  *********************************************************************/
 #include "DirectXCore.h"
 #include "PostEffectManager.h"

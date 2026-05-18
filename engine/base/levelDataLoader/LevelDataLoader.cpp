@@ -1,3 +1,11 @@
+/*********************************************************************
+ * \file   LevelDataLoader.cpp
+ * \brief  レベルデータローダーの実装
+ *
+ * \author Harukichimaru
+ * \date   May 2025
+ * \note   JSONファイルからレベルデータを読み込み、座標変換を実施
+ *********************************************************************/
 #include "LevelDataLoader.h"
 #include <fstream>
 

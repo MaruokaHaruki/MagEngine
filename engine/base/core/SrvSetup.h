@@ -1,10 +1,10 @@
 /*********************************************************************
  * \file   SrvSetup.h
- * \brief
+ * \brief  サーバリソースビューセットアップクラス
  *
  * \author Harukichimaru
  * \date   December 2024
- * \note
+ * \note   DirectX 12のSRVディスクリプタテーブルを管理
  *********************************************************************/
 #pragma once
 #include "DirectXCore.h"

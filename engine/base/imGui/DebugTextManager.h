@@ -1,3 +1,11 @@
+/*********************************************************************
+ * \file   DebugTextManager.h
+ * \brief  デバッグテキスト表示管理クラス
+ *
+ * \author Harukichimaru
+ * \date   February 2025
+ * \note   3D空間とスクリーン空間のテキスト表示を管理
+ *********************************************************************/
 #pragma once
 #include "Camera.h"
 #include "Object3d.h"
@@ -10,7 +18,7 @@
 // Forward declaration for ImFont
 struct ImFont;
 
-// デバッグテキストの情報
+/// @brief デバッグテキストの情報構造体
 struct DebugText {
 	std::string text;		// 表示テキスト
 	MagMath::Vector3 worldPosition;	// 3D空間上の位置
