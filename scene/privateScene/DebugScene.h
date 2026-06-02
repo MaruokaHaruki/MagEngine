@@ -54,6 +54,15 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
+	void AddCloudHoleFromDebugCamera();
+	void AddRandomCloudHole();
+	void AddManualCloudHole();
+	void DrawOverviewImGui();
+	void DrawCloudTestImGui();
+	void DrawTrailTestImGui();
+	void DrawObjectTestImGui();
+	void DrawVoiceTestImGui();
+
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
@@ -98,14 +107,21 @@ private:
 
 	//========================================
 	// ボールテスト
+	bool drawTestObjects_ = true;
+	bool drawLevelObjects_ = true;
 
 	//========================================
 	// Cloud
 	std::unique_ptr<MagEngine::Cloud> cloud_;
+	bool enableCloudTest_ = true;
+	bool autoCloudHole_ = false;
+	float autoCloudHoleInterval_ = 0.25f;
+	float autoCloudHoleTimer_ = 0.0f;
 
 	//========================================
 	// TrailEffect
 	MagEngine::TrailEffectManager *trailEffectManager_ = nullptr;
+	bool enableTrailLoop_ = true;
 
 	//========================================
 	// TrailEffect テスト用パラメータ
@@ -117,12 +133,14 @@ private:
 
 	//========================================
 	// 雲の穴開けテスト用パラメータ（円錐形状）
-	float bulletHoleStartRadius_ = 4.0f;			   // 弾痕の開始半径（入口）
-	float bulletHoleEndRadius_ = 0.2f;				   // 弾痕の終了半径（出口）
-	float bulletHoleConeLength_ = 1000.0f;			   // 円錐の長さ
-	float bulletHoleLifeTime_ = 15.0f;				   // 弾痕の持続時間
+	float bulletHoleStartRadius_ = 16.0f;			   // 弾痕の開始半径（入口）
+	float bulletHoleEndRadius_ = 8.0f;				   // 弾痕の終了半径（出口）
+	float bulletHoleConeLength_ = 700.0f;			   // 円錐の長さ
+	float bulletHoleLifeTime_ = 10.0f;				   // 弾痕の持続時間
 	Vector3 manualBulletOrigin_{0.0f, 180.0f, 300.0f}; // マニュアル追加用の原点
 	Vector3 manualBulletDirection_{0.0f, 0.0f, 1.0f};  // マニュアル追加用の方向
+	int cloudHoleBurstCount_ = 4;
+	float cloudHoleRandomSpread_ = 0.8f;
 
 	//========================================
 	// マイク入力テスト用

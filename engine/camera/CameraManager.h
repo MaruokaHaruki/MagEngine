@@ -74,6 +74,9 @@ namespace MagEngine {
 		/// @brief デバッグカメラのターゲット追従モードを切り替え
 		void ToggleDebugCameraTargetLock();
 
+		/// @brief デバッグカメラが見ている方向を取得
+		MagMath::Vector3 GetDebugCameraForward() const;
+
 		/// @brief デバッグ用の視覚情報を描画 (ラインなど)
 		void DrawDebugVisualizations();
 

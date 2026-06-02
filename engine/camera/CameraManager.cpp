@@ -418,6 +418,29 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
+	///                     デバッグカメラが見ている方向を取得
+	MagMath::Vector3 CameraManager::GetDebugCameraForward() const {
+		Camera *debugCamera = GetCamera("DebugCamera");
+		if(!debugCamera) {
+			return { 0.0f, 0.0f, 1.0f };
+		}
+
+		MagMath::Transform cameraTransform = debugCamera->GetTransform();
+		if(isDebugCameraTargetLocked_) {
+			MagMath::Vector3 targetDirection = debugCameraTarget_ - cameraTransform.translate;
+			if(Length(targetDirection) > 0.001f) {
+				return Normalize(targetDirection);
+			}
+		}
+
+		// ターゲットロック解除時は、移動処理と同じローカルZ+を正面として扱う。
+		MagMath::Matrix4x4 rotationMatrix = MakeRotateMatrix(cameraTransform.rotate);
+		MagMath::Vector3 forward = { 0.0f, 0.0f, 1.0f };
+		forward = Conversion(forward, rotationMatrix);
+		return Normalize(forward);
+	}
+
+	///=============================================================================
 	///						デバッグ用の視覚情報を描画
 	void CameraManager::DrawDebugVisualizations() {
 		LineManager *lineManager = LineManager::GetInstance();
