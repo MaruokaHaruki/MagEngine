@@ -10,6 +10,8 @@
 #include "ImguiSetup.h"
 #include "Input.h"
 #include "LineManager.h" // LineManager をインクルード
+#include <algorithm>
+#include <cmath>
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
@@ -47,8 +49,14 @@ namespace MagEngine {
 		debugCameraTarget_ = { 0.0f, 0.0f, 0.0f };
 		debugCameraDistanceToTarget_ = 20.0f; // 初期距離を調整
 		isDebugCameraTargetLocked_ = true;	  // 最初はターゲット追従モード
-		debugCameraMoveSpeed_ = 0.2f;		  // フリーカメラ時の移動速度
+		debugCameraMoveSpeed_ = 0.6f;		  // フリーカメラ時の移動速度
 		debugCameraRotateSpeed_ = 0.005f;	  // フリーカメラ時の回転速度
+		debugCameraTargetMoveSpeed_ = 0.35f;
+		debugCameraPanSpeed_ = 0.02f;
+		debugCameraWheelZoomRate_ = 0.82f;
+		debugCameraWheelMoveSpeed_ = 6.0f;
+		debugCameraFastMultiplier_ = 4.0f;
+		debugCameraSlowMultiplier_ = 0.25f;
 
 		// 初期デバッグカメラのトランスフォーム設定
 		ResetDebugCameraTransform();
@@ -140,11 +148,17 @@ namespace MagEngine {
 
 		// マウスのホイール量を取得（ズームに使用）
 		float mouseWheel = input->GetMouseWheel();
+		float wheelNotches = mouseWheel / 16.0f;
 
 		// マウスのボタン状態を取得
-		bool isMiddleButtonPressed = input->PushMouseButton(1);
+		bool isRightButtonPressed = input->PushMouseButton(1);
 		// Shiftキーの状態を取得
 		bool isShiftPressed = input->PushKey(DIK_LSHIFT) || input->PushKey(DIK_RSHIFT);
+		bool isCtrlPressed = input->PushKey(DIK_LCONTROL) || input->PushKey(DIK_RCONTROL);
+		float speedMultiplier = isShiftPressed ? debugCameraFastMultiplier_ : 1.0f;
+		if(isCtrlPressed) {
+			speedMultiplier *= debugCameraSlowMultiplier_;
+		}
 
 		// カメラのトランスフォームを取得
 		MagMath::Transform cameraTransform = debugCamera->GetTransform();
@@ -153,20 +167,19 @@ namespace MagEngine {
 			// ターゲット追従モード
 			MagMath::Matrix4x4 rotationMatrix = MagMath::MakeRotateMatrix(cameraTransform.rotate);
 
-			// パン（Shift + 中マウスボタンドラッグ）
-			if(isMiddleButtonPressed && isShiftPressed) {
-				const float panSpeed = 0.01f;
+			// パン（Shift + 右マウスボタンドラッグ）
+			if(isRightButtonPressed && isShiftPressed) {
+				const float panSpeed = debugCameraPanSpeed_ * (std::max)(debugCameraDistanceToTarget_, 1.0f) * 0.05f;
 				MagMath::Vector3 right = { rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0] };
 				MagMath::Vector3 up = { rotationMatrix.m[0][1], rotationMatrix.m[1][1], rotationMatrix.m[2][1] };
 				MagMath::Vector3 moveAmount = ( right * ( -mouseDx * panSpeed ) ) + ( up * ( mouseDy * panSpeed ) );
 				cameraTransform.translate = cameraTransform.translate + moveAmount;
 				debugCameraTarget_ = debugCameraTarget_ + moveAmount;
 			}
-			// 回転 (中マウスボタンドラッグ)
-			else if(isMiddleButtonPressed) {
-				const float rotateSpeed = 0.005f;
-				cameraTransform.rotate.y += mouseDx * rotateSpeed;
-				cameraTransform.rotate.x += mouseDy * rotateSpeed;
+			// 回転 (右マウスボタンドラッグ)
+			else if(isRightButtonPressed) {
+				cameraTransform.rotate.y += mouseDx * debugCameraRotateSpeed_;
+				cameraTransform.rotate.x += mouseDy * debugCameraRotateSpeed_;
 
 				const float maxPitch = 1.55f;
 				if(cameraTransform.rotate.x > maxPitch)
@@ -181,39 +194,45 @@ namespace MagEngine {
 			}
 
 			// WASDまたは矢印キー（中心点の平行移動）
-			const float targetMoveSpeed = 0.1f;
 			rotationMatrix = MakeRotateMatrix(cameraTransform.rotate); // パンや回転で更新されている可能性があるので再取得
 			MagMath::Vector3 forward = { rotationMatrix.m[0][2], rotationMatrix.m[1][2], rotationMatrix.m[2][2] };
 			MagMath::Vector3 right = { rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0] };
+			MagMath::Vector3 worldUp = { 0.0f, 1.0f, 0.0f };
 			MagMath::Vector3 moveDirection = { 0.0f, 0.0f, 0.0f };
 
-			if(input->PushKey(DIK_UPARROW)) {
-				moveDirection = moveDirection + forward * targetMoveSpeed;
+			if(input->PushKey(DIK_W) || input->PushKey(DIK_UPARROW)) {
+				moveDirection = moveDirection + forward;
 			}
-			if(input->PushKey(DIK_DOWNARROW)) {
-				moveDirection = moveDirection - forward * targetMoveSpeed;
+			if(input->PushKey(DIK_S) || input->PushKey(DIK_DOWNARROW)) {
+				moveDirection = moveDirection - forward;
 			}
-			if(input->PushKey(DIK_LEFTARROW)) {
-				moveDirection = moveDirection - right * targetMoveSpeed;
+			if(input->PushKey(DIK_A) || input->PushKey(DIK_LEFTARROW)) {
+				moveDirection = moveDirection - right;
 			}
-			if(input->PushKey(DIK_RIGHTARROW)) {
-				moveDirection = moveDirection + right * targetMoveSpeed;
+			if(input->PushKey(DIK_D) || input->PushKey(DIK_RIGHTARROW)) {
+				moveDirection = moveDirection + right;
+			}
+			if(input->PushKey(DIK_E)) {
+				moveDirection = moveDirection + worldUp;
+			}
+			if(input->PushKey(DIK_Q)) {
+				moveDirection = moveDirection - worldUp;
 			}
 
 			if(Length(moveDirection) > 0.001f) {
-				debugCameraTarget_ = debugCameraTarget_ + moveDirection;
+				moveDirection = Normalize(moveDirection);
+				float targetMoveStep = debugCameraTargetMoveSpeed_ * speedMultiplier * (std::max)(debugCameraDistanceToTarget_, 1.0f) * 0.05f;
+				debugCameraTarget_ = debugCameraTarget_ + moveDirection * targetMoveStep;
 				MagMath::Vector3 directionToCamera = { 0.0f, 0.0f, -1.0f };
 				directionToCamera = Conversion(directionToCamera, MakeRotateMatrix(cameraTransform.rotate));
 				cameraTransform.translate = debugCameraTarget_ + directionToCamera * debugCameraDistanceToTarget_;
 			}
 
 			// ズーム（中心点とカメラの距離の変更）
-			if(mouseWheel != 0.0f) {
-				const float zoomSpeed = 0.5f;
-				debugCameraDistanceToTarget_ -= mouseWheel * zoomSpeed * 0.1f;
-				if(debugCameraDistanceToTarget_ < 0.1f) {
-					debugCameraDistanceToTarget_ = 0.1f;
-				}
+			if(wheelNotches != 0.0f) {
+				// 距離倍率でズームし、遠距離では大きく近距離では細かく動かす。
+				debugCameraDistanceToTarget_ *= std::pow(debugCameraWheelZoomRate_, wheelNotches * speedMultiplier);
+				debugCameraDistanceToTarget_ = std::clamp(debugCameraDistanceToTarget_, 0.1f, 5000.0f);
 				MagMath::Vector3 directionToCamera = { 0.0f, 0.0f, -1.0f };
 				directionToCamera = Conversion(directionToCamera, MakeRotateMatrix(cameraTransform.rotate));
 				cameraTransform.translate = debugCameraTarget_ + directionToCamera * debugCameraDistanceToTarget_;
@@ -222,15 +241,15 @@ namespace MagEngine {
 			// フリーカメラモード
 			MagMath::Matrix4x4 rotationMatrix = MakeRotateMatrix(cameraTransform.rotate);
 
-			// パン（Shift + 中マウスボタンドラッグ）
-			if(isMiddleButtonPressed && isShiftPressed) {
-				const float panSpeed = 0.02f; // フリーカメラ用のパン速度
+			// パン（Shift + 右マウスボタンドラッグ）
+			if(isRightButtonPressed && isShiftPressed) {
+				const float panSpeed = debugCameraPanSpeed_ * speedMultiplier;
 				MagMath::Vector3 camRight = { rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0] };
 				MagMath::Vector3 camUp = { rotationMatrix.m[0][1], rotationMatrix.m[1][1], rotationMatrix.m[2][1] };
 				cameraTransform.translate = cameraTransform.translate + ( camRight * ( -mouseDx * panSpeed ) ) + ( camUp * ( mouseDy * panSpeed ) );
 			}
-			// 回転 (中マウスボタンドラッグ)
-			else if(isMiddleButtonPressed) {
+			// 回転 (右マウスボタンドラッグ)
+			else if(isRightButtonPressed) {
 				cameraTransform.rotate.y += mouseDx * debugCameraRotateSpeed_;
 				cameraTransform.rotate.x += mouseDy * debugCameraRotateSpeed_;
 
@@ -249,16 +268,16 @@ namespace MagEngine {
 			MagMath::Vector3 camRight = { rotationMatrix.m[0][0], rotationMatrix.m[1][0], rotationMatrix.m[2][0] };
 			MagMath::Vector3 worldUp = { 0.0f, 1.0f, 0.0f }; // ワールドY軸で上下移動
 
-			if(input->PushKey(DIK_UPARROW)) {
+			if(input->PushKey(DIK_W) || input->PushKey(DIK_UPARROW)) {
 				moveDirection = moveDirection + camForward;
 			}
-			if(input->PushKey(DIK_DOWNARROW)) {
+			if(input->PushKey(DIK_S) || input->PushKey(DIK_DOWNARROW)) {
 				moveDirection = moveDirection - camForward;
 			}
-			if(input->PushKey(DIK_LEFTARROW)) {
+			if(input->PushKey(DIK_A) || input->PushKey(DIK_LEFTARROW)) {
 				moveDirection = moveDirection - camRight;
 			}
-			if(input->PushKey(DIK_RIGHTARROW)) {
+			if(input->PushKey(DIK_D) || input->PushKey(DIK_RIGHTARROW)) {
 				moveDirection = moveDirection + camRight;
 			}
 			if(input->PushKey(DIK_E)) { // 上昇
@@ -270,13 +289,12 @@ namespace MagEngine {
 
 			if(Length(moveDirection) > 0.001f) {
 				moveDirection = Normalize(moveDirection);
-				cameraTransform.translate = cameraTransform.translate + moveDirection * debugCameraMoveSpeed_;
+				cameraTransform.translate = cameraTransform.translate + moveDirection * debugCameraMoveSpeed_ * speedMultiplier;
 			}
 
 			// マウスホイールで前後移動 (カメラの向きに沿って)
-			if(mouseWheel != 0.0f) {
-				const float wheelMoveFactor = 5.0f; // ホイール感度調整用
-				cameraTransform.translate = cameraTransform.translate + camForward * ( mouseWheel * debugCameraMoveSpeed_ * wheelMoveFactor * 0.1f );
+			if(wheelNotches != 0.0f) {
+				cameraTransform.translate = cameraTransform.translate + camForward * ( wheelNotches * debugCameraWheelMoveSpeed_ * speedMultiplier );
 			}
 		}
 
@@ -307,6 +325,8 @@ namespace MagEngine {
 		ImGui::Separator();
 
 		ImGui::Text("Debug Camera Controls (for 'DebugCamera'):");
+		ImGui::Text("RMB: Rotate / Shift+RMB: Pan / Wheel: Zoom or Move");
+		ImGui::Text("WASD or Arrows: Move / Q,E: Down,Up / Shift: Fast / Ctrl: Slow");
 		if(ImGui::Checkbox("Lock Target", &isDebugCameraTargetLocked_)) {
 			// モード切替時にカメラのトランスフォームを調整することも可能
 			// 例えば、フリーからロックに切り替えた際、現在のカメラ位置と向きからターゲットを再計算するなど
@@ -329,10 +349,16 @@ namespace MagEngine {
 		if(isDebugCameraTargetLocked_) {
 			ImGui::DragFloat3("Target Position", &debugCameraTarget_.x, 0.1f);
 			ImGui::DragFloat("Distance to Target", &debugCameraDistanceToTarget_, 0.1f, 0.1f, 1000.0f);
+			ImGui::DragFloat("Target Move Speed", &debugCameraTargetMoveSpeed_, 0.01f, 0.01f, 10.0f);
 		} else {
 			ImGui::DragFloat("Move Speed (Free)", &debugCameraMoveSpeed_, 0.01f, 0.01f, 10.0f);
-			ImGui::DragFloat("Rotate Speed (Free)", &debugCameraRotateSpeed_, 0.001f, 0.001f, 0.1f);
 		}
+		ImGui::DragFloat("Rotate Speed", &debugCameraRotateSpeed_, 0.001f, 0.001f, 0.1f);
+		ImGui::DragFloat("Pan Speed", &debugCameraPanSpeed_, 0.001f, 0.001f, 1.0f);
+		ImGui::DragFloat("Wheel Zoom Rate", &debugCameraWheelZoomRate_, 0.001f, 0.5f, 0.98f);
+		ImGui::DragFloat("Wheel Move Speed", &debugCameraWheelMoveSpeed_, 0.1f, 0.1f, 100.0f);
+		ImGui::DragFloat("Fast Multiplier", &debugCameraFastMultiplier_, 0.1f, 1.0f, 20.0f);
+		ImGui::DragFloat("Slow Multiplier", &debugCameraSlowMultiplier_, 0.01f, 0.01f, 1.0f);
 
 		ImGui::Separator();
 		ImGui::Text("All Cameras Info & Debug View:");

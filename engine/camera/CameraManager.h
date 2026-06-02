@@ -102,6 +102,12 @@ namespace MagEngine {
 		bool isDebugCameraTargetLocked_;
 		float debugCameraMoveSpeed_;
 		float debugCameraRotateSpeed_;
+		float debugCameraTargetMoveSpeed_;
+		float debugCameraPanSpeed_;
+		float debugCameraWheelZoomRate_;
+		float debugCameraWheelMoveSpeed_;
+		float debugCameraFastMultiplier_;
+		float debugCameraSlowMultiplier_;
 
 		// 各カメラのデバッグ表示フラグ
 		std::map<std::string, bool> cameraDebugViewFlags_;
