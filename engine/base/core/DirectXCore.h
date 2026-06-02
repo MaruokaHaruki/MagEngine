@@ -77,6 +77,10 @@ namespace MagEngine {
 		/// @brief ReleaseDirectX ダイレクトXの開放
 		void ReleaseDirectX();
 
+		//========================================
+		/// @brief WaitForGpu GPUに積まれた処理の完了を待つ
+		void WaitForGpu();
+
 		///--------------------------------------------------------------
 		///						 ダイレクトXの初期化系
 		//========================================
@@ -134,10 +138,6 @@ namespace MagEngine {
 		//========================================
 		/// @brief CreateRenderTargetViews RTVの作成
 		void CreateRenderTargetViews();
-
-		//========================================
-		/// @brief FenceGeneration フェンスの生成
-		void FenceGeneration();
 
 		//========================================
 		/// @brief SettleCommandList コマンドリストの決定
@@ -435,8 +435,12 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue_;
 
 		//========================================
+		// フレームバッファリング（3フレーム先読み）
+		static constexpr uint32_t FRAME_BUFFER_COUNT = 3;
+
+		//========================================
 		// コマンドアロケータを生成する
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator_;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocators_[FRAME_BUFFER_COUNT];
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
 
 		//========================================
@@ -450,9 +454,6 @@ namespace MagEngine {
 		uint64_t fenceValue_ = 0;
 		HANDLE fenceEvent_ = nullptr; // Initialize to nullptr
 
-		//========================================
-		// フレームバッファリング（3フレーム先読み）
-		static constexpr uint32_t FRAME_BUFFER_COUNT = 3;
 		uint64_t frameFenceValues_[FRAME_BUFFER_COUNT] = {};
 		uint32_t currentFrameIndex_ = 0;
 

@@ -151,12 +151,12 @@ namespace MagEngine {
 	uint32_t TextureManager::GetTextureIndex(const std::string &filePath) {
 		// ディレクトリパスを追加
 		std::string fullPath = kTextureDirectoryPath + filePath;
+		if (filePath == "RenderTexture0" || filePath == "RenderTexture1") {
+			fullPath = filePath;
+		}
 
 		if (textureDatas_.contains(fullPath)) {
-			// 読み込み済みなら要素番号を返す
-			auto it = textureDatas_.find(fullPath);
-			uint32_t textureIndex = static_cast<uint32_t>(std::distance(textureDatas_.begin(), it));
-			return textureIndex;
+			return textureDatas_.at(fullPath).srvIndex;
 		}
 		//---------------------------------------
 		// 検索化ヒットしない場合は停止

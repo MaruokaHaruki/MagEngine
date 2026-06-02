@@ -27,6 +27,7 @@ namespace MagEngine {
 		DARK,
 		LIGHT,
 		CLASSIC,
+		EDITOR,
 		CYBER,
 		GREEN,
 	};
@@ -72,6 +73,12 @@ namespace MagEngine {
 		 * \param  style
 		 */
 		void StyleColorsDarkGreen(ImGuiStyle &style);
+
+		/**----------------------------------------------------------------------------
+		 * \brief  StyleColorsEditorDark エディター向けの視認性重視スタイル
+		 * \param  style スタイル
+		 */
+		void StyleColorsEditorDark(ImGuiStyle &style);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  ShowPerformanceMonitor

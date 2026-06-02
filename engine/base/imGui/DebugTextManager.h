@@ -47,6 +47,9 @@ namespace MagEngine {
 		// 初期化
 		void Initialize(WinApp *winApp);
 
+		// 終了処理
+		void Finalize();
+
 		// 更新処理
 		void Update();
 

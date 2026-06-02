@@ -16,18 +16,10 @@
 ///                        namespace MagEngine
 namespace MagEngine {
 	///=============================================================================
-	///						インスタンス
-	LineManager *LineManager::instance_ = nullptr;
-
-	///=============================================================================
 	///						インスタンス設定
-	// TODO: Singletonパターンをstd::unique_ptrに移行すべき
-	// 現在は生ポインタで管理されており、メモリリークのリスクがある
 	LineManager *LineManager::GetInstance() {
-		if (instance_ == nullptr) {
-			instance_ = new LineManager();
-		}
-		return instance_;
+		static LineManager instance;
+		return &instance;
 	}
 
 	///=============================================================================
@@ -53,14 +45,18 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void LineManager::Finalize() {
-		// インスタンスの削除
-		delete instance_;
-		instance_ = nullptr;
+		line_.reset();
+		lineSetup_.reset();
+		dxCore_ = nullptr;
+		srvSetup_ = nullptr;
 	}
 
 	///=============================================================================
 	///						更新処理
 	void LineManager::Update() {
+		if (!line_) {
+			return;
+		}
 		// グリッドアニメーション
 		if (isGridAnimationEnabled_) {
 			// アニメーション時間を更新
@@ -91,6 +87,9 @@ namespace MagEngine {
 	///=============================================================================
 	///						ラインの描画
 	void LineManager::Draw() {
+		if (!line_ || !lineSetup_) {
+			return;
+		}
 		//========================================
 		// 共通描画設定
 		lineSetup_->CommonDrawSetup();
@@ -134,6 +133,9 @@ namespace MagEngine {
 	///=============================================================================
 	///						ラインのクリア
 	void LineManager::ClearLines() {
+		if (!line_) {
+			return;
+		}
 		// ラインのクリア
 		line_->ClearLines();
 	}
@@ -141,7 +143,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						ラインの追加
 	void LineManager::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness) {
-		if (!isDrawLine_) {
+		if (!isDrawLine_ || !line_) {
 			return;
 		}
 		// ラインの追加（太さを指定）

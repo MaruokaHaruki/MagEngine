@@ -62,7 +62,6 @@ namespace MagEngine {
 		dxCore_ = std::make_unique<DirectXCore>();
 		// ダイレクトXの初期化
 		dxCore_->InitializeDirectX(win_.get());
-		dxCore_->CreateRenderTextureRTV();
 
 		///--------------------------------------------------------------
 		///						 ポストエフェクトマネージャ
@@ -75,7 +74,7 @@ namespace MagEngine {
 #if ENABLE_IMGUI
 		imguiSetup_ = std::make_unique<ImguiSetup>();
 		// ImGuiの初期化
-		imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::CLASSIC);
+		imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::EDITOR);
 #endif
 
 		///--------------------------------------------------------------
@@ -113,11 +112,6 @@ namespace MagEngine {
 		lightManager_ = std::make_unique<LightManager>();
 		// ライトマネージャの初期化
 		lightManager_->Initialize();
-
-		///--------------------------------------------------------------
-		/// 					 カメラの初期化
-		CameraManager::GetInstance()->Initialize();
-		// TODO: カメラの改善 現在、カメラの設定はここで行っているが、自由に変更がしにくいという問題が発生している。
 
 		///--------------------------------------------------------------
 		///						 スプライトクラス
@@ -291,17 +285,45 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void MagFramework::Finalize() {
+		// GPUが参照中のリソースを各マネージャが解放しないよう、破棄前に同期する
+		if (dxCore_) {
+			dxCore_->WaitForGpu();
+		}
+		//========================================
+		// シーンの終了処理
+		if (sceneManager_) {
+			sceneManager_->Finalize();
+			sceneManager_.reset();
+		}
+		sceneFactory_.reset();
 		//========================================
 		// エディターレイアウトの終了処理
 		if (editorLayout_) {
 			editorLayout_->Finalize();
+			editorLayout_.reset();
 		}
 		//========================================
 		// COMMENT: ImGui 条件付き終了処理
 #if ENABLE_IMGUI
 		// ImGuiの終了処理
-		imguiSetup_->Finalize();
+		if (imguiSetup_) {
+			imguiSetup_->Finalize();
+			imguiSetup_.reset();
+		}
 #endif // ENABLE_IMGUI
+		//========================================
+		// トレイルエフェクトの終了処理
+		trailEffectManager_.reset();
+		trailEffectSetup_.reset();
+		//========================================
+		// ライトマネージャの終了処理
+		if (lightManager_) {
+			lightManager_->Finalize();
+			lightManager_.reset();
+		}
+		//========================================
+		// デバッグテキストの終了処理
+		DebugTextManager::GetInstance()->Finalize();
 		//========================================
 		// audioの終了処理
 		MAudioG::GetInstance()->Finalize();
@@ -315,11 +337,29 @@ namespace MagEngine {
 		// ラインマネージャの終了処理
 		LineManager::GetInstance()->Finalize();
 		//========================================
+		// 共通描画セットアップの終了処理
+		cloudSetup_.reset();
+		skyboxSetup_.reset();
+		object3dSetup_.reset();
+		particleSetup_.reset();
+		spriteSetup_.reset();
+		postEffectManager_.reset();
+		srvSetup_.reset();
+		//========================================
+		// カメラマネージャの終了処理
+		CameraManager::GetInstance()->Finalize();
+		//========================================
 		// ダイレクトX
-		dxCore_->ReleaseDirectX();
+		if (dxCore_) {
+			dxCore_->ReleaseDirectX();
+			dxCore_.reset();
+		}
 		//========================================
 		// ウィンドウの終了
-		win_->CloseWindow();
+		if (win_) {
+			win_->CloseWindow();
+			win_.reset();
+		}
 	}
 
 	///=============================================================================

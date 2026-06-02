@@ -23,7 +23,6 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 シングルトン化
 	private:
-		static ModelManager *instance_;
 		// コンストラクタ
 		ModelManager() = default;
 		// デストラクタ

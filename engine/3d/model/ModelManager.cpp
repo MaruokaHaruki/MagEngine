@@ -12,16 +12,9 @@
 namespace MagEngine {
 ///=============================================================================
 ///						インスタンス設定
-	ModelManager *ModelManager::instance_ = nullptr;
-
-	///=============================================================================
-	///						インスタンス生成
 	ModelManager *ModelManager::GetInstance() {
-		if(instance_ == nullptr) {
-			instance_ = new ModelManager();
-		}
-		return instance_;
-
+		static ModelManager instance;
+		return &instance;
 	}
 
 	///=============================================================================
@@ -70,8 +63,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void ModelManager::Finalize() {
-		//インスタンスの削除
-		delete instance_;
-		instance_ = nullptr;
+		models_.clear();
+		modelSetup_.reset();
 	}
 }

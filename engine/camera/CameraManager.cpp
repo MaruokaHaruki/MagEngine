@@ -30,6 +30,10 @@ namespace MagEngine {
 	///=============================================================================
 	///						初期化
 	void CameraManager::Initialize() {
+		if(!cameras_.empty()) {
+			return;
+		}
+
 		// デバックカメラの追加
 		AddCamera("DebugCamera");
 		cameraDebugViewFlags_["DebugCamera"] = false; // 初期状態ではデバッグカメラの視覚化はオフ
@@ -53,6 +57,10 @@ namespace MagEngine {
 	///=============================================================================
 	///                     カメラの追加
 	void CameraManager::AddCamera(const std::string &name) {
+		if(cameras_.contains(name)) {
+			return;
+		}
+
 		// カメラを作成
 		std::unique_ptr<Camera> camera = std::make_unique<Camera>();
 		camera->Initialize();

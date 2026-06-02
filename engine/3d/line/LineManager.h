@@ -201,12 +201,18 @@ namespace MagEngine {
 		/// @brief デフォルトカメラの取得
 		/// @return カメラのポインタ
 		Camera *GetDefaultCamera() {
+			if (!lineSetup_) {
+				return nullptr;
+			}
 			return lineSetup_->GetDefaultCamera();
 		}
 
 		/// @brief デフォルトカメラの設定
 		/// @param camera カメラのポインタ
 		void SetDefaultCamera(Camera *camera) {
+			if (!lineSetup_) {
+				return;
+			}
 			lineSetup_->SetDefaultCamera(camera);
 		}
 
@@ -215,8 +221,6 @@ namespace MagEngine {
 	private:
 		//========================================
 		// コンストラクタを非公開に
-		static LineManager *instance_;
-
 		// コンストラクタ
 		LineManager() = default;
 		// デストラクタ

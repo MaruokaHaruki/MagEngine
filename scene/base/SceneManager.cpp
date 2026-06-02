@@ -10,6 +10,7 @@
 #include "SceneManager.h"
 #include "ImguiSetup.h"
 #include "SceneFactory.h"
+#include "SpriteSetup.h"
 // public:
 #include "ClearScene.h"
 #include "GamePlayScene.h"
@@ -67,6 +68,10 @@ void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 ///=============================================================================
 /// 終了処理
 void SceneManager::Finalize() {
+	if (spriteSetup_ && spriteSetup_->GetDXManager()) {
+		spriteSetup_->GetDXManager()->WaitForGpu();
+	}
+
 	if (nowScene_) {
 		nowScene_->Finalize();
 	}
@@ -86,6 +91,9 @@ void SceneManager::Update() {
 	// NOTE: シーン遷移判定（-1の場合は遷移しない）
 	if (prevSceneNo_ != currentSceneNo_ && currentSceneNo_ != -1) {
 		if (nowScene_) {
+			if (spriteSetup_ && spriteSetup_->GetDXManager()) {
+				spriteSetup_->GetDXManager()->WaitForGpu();
+			}
 			// 現在のシーンの終了処理
 			nowScene_->Finalize();
 		}

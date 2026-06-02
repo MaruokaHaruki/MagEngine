@@ -22,8 +22,6 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void EngineApp::Finalize() {
-		CameraManager::GetInstance()->Finalize(); ///
-		//========================================
 		// フレームワークの終了処理
 		MagFramework::Finalize();
 	}

@@ -136,8 +136,6 @@ namespace MagEngine {
 		CloseCommandList();
 		// コマンドキック
 		ExecuteCommandList();
-		// フェンス生成
-		FenceGeneration();
 		//=======================================
 		// オフスクリーンの初期化
 		CreateOffScreenPipeLine();
@@ -148,6 +146,28 @@ namespace MagEngine {
 	void DirectXCore::ReleaseDirectX() {
 		/// 開放処理
 		ReleaseResources();
+	}
+
+	///=============================================================================
+	///						GPU完了待ち
+	void DirectXCore::WaitForGpu() {
+		if(!commandQueue_ || !fence_ || !fenceEvent_) {
+			return;
+		}
+
+		fenceValue_++;
+		hr_ = commandQueue_->Signal(fence_.Get(), fenceValue_);
+		assert(SUCCEEDED(hr_));
+
+		if(fence_->GetCompletedValue() < fenceValue_) {
+			hr_ = fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+			assert(SUCCEEDED(hr_));
+			WaitForSingleObject(fenceEvent_, INFINITE);
+		}
+
+		for(uint32_t i = 0; i < FRAME_BUFFER_COUNT; ++i) {
+			frameFenceValues_[i] = fenceValue_;
+		}
 	}
 
 	///=============================================================================
@@ -273,13 +293,15 @@ namespace MagEngine {
 	///=============================================================================
 	///						コマンドアロケータを生成する
 	void DirectXCore::CreateCommandAllocator() {
-		commandAllocator_ = nullptr;
-		hr_ = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator_));
-		// コマンドアロケータのせいせがうまくいかなかったので起動できない
-		assert(SUCCEEDED(hr_));
+		for(uint32_t i = 0; i < FRAME_BUFFER_COUNT; ++i) {
+			commandAllocators_[i] = nullptr;
+			hr_ = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocators_[i]));
+			// コマンドアロケータのせいせがうまくいかなかったので起動できない
+			assert(SUCCEEDED(hr_));
+		}
 		// コマンドリスト
 		commandList_ = nullptr;
-		hr_ = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator_.Get(), nullptr,
+		hr_ = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocators_[currentFrameIndex_].Get(), nullptr,
 			IID_PPV_ARGS(&commandList_));
 // コマンドリストの生成がうまくいかなかったので起動できない
 		assert(SUCCEEDED(hr_));
@@ -387,14 +409,6 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
-	///						Fenceの生成
-	void DirectXCore::FenceGeneration() {
-		// フレーム Fence 値の記録と、次フレームのインデックス更新
-		// (実際の GPU 同期は ExecuteCommandList() で行われる)
-		currentFrameIndex_ = (currentFrameIndex_ + 1) % FRAME_BUFFER_COUNT;
-	}
-
-	///=============================================================================
 	///						コマンド積み込んで確定させる
 	void DirectXCore::SettleCommandList() {
 		// これから書き込むバックバッファのインデックスを取得
@@ -468,8 +482,8 @@ namespace MagEngine {
 	///						コマンドのキック
 	void DirectXCore::ExecuteCommandList() {
 		// GPUにコマンドリストの実行を行わせる
-		Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { commandList_ };
-		commandQueue_->ExecuteCommandLists(1, commandLists->GetAddressOf());
+		ID3D12CommandList *commandLists[] = { commandList_.Get() };
+		commandQueue_->ExecuteCommandLists(1, commandLists);
 		
 		// 現在のフレーム Fence 値を割り当てて GPU に通知
 		fenceValue_++;
@@ -478,19 +492,28 @@ namespace MagEngine {
 		
 		// GPUとOSに画面の交換を行うように通知する
 		swapChain_->Present(1, 0);
+
+		// TODO: DeferredReleaseQueue 導入後にこの毎フレーム待機を外す。
+		// 現状は弾やエフェクトなどの個別リソースが Update 中に破棄されるため、
+		// 次フレームへ進む前に GPU 参照を確実に終わらせる。
+		if(fence_->GetCompletedValue() < fenceValue_) {
+			hr_ = fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+			assert(SUCCEEDED(hr_));
+			WaitForSingleObject(fenceEvent_, INFINITE);
+		}
 		
-		// 次フレーム用のコマンドリストを準備する前に、
-		// 直前に実行したコマンドの完了を待つ
-		uint64_t completedValue = fence_->GetCompletedValue();
-		if (completedValue < fenceValue_) {
-			fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+		// 次に使うフレームリソースがまだGPUで使用中の場合だけ待つ
+		currentFrameIndex_ = (currentFrameIndex_ + 1) % FRAME_BUFFER_COUNT;
+		const uint64_t nextFrameFenceValue = frameFenceValues_[currentFrameIndex_];
+		if (nextFrameFenceValue != 0 && fence_->GetCompletedValue() < nextFrameFenceValue) {
+			fence_->SetEventOnCompletion(nextFrameFenceValue, fenceEvent_);
 			WaitForSingleObject(fenceEvent_, INFINITE);
 		}
 		
 		// 次フレーム用のコマンドリストを準備
-		hr_ = commandAllocator_->Reset();
+		hr_ = commandAllocators_[currentFrameIndex_]->Reset();
 		assert(SUCCEEDED(hr_));
-		hr_ = commandList_->Reset(commandAllocator_.Get(), nullptr);
+		hr_ = commandList_->Reset(commandAllocators_[currentFrameIndex_].Get(), nullptr);
 		assert(SUCCEEDED(hr_));
 	}
 
@@ -498,16 +521,12 @@ namespace MagEngine {
 	///						開放処理
 	void DirectXCore::ReleaseResources() {
 		// GPU処理の完了を待つ（リソース破棄前に必須）
-		if (fence_) {
-			fenceValue_++;
-			commandQueue_->Signal(fence_.Get(), fenceValue_);
-			if (fence_->GetCompletedValue() < fenceValue_) {
-				fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
-				WaitForSingleObject(fenceEvent_, INFINITE);
-			}
-		}
+		WaitForGpu();
 		
-		CloseHandle(fenceEvent_);
+		if(fenceEvent_) {
+			CloseHandle(fenceEvent_);
+			fenceEvent_ = nullptr;
+		}
 #ifdef _DEBUG
 	// debugController_->Release();
 #endif // DEBUG

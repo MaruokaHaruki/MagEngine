@@ -37,6 +37,17 @@ namespace MagEngine {
 		// NOTE: フォント設定はImguiSetupで行われるようになりました
 	}
 
+	void DebugTextManager::Finalize() {
+		ClearAllTextsIncludingPersistent();
+		loadedFonts_.clear();
+		camera_ = nullptr;
+		winApp_ = nullptr;
+		isDebugTextEnabled_ = true;
+		showOnlyPersistent_ = false;
+		showOnly3DTexts_ = false;
+		showOnlyScreenTexts_ = false;
+	}
+
 	void DebugTextManager::Update() {
 		// 開始前にテキストのリセット
 		DebugTextManager::GetInstance()->ClearAllTexts();

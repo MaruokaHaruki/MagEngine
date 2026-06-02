@@ -22,19 +22,6 @@ namespace MagEngine {
 		if (!isVisible_)
 			return;
 
-		// 初回のみ左下に配置
-		static bool first_time = true;
-		if (first_time) {
-			first_time = false;
-			ImGuiViewport *main_viewport = ImGui::GetMainViewport();
-			ImVec2 work_pos = main_viewport->WorkPos;
-			ImVec2 work_size = main_viewport->WorkSize;
-
-			// 左下配置：x=work_pos.x, y=work_pos.y+work_size.y*0.6
-			ImGui::SetNextWindowPos(ImVec2(work_pos.x, work_pos.y + work_size.y * 0.6f), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSize(ImVec2(work_size.x * 0.3f, work_size.y * 0.4f), ImGuiCond_FirstUseEver);
-		}
-
 		BeginPanel(320, 180);
 		if (BeginPanelWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
 

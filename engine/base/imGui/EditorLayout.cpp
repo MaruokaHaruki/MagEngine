@@ -15,6 +15,7 @@
 #include "PostEffectManager.h"
 #include "ToolsPanel.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
 ///=============================================================================
 ///                        namespace MagEngine
@@ -60,7 +61,9 @@ namespace MagEngine {
 		SetupDockspace();
 
 		// メニューバー描画
-		DrawMenuBar();
+		if (editorState_.menuBarVisible) {
+			DrawMenuBar();
+		}
 
 		// 各パネルの描画
 		if (editorState_.panelVisibility.viewport) {
@@ -107,11 +110,16 @@ namespace MagEngine {
 	void EditorLayout::ResetLayout() {
 		editorState_ = EditorState();
 		ShowAllPanels();
+		layoutNeedsReset_ = true;
 	}
 
 	void EditorLayout::SetupDockspace() {
-		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+		if (!editorState_.dockspaceEnabled) {
+			return;
+		}
+
+		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBackground;
 
 		ImGuiViewport *viewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -128,8 +136,37 @@ namespace MagEngine {
 
 		ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
 		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		if (layoutNeedsReset_) {
+			BuildDefaultDockLayout(dockspace_id);
+			layoutNeedsReset_ = false;
+		}
 
 		ImGui::End();
+	}
+
+	void EditorLayout::BuildDefaultDockLayout(ImGuiID dockspaceId) {
+		ImGui::DockBuilderRemoveNode(dockspaceId);
+		ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->WorkSize);
+
+		ImGuiID dockMain = dockspaceId;
+		ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Right, 0.28f, nullptr, &dockMain);
+		ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Down, 0.28f, nullptr, &dockMain);
+
+		ImGui::DockBuilderDockWindow("Game Viewport", dockMain);
+		ImGui::DockBuilderDockWindow("Console", dockBottom);
+		ImGui::DockBuilderDockWindow("Performance Monitor", dockBottom);
+
+		ImGui::DockBuilderDockWindow("Tools", dockRight);
+		ImGui::DockBuilderDockWindow("Post Effects", dockRight);
+		ImGui::DockBuilderDockWindow("Camera Manager", dockRight);
+		ImGui::DockBuilderDockWindow("Light Manager", dockRight);
+		ImGui::DockBuilderDockWindow("LineManager", dockRight);
+		ImGui::DockBuilderDockWindow("TrailEffectManager", dockRight);
+		ImGui::DockBuilderDockWindow("Input", dockRight);
+		ImGui::DockBuilderDockWindow("デバッグテキスト管理", dockRight);
+
+		ImGui::DockBuilderFinish(dockspaceId);
 	}
 
 	void EditorLayout::DrawMenuBar() {

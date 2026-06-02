@@ -8,6 +8,7 @@
  *********************************************************************/
 #pragma once
 #include "EditorState.h"
+#include "imgui.h"
 #include <memory>
 
 ///=============================================================================
@@ -86,11 +87,13 @@ namespace MagEngine {
 		DirectXCore *dxCore_ = nullptr;
 		PostEffectManager *postEffectManager_ = nullptr;
 		class ImguiSetup *imguiSetup_ = nullptr;
+		bool layoutNeedsReset_ = true;
 
 		//========================================
 		// ヘルパー関数
 		void SetupDockspace();
 		void DrawMenuBar();
+		void BuildDefaultDockLayout(ImGuiID dockspaceId);
 	};
 
 }
