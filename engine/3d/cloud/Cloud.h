@@ -105,7 +105,7 @@ namespace MagEngine {
 
 	/**----------------------------------------------------------------------------
 	 * \brief  BulletHoleBuffer 弾痕配列定数バッファ(GPU用)
-	 * \note   最大8個の弾痕を管理（高速化優先）
+	 * \note   最大4個の弾痕を管理（高速化優先）
 	 */
 	struct alignas(16) BulletHoleBuffer {
 		static constexpr int kMaxBulletHoles = 4;	// 最大弾痕数（高速化のため削減）

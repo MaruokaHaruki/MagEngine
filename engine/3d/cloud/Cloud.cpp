@@ -353,6 +353,11 @@ namespace MagEngine {
 	///						すべての弾痕をクリア
 	void Cloud::ClearBulletHoles() {
 		bulletHoles_.clear();
+		paramsCPU_.bulletHoleCount = 0;
+		bulletHoleBufferCPU_ = {};
+		if (bulletHoleData_) {
+			memset(bulletHoleData_, 0, sizeof(BulletHoleBuffer));
+		}
 		// COMMENT: DEBUG ビルドのみログ出力
 #ifdef _DEBUG
 		Logger::Log("All bullet holes cleared", Logger::LogLevel::Info);

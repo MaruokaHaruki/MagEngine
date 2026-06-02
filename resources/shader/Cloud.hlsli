@@ -102,7 +102,7 @@ struct BulletHoleGPU {
 // 弾痕配列定数バッファ（b2）
 cbuffer BulletHoleBufferCB : register(b2)
 {
-    BulletHoleGPU gBulletHoles[32];  // 最大32個の弾痕
+    BulletHoleGPU gBulletHoles[4];  // CPU側の固定バッファ数と一致させる
 };
 
 ///=============================================================================
@@ -329,7 +329,7 @@ float CylinderSDF(float3 p, float3 origin, float3 direction, float radius)
 /// @note 円錐形状により入口から徐々に狭まる自然な弾痕を表現
 ///
 /// ===== 最適化メモ =====
-/// - アクティブな弾痕数を制限（最大8個まで）→ 弾痕判定75%削減期待
+/// - アクティブな弾痕数をCPU側の固定バッファ数に制限
 /// - 軸方向判定で圏外を即座に除外 → 計算スキップで15-20%改善
 float CalculateBulletHoleMask(float3 position)
 {
@@ -338,9 +338,8 @@ float CalculateBulletHoleMask(float3 position)
     //! 弾痕がない場合は即座にリターン（ループ回避で高速化）
     if (gBulletHoleCount <= 0) return 1.0f;
     
-    //! 最適化：アクティブな弾痕を最大8個に制限
-    //! 32個の弾痕判定は過度→直近8個のみで視覚的に十分（約75%削減）
-    int activeBullets = min(gBulletHoleCount, 8);
+    //! CPU側で転送される最大数と揃え、未初期化領域を参照しない
+    int activeBullets = min(gBulletHoleCount, 4);
     
     for (int i = 0; i < activeBullets; ++i)
     {
