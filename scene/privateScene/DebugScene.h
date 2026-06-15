@@ -141,6 +141,8 @@ private:
 	Vector3 manualBulletDirection_{0.0f, 0.0f, 1.0f};  // マニュアル追加用の方向
 	int cloudHoleBurstCount_ = 4;
 	float cloudHoleRandomSpread_ = 0.8f;
+	int cloudHoleShape_ = 0;
+	float cloudHoleShapeAngle_ = 0.0f;
 
 	//========================================
 	// マイク入力テスト用

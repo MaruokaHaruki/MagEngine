@@ -46,6 +46,19 @@ namespace {
 		return CameraManager::GetInstance()->GetCurrentCamera();
 	}
 
+	CloudBulletHoleShape ToCloudHoleShape(int shape) {
+		switch (shape) {
+		case 1:
+			return CloudBulletHoleShape::Box;
+		case 2:
+			return CloudBulletHoleShape::Diamond;
+		case 3:
+			return CloudBulletHoleShape::Star;
+		default:
+			return CloudBulletHoleShape::Circle;
+		}
+	}
+
 	bool IntersectRayAabb(const Vector3 &rayOrigin, const Vector3 &rayDirection, const Vector3 &boxCenter, const Vector3 &boxSize, float &hitDistance) {
 		Vector3 boxMin = {
 			boxCenter.x - boxSize.x * 0.5f,
@@ -172,7 +185,7 @@ void DebugScene::Initialize(SceneContext *context) {
 	cloud_->Initialize(cloudSetup);
 
 	// 原点基準で穴あけの挙動を確認しやすくするため、雲の中心をワールド原点に固定する。
-	cloud_->SetSize(Vector3{500.0f, 100.0f, 500.0f});
+	cloud_->SetSize(Vector3{500.0f, 500.0f, 500.0f});
 	cloud_->SetEnabled(true);
 	cloud_->SetPosition(Vector3{0.0f, 0.0f, 0.0f});
 
@@ -375,7 +388,9 @@ void DebugScene::AddCloudHoleFromDebugCamera() {
 		bulletHoleStartRadius_,
 		bulletHoleEndRadius_,
 		bulletHoleConeLength_,
-		bulletHoleLifeTime_);
+		bulletHoleLifeTime_,
+		ToCloudHoleShape(cloudHoleShape_),
+		cloudHoleShapeAngle_);
 	Logger::Log("Added cloud hole from DebugCamera", Logger::LogLevel::Info);
 }
 
@@ -403,7 +418,9 @@ void DebugScene::AddRandomCloudHole() {
 		bulletHoleStartRadius_,
 		bulletHoleEndRadius_,
 		bulletHoleConeLength_,
-		bulletHoleLifeTime_);
+		bulletHoleLifeTime_,
+		ToCloudHoleShape(cloudHoleShape_),
+		cloudHoleShapeAngle_);
 }
 
 void DebugScene::AddManualCloudHole() {
@@ -414,7 +431,8 @@ void DebugScene::AddManualCloudHole() {
 	manualBulletDirection_ = NormalizeOrDefault(manualBulletDirection_, Vector3{0.0f, 0.0f, 1.0f});
 	cloud_->AddBulletHole(manualBulletOrigin_, manualBulletDirection_,
 						  bulletHoleStartRadius_, bulletHoleEndRadius_,
-						  bulletHoleConeLength_, bulletHoleLifeTime_);
+						  bulletHoleConeLength_, bulletHoleLifeTime_,
+						  ToCloudHoleShape(cloudHoleShape_), cloudHoleShapeAngle_);
 	Logger::Log("Added manual cloud hole", Logger::LogLevel::Info);
 }
 
@@ -582,6 +600,9 @@ void DebugScene::DrawCloudTestImGui() {
 
 	ImGui::Separator();
 	ImGui::Text("Hole Shape");
+	const char *shapeItems[] = {"Circle", "Box", "Diamond", "Star"};
+	ImGui::Combo("Section Shape", &cloudHoleShape_, shapeItems, IM_ARRAYSIZE(shapeItems));
+	ImGui::SliderFloat("Shape Angle", &cloudHoleShapeAngle_, -3.14159f, 3.14159f, "%.2f rad");
 	ImGui::SliderFloat("Start Radius", &bulletHoleStartRadius_, 0.1f, 20.0f);
 	ImGui::SliderFloat("End Radius", &bulletHoleEndRadius_, 0.05f, 20.0f);
 	ImGui::SliderFloat("Cone Length", &bulletHoleConeLength_, 1.0f, 2000.0f);

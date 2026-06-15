@@ -95,8 +95,8 @@ struct BulletHoleGPU {
     float endRadius;     // 弾痕の終了半径（出口）
     float lifeTime;      // 残存時間(0.0～1.0、1.0=完全、0.0=消滅)
     float coneLength;    // 円錐の長さ
-    float padding1;      // パディング
-    float padding2;      // パディング
+    float shapeType;     // 断面形状タイプ
+    float shapeParam;    // 形状別パラメータ
 };
 
 // 弾痕配列定数バッファ（b2）
@@ -369,16 +369,35 @@ float CalculateBulletHoleMask(float3 position)
         float currentRadius = lerp(hole.startRadius, hole.endRadius, t);
         
         //========================================
-        // 半径方向のフォールオフ（ガウス分布ベース）
-        // 理由: 中心から離れるほど滑らかに密度が回復するため
-        //! 最適化：半径チェックで余分な計算を回避
-        //! 半径の1.5倍超は影響なし→即座に次弾痕へ（計算スキップ）
-        if (radialDist > currentRadius * 1.5f) continue;
-        
-        float radialFalloff = radialDist / (currentRadius + 0.001f); // 0除算回避
-        // ガウス関数に似た減衰カーブ（exp(-x^2)）
-        float radialMask = exp(-radialFalloff * radialFalloff * 2.5f); // 2.5でより急峻な減衰
-        radialMask = (1.0f - radialMask);
+        // 断面形状SDF
+        // 理由: 弾道方向は共通にし、断面だけを差し替えることで多様な穴形状を表現するため
+        if (radialDist > currentRadius * 1.75f) continue;
+
+        float3 localUp = (abs(hole.direction.y) < 0.95f) ? float3(0.0f, 1.0f, 0.0f) : float3(1.0f, 0.0f, 0.0f);
+        float3 axisX = normalize(cross(localUp, hole.direction));
+        float3 axisY = cross(hole.direction, axisX);
+        float2 sectionPos = float2(dot(perpendicular, axisX), dot(perpendicular, axisY));
+
+        float shapeAngle = hole.shapeParam;
+        float2 rotatedSection = float2(
+            sectionPos.x * cos(shapeAngle) - sectionPos.y * sin(shapeAngle),
+            sectionPos.x * sin(shapeAngle) + sectionPos.y * cos(shapeAngle));
+
+        float shapeDist = radialDist - currentRadius;
+        int shapeType = (int)(hole.shapeType + 0.5f);
+        if (shapeType == 1) {
+            float2 d = abs(rotatedSection) - currentRadius;
+            shapeDist = length(max(d, 0.0f)) + min(max(d.x, d.y), 0.0f);
+        } else if (shapeType == 2) {
+            shapeDist = (abs(rotatedSection.x) + abs(rotatedSection.y)) * 0.70710678f - currentRadius;
+        } else if (shapeType == 3) {
+            float starAngle = atan2(rotatedSection.y, rotatedSection.x);
+            float starRadius = currentRadius * (0.72f + 0.28f * cos(starAngle * 5.0f));
+            shapeDist = length(rotatedSection) - starRadius;
+        }
+
+        float shapeFalloff = saturate((shapeDist + currentRadius) / (currentRadius * 1.5f + 0.001f));
+        float radialMask = smoothstep(0.0f, 1.0f, shapeFalloff);
         
         //========================================
         // 軸方向のフォールオフ（入口と出口で滑らかに）

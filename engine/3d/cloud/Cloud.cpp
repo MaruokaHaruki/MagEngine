@@ -319,7 +319,9 @@ namespace MagEngine {
 							  float startRadius,
 							  float endRadius,
 							  float coneLength,
-							  float lifeTime) {
+							  float lifeTime,
+							  CloudBulletHoleShape shape,
+							  float shapeParam) {
 		//========================================
 		// 最大数を超える場合は最も古い弾痕を削除
 		// COMMENT: メモリ使用量を制限し、GPUバッファサイズを固定するため
@@ -337,6 +339,8 @@ namespace MagEngine {
 		hole.coneLength = coneLength;					// 円錐の長さ
 		hole.lifeTime = lifeTime;
 		hole.maxLifeTime = lifeTime;
+		hole.shape = shape;
+		hole.shapeParam = shapeParam;
 		bulletHoles_.push_back(hole);
 
 		// COMMENT: DEBUG ビルドのみログ出力（Release では削除）
@@ -412,6 +416,8 @@ namespace MagEngine {
 			gpuHole.startRadius = hole.startRadius; // 入口の半径
 			gpuHole.endRadius = hole.endRadius;		// 出口の半径
 			gpuHole.coneLength = hole.coneLength;	// 円錐の長さ
+			gpuHole.shapeType = static_cast<float>(hole.shape);
+			gpuHole.shapeParam = hole.shapeParam;
 
 			// 残存時間を0.0～1.0に正規化
 			// COMMENT: シェーダーでフェードアウト処理をしやすくするため

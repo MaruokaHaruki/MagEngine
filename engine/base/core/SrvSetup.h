@@ -29,8 +29,25 @@ namespace MagEngine {
 		uint32_t Allocate();
 
 		/// @brief IsFull SRVが満杯かどうか
-		bool IsFull() {
+		bool IsFull() const {
 			return useIndex_ >= kMaxSRVCount_;
+		}
+
+		/// @brief CanAllocate 指定数のSRVを追加で確保できるか
+		/// @param count 確保したいSRV数
+		/// @return 確保できる場合true
+		bool CanAllocate(uint32_t count = 1) const;
+
+		/// @brief GetUsedCount 使用済みSRV数を取得
+		/// @return 使用済みSRV数
+		uint32_t GetUsedCount() const {
+			return useIndex_;
+		}
+
+		/// @brief GetFreeCount 残りSRV数を取得
+		/// @return 残りSRV数
+		uint32_t GetFreeCount() const {
+			return kMaxSRVCount_ - useIndex_;
 		}
 
 		/// \brief CreateSRVforTexture2D SRV生成(テクスチャ用)
@@ -71,6 +88,13 @@ namespace MagEngine {
 		/// @return
 		D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
 
+		/// @brief IsValidIndex SRVインデックスがヒープ範囲内か
+		/// @param index インデックス
+		/// @return 有効範囲内ならtrue
+		bool IsValidIndex(uint32_t index) const {
+			return index < kMaxSRVCount_;
+		}
+
 		/// @brief SetGraphicsRootDescriptorTable グラフィックスルートディスクリプタテーブルの設定
 		/// @param rootParameterIndex ルートパラメータインデックス
 		/// @param srvIndex SRVインデックス
@@ -79,6 +103,10 @@ namespace MagEngine {
 		//========================================
 		// 最大SRV数
 		static const uint32_t kMaxSRVCount_ = 512;
+
+		//========================================
+		// 確保失敗を呼び出し側で明示的に検出するための無効値
+		static const uint32_t kInvalidSRVIndex_ = UINT32_MAX;
 
 		///--------------------------------------------------------------
 		///							メンバ変数

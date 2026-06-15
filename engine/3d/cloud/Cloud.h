@@ -48,8 +48,15 @@ namespace MagEngine {
 		float endRadius = 0.2f;						  ///< 弾痕の終了半径（出口）
 		float lifeTime = 1.0f;						  ///< 残存時間（0.0～1.0、1.0=完全、0.0=消滅）
 		float coneLength = 10.0f;					  ///< 円錐の長さ
-		float padding1 = 0.0f;						  ///< パディング
-		float padding2 = 0.0f;						  ///< パディング
+		float shapeType = 0.0f;						  ///< 断面形状タイプ
+		float shapeParam = 0.0f;						  ///< 形状別パラメータ
+	};
+
+	enum class CloudBulletHoleShape {
+		Circle = 0,
+		Box = 1,
+		Diamond = 2,
+		Star = 3,
 	};
 
 	/**----------------------------------------------------------------------------	 * \brief  CloudRenderParams 雲レンダリングパラメータ（GPU用）
@@ -152,7 +159,9 @@ namespace MagEngine {
 						   float startRadius = 1.5f,
 						   float endRadius = 0.3f,
 						   float coneLength = 10.0f,
-						   float lifeTime = 15.0f);
+						   float lifeTime = 15.0f,
+						   CloudBulletHoleShape shape = CloudBulletHoleShape::Circle,
+						   float shapeParam = 0.0f);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  すべての弾痕をクリアする
@@ -299,6 +308,8 @@ namespace MagEngine {
 			float coneLength;			// 円錐の長さ
 			float lifeTime;				// 残存時間（秒単位）
 			float maxLifeTime;			// 最大残存時間（秒単位）
+			CloudBulletHoleShape shape; // 断面形状
+			float shapeParam;			// 形状別パラメータ
 		};
 
 		/**----------------------------------------------------------------------------		 * \brief  FullscreenVertex フルスクリーン頂点構造体
