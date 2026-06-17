@@ -160,23 +160,6 @@ void PlayerCombatComponent::UpdateMissiles() {
 	UpdateProjectileList(missiles_);
 }
 
-//=============================================================================
-// 弾の描画
-void PlayerCombatComponent::DrawBullets() {
-	for (auto &bullet : bullets_) {
-		bullet->Draw();
-	}
-}
-
-void PlayerCombatComponent::DrawMissiles() {
-	for (auto &missile : missiles_) {
-		missile->Draw();
-#ifdef _DEBUG
-		missile->DrawDebugInfo();
-#endif
-	}
-}
-
 void PlayerCombatComponent::DrawBulletsTrails() {
 	for (auto &bullet : bullets_) {
 		bullet->DrawTrail();
@@ -186,6 +169,19 @@ void PlayerCombatComponent::DrawBulletsTrails() {
 void PlayerCombatComponent::DrawMissilesTrails() {
 	for (auto &missile : missiles_) {
 		missile->DrawTrail();
+	}
+}
+
+void PlayerCombatComponent::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	for(auto &bullet : bullets_) {
+		if(bullet) {
+			bullet->RegisterRenderables(renderWorld);
+		}
+	}
+	for(auto &missile : missiles_) {
+		if(missile) {
+			missile->RegisterRenderables(renderWorld);
+		}
 	}
 }
 

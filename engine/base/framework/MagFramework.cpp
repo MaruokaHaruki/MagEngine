@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "MagFramework.h"
 #include "WinApp.h"
+#include "engine/render/RenderContext.h"
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
@@ -137,6 +138,8 @@ namespace MagEngine {
 		object3dSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// Object3Dのライトマネージャ設定
 		object3dSetup_->SetLightManager(lightManager_.get());
+		// NOTE: RenderPassはObject3dSetupの描画状態を再利用し、旧描画順だけを置き換える
+		renderer_.Initialize(*object3dSetup_);
 
 		///--------------------------------------------------------------
 		///						 Skybox共通部
@@ -316,7 +319,7 @@ namespace MagEngine {
 	void MagFramework::Finalize() {
 		// GPUが参照中のリソースを各マネージャが解放しないよう、破棄前に同期する
 		if (dxCore_) {
-			dxCore_->WaitForGpu();
+			dxCore_->WaitForGpuIdle();
 		}
 		//========================================
 		// シーンの終了処理
@@ -504,13 +507,15 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
-	///						Object3D共通描画設定
-	void MagFramework::Object3DCommonDraw() {
-		//========================================s
-		// 3D共通描画設定
-		object3dSetup_->CommonDrawSetup();
-		// 3D描画
-		sceneManager_->Object3DDraw();
+	///						3D不透明描画
+	void MagFramework::OpaqueRender() {
+		renderWorld_.Clear();
+		sceneManager_->RegisterRenderables(renderWorld_);
+
+		auto commandList = dxCore_->GetCommandList();
+		assert(commandList);
+		RenderContext renderContext{*commandList.Get()};
+		renderer_.Render(renderContext, renderWorld_);
 	}
 
 	///=============================================================================

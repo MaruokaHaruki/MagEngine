@@ -30,6 +30,7 @@ namespace MagEngine {
 
 	class Object3dSetup;
 	class Camera;
+	class RenderWorld;
 	class Object3d {
 		///--------------------------------------------------------------
 		///							メンバ関数
@@ -42,6 +43,9 @@ namespace MagEngine {
 
 		/// \brief 描画
 		void Draw();
+
+		/// \brief RenderWorldへ3D不透明描画対象として登録
+		void RegisterRenderables(RenderWorld &renderWorld);
 
 		/// \brief ImGui描画
 		void ChangeTexture(const std::string &texturePath);

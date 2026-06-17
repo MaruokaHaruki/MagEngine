@@ -1,6 +1,7 @@
 #include "PlayerBullet.h"
 #include "Object3d.h"
 #include "TrailEffectManager.h"
+#include "engine/render/RenderWorld.h"
 using namespace MagEngine;
 
 void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
@@ -79,9 +80,9 @@ void PlayerBullet::Update() {
 	obj_->Update();
 }
 
-void PlayerBullet::Draw() {
-	if (isAlive_ && obj_) {
-		obj_->Draw();
+void PlayerBullet::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(isAlive_ && obj_) {
+		obj_->RegisterRenderables(renderWorld);
 	}
 }
 

@@ -175,7 +175,11 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\camera\CameraManager.cpp" />
     <ClCompile Include="engine\audio\MAudioG.cpp" />
     <ClCompile Include="engine\base\core\DescriptorAllocator.cpp" />
+    <ClCompile Include="engine\base\core\FrameContext.cpp" />
     <ClCompile Include="engine\base\core\SrvSetup.cpp" />
+    <ClCompile Include="engine\render\OpaqueRenderPass.cpp" />
+    <ClCompile Include="engine\render\Renderer.cpp" />
+    <ClCompile Include="engine\render\RenderWorld.cpp" />
     <ClCompile Include="engine\camera\Camera.cpp" />
     <ClCompile Include="engine\base\core\DirectXCore.cpp" />
     <ClCompile Include="engine\utils\WstringUtility.cpp" />
@@ -286,7 +290,13 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\audio\MAudioG.h" />
     <ClInclude Include="engine\base\core\DescriptorAllocator.h" />
     <ClInclude Include="engine\base\core\DescriptorHandle.h" />
+    <ClInclude Include="engine\base\core\FrameContext.h" />
     <ClInclude Include="engine\base\core\SrvSetup.h" />
+    <ClInclude Include="engine\render\IRenderPass.h" />
+    <ClInclude Include="engine\render\OpaqueRenderPass.h" />
+    <ClInclude Include="engine\render\Renderer.h" />
+    <ClInclude Include="engine\render\RenderContext.h" />
+    <ClInclude Include="engine\render\RenderWorld.h" />
     <ClInclude Include="engine\camera\Camera.h" />
     <ClInclude Include="engine\base\core\DirectXCore.h" />
     <ClInclude Include="engine\utils\WstringUtility.h" />

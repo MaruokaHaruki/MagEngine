@@ -10,6 +10,7 @@
 //========================================
 // 標準ライブラリ
 #include <cassert>
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <format>
@@ -21,6 +22,7 @@
 #include "MagMath.h"
 #include "WstringUtility.h"
 #include "DescriptorAllocator.h"
+#include "FrameContext.h"
 #include "Logger.h"
 #include "FullscreenPassRendere.h"
 #include "GrayscaleEffect.h"
@@ -80,8 +82,8 @@ namespace MagEngine {
 		void ReleaseDirectX();
 
 		//========================================
-		/// @brief WaitForGpu GPUに積まれた処理の完了を待つ
-		void WaitForGpu();
+		/// @brief WaitForGpuIdle GPUに積まれた処理の完了を待つ
+		void WaitForGpuIdle();
 
 		///--------------------------------------------------------------
 		///						 ダイレクトXの初期化系
@@ -110,8 +112,8 @@ namespace MagEngine {
 		void CreateCommandQueue();
 
 		//========================================
-		/// @brief CreateCommandAllocator コマンドアロケータの生成
-		void CreateCommandAllocator();
+		/// @brief InitializeFrameContextsAndCommandList フレームコンテキストとコマンドリストの生成
+		void InitializeFrameContextsAndCommandList();
 
 		//========================================
 		/// @brief CreateSwapChain SwapChainの生成
@@ -172,6 +174,18 @@ namespace MagEngine {
 		//========================================
 		/// @brief CreateDXCCompiler DXCコンパイラーの初期化
 		void CreateDXCCompiler();
+
+		//========================================
+		/// @brief BeginFrame 次フレーム用コマンド記録の準備
+		void BeginFrame();
+
+		//========================================
+		/// @brief EndFrame コマンドをGPUへ投入し、Fence値をFrameContextへ保存
+		void EndFrame();
+
+		//========================================
+		/// @brief WaitForFrameContext 指定FrameContextのGPU使用完了を待つ
+		void WaitForFrameContext(const FrameContext &frameContext);
 
 		///--------------------------------------------------------------
 		///						 生成系メンバ関数
@@ -322,6 +336,12 @@ namespace MagEngine {
 		}
 
 		//========================================
+		/// @brief GetFramesInFlight GPUへ同時投入し得るフレームコンテキスト数を取得
+		uint32_t GetFramesInFlight() const {
+			return FramesInFlight;
+		}
+
+		//========================================
 		/// @brief GetRtvDesc RTVディスクリプタの取得
 		/// @return RTVディスクリプタ
 		D3D12_RENDER_TARGET_VIEW_DESC GetRtvDesc() const {
@@ -430,13 +450,17 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue_;
 
 		//========================================
-		// フレームバッファリング（3フレーム先読み）
-		static constexpr uint32_t FRAME_BUFFER_COUNT = 3;
+		// スワップチェーンのバックバッファ数
+		static constexpr uint32_t SwapChainBufferCount = 2;
+
+		// CPU/GPU並列実行のために保持するフレームコンテキスト数
+		static constexpr uint32_t FramesInFlight = 3;
 
 		//========================================
-		// コマンドアロケータを生成する
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocators_[FRAME_BUFFER_COUNT];
+		// フレーム単位のコマンド記録状態
+		std::array<FrameContext, FramesInFlight> frameContexts_;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
+		uint32_t currentFrameContextIndex_ = 0;
 
 		//========================================
 		// スワップチェーンを生成する
@@ -446,11 +470,8 @@ namespace MagEngine {
 		//========================================
 		// Fenceの生成
 		Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
-		uint64_t fenceValue_ = 0;
+		uint64_t nextFenceValue_ = 0;
 		HANDLE fenceEvent_ = nullptr; // Initialize to nullptr
-
-		uint64_t frameFenceValues_[FRAME_BUFFER_COUNT] = {};
-		uint32_t currentFrameIndex_ = 0;
 
 		//========================================
 		// 深度バッファ
@@ -467,16 +488,16 @@ namespace MagEngine {
 		//========================================
 		// RTVの設定
 		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc_{};
-		DescriptorHandle swapChainRtvHandles_[2]{};
+		DescriptorHandle swapChainRtvHandles_[SwapChainBufferCount]{};
 		DescriptorHandle renderTextureRtvHandles_[2]{};
 		// これから書き込むバックバッファのインデックスを取得
-		UINT backBufferIndex_ = 0;
+		UINT currentBackBufferIndex_ = 0;
 		// TransitionBarrierの設定
 		D3D12_RESOURCE_BARRIER barrier_{};
 
 		//========================================
 		// SwapChainからResource
-		Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResource_[2] = { nullptr, nullptr };
+		Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResource_[SwapChainBufferCount] = { nullptr, nullptr };
 
 		//========================================
 		// DXCコンパイラ

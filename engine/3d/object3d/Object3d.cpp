@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "LightManager.h"
 #include "Object3dSetup.h"
+#include "engine/render/RenderWorld.h"
 //---------------------------------------
 // ファイル読み込み関数
 #include <fstream>
@@ -122,6 +123,15 @@ namespace MagEngine {
 		if (model_) {
 			model_->Draw();
 		}
+	}
+
+	///=============================================================================
+	///						描画登録
+	void Object3d::RegisterRenderables(RenderWorld &renderWorld) {
+		OpaqueRenderItem item{};
+		item.object = this;
+		item.visible = model_ != nullptr;
+		renderWorld.AddOpaque(item);
 	}
 
 	///=============================================================================

@@ -89,6 +89,18 @@
     <ClCompile Include="engine\base\core\DescriptorAllocator.cpp">
       <Filter>engine\base\core</Filter>
     </ClCompile>
+    <ClCompile Include="engine\base\core\FrameContext.cpp">
+      <Filter>engine\base\core</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\OpaqueRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\Renderer.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\RenderWorld.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
     <ClCompile Include="engine\base\imGui\ImguiSetup.cpp">
       <Filter>engine\base\imGui</Filter>
     </ClCompile>
@@ -363,6 +375,24 @@
     <ClInclude Include="engine\base\core\DescriptorHandle.h">
       <Filter>engine\base\core</Filter>
     </ClInclude>
+    <ClInclude Include="engine\base\core\FrameContext.h">
+      <Filter>engine\base\core</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\IRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\OpaqueRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\Renderer.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\RenderContext.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\RenderWorld.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
     <ClInclude Include="engine\base\imGui\ImguiSetup.h">
       <Filter>engine\base\imGui</Filter>
     </ClInclude>
@@ -599,6 +629,9 @@
     </Filter>
     <Filter Include="engine\postEffect">
       <UniqueIdentifier>{f22f067c-3032-489e-85f7-72ec59a55011}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\render">
+      <UniqueIdentifier>{6c8e0869-b0a8-4cd9-a246-62d2662085e7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

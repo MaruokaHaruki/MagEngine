@@ -14,6 +14,7 @@ class EnemyBase; // Enemy から EnemyBase に変更
 namespace MagEngine {
 	class TrailEffectManager;
 	class LineManager;
+	class RenderWorld;
 }
 
 ///=============================================================================
@@ -44,10 +45,9 @@ public:
 
 	///--------------------------------------------------------------
 	///                        描画
-	void DrawBullets();
-	void DrawMissiles();
 	void DrawBulletsTrails();
 	void DrawMissilesTrails();
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	///--------------------------------------------------------------
 	///                        ゲッター

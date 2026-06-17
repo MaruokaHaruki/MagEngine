@@ -114,12 +114,11 @@ void EnemyManager::Update() {
 	RemoveDeadEnemies();
 }
 
-///=============================================================================
-///                        描画
-void EnemyManager::Draw() {
-	for (auto &enemy : enemies_) {
-		if (enemy && enemy->IsAlive())
-			enemy->Draw();
+void EnemyManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	for(auto &enemy : enemies_) {
+		if(enemy && enemy->IsAlive()) {
+			enemy->RegisterRenderables(renderWorld);
+		}
 	}
 }
 

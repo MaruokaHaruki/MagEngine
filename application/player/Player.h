@@ -45,6 +45,7 @@ namespace MagEngine {
 	class Input;
 	class LineManager;
 	class TrailEffectManager;
+	class RenderWorld;
 }
 
 ///=============================================================================
@@ -143,28 +144,16 @@ public:
 	/// @note Update() は必ず毎フレーム呼び出す必要がある
 	void Update();
 	
-	/// @brief 3D描画
-	/// @details プレイヤーモデルとロックオン範囲のデバッグ線を描画
-	/// @note デバッグモード時のみロックオン範囲が表示される
-	void Draw();
-	
 	/// @brief ImGui用デバッグパネル描画
 	/// @details HPゲージ、ブーストゲージ、移動情報、ロックオン情報などを表示
 	/// @warning ImGui パネルの表示はゲームプレイに影響しない（デバッグのみ）
 	void DrawImGui();
 
+	/// @brief 3D不透明描画対象の登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
+
 	///--------------------------------------------------------------
 	///                        武装描画
-	/// @brief 発射済みの弾を描画
-	/// @details PlayerCombatComponent が管理する生存中の弾をすべて描画
-	/// @note Draw() から分離されており、レンダーパスの制御が可能
-	void DrawBullets();
-	
-	/// @brief 発射済みのミサイルを描画
-	/// @details PlayerCombatComponent が管理する生存中のミサイルをすべて描画
-	/// @note ミサイル追尾の視覚的確認に有用
-	void DrawMissiles();
-	
 	/// @brief 弾のトレイルエフェクトを描画
 	/// @details 弾の移動軌跡を表示するパーティクルエフェクト
 	/// @note TrailEffectManager で管理

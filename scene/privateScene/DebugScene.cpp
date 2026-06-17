@@ -445,23 +445,20 @@ void DebugScene::Object2DDraw() {
 }
 
 ///=============================================================================
-///						3D描画
-void DebugScene::Object3DDraw() {
-	if (drawTestObjects_) {
-		if (objTerrain_) {
-			objTerrain_->Draw();
+///						3D不透明描画対象の登録
+void DebugScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(drawTestObjects_) {
+		if(objTerrain_) {
+			objTerrain_->RegisterRenderables(renderWorld);
 		}
-		if (objMonsterBall_) {
-			objMonsterBall_->Draw();
+		if(objMonsterBall_) {
+			objMonsterBall_->RegisterRenderables(renderWorld);
 		}
 	}
-
-	//========================================
-	// レベルデータオブジェクトの描画
-	if (drawLevelObjects_) {
-		for (auto &levelObj : levelObjects_) {
-			if (levelObj) {
-				levelObj->Draw();
+	if(drawLevelObjects_) {
+		for(auto &levelObj : levelObjects_) {
+			if(levelObj) {
+				levelObj->RegisterRenderables(renderWorld);
 			}
 		}
 	}

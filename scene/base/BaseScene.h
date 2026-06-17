@@ -11,6 +11,7 @@
 class SceneContext;
 namespace MagEngine {
 	struct EngineContext;
+	class RenderWorld;
 }
 
 // シーンの種類
@@ -44,8 +45,8 @@ public:
 	/// \brief 2D描画
 	virtual void Object2DDraw() = 0;
 
-	/// \brief 3D描画
-	virtual void Object3DDraw() = 0;
+	/// \brief 3D不透明描画対象の登録
+	virtual void RegisterRenderables(MagEngine::RenderWorld &renderWorld) = 0;
 
 	/// \brief パーティクル描画
 	virtual void ParticleDraw() = 0;

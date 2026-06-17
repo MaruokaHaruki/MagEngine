@@ -652,36 +652,14 @@ void GamePlayScene::Object2DDraw() {
 }
 
 ///=============================================================================
-///                        3D描画
-void GamePlayScene::Object3DDraw() {
-
-	//=========================================
-	// スカイドーム
-	if (skydome_) {
-		// skydome_->Draw();
+///                        3D不透明描画対象の登録
+void GamePlayScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(player_) {
+		player_->RegisterRenderables(renderWorld);
 	}
-
-	//========================================
-	// プレイヤー
-	if (player_) {
-		player_->Draw();
-		// プレイヤーの弾とミサイルも描画
-		player_->DrawBullets();
-		player_->DrawMissiles();
+	if(enemyManager_ && !isGameClear_) {
+		enemyManager_->RegisterRenderables(renderWorld);
 	}
-
-	//========================================
-	// 敵マネージャー
-	if (enemyManager_ && !isGameClear_) {
-		enemyManager_->Draw();
-	}
-
-	//========================================
-	// 当たり判定
-	collisionManager_->Draw();
-
-	//========================================
-	// HUDはUIManager で描画管理
 }
 
 ///=============================================================================

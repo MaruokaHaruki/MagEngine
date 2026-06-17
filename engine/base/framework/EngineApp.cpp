@@ -47,7 +47,7 @@ namespace MagEngine {
 
 		//========================================
 		// 3Dオブジェクト共通描画設定
-		MagFramework::Object3DCommonDraw();
+		MagFramework::OpaqueRender();
 
 		//========================================
 		// クラウド共通描画設定（3Dオブジェクトの後）

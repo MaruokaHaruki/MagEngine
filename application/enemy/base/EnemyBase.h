@@ -14,6 +14,9 @@ class Object3dSetup;
 class Player;
 class PlayerBullet;
 class PlayerMissile;
+namespace MagEngine {
+	class RenderWorld;
+}
 
 ///=============================================================================
 ///						EnemyBase クラス（敵の基底クラス）
@@ -43,8 +46,8 @@ public:
 	/// \brief 更新（派生クラスでオーバーライド可能）
 	virtual void Update();
 
-	/// \brief 描画
-	virtual void Draw();
+	/// \brief 3D不透明描画対象の登録
+	virtual void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画（派生クラスでオーバーライド推奨）
 	virtual void DrawImGui();

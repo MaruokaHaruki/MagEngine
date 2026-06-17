@@ -123,11 +123,9 @@ void EnemyBase::Update() {
 	obj_->Update();
 }
 
-///=============================================================================
-///                        描画
-void EnemyBase::Draw() {
-	if (destroyState_ == DestroyState::Alive && obj_) {
-		obj_->Draw();
+void EnemyBase::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(destroyState_ == DestroyState::Alive && obj_) {
+		obj_->RegisterRenderables(renderWorld);
 	}
 }
 

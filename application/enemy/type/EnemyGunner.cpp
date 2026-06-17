@@ -172,13 +172,12 @@ void EnemyGunner::Update() {
 		bullets_.end());
 }
 
-///=============================================================================
-///                        描画
-void EnemyGunner::Draw() {
-	EnemyBase::Draw();
-	for (auto &bullet : bullets_) {
-		if (bullet)
-			bullet->Draw();
+void EnemyGunner::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	EnemyBase::RegisterRenderables(renderWorld);
+	for(auto &bullet : bullets_) {
+		if(bullet) {
+			bullet->RegisterRenderables(renderWorld);
+		}
 	}
 }
 

@@ -16,6 +16,7 @@
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
+#include "engine/render/RenderWorld.h"
 #include "Input.h"
 #include <cassert>
 #include <algorithm>
@@ -284,77 +285,11 @@ void Player::ProcessShooting() {
 	prevMissileButtonPressed_ = missileButtonPressed;
 }
 
-//=============================================================================
-// 描画
-void Player::Draw() {
-	if (obj_) {
-		obj_->Draw();
+void Player::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(obj_) {
+		obj_->RegisterRenderables(renderWorld);
 	}
-
-#ifdef _DEBUG
-	// ロックオン範囲の描画（コンポーネント情報を使用）
-	assert(lineManager_);
-	LineManager *lineManager = lineManager_;
-	Vector3 playerPos = GetPosition();
-	Vector3 playerForward = GetForwardVector();
-
-	// コーン形のロックオン範囲を描画
-	bool hasLockOn = lockedOnComponent_.HasLockOnTarget();
-	Vector4 rangeColor = hasLockOn ? Vector4{1.0f, 0.0f, 0.0f, 0.4f} : // ロックオン中は赤
-							 Vector4{0.0f, 1.0f, 1.0f, 0.2f};		   // 待機中はシアン
-
-	// コーン形を描画：正面に向かう円錐
-	float fovRadians = lockedOnComponent_.GetLockOnFOV() * 0.5f * MagMath::PI / 180.0f; // 視野角をラジアンに
-	int circleSegments = 16;
-
-	// コーン底面の円を描画
-	for (int i = 0; i < circleSegments; ++i) {
-		float angle1 = (2.0f * MagMath::PI / circleSegments) * i;
-		float angle2 = (2.0f * MagMath::PI / circleSegments) * (i + 1);
-
-		// 円の半径を計算（視野角とロックオン距離から）
-		float coneRadius = lockedOnComponent_.GetLockOnRange() * std::tan(fovRadians);
-
-		// 右ベクトルと上ベクトルを計算
-		Vector3 right = {playerForward.z, 0.0f, -playerForward.x};
-		float rightLen = std::sqrt(right.x * right.x + right.z * right.z);
-		if (rightLen > 0.001f) {
-			right.x /= rightLen;
-			right.z /= rightLen;
-		} else {
-			right = {1.0f, 0.0f, 0.0f};
-		}
-
-		Vector3 up = {0.0f, 1.0f, 0.0f};
-
-		// 円周上の2点
-		Vector3 p1 = playerPos + playerForward * lockedOnComponent_.GetLockOnRange() +
-					 right * std::cos(angle1) * coneRadius +
-					 up * std::sin(angle1) * coneRadius;
-		Vector3 p2 = playerPos + playerForward * lockedOnComponent_.GetLockOnRange() +
-					 right * std::cos(angle2) * coneRadius +
-					 up * std::sin(angle2) * coneRadius;
-
-		// 底面の円の辺
-		lineManager->DrawLine(p1, p2, rangeColor, 1.0f);
-
-		// コーンの側面
-		lineManager->DrawLine(playerPos, p1, rangeColor, 0.5f);
-	}
-
-	// ロックオン中のターゲットマーカー（削除）
-	// NOTE: デバッグ線描の簡潔化により削除
-#endif
-}
-
-//=============================================================================
-// 弾の描画
-void Player::DrawBullets() {
-	combatComponent_.DrawBullets();
-}
-
-void Player::DrawMissiles() {
-	combatComponent_.DrawMissiles();
+	combatComponent_.RegisterRenderables(renderWorld);
 }
 
 void Player::DrawBulletsTrails() {

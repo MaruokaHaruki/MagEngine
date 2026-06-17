@@ -4,6 +4,7 @@
 #include "Particle.h"
 #include "Player.h"
 #include "TrailEffectManager.h"
+#include "engine/render/RenderWorld.h"
 #include <cmath>
 using namespace MagEngine;
 
@@ -96,11 +97,9 @@ void EnemyBullet::Update() {
 	BaseObject::Update(transform_.translate);
 }
 
-///=============================================================================
-///                        描画
-void EnemyBullet::Draw() {
-	if (isAlive_ && obj_) {
-		obj_->Draw();
+void EnemyBullet::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(isAlive_ && obj_) {
+		obj_->RegisterRenderables(renderWorld);
 	}
 }
 

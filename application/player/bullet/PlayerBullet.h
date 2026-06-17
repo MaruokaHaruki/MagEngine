@@ -11,6 +11,7 @@
 class Object3dSetup;
 namespace MagEngine {
 	class TrailEffectManager;
+	class RenderWorld;
 }
 
 class PlayerBullet : public BaseObject {
@@ -23,8 +24,8 @@ public:
 	/// \brief 更新
 	void Update();
 
-	/// \brief 描画
-	void Draw();
+	/// \brief 3D不透明描画対象の登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief トレイル描画
 	void DrawTrail();

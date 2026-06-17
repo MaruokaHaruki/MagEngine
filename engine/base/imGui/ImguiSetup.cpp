@@ -67,7 +67,7 @@ namespace MagEngine {
 		//========================================
 		// DirectX12用の初期化
 		ImGui_ImplDX12_Init(dxCore_->GetDevice().Get(),
-							dxCore_->GetSwapChainDesc().BufferCount,
+							dxCore_->GetFramesInFlight(),
 							dxCore_->GetRtvDesc().Format,
 							dxCore_->GetResourceAllocator().GetHeap(),
 							fontDescriptor_.cpuHandle,

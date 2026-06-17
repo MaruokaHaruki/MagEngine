@@ -18,6 +18,7 @@
 #include "MathUtility.h"
 #include "ModelManager.h"
 #include "Object3d.h"
+#include "engine/render/RenderWorld.h"
 #include "PlayerConstants.h"
 #include "TrailEffectManager.h"
 #include <algorithm>
@@ -404,11 +405,9 @@ void PlayerMissile::Explode() {
 	// 爆発エフェクトの実装（必要に応じて）
 }
 
-//=============================================================================
-// 描画
-void PlayerMissile::Draw() {
-	if (obj_ && isAlive_) {
-		obj_->Draw();
+void PlayerMissile::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(obj_ && isAlive_) {
+		obj_->RegisterRenderables(renderWorld);
 	}
 }
 

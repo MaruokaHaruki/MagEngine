@@ -48,6 +48,8 @@
 // Editor
 #include "EditorLayout.h"
 #include "GameViewportPanel.h"
+#include "engine/render/Renderer.h"
+#include "engine/render/RenderWorld.h"
 
 ///=============================================================================
 ///                        namespace MagEngine
@@ -97,8 +99,8 @@ namespace MagEngine {
 		void Object2DCommonDraw();
 		/// @brief パーティクル共通描画設定
 		void ParticleCommonDraw();
-		/// @brief オブジェクト3D共通描画設定
-		void Object3DCommonDraw();
+		/// @brief 3D不透明描画
+		void OpaqueRender();
 		/// @brief Skybox共通描画設定
 		void SkyboxCommonDraw();
 		/// @brief Cloud共通描画設定
@@ -180,6 +182,10 @@ namespace MagEngine {
 		std::unique_ptr<LightManager> lightManager_;
 		// トレイルエフェクトマネージャ
 		std::unique_ptr<TrailEffectManager> trailEffectManager_;
+		//========================================
+		// レンダラー
+		Renderer renderer_;
+		RenderWorld renderWorld_;
 		//========================================
 		// エディター
 		std::unique_ptr<EditorLayout> editorLayout_;

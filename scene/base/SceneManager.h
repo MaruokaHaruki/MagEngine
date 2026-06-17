@@ -15,6 +15,10 @@
 #include "TrailEffectManager.h"
 #include <memory>
 
+namespace MagEngine {
+	class RenderWorld;
+}
+
 ///=============================================================================
 ///                         シーンマネージャ
 /// NOTE: SceneContextを内部で管理し、シーンに統合して渡す
@@ -34,8 +38,8 @@ public:
 	/// @brief Object2D描画
 	void Object2DDraw();
 
-	/// @brief Object3D描画
-	void Object3DDraw();
+	/// @brief 3D不透明描画対象の登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// @brief Particle描画
 	void ParticleDraw();

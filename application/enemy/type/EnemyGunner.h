@@ -43,8 +43,8 @@ public:
 	/// \brief 更新
 	void Update() override;
 
-	/// \brief 描画
-	void Draw() override;
+	/// \brief 3D不透明描画対象の登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
 
 	/// \brief トレイル描画
 	void DrawTrail();

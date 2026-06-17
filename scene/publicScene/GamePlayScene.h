@@ -56,7 +56,7 @@ public:
 	void Object2DDraw() override;
 
 	/// \brief 3D描画
-	void Object3DDraw() override;
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
 
 	/// \brief パーティクル描画
 	void ParticleDraw() override;

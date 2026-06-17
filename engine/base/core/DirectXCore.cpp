@@ -103,8 +103,8 @@ namespace MagEngine {
 		SetupErrorHandling();
 		// コマンドキューの生成
 		CreateCommandQueue();
-		// コマンドアロケータの生成
-		CreateCommandAllocator();
+		// フレームコンテキストとコマンドリストの生成
+		InitializeFrameContextsAndCommandList();
 		// コマンドリストの生成
 		CreateSwapChain();
 		// フェンスの生成
@@ -148,23 +148,23 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						GPU完了待ち
-	void DirectXCore::WaitForGpu() {
+	void DirectXCore::WaitForGpuIdle() {
 		if(!commandQueue_ || !fence_ || !fenceEvent_) {
 			return;
 		}
 
-		fenceValue_++;
-		hr_ = commandQueue_->Signal(fence_.Get(), fenceValue_);
+		const uint64_t fenceValue = ++nextFenceValue_;
+		hr_ = commandQueue_->Signal(fence_.Get(), fenceValue);
 		assert(SUCCEEDED(hr_));
 
-		if(fence_->GetCompletedValue() < fenceValue_) {
-			hr_ = fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+		if(fence_->GetCompletedValue() < fenceValue) {
+			hr_ = fence_->SetEventOnCompletion(fenceValue, fenceEvent_);
 			assert(SUCCEEDED(hr_));
 			WaitForSingleObject(fenceEvent_, INFINITE);
 		}
 
-		for(uint32_t i = 0; i < FRAME_BUFFER_COUNT; ++i) {
-			frameFenceValues_[i] = fenceValue_;
+		for(FrameContext &frameContext : frameContexts_) {
+			frameContext.SetFenceValue(fenceValue);
 		}
 	}
 
@@ -290,16 +290,13 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						コマンドアロケータを生成する
-	void DirectXCore::CreateCommandAllocator() {
-		for(uint32_t i = 0; i < FRAME_BUFFER_COUNT; ++i) {
-			commandAllocators_[i] = nullptr;
-			hr_ = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocators_[i]));
-			// コマンドアロケータのせいせがうまくいかなかったので起動できない
-			assert(SUCCEEDED(hr_));
+	void DirectXCore::InitializeFrameContextsAndCommandList() {
+		for(FrameContext &frameContext : frameContexts_) {
+			frameContext.Initialize(*device_.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
 		}
 		// コマンドリスト
 		commandList_ = nullptr;
-		hr_ = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocators_[currentFrameIndex_].Get(), nullptr,
+		hr_ = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, frameContexts_[currentFrameContextIndex_].GetCommandAllocator(), nullptr,
 			IID_PPV_ARGS(&commandList_));
 // コマンドリストの生成がうまくいかなかったので起動できない
 		assert(SUCCEEDED(hr_));
@@ -314,7 +311,7 @@ namespace MagEngine {
 		swapChainDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		swapChainDesc_.SampleDesc.Count = 1;
 		swapChainDesc_.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc_.BufferCount = 2;
+		swapChainDesc_.BufferCount = SwapChainBufferCount;
 		swapChainDesc_.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		// コマンドキュー、ウィンドウバレル、設定を渡して生成する
 		hr_ = dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(), winApp_->GetWindowHandle(), &swapChainDesc_, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1 **>( swapChain_.GetAddressOf() ));
@@ -326,8 +323,8 @@ namespace MagEngine {
 	void DirectXCore::CreateFence() {
 		// 初期値0でFenceを作る
 		fence_ = nullptr;
-		fenceValue_ = 0;
-		hr_ = device_->CreateFence(fenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_));
+		nextFenceValue_ = 0;
+		hr_ = device_->CreateFence(nextFenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_));
 		assert(SUCCEEDED(hr_));
 		// FenceのSignalを持つためのイベントを生成する
 		fenceEvent_ = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -364,12 +361,11 @@ namespace MagEngine {
 	///=============================================================================
 	///						SwapChainからResource
 	void DirectXCore::GetResourcesFromSwapChain() {
-		// SwapChainからResourceを引っ張ってくる
-		hr_ = swapChain_->GetBuffer(0, IID_PPV_ARGS(&swapChainResource_[0]));
-		// うまく取得できなければ起動できない
-		assert(SUCCEEDED(hr_));
-		hr_ = swapChain_->GetBuffer(1, IID_PPV_ARGS(&swapChainResource_[1]));
-		assert(SUCCEEDED(hr_));
+		for(uint32_t i = 0; i < SwapChainBufferCount; ++i) {
+			// SwapChainのBufferCountと一致する範囲だけ取得する
+			hr_ = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResource_[i]));
+			assert(SUCCEEDED(hr_));
+		}
 	}
 
 	///=============================================================================
@@ -378,21 +374,17 @@ namespace MagEngine {
 		rtvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;		// 出力結果をSRGBに変換して書き込む
 		rtvDesc_.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2dテクスチャとして書き込む
 		// NOTE:SwapChain BackBufferのRTVはallocatorから順に確保し、手動ptr加算を行わない
-		//=======================================
-		// １つ目の作成
-		swapChainRtvHandles_[0] = rtvAllocator_.Allocate();
-		device_->CreateRenderTargetView(swapChainResource_[0].Get(), &rtvDesc_, swapChainRtvHandles_[0].cpuHandle);
-		//=======================================
-		// 2つめの作成
-		swapChainRtvHandles_[1] = rtvAllocator_.Allocate();
-		device_->CreateRenderTargetView(swapChainResource_[1].Get(), &rtvDesc_, swapChainRtvHandles_[1].cpuHandle);
+		for(uint32_t i = 0; i < SwapChainBufferCount; ++i) {
+			swapChainRtvHandles_[i] = rtvAllocator_.Allocate();
+			device_->CreateRenderTargetView(swapChainResource_[i].Get(), &rtvDesc_, swapChainRtvHandles_[i].cpuHandle);
+		}
 	}
 
 	///=============================================================================
 	///						コマンド積み込んで確定させる
 	void DirectXCore::SettleCommandList() {
 		// これから書き込むバックバッファのインデックスを取得
-		backBufferIndex_ = swapChain_->GetCurrentBackBufferIndex();
+		currentBackBufferIndex_ = swapChain_->GetCurrentBackBufferIndex();
 	}
 
 	///=============================================================================
@@ -403,7 +395,7 @@ namespace MagEngine {
 		// Noneにしておく
 		barrier_.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 		// バリアを張る対象のリソース。現在のバックバッファに対して行う
-		barrier_.Transition.pResource = swapChainResource_[backBufferIndex_].Get();
+		barrier_.Transition.pResource = swapChainResource_[currentBackBufferIndex_].Get();
 		// 遷移前の(現在)のResouceState
 		barrier_.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 		// 遷移後のReosuceState
@@ -416,10 +408,10 @@ namespace MagEngine {
 	///						RenderTargetの設定
 	void DirectXCore::RenderTargetPreference() {
 		// 描画先のRTVを設定する
-		commandList_->OMSetRenderTargets(1, &swapChainRtvHandles_[backBufferIndex_].cpuHandle, false, &dsvHandle_.cpuHandle);
+		commandList_->OMSetRenderTargets(1, &swapChainRtvHandles_[currentBackBufferIndex_].cpuHandle, false, &dsvHandle_.cpuHandle);
 		// 指定した色で画面全体をクリアする	背景色！
 		float clearColor[] = { 0.05f, 0.05f, 0.05f, 1.0f }; // この色を変更することでウィンドウの色を黒に変更できます
-		commandList_->ClearRenderTargetView(swapChainRtvHandles_[backBufferIndex_].cpuHandle, clearColor, 0, nullptr);
+		commandList_->ClearRenderTargetView(swapChainRtvHandles_[currentBackBufferIndex_].cpuHandle, clearColor, 0, nullptr);
 		commandList_->ClearDepthStencilView(dsvHandle_.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0F, 0, 0, nullptr);
 	}
 
@@ -461,47 +453,63 @@ namespace MagEngine {
 	///=============================================================================
 	///						コマンドのキック
 	void DirectXCore::ExecuteCommandList() {
+		EndFrame();
+		BeginFrame();
+	}
+
+	///=============================================================================
+	///						フレーム終了
+	void DirectXCore::EndFrame() {
 		// GPUにコマンドリストの実行を行わせる
 		ID3D12CommandList *commandLists[] = { commandList_.Get() };
-		commandQueue_->ExecuteCommandLists(1, commandLists);
-		
-		// 現在のフレーム Fence 値を割り当てて GPU に通知
-		fenceValue_++;
-		commandQueue_->Signal(fence_.Get(), fenceValue_);
-		frameFenceValues_[currentFrameIndex_] = fenceValue_;
-		
-		// GPUとOSに画面の交換を行うように通知する
-		swapChain_->Present(1, 0);
+		commandQueue_->ExecuteCommandLists(_countof(commandLists), commandLists);
 
-		// TODO: DeferredReleaseQueue 導入後にこの毎フレーム待機を外す。
-		// 現状は弾やエフェクトなどの個別リソースが Update 中に破棄されるため、
-		// 次フレームへ進む前に GPU 参照を確実に終わらせる。
-		if(fence_->GetCompletedValue() < fenceValue_) {
-			hr_ = fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
-			assert(SUCCEEDED(hr_));
-			WaitForSingleObject(fenceEvent_, INFINITE);
-		}
-		
-		// 次に使うフレームリソースがまだGPUで使用中の場合だけ待つ
-		currentFrameIndex_ = (currentFrameIndex_ + 1) % FRAME_BUFFER_COUNT;
-		const uint64_t nextFrameFenceValue = frameFenceValues_[currentFrameIndex_];
-		if (nextFrameFenceValue != 0 && fence_->GetCompletedValue() < nextFrameFenceValue) {
-			fence_->SetEventOnCompletion(nextFrameFenceValue, fenceEvent_);
-			WaitForSingleObject(fenceEvent_, INFINITE);
-		}
-		
+		// GPUとOSに画面の交換を行うように通知する
+		hr_ = swapChain_->Present(1, 0);
+		assert(SUCCEEDED(hr_));
+
+		const uint64_t fenceValue = ++nextFenceValue_;
+		hr_ = commandQueue_->Signal(fence_.Get(), fenceValue);
+		assert(SUCCEEDED(hr_));
+		frameContexts_[currentFrameContextIndex_].SetFenceValue(fenceValue);
+
+		// NOTE:既存の弾・エフェクト・シーン破棄は即時解放のため、DeferredReleaseQueue導入まではGPU参照中破棄を防ぐ。
+		WaitForFrameContext(frameContexts_[currentFrameContextIndex_]);
+
+		currentFrameContextIndex_ = (currentFrameContextIndex_ + 1) % FramesInFlight;
+	}
+
+	///=============================================================================
+	///						フレーム開始
+	void DirectXCore::BeginFrame() {
+		FrameContext &frameContext = frameContexts_[currentFrameContextIndex_];
+		WaitForFrameContext(frameContext);
+
 		// 次フレーム用のコマンドリストを準備
-		hr_ = commandAllocators_[currentFrameIndex_]->Reset();
+		frameContext.ResetCommandAllocator();
+		hr_ = commandList_->Reset(frameContext.GetCommandAllocator(), nullptr);
 		assert(SUCCEEDED(hr_));
-		hr_ = commandList_->Reset(commandAllocators_[currentFrameIndex_].Get(), nullptr);
+		currentBackBufferIndex_ = swapChain_->GetCurrentBackBufferIndex();
+	}
+
+	///=============================================================================
+	///						FrameContextのGPU完了待ち
+	void DirectXCore::WaitForFrameContext(const FrameContext &frameContext) {
+		const uint64_t fenceValue = frameContext.GetFenceValue();
+		if(fenceValue == 0 || fence_->GetCompletedValue() >= fenceValue) {
+			return;
+		}
+
+		hr_ = fence_->SetEventOnCompletion(fenceValue, fenceEvent_);
 		assert(SUCCEEDED(hr_));
+		WaitForSingleObject(fenceEvent_, INFINITE);
 	}
 
 	///=============================================================================
 	///						開放処理
 	void DirectXCore::ReleaseResources() {
 		// GPU処理の完了を待つ（リソース破棄前に必須）
-		WaitForGpu();
+		WaitForGpuIdle();
 		
 		if(fenceEvent_) {
 			CloseHandle(fenceEvent_);

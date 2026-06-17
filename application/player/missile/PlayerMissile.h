@@ -23,6 +23,7 @@ class EnemyManager; // 前方宣言を追加
 namespace MagEngine {
 	class TrailEffectManager;
 	class LineManager;
+	class RenderWorld;
 }
 
 ///=============================================================================
@@ -46,8 +47,8 @@ public:
 					EnemyBase *target = nullptr); // Enemy* から EnemyBase* に変更
 	/// @brief Update 更新
 	void Update();
-	/// @brief Draw 描画
-	void Draw();
+	/// @brief 3D不透明描画対象の登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 	/// @brief DrawTrail トレイル描画
 	void DrawTrail();
 	/// @brief DrawDebugInfo デバッグ情報描画

@@ -54,7 +54,7 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 /// 終了処理
 void SceneManager::Finalize() {
 	if (engineContext_ && engineContext_->graphics) {
-		engineContext_->graphics->WaitForGpu();
+		engineContext_->graphics->WaitForGpuIdle();
 	}
 
 	if (nowScene_) {
@@ -77,7 +77,7 @@ void SceneManager::Update() {
 	if (prevSceneNo_ != currentSceneNo_ && currentSceneNo_ != -1) {
 		if (nowScene_) {
 			if (engineContext_ && engineContext_->graphics) {
-				engineContext_->graphics->WaitForGpu();
+				engineContext_->graphics->WaitForGpuIdle();
 			}
 			// 現在のシーンの終了処理
 			nowScene_->Finalize();
@@ -102,10 +102,10 @@ void SceneManager::Object2DDraw() {
 }
 
 ///=============================================================================
-/// 3D描画
-void SceneManager::Object3DDraw() {
+/// 3D不透明描画対象の登録
+void SceneManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if (nowScene_) {
-		nowScene_->Object3DDraw();
+		nowScene_->RegisterRenderables(renderWorld);
 	}
 }
 

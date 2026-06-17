@@ -305,10 +305,10 @@ void TitleScene::Object2DDraw() {
 }
 
 ///=============================================================================
-///						3D描画
-void TitleScene::Object3DDraw() {
-	if (player_) {
-		player_->Draw();
+///						3D不透明描画対象の登録
+void TitleScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(player_) {
+		player_->RegisterRenderables(renderWorld);
 	}
 }
 

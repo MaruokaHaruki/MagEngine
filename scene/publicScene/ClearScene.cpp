@@ -48,8 +48,8 @@ void ClearScene::Object2DDraw() {
 }
 
 ///=============================================================================
-///						3D描画
-void ClearScene::Object3DDraw() {
+///						3D不透明描画対象の登録
+void ClearScene::RegisterRenderables(MagEngine::RenderWorld &) {
 }
 
 ///=============================================================================
