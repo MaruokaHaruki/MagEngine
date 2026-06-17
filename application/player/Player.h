@@ -19,7 +19,6 @@
  *********************************************************************/
 #pragma once
 #include "BaseObject.h"
-#include "Input.h"
 #include "MagMath.h"
 #include "Object3d.h"
 #include "ParticleEmitter.h"
@@ -42,6 +41,11 @@ class Object3dSetup;
 class EnemyManager;
 class EnemyBase; // Enemy から EnemyBase に変更
 class EnemyBullet;
+namespace MagEngine {
+	class Input;
+	class LineManager;
+	class TrailEffectManager;
+}
 
 ///=============================================================================
 /// @brief 武装設定構造体
@@ -132,7 +136,7 @@ public:
 	/// @param modelPath モデルパス
 	/// @details プレイヤーのすべてのコンポーネント、オブジェクト、ゲージを初期化
 	/// @note Initialize() の後は必ず SetEnemyManager() を呼び出すこと
-	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath);
+	void Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, MagEngine::Input &input, MagEngine::LineManager &lineManager);
 	
 	/// @brief 毎フレーム更新
 	/// @details 移動、射撃、各種コンポーネントの状態を更新
@@ -885,6 +889,8 @@ private:
 	/// @details Initialize() で受け取ったポインタを保持
 	/// @note 画像リソースの作成など、オブジェクト生成時に必要
 	MagEngine::Object3dSetup *object3dSetup_;
+	MagEngine::Input *input_;
+	MagEngine::LineManager *lineManager_;
 
 	//========================================
 	// コンポーネント群

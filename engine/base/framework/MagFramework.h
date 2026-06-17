@@ -19,6 +19,7 @@
 // Framework
 #include "Camera.h"
 #include "DirectXCore.h"
+#include "EngineContext.h"
 #if ENABLE_IMGUI
 #include "ImguiSetup.h"
 #endif
@@ -72,6 +73,10 @@ namespace MagEngine {
 		virtual void Finalize();
 		/// @brief ポストエフェクトのImGui描画
 		void DrawPostEffectImGui();
+
+	private:
+		/// @brief EngineContextへ既存サービスの非所有参照を設定
+		void InitializeEngineContext();
 
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
@@ -151,6 +156,18 @@ namespace MagEngine {
 		std::unique_ptr<CloudSetup> cloudSetup_;
 		// TrailEffectセットアップ
 		std::unique_ptr<TrailEffectSetup> trailEffectSetup_;
+		//========================================
+		// マネージャ
+		// EngineContext - NOTE: 実体はFrameworkが保持し、Sceneへは非所有参照として渡す
+		EngineContext engineContext_;
+		//========================================
+		// マネージャ
+		// カメラマネージャ
+		std::unique_ptr<CameraManager> cameraManager_;
+		// ラインマネージャ
+		std::unique_ptr<LineManager> lineManager_;
+		// テクスチャマネージャ
+		std::unique_ptr<TextureManager> textureManager_;
 		//========================================
 		// マネージャ
 		// ポストエフェクトマネージャ

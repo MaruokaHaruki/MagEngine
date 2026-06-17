@@ -29,6 +29,11 @@ public:
 	/// @param enemyManager 敵マネージャーポインタ
 	void Initialize(Player *player, EnemyManager *enemyManager);
 
+	/// @brief 線描画マネージャーを設定
+	void SetLineManager(MagEngine::LineManager &lineManager) {
+		lineManager_ = &lineManager;
+	}
+
 	/// @brief 終了処理
 	void Finalize();
 
@@ -86,6 +91,7 @@ private:
 	Player *player_ = nullptr;
 	EnemyManager *enemyManager_ = nullptr;
 	MagEngine::LineManager *lineManager_ = nullptr;
+	MagEngine::Camera *currentCamera_ = nullptr;
 
 	// 表示設定
 	bool isVisible_ = true;

@@ -232,13 +232,13 @@ namespace MagEngine {
 		}
 
 		// テクスチャのSRVインデックスを取得して設定
-		TextureManager::GetInstance()->LoadTexture(textureFilePath);
+		particleSetup_->GetTextureManager().LoadTexture(textureFilePath);
 
 		// テクスチャのSRVインデックスを取得して設定
-		newGroup.srvIndex = TextureManager::GetInstance()->GetTextureIndex(textureFilePath);
+		newGroup.srvIndex = particleSetup_->GetTextureManager().GetTextureIndex(textureFilePath);
 
 		// テクスチャサイズを取得
-		const DirectX::TexMetadata &metadata = TextureManager::GetInstance()->GetMetadata(textureFilePath);
+		const DirectX::TexMetadata &metadata = particleSetup_->GetTextureManager().GetMetadata(textureFilePath);
 		MagMath::Vector2 textureSize = { static_cast<float>( metadata.width ), static_cast<float>( metadata.height ) };
 		// カスタムサイズが指定されているかどうか
 		// newGroup.textureSize = textureSize;
@@ -270,8 +270,8 @@ namespace MagEngine {
 		// InstancingMaxResource();
 
 		// インスタンシング用SRVを確保してSRVインデックスを記録
-		// newGroup.instancingSrvIndex =　srvManager_->Allocate() + 1;
-		newGroup.instancingSrvIndex = particleSetup_->GetSrvSetup()->Allocate() + 1;
+		// NOTE:DescriptorAllocatorが返したIndexをそのまま保持し、手動補正によるHandleずれを防ぐ
+		newGroup.instancingSrvIndex = particleSetup_->GetSrvSetup()->Allocate();
 		// 作成したSRVをインスタンシング用リソースに設定
 		// srvManager_->CreateSRVforStructuredBuffer(newGroup.instancingSrvIndex, newGroup.instancingResource.Get(), kNumMaxInstance, sizeof(ParticleForGPU));
 		particleSetup_->GetSrvSetup()->CreateSRVStructuredBuffer(newGroup.instancingSrvIndex, newGroup.instancingResource.Get(), kNumMaxInstance, sizeof(ParticleForGPU));

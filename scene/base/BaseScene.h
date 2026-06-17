@@ -7,51 +7,11 @@
  * \note
  *********************************************************************/
 #pragma once
-//========================================
-// NOTE: SceneContextを使用してセットアップ類をまとめている
-//       これにより各シーンのInitialize引数を削減
-#include "SceneContext.h"
 
-//========================================
-// 3D系
-// Object3d
-#include "Object3d.h"
-#include "Object3dSetup.h"
-// Particle
-#include "Particle.h"
-#include "ParticleEmitter.h"
-#include "ParticleSetup.h"
-// Skybox
-#include "Skybox.h"
-#include "SkyboxSetup.h"
-// Cloud
-#include "Cloud.h"
-#include "CloudSetup.h"
-// TrailEffect
-#include "TrailEffectManager.h"
-#include "TrailEffectSetup.h"
-// ========================================
-// 2D系
-#include "Sprite.h"
-#include "SpriteSetup.h"
-// ========================================
-// その他
-// オーディオ
-#include "MAudioG.h"
-// カメラ
-#include "Camera.h"
-// カメラマネージャ
-#include "CameraManager.h"
-// ラインマネージャ
-#include "LineManager.h"
-// データローダー
-#include "LevelDataLoader.h"
-// Input
-#include "Input.h"
-
-// ========================================
-// デバック関係
-#include "DebugTextManager.h"
+class SceneContext;
+namespace MagEngine {
+	struct EngineContext;
+}
 
 // シーンの種類
 enum SCENE {
@@ -64,15 +24,16 @@ enum SCENE {
 ///=============================================================================
 ///                         インターフェースシーン
 /// NOTE: このクラスはすべてのシーンの基底クラス
-///       SceneContextを通じて共通リソースにアクセスする
+///       派生Scene固有の依存を持たせないことでinclude波及を抑える
 class BaseScene {
 	///--------------------------------------------------------------
 	///                            メンバ関数
 	// NOTE: 継承先で実装される関数。抽象クラスなので純粋仮想関数とする。
 public:
-	/// \brief 初期化 - NOTE: 引数をSceneContextの1つにまとめられた
-	/// \param context シーンが使用するすべてのセットアップを含むコンテキスト
-	virtual void Initialize(SceneContext *context) = 0;
+	/// \brief 初期化
+	/// \param engineContext Sceneが使用するEngineサービス
+	/// \param sceneContext Scene管理用コンテキスト
+	virtual void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) = 0;
 
 	/// \brief 終了処理
 	virtual void Finalize() = 0;

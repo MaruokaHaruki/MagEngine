@@ -11,6 +11,9 @@
 
 // Forward declaration
 class SceneContext;
+namespace MagEngine {
+	struct EngineContext;
+}
 
 ///=============================================================================
 ///                         クリアシーンクラス
@@ -19,7 +22,7 @@ class ClearScene : public BaseScene {
 	///                            メンバ関数
 public:
 	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
-	void Initialize(SceneContext *context) override;
+	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 
 	/// \brief 終了処理
 	void Finalize() override;
@@ -57,4 +60,8 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	//========================================
+	// EngineContext
+	const MagEngine::EngineContext *engineContext_ = nullptr;
+	SceneContext *sceneContext_ = nullptr;
 };

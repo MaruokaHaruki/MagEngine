@@ -22,6 +22,7 @@ class EnemyBase;
 class EnemyManager; // 前方宣言を追加
 namespace MagEngine {
 	class TrailEffectManager;
+	class LineManager;
 }
 
 ///=============================================================================
@@ -39,6 +40,7 @@ public:
 	/// @param target ターゲット（初期値はnullptr）
 	void Initialize(MagEngine::Object3dSetup *object3dSetup,
 					MagEngine::TrailEffectManager *trailEffectManager,
+					MagEngine::LineManager *lineManager,
 					const std::string &modelPath,
 					const Vector3 &startPos, const Vector3 &initialDirection,
 					EnemyBase *target = nullptr); // Enemy* から EnemyBase* に変更
@@ -155,6 +157,7 @@ private:
 	//========================================
 	// トレイルエフェクト
 	std::unique_ptr<MagEngine::TrailEffect> trailEffect_; // トレイルエフェクト
+	MagEngine::LineManager *lineManager_ = nullptr;
 
 	//========================================
 	// 物理関連

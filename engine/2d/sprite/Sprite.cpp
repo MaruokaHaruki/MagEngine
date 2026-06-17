@@ -32,7 +32,7 @@ namespace MagEngine {
 
 		// テクスチャの読み込みと設定
 		textureFilePath_ = textureFilePath;
-		TextureManager::GetInstance()->LoadTexture(textureFilePath);
+		spriteSetup_->GetTextureManager().LoadTexture(textureFilePath);
 
 		// テクスチャのサイズに合わせて初期化
 		AdjustTextureSize();
@@ -106,7 +106,7 @@ namespace MagEngine {
 		commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
 		// テクスチャの設定
-		commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(textureFilePath_));
+		commandList->SetGraphicsRootDescriptorTable(2, spriteSetup_->GetTextureManager().GetSrvHandleGPU(textureFilePath_));
 
 		// 描画コール（インスタンス描画、6頂点 = 2三角形）
 		commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
@@ -312,7 +312,7 @@ namespace MagEngine {
 	///                    テクスチャ範囲の反映
 	void Sprite::ReflectTextureRange() {
 		// テクスチャメタデータの取得
-		const DirectX::TexMetadata &metadata = TextureManager::GetInstance()->GetMetadata(textureFilePath_);
+		const DirectX::TexMetadata &metadata = spriteSetup_->GetTextureManager().GetMetadata(textureFilePath_);
 
 		// テクスチャのサイズ
 		float textureWidth = static_cast<float>(metadata.width);
@@ -335,7 +335,7 @@ namespace MagEngine {
 	///                    テクスチャサイズをスプライトに統合
 	void Sprite::AdjustTextureSize() {
 		// テクスチャメタデータの取得
-		const DirectX::TexMetadata &metadata = TextureManager::GetInstance()->GetMetadata(textureFilePath_);
+		const DirectX::TexMetadata &metadata = spriteSetup_->GetTextureManager().GetMetadata(textureFilePath_);
 
 		// テクスチャの幅と高さ
 		float textureWidth = static_cast<float>(metadata.width);

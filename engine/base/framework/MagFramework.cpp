@@ -78,14 +78,15 @@ namespace MagEngine {
 #endif
 
 		///--------------------------------------------------------------
-		/// 					 カメラの初期化s
-		CameraManager::GetInstance()->Initialize();
+		/// 					 カメラの初期化
+		cameraManager_ = std::make_unique<CameraManager>();
+		cameraManager_->Initialize();
 
 		///--------------------------------------------------------------
 		///                        デバックテキストマネージャ
 		DebugTextManager::GetInstance()->Initialize(win_.get());
 		// デバッグテキストマネージャの初期化（カメラ初期化後に設定）
-		DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		DebugTextManager::GetInstance()->SetCamera(cameraManager_->GetCurrentCamera());
 		// デバッグテキストの表示を有効にする
 		DebugTextManager::GetInstance()->SetDebugTextEnabled(true);
 
@@ -105,7 +106,8 @@ namespace MagEngine {
 
 		///--------------------------------------------------------------
 		// 						 テクスチャマネージャ
-		TextureManager::GetInstance()->Initialize(dxCore_.get(), "resources/texture/", srvSetup_.get());
+		textureManager_ = std::make_unique<TextureManager>();
+		textureManager_->Initialize(dxCore_.get(), "resources/texture/", srvSetup_.get());
 
 		///--------------------------------------------------------------
 		///						 ライトマネージャ
@@ -119,20 +121,20 @@ namespace MagEngine {
 		// スプライト共通部
 		spriteSetup_ = std::make_unique<SpriteSetup>();
 		// スプライト共通部の初期化
-		spriteSetup_->Initialize(dxCore_.get());
+		spriteSetup_->Initialize(dxCore_.get(), *textureManager_);
 
 		///--------------------------------------------------------------
 		///						 Object3D共通部
 		//========================================
 		// モデルマネージャの初期化
-		ModelManager::GetInstance()->Initialize(dxCore_.get());
+		ModelManager::GetInstance()->Initialize(dxCore_.get(), *textureManager_);
 		//========================================
 		// 3Dオブジェクト共通部
 		object3dSetup_ = std::make_unique<Object3dSetup>();
 		// 3Dオブジェクト共通部の初期化
 		object3dSetup_->Initialize(dxCore_.get());
 		// Object3Dのカメラ設定
-		object3dSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		object3dSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// Object3Dのライトマネージャ設定
 		object3dSetup_->SetLightManager(lightManager_.get());
 
@@ -140,9 +142,9 @@ namespace MagEngine {
 		///						 Skybox共通部
 		skyboxSetup_ = std::make_unique<SkyboxSetup>();
 		//  Skyboxの初期化
-		skyboxSetup_->Initialize(dxCore_.get());
+		skyboxSetup_->Initialize(dxCore_.get(), *textureManager_);
 		//  Skyboxのカメラ設定
-		skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		skyboxSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// Skyboxのライトマネージャ設定
 		skyboxSetup_->SetLightManager(lightManager_.get());
 
@@ -150,9 +152,9 @@ namespace MagEngine {
 		///						 パーティクル共通部
 		particleSetup_ = std::make_unique<ParticleSetup>();
 		// パーティクルセットアップの初期化
-		particleSetup_->Initialize(dxCore_.get(), srvSetup_.get());
+		particleSetup_->Initialize(dxCore_.get(), srvSetup_.get(), *textureManager_);
 		// パーティクルのカメラ設定
-		particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		particleSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 
 		///--------------------------------------------------------------
 		///						 クラウド共通部
@@ -182,28 +184,32 @@ namespace MagEngine {
 
 		///--------------------------------------------------------------
 		///						 ラインマネージャ
-		LineManager::GetInstance()->Initialize(dxCore_.get(), srvSetup_.get());
+		lineManager_ = std::make_unique<LineManager>();
+		lineManager_->Initialize(dxCore_.get(), srvSetup_.get());
 		// Lineのカメラ設定
-		LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		lineManager_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 
 		///--------------------------------------------------------------
 		///						 オーディオの初期化
 		MAudioG::GetInstance()->Initialize("resources/sound/");
 
 		///--------------------------------------------------------------
+		///						 EngineContextの構築
+		InitializeEngineContext();
+
+		///--------------------------------------------------------------
 		///						 シーンマネージャ
 		sceneManager_ = std::make_unique<SceneManager>();
-		// シーンマネージャの初期化
-		sceneManager_->Initialize(spriteSetup_.get(), object3dSetup_.get(), particleSetup_.get(),
-								  skyboxSetup_.get(), cloudSetup_.get(), trailEffectSetup_.get(), trailEffectManager_.get());
 		// シーンファクトリーのセット
 		sceneFactory_ = std::make_unique<SceneFactory>();
 		sceneManager_->SetSceneFactory(sceneFactory_.get());
+		// シーンマネージャの初期化
+		sceneManager_->Initialize(engineContext_);
 
 		///--------------------------------------------------------------
 		///						 各種設定
 		// ライトマネージャへラインマネージャポインタの受け渡し
-		lightManager_->SetLineManager(LineManager::GetInstance());
+		lightManager_->SetLineManager(lineManager_.get());
 
 		///--------------------------------------------------------------
 		///						 エディターレイアウトの初期化
@@ -228,32 +234,55 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
+	///						EngineContextの構築
+	void MagFramework::InitializeEngineContext() {
+		// 処理内容：既存SingletonとFramework所有オブジェクトをContextへ集約する
+		// 理由：所有権を変更せず、Scene側のSingleton直接参照を段階的に減らすため
+		engineContext_.input = Input::GetInstance();
+		engineContext_.cameraManager = cameraManager_.get();
+		engineContext_.textureManager = textureManager_.get();
+		engineContext_.modelManager = ModelManager::GetInstance();
+		engineContext_.audio = MAudioG::GetInstance();
+		engineContext_.graphics = dxCore_.get();
+		engineContext_.spriteSetup = spriteSetup_.get();
+		engineContext_.object3dSetup = object3dSetup_.get();
+		engineContext_.particleSetup = particleSetup_.get();
+		engineContext_.skyboxSetup = skyboxSetup_.get();
+		engineContext_.cloudSetup = cloudSetup_.get();
+		engineContext_.trailEffectSetup = trailEffectSetup_.get();
+		engineContext_.trailEffectManager = trailEffectManager_.get();
+		engineContext_.debugTextManager = DebugTextManager::GetInstance();
+		engineContext_.lineManager = lineManager_.get();
+		engineContext_.Validate();
+	}
+
+	///=============================================================================
 	///						更新
 	void MagFramework::Update() {
 		//========================================
 		// デバックカメラの呼び出し1,2
 		if (Input::GetInstance()->PushKey(DIK_1)) {
-			CameraManager::GetInstance()->SetCurrentCamera("DebugCamera");
+			cameraManager_->SetCurrentCamera("DebugCamera");
 		}
 		if (Input::GetInstance()->PushKey(DIK_2)) {
-			CameraManager::GetInstance()->SetCurrentCamera("DefaultCamera");
+			cameraManager_->SetCurrentCamera("DefaultCamera");
 		}
 
 		//========================================
 		// カメラの更新
-		CameraManager::GetInstance()->UpdateAll();
+		cameraManager_->UpdateAll(*lineManager_);
 
 		//========================================
 		// デバックテキストの更新（カメラ更新後に実行）
-		DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		DebugTextManager::GetInstance()->SetCamera(cameraManager_->GetCurrentCamera());
 		DebugTextManager::GetInstance()->Update();
 
 		//========================================
 		// ラインの更新
 		// カメラの更新
-		LineManager::GetInstance()->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		lineManager_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// ラインの更新
-		LineManager::GetInstance()->Update();
+		lineManager_->Update();
 
 		//=========================================
 		// ライトの可視化
@@ -261,13 +290,13 @@ namespace MagEngine {
 
 		//========================================
 		// Object3Dのカメラ設定の更新
-		object3dSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		object3dSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// particleのカメラ設定の更新
-		particleSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		particleSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// skyboxのカメラ設定の更新
-		skyboxSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		skyboxSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// TrailEffectのカメラ設定の更新
-		trailEffectSetup_->SetDefaultCamera(CameraManager::GetInstance()->GetCurrentCamera());
+		trailEffectSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 
 		//========================================
 		// トレイルエフェクトマネージャの更新
@@ -329,13 +358,19 @@ namespace MagEngine {
 		MAudioG::GetInstance()->Finalize();
 		//========================================
 		// テクスチャマネージャの終了処理
-		TextureManager::GetInstance()->Finalize();
+		if (textureManager_) {
+			textureManager_->Finalize();
+			textureManager_.reset();
+		}
 		//========================================
 		// モデルマネージャの終了処理
 		ModelManager::GetInstance()->Finalize();
 		//========================================
 		// ラインマネージャの終了処理
-		LineManager::GetInstance()->Finalize();
+		if (lineManager_) {
+			lineManager_->Finalize();
+			lineManager_.reset();
+		}
 		//========================================
 		// 共通描画セットアップの終了処理
 		cloudSetup_.reset();
@@ -347,7 +382,10 @@ namespace MagEngine {
 		srvSetup_.reset();
 		//========================================
 		// カメラマネージャの終了処理
-		CameraManager::GetInstance()->Finalize();
+		if (cameraManager_) {
+			cameraManager_->Finalize();
+			cameraManager_.reset();
+		}
 		//========================================
 		// ダイレクトX
 		if (dxCore_) {
@@ -369,7 +407,7 @@ namespace MagEngine {
 		srvSetup_->PreDraw();
 		//========================================
 		//  Lineの描画
-		LineManager::GetInstance()->Draw();
+		lineManager_->Draw();
 	}
 
 	///=============================================================================
@@ -383,7 +421,7 @@ namespace MagEngine {
 	void MagFramework::PreDraw() {
 		//========================================
 		// ループ前処理(ポストエフェクト適用)
-		dxCore_->PreDraw(postEffectManager_.get());
+		dxCore_->PreDraw(postEffectManager_.get(), *textureManager_);
 	}
 
 	///=============================================================================
@@ -420,11 +458,11 @@ namespace MagEngine {
 		// InPutのImGui描画
 		Input::GetInstance()->ImGuiDraw();
 		// CameraのImGui描画
-		CameraManager::GetInstance()->DrawImGui();
+		cameraManager_->DrawImGui();
 		// LightのImGui描画
 		lightManager_->DrawImGui();
 		// LineのImGui描画
-		LineManager::GetInstance()->DrawImGui();
+		lineManager_->DrawImGui();
 		// TrailEffectManagerのImGui描画
 		trailEffectManager_->DrawImGui();
 		// ImGuiでデバッグテキストを描画

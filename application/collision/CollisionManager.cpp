@@ -7,7 +7,8 @@ using namespace MagEngine;
 
 ///=============================================================================
 ///						初期化
-void CollisionManager::Initialize(float cellSize, int maxObjects) {
+void CollisionManager::Initialize(MagEngine::LineManager &lineManager, float cellSize, int maxObjects) {
+	lineManager_ = &lineManager;
 	cellSize_ = cellSize;
 	invCellSize_ = 1.0f / cellSize; // 除算回避用
 	enableDebugDraw_ = false;
@@ -386,7 +387,9 @@ void CollisionManager::DrawDebugColliders() {
 				color = Vector4{1.0f, 1.0f, 1.0f, 1.0f}; // 白：衝突していない
 			}
 
-			LineManager::GetInstance()->DrawSphere(position, radius, color);
+			if (lineManager_) {
+				lineManager_->DrawSphere(position, radius, color);
+			}
 		}
 	}
 }

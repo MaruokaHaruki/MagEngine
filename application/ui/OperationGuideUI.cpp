@@ -5,13 +5,15 @@
 #include "Input.h"
 #include <Xinput.h>
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void OperationGuideUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
+void OperationGuideUI::Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Input &input) {
 	spriteSetup_ = spriteSetup;
+	input_ = &input;
 
 	// 画面サイズを取得
 	if (spriteSetup_) {
@@ -252,7 +254,8 @@ void OperationGuideUI::Update() {
 ///=============================================================================
 ///                        ボタン状態の更新
 void OperationGuideUI::UpdateButtonStates() {
-	Input *input = Input::GetInstance();
+	assert(input_);
+	Input *input = input_;
 
 	// 左スティック（移動入力があれば押されている判定）
 	float stickX = input->GetLeftStickX();

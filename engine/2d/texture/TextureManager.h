@@ -8,7 +8,6 @@
 #pragma once
 #include "DirectXCore.h"
 #include "SrvSetup.h"
-#include <memory>
 #include <string>
 #include <unordered_map>
 ///=============================================================================
@@ -21,16 +20,13 @@ namespace MagEngine {
 	 * \brief filePath ファイルパス
 	 * \brief metadata メタデータ
 	 * \brief resource リソース
-	 * \brief srvHandleCPU CPU用SRVハンドル
-	 * \brief srvHandleGPU GPU用SRVハンドル
+	 * \brief srvHandle SRV Descriptor
 	 */
 	struct TextureData {
 		DirectX::TexMetadata metadata{};
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 		Microsoft::WRL::ComPtr<ID3D12Resource> interMediateResource;
-		uint32_t srvIndex = 0;
-		D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU{};
-		D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU{};
+		DescriptorHandle srvHandle{};
 	};
 
 	///=============================================================================
@@ -39,9 +35,10 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							メンバ関数
 	public:
-		/// @brief GetInstance インスタンス生成
-		/// @return インスタンスのポインタ
-		static TextureManager *GetInstance();
+		TextureManager() = default;
+		~TextureManager() = default;
+		TextureManager(const TextureManager &) = delete;
+		TextureManager &operator=(const TextureManager &) = delete;
 
 		/// @brief Initialize 初期化
 		/// @param dxManager DirectXCoreポインタ
@@ -78,22 +75,6 @@ namespace MagEngine {
 
 		/// @brief CreateRenderTextureMetaData レンダーテクスチャのメタデータを生成
 		void CreateRenderTextureMetaData();
-
-		///--------------------------------------------------------------
-		///							 メンバ変数
-		//========================================
-		// シングルトンインスタンス
-		static std::unique_ptr<TextureManager> instance_;
-		// std::make_unique と std::unique_ptr でのアクセスを許可
-		friend std::unique_ptr<TextureManager> std::make_unique<TextureManager>();
-		template <typename T>
-		friend struct std::default_delete;
-		//========================================
-		// 設定
-		TextureManager() = default;
-		~TextureManager() = default;
-		TextureManager(TextureManager &) = default;
-		TextureManager &operator=(TextureManager &) = default;
 
 	private:
 		//========================================

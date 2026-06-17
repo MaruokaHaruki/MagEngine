@@ -19,11 +19,11 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						初期化
-	void ModelManager::Initialize(DirectXCore *dxCore) {
+	void ModelManager::Initialize(DirectXCore *dxCore, TextureManager &textureManager) {
 		//========================================
 		// モデル共通部の初期化
 		modelSetup_ = std::make_unique<ModelSetup>();
-		modelSetup_->Initialize(dxCore);
+		modelSetup_->Initialize(dxCore, textureManager);
 	}
 
 	///=============================================================================

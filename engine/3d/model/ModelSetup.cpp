@@ -13,10 +13,12 @@
 namespace MagEngine {
 ///=============================================================================
 ///						初期化
-	void ModelSetup::Initialize(DirectXCore *dxCore) {
+	void ModelSetup::Initialize(DirectXCore *dxCore, TextureManager &textureManager) {
 		//========================================
 		// 引数で受け取ったDXCoreをセット
 		dxCore_ = dxCore;
+		// モデルはテクスチャを所有せず、Framework所有の管理器を参照する
+		textureManager_ = &textureManager;
 	}
 
 	///=============================================================================
@@ -29,7 +31,7 @@ namespace MagEngine {
 		//========================================
 		// テクスチャの読み込み
 		if(!texturePath.empty()) {
-			TextureManager::GetInstance()->LoadTexture(texturePath);
+			textureManager_->LoadTexture(texturePath);
 		}
 	}
 }

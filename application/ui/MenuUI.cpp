@@ -5,13 +5,15 @@
 #include "Input.h"
 #include <Xinput.h>
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void MenuUI::Initialize(MagEngine::SpriteSetup *spriteSetup) {
+void MenuUI::Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Input &input) {
 	spriteSetup_ = spriteSetup;
+	input_ = &input;
 
 	// 画面サイズを取得
 	if (spriteSetup_) {
@@ -157,7 +159,8 @@ void MenuUI::Finalize() {
 void MenuUI::Update() {
 	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
 
-	Input *input = Input::GetInstance();
+	assert(input_);
+	Input *input = input_;
 
 	// ESCキーまたはパッドのメニューボタンでメニューを開く・閉じる（トリガーで一回だけ）
 	if (input->TriggerKey(DIK_ESCAPE) || input->TriggerButton(XINPUT_GAMEPAD_START)) {
@@ -216,7 +219,8 @@ void MenuUI::UpdateButtonSelection() {
 		return;
 	}
 
-	Input *input = Input::GetInstance();
+	assert(input_);
+	Input *input = input_;
 
 	// 上下キーでボタン選択
 	static float inputCooldown = 0.0f;

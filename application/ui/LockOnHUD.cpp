@@ -4,7 +4,6 @@
 #include "../enemy/base/EnemyBase.h"
 #include "../enemy/manager/EnemyManager.h"
 #include "../player/Player.h"
-#include "CameraManager.h"
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include <algorithm>
@@ -16,7 +15,6 @@ using namespace MagEngine;
 void LockOnHUD::Initialize(Player *player, EnemyManager *enemyManager) {
 	player_ = player;
 	enemyManager_ = enemyManager;
-	lineManager_ = LineManager::GetInstance();
 
 	isVisible_ = true;
 	pulseTime_ = 0.0f;
@@ -33,6 +31,7 @@ void LockOnHUD::Finalize() {
 	player_ = nullptr;
 	enemyManager_ = nullptr;
 	lineManager_ = nullptr;
+	currentCamera_ = nullptr;
 }
 
 ///=============================================================================
@@ -41,6 +40,7 @@ void LockOnHUD::Update(MagEngine::Camera *camera) {
 	if (!isVisible_ || !player_ || !enemyManager_) {
 		return;
 	}
+	currentCamera_ = camera;
 
 	// アニメーション更新
 	if (debugSettings_.enableAnimation) {
@@ -59,7 +59,7 @@ void LockOnHUD::Draw() {
 	}
 
 	// カメラを取得
-	MagEngine::Camera *camera = CameraManager::GetInstance()->GetCamera("FollowCamera");
+	MagEngine::Camera *camera = currentCamera_;
 	if (!camera) {
 		return;
 	}

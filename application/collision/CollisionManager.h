@@ -16,6 +16,10 @@ using namespace MagMath;
 #include <unordered_map>
 #include <vector>
 
+namespace MagEngine {
+	class LineManager;
+}
+
 //========================================
 // コリジョンシステム定数
 namespace CollisionConstants {
@@ -100,7 +104,7 @@ struct CollisionPairHash {
 class CollisionManager {
 public:
 	/// \brief 初期化
-	void Initialize(float cellSize = CollisionConstants::kDefaultCellSize, int maxObjects = CollisionConstants::kDefaultMaxObjects);
+	void Initialize(MagEngine::LineManager &lineManager, float cellSize = CollisionConstants::kDefaultCellSize, int maxObjects = CollisionConstants::kDefaultMaxObjects);
 
 	/// \brief 更新
 	void Update();
@@ -212,4 +216,5 @@ private:
 	bool enableGroupFilter_;	///< グループフィルタリングの有効/無効
 	uint16_t debugGroupFilter_; ///< デバッグ表示用のグループフィルタ
 	size_t collisionChecksThisFrame_;
+	MagEngine::LineManager *lineManager_ = nullptr;
 };

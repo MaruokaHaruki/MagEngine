@@ -15,6 +15,7 @@ namespace MagEngine {
 	// 前方宣言
 	class DirectXCore;
 	class LightManager;
+	class TextureManager;
 	///=============================================================================
 	///						クラス
 	class SkyboxSetup {
@@ -23,7 +24,7 @@ namespace MagEngine {
 	public:
 		/// @brief  デフォルトコンストラクタ
 		/// @param dxCore DirectXCoreポインタ
-		void Initialize(DirectXCore *dxCore);
+		void Initialize(DirectXCore *dxCore, TextureManager &textureManager);
 
 		/// @brief 共通描画設定
 		void CommonDrawSetup();
@@ -44,6 +45,10 @@ namespace MagEngine {
 		/// @return DirectXCoreポインタ
 		DirectXCore *GetDXManager() const {
 			return dxCore_;
+		}
+
+		TextureManager &GetTextureManager() const {
+			return *textureManager_;
 		}
 
 		/// @brief SetDefaultCamera デフォルトカメラの設定
@@ -76,6 +81,8 @@ namespace MagEngine {
 		//========================================
 		// DirectXCoreポインタ
 		DirectXCore *dxCore_ = nullptr;
+		// キューブマップはTextureManagerが所有し、Skyboxは参照だけを使う
+		TextureManager *textureManager_ = nullptr;
 
 		//========================================
 		// RootSignature

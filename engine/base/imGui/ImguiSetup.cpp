@@ -60,30 +60,18 @@ namespace MagEngine {
 		ImGui_ImplWin32_Init(winApp_->GetWindowHandle());
 
 		//========================================
-		// デスクリプタヒープの設定
-		// NOTE:ImGuiの描画に必要なSRV用ディスクリプタヒープを生成
-		D3D12_DESCRIPTOR_HEAP_DESC desc = {};
-		desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		desc.NumDescriptors = 128; // ゲーム画面など複数のテクスチャに対応
-		desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		// ディスクリプタヒープの生成
-		dxCore->GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&srvDescriptorHeap_));
-		// 生成確認
-		assert(srvDescriptorHeap_);
-
-		// ディスクリプタサイズを取得
-		descriptorSize_ = dxCore->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		// 最初のディスクリプタはImGui内部で使用される可能性があるため、1からスタート
-		nextDescriptorIndex_ = 1;
+		// NOTE:ImGuiも共通Resource Descriptor Heapを利用し、Heap切り替えを避ける
+		fontDescriptor_ = dxCore_->GetResourceAllocator().Allocate();
+		assert(fontDescriptor_.IsValid());
 
 		//========================================
 		// DirectX12用の初期化
 		ImGui_ImplDX12_Init(dxCore_->GetDevice().Get(),
 							dxCore_->GetSwapChainDesc().BufferCount,
 							dxCore_->GetRtvDesc().Format,
-							srvDescriptorHeap_.Get(),
-							srvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart(),
-							srvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart());
+							dxCore_->GetResourceAllocator().GetHeap(),
+							fontDescriptor_.cpuHandle,
+							fontDescriptor_.gpuHandle);
 
 		//========================================
 		// ドッキング設定
@@ -186,7 +174,7 @@ namespace MagEngine {
 		ID3D12GraphicsCommandList *commandList = dxCore_->GetCommandList().Get();
 
 		// デスクリプタヒープの配列をセットするコマンド
-		ID3D12DescriptorHeap *ppHeaps[] = {srvDescriptorHeap_.Get()};
+		ID3D12DescriptorHeap *ppHeaps[] = {dxCore_->GetResourceAllocator().GetHeap()};
 		commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 		// 描画コマンド
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
@@ -201,9 +189,7 @@ namespace MagEngine {
 		ImGui_ImplWin32_Shutdown(); // ImGuiのWin32サポート終了
 		ImGui::DestroyContext();	// ImGuiコンテキストの破棄
 
-		//========================================
-		// ディスクリプタヒープの解放
-		srvDescriptorHeap_.Reset();
+		fontDescriptor_ = {};
 	}
 
 	///=============================================================================
@@ -391,21 +377,13 @@ namespace MagEngine {
 /// ImguiSetup::RegisterTextureForImGui の実装
 namespace MagEngine {
 	ImTextureID ImguiSetup::RegisterTextureForImGui(ID3D12Resource *resource) {
-		if (!resource || !dxCore_ || !srvDescriptorHeap_.Get()) {
+		if (!resource || !dxCore_) {
 			return (ImTextureID) nullptr;
 		}
 
-		// 次のディスクリプタインデックスが範囲内かチェック
-		if (nextDescriptorIndex_ >= 128) {
-			return (ImTextureID) nullptr;
-		}
-
-		// CPU/GPUハンドルを計算
-		D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = srvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-		cpuHandle.ptr += nextDescriptorIndex_ * descriptorSize_;
-
-		D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = srvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart();
-		gpuHandle.ptr += nextDescriptorIndex_ * descriptorSize_;
+		// NOTE:ImGui表示用SRVも共通Allocatorから確保し、手動Descriptor計算を行わない
+		DescriptorHandle handle = dxCore_->GetResourceAllocator().Allocate();
+		assert(handle.IsValid());
 
 		// SRVを作成
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -414,13 +392,9 @@ namespace MagEngine {
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srvDesc.Texture2D.MipLevels = resource->GetDesc().MipLevels;
 
-		dxCore_->GetDevice()->CreateShaderResourceView(resource, &srvDesc, cpuHandle);
+		dxCore_->GetDevice()->CreateShaderResourceView(resource, &srvDesc, handle.cpuHandle);
 
-		// 次のインデックスに進める
-		ImTextureID result = (ImTextureID)gpuHandle.ptr;
-		nextDescriptorIndex_++;
-
-		return result;
+		return (ImTextureID)handle.gpuHandle.ptr;
 	}
 
 	///=============================================================================

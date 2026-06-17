@@ -97,7 +97,7 @@ namespace MagEngine {
 		 * \return ディスクリプタヒープポインタ
 		 */
 		ID3D12DescriptorHeap *GetSrvDescriptorHeap() const {
-			return srvDescriptorHeap_.Get();
+			return dxCore_ ? dxCore_->GetResourceAllocator().GetHeap() : nullptr;
 		}
 		/**----------------------------------------------------------------------------
 		 * \brief  LoadFont フォントをロード
@@ -135,13 +135,8 @@ namespace MagEngine {
 		DirectXCore *dxCore_ = nullptr;
 
 		//========================================
-		// SRV用ディスクリプタヒープ
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap_ = nullptr;
-
-		// ディスクリプタサイズ
-		uint32_t descriptorSize_ = 0;
-		// 次のディスクリプタインデックス
-		uint32_t nextDescriptorIndex_ = 0;
+		// ImGuiフォント用Descriptor
+		DescriptorHandle fontDescriptor_{};
 
 		// 描画コール数などのカウンタ（例: 自身のエンジンやゲームループで管理）
 		int drawCallCount = 0;

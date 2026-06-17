@@ -8,10 +8,11 @@
  *********************************************************************/
 #pragma once
 #include "Matrix4x4.h"
-#include "TextureManager.h"
+#include "Light.h"
 #include "Transform.h"
 #include "TransformationMatrix.h"
 #include "Vector4.h"
+#include <vector>
 //========================================
 // DX12include
 #include <d3d12.h>

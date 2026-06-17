@@ -10,12 +10,11 @@ using namespace MagEngine;
 
 ///=============================================================================
 ///                        初期化
-void TitleCamera::Initialize(const std::string &cameraName) {
+void TitleCamera::Initialize(const std::string &cameraName, MagEngine::CameraManager &cameraManager) {
 	cameraName_ = cameraName;
 
 	// カメラマネージャからカメラを取得
-	CameraManager *cameraManager = CameraManager::GetInstance();
-	camera_ = cameraManager->GetCamera(cameraName);
+	camera_ = cameraManager.GetCamera(cameraName);
 
 	player_ = nullptr;
 	currentPhase_ = TitleCameraPhase::Opening;

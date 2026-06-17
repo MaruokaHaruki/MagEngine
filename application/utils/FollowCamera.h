@@ -6,13 +6,17 @@ using namespace MagMath;
 
 // Forward declarations
 class Player;
+namespace MagEngine {
+	class CameraManager;
+	class Input;
+}
 
 class FollowCamera {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(const std::string &cameraName);
+	void Initialize(const std::string &cameraName, MagEngine::CameraManager &cameraManager, MagEngine::Input &input);
 
 	/// \brief 更新
 	void Update();
@@ -101,6 +105,7 @@ public:
 	///							メンバ変数
 private:
 	MagEngine::Camera *camera_; // カメラマネージャから取得したカメラ
+	MagEngine::Input *input_ = nullptr;
 	Player *target_;			// 追従対象のプレイヤー
 	std::string cameraName_;	// 使用するカメラ名
 

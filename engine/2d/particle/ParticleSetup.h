@@ -13,6 +13,7 @@
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
+	class TextureManager;
 	class ParticleSetup {
 		///--------------------------------------------------------------
 		///						 メンバ関数
@@ -21,7 +22,7 @@ namespace MagEngine {
 		 * \brief  Initialize 初期化
 		 * \param  dxManager ダイレクトXマネージャー
 		 */
-		void Initialize(DirectXCore *dxCore, SrvSetup *srvSetup);
+		void Initialize(DirectXCore *dxCore, SrvSetup *srvSetup, TextureManager &textureManager);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  CommonDrawSetup 共通描画設定
@@ -58,6 +59,10 @@ namespace MagEngine {
 		 */
 		SrvSetup *GetSrvSetup() const {
 			return srvSetup_;
+		}
+
+		TextureManager &GetTextureManager() const {
+			return *textureManager_;
 		}
 
 		/**----------------------------------------------------------------------------
@@ -99,6 +104,8 @@ namespace MagEngine {
 		DirectXCore *dxCore_ = nullptr;
 		// SrvSetupポインタ
 		SrvSetup *srvSetup_ = nullptr;
+		// テクスチャ管理器はFrameworkが所有するため、ここでは寿命を持たない
+		TextureManager *textureManager_ = nullptr;
 
 		//========================================
 		// RootSignature

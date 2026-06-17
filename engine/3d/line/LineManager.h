@@ -23,9 +23,10 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 メンバ関数
 	public:
-		/// @brief インスタンスの取得
-		/// @return LineManagerのインスタンス
-		static LineManager *GetInstance();
+		LineManager() = default;
+		~LineManager() = default;
+		LineManager(const LineManager &) = delete;
+		LineManager &operator=(const LineManager &) = delete;
 
 		/// @brief 初期化
 		/// @param dxCore DirectXCoreポインタ
@@ -219,18 +220,6 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 メンバ変数
 	private:
-		//========================================
-		// コンストラクタを非公開に
-		// コンストラクタ
-		LineManager() = default;
-		// デストラクタ
-		~LineManager() = default;
-		// コピーコンストラクタ
-		LineManager(const LineManager &) = delete;
-		// 代入演算子
-		LineManager &operator=(const LineManager &) = delete;
-
-		//========================================
 		// DirectXCore への参照
 		DirectXCore *dxCore_ = nullptr;
 		// SrvSetup への参照

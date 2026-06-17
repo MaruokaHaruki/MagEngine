@@ -2,15 +2,18 @@
 #include "MagMath.h"
 using namespace MagMath;
 #include "Camera.h"
-#include "CameraManager.h"
 #include "FollowCamera.h"
-#include "LineManager.h"
 #include "Player.h"
 #include <memory>
 
+namespace MagEngine {
+	class CameraManager;
+	class LineManager;
+}
+
 class HUD {
 public:
-	void Initialize();
+	void Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineManager &lineManager);
 	void Update(const Player *player);
 	void Draw();
 	void DrawImGui();
@@ -72,6 +75,8 @@ private:
 
 	// カメラ参照
 	FollowCamera *followCamera_;
+	MagEngine::CameraManager *cameraManager_;
+	MagEngine::LineManager *lineManager_;
 
 	// プレイヤー参照
 	const Player *currentPlayer_;

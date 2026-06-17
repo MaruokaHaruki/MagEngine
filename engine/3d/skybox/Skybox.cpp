@@ -116,7 +116,7 @@ namespace MagEngine {
 		// トランスフォーメーションマトリックスバッファの設定
 		commandList->SetGraphicsRootConstantBufferView(0, transformationMatrixBuffer_->GetGPUVirtualAddress());
 		// テクスチャの設定
-		commandList->SetGraphicsRootDescriptorTable(1, TextureManager::GetInstance()->GetSrvHandleGPU(texturePath_));
+		commandList->SetGraphicsRootDescriptorTable(1, skyboxSetup_->GetTextureManager().GetSrvHandleGPU(texturePath_));
 
 		//========================================
 		// ライト定数バッファの設定

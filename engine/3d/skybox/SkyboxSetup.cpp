@@ -15,9 +15,11 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						初期化
-	void SkyboxSetup::Initialize(DirectXCore *dxCore) {
+	void SkyboxSetup::Initialize(DirectXCore *dxCore, TextureManager &textureManager) {
 		/// ===引数でdxManagerを受取=== ///
 		dxCore_ = dxCore;
+		// テクスチャ管理器はFramework側の所有物として扱う
+		textureManager_ = &textureManager;
 
 		/// ===グラフィックスパイプラインの生成=== ///
 		CreateGraphicsPipeline();

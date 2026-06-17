@@ -15,17 +15,14 @@
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
+	class LineManager;
 ///=============================================================================
 ///						カメラマネージャークラス
 	class CameraManager {
 		///--------------------------------------------------------------
 		///						 メンバ関数
 	public:
-		/**----------------------------------------------------------------------------
-		 * \brief  GetInstance インスタンスの取得
-		 * \return
-		 */
-		static CameraManager *GetInstance();
+		CameraManager() = default;
 		/**----------------------------------------------------------------------------
 		 * \brief  ~CameraManager デストラクタ
 		 */
@@ -57,7 +54,7 @@ namespace MagEngine {
 		Camera *GetCurrentCamera() const;
 
 		/// \brief 全てのカメラの更新
-		void UpdateAll();
+		void UpdateAll(LineManager &lineManager);
 
 		/// @brief デバックカメラの更新
 		void DebugCameraUpdate();
@@ -78,7 +75,7 @@ namespace MagEngine {
 		MagMath::Vector3 GetDebugCameraForward() const;
 
 		/// @brief デバッグ用の視覚情報を描画 (ラインなど)
-		void DrawDebugVisualizations();
+		void DrawDebugVisualizations(LineManager &lineManager);
 
 		/// @brief 特定のカメラのデバッグ表示を切り替える
 		void ToggleCameraDebugView(const std::string &cameraName);
@@ -86,9 +83,8 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 メンバ変数
 	private:
-		//========================================
-		// 　コンストラクタ
-		CameraManager() = default;
+		CameraManager(const CameraManager &) = delete;
+		CameraManager &operator=(const CameraManager &) = delete;
 		//========================================
 		// カメラのコンテナ
 		std::map<std::string, std::unique_ptr<Camera>> cameras_;

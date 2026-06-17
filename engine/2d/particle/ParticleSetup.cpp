@@ -12,13 +12,15 @@
 namespace MagEngine {
 ///=============================================================================
 ///						初期化
-	void ParticleSetup::Initialize(DirectXCore *dxCore, SrvSetup *srvSetup) {
+	void ParticleSetup::Initialize(DirectXCore *dxCore, SrvSetup *srvSetup, TextureManager &textureManager) {
 		//========================================
 		// 引数でdxManagerを受取
 		dxCore_ = dxCore;
 		//========================================
 		// SrvSetupの取得
 		srvSetup_ = srvSetup;
+		// テクスチャ管理器の所有権はFrameworkに固定し、Particle側は参照だけを保持する
+		textureManager_ = &textureManager;
 		//========================================
 		// グラフィックスパイプラインの生成
 		CreateGraphicsPipeline();

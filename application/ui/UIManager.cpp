@@ -5,8 +5,12 @@
 ///=============================================================================
 ///                        初期化
 void UIManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
-						   MagEngine::Object3dSetup *object3dSetup) {
+						   MagEngine::Object3dSetup *object3dSetup,
+						   MagEngine::Input &input,
+						   MagEngine::CameraManager &cameraManager,
+						   MagEngine::LineManager &lineManager) {
 	spriteSetup_ = spriteSetup;
+	cameraManager_ = &cameraManager;
 
 	// GameOverUI の初期化
 	gameOverUI_ = std::make_unique<GameOverUI>();
@@ -18,7 +22,7 @@ void UIManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	// OperationGuideUI の初期化
 	operationGuideUI_ = std::make_unique<OperationGuideUI>();
-	operationGuideUI_->Initialize(spriteSetup_);
+	operationGuideUI_->Initialize(spriteSetup_, input);
 
 	// StartAnimation の初期化
 	startAnimation_ = std::make_unique<StartAnimation>();
@@ -26,14 +30,15 @@ void UIManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	// HUD の初期化
 	hud_ = std::make_unique<HUD>();
-	hud_->Initialize();
+	hud_->Initialize(cameraManager, lineManager);
 
 	// MenuUI の初期化
 	menuUI_ = std::make_unique<MenuUI>();
-	menuUI_->Initialize(spriteSetup_);
+	menuUI_->Initialize(spriteSetup_, input);
 
 	// LockOnHUD の初期化
 	lockOnHUD_ = std::make_unique<LockOnHUD>();
+	lockOnHUD_->SetLineManager(lineManager);
 }
 
 ///=============================================================================
@@ -81,7 +86,7 @@ void UIManager::Update(const Player *player) {
 		menuUI_->Update();
 	}
 	if (lockOnHUD_ && player) {
-		MagEngine::Camera *camera = MagEngine::CameraManager::GetInstance()->GetCamera("FollowCamera");
+		MagEngine::Camera *camera = cameraManager_ ? cameraManager_->GetCamera("FollowCamera") : nullptr;
 		if (camera) {
 			lockOnHUD_->Update(camera);
 		}

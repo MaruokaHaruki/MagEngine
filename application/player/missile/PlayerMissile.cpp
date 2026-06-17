@@ -29,6 +29,7 @@ using namespace MagEngine;
 void PlayerMissile::Initialize(
 	MagEngine::Object3dSetup *object3dSetup,
 	MagEngine::TrailEffectManager *trailEffectManager,
+	MagEngine::LineManager *lineManager,
 	const std::string &modelPath,
 	const Vector3 &position,
 	const Vector3 &direction,
@@ -39,6 +40,7 @@ void PlayerMissile::Initialize(
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
 	object3dSetup_ = object3dSetup;
+	lineManager_ = lineManager;
 
 	//========================================
 	// 物理パラメータ初期化（シンプルな一定速度）
@@ -421,7 +423,10 @@ void PlayerMissile::DrawDebugInfo() {
 	if (!showDebugInfo_ || !obj_)
 		return;
 
-	LineManager *lineManager = LineManager::GetInstance();
+	if (!lineManager_) {
+		return;
+	}
+	LineManager *lineManager = lineManager_;
 	Vector3 missilePos = obj_->GetPosition();
 
 	//========================================

@@ -12,6 +12,7 @@
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
+	class TextureManager;
 ///=============================================================================
 ///						モデル共通部クラス
 	class ModelSetup {
@@ -20,7 +21,7 @@ namespace MagEngine {
 		///							メンバ関数
 	public:
 		/// \brief 初期化
-		void Initialize(DirectXCore *dxCore);
+		void Initialize(DirectXCore *dxCore, TextureManager &textureManager);
 
 		/// \brief 環境マップテクスチャの設定
 		void SetEnvironmentTexture(const std::string &texturePath);
@@ -38,6 +39,10 @@ namespace MagEngine {
 		 */
 		DirectXCore *GetDXManager() const {
 			return dxCore_;
+		}
+
+		TextureManager &GetTextureManager() const {
+			return *textureManager_;
 		}
 
 		/**----------------------------------------------------------------------------
@@ -64,6 +69,8 @@ namespace MagEngine {
 		//---------------------------------------
 		// DirectXCoreポインタ
 		DirectXCore *dxCore_ = nullptr;
+		// TextureManagerはFramework所有のため、ModelSetupでは寿命を持たない
+		TextureManager *textureManager_ = nullptr;
 
 		//---------------------------------------
 		// 環境マップテクスチャパス

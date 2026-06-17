@@ -7,80 +7,87 @@
  * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "TitleScene.h"
+#include "CameraManager.h"
+#include "EngineContext.h"
+#include "Input.h"
+#include "ModelManager.h"
 #include "SceneContext.h"
+#include "TextureManager.h"
 #include "TitleCamera.h"
+#include <cassert>
 using namespace MagEngine;
 
 ///=============================================================================
 /// 初期化
 /// NOTE: contextからセットアップを取得
-void TitleScene::Initialize(SceneContext *context) {
-	//========================================
-	// NOTE: contextがnullptrでないかチェック
-	if (!context) {
-		return;
-	}
+void TitleScene::Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) {
+	engineContext.Validate();
+	engineContext_ = &engineContext;
+	sceneContext_ = &sceneContext;
+	CameraManager *cameraManager = engineContext_->cameraManager;
+	TextureManager *textureManager = engineContext_->textureManager;
+	ModelManager *modelManager = engineContext_->modelManager;
 
-	// NOTE: contextからセットアップを取得
-	MagEngine::SpriteSetup *spriteSetup = context->GetSpriteSetup();
-	MagEngine::Object3dSetup *object3dSetup = context->GetObject3dSetup();
-	MagEngine::SkyboxSetup *skyboxSetup = context->GetSkyboxSetup();
-	MagEngine::CloudSetup *cloudSetup = context->GetCloudSetup();
+	// NOTE: EngineContextからセットアップを取得し、SceneContextはScene管理情報に限定する
+	MagEngine::SpriteSetup *spriteSetup = engineContext_->spriteSetup;
+	MagEngine::Object3dSetup *object3dSetup = engineContext_->object3dSetup;
+	MagEngine::SkyboxSetup *skyboxSetup = engineContext_->skyboxSetup;
+	MagEngine::CloudSetup *cloudSetup = engineContext_->cloudSetup;
 
 	//========================================
 	// 読み込み関係
-	// TextureManager::GetInstance()->LoadTexture(".dds");
+	// textureManager->LoadTexture(".dds");
 	// スプライト
-	TextureManager::GetInstance()->LoadTexture("uvChecker.dds");
+	textureManager->LoadTexture("uvChecker.dds");
 	// 演出系
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Title.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Triangle.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_PressEnter.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_PressA.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Engage.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_GameOver.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Comprete.dds");
+	textureManager->LoadTexture("WolfOne_Title.dds");
+	textureManager->LoadTexture("WolfOne_Triangle.dds");
+	textureManager->LoadTexture("WolfOne_PressEnter.dds");
+	textureManager->LoadTexture("WolfOne_PressA.dds");
+	textureManager->LoadTexture("WolfOne_Engage.dds");
+	textureManager->LoadTexture("WolfOne_GameOver.dds");
+	textureManager->LoadTexture("WolfOne_Comprete.dds");
 	// 操作ガイドUI
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_a.dds");
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_b.dds");
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_x.dds");
-	TextureManager::GetInstance()->LoadTexture("xbox_button_color_y.dds");
-	TextureManager::GetInstance()->LoadTexture("xbox_rt.dds");
-	TextureManager::GetInstance()->LoadTexture("xbox_ls.dds");
-	TextureManager::GetInstance()->LoadTexture("white1x1.dds"); // トランジション用
+	textureManager->LoadTexture("xbox_button_color_a.dds");
+	textureManager->LoadTexture("xbox_button_color_b.dds");
+	textureManager->LoadTexture("xbox_button_color_x.dds");
+	textureManager->LoadTexture("xbox_button_color_y.dds");
+	textureManager->LoadTexture("xbox_rt.dds");
+	textureManager->LoadTexture("xbox_ls.dds");
+	textureManager->LoadTexture("white1x1.dds"); // トランジション用
 	// 操作テキスト
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Dodge.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_MachineGun.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_ControlStick.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Missile.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Test.dds");
+	textureManager->LoadTexture("WolfOne_Dodge.dds");
+	textureManager->LoadTexture("WolfOne_MachineGun.dds");
+	textureManager->LoadTexture("WolfOne_ControlStick.dds");
+	textureManager->LoadTexture("WolfOne_Missile.dds");
+	textureManager->LoadTexture("WolfOne_Test.dds");
 	// メニューテキスト
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Resume.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Controls.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_ReturntoTitle.dds");
-	TextureManager::GetInstance()->LoadTexture("WolfOne_Pause.dds");
+	textureManager->LoadTexture("WolfOne_Resume.dds");
+	textureManager->LoadTexture("WolfOne_Controls.dds");
+	textureManager->LoadTexture("WolfOne_ReturntoTitle.dds");
+	textureManager->LoadTexture("WolfOne_Pause.dds");
 	// モデル
-	ModelManager::GetInstance()->LoadModel("jet.obj"); // モデルは事前にロードしておく
-	ModelManager::GetInstance()->LoadModel("Missile.obj");
-	ModelManager::GetInstance()->LoadModel("Bullet.obj");  // 弾のモデル
-	ModelManager::GetInstance()->LoadModel("ground.obj");  // 地形のモデル
-	ModelManager::GetInstance()->LoadModel("skydome.obj"); // 地面のモデルもロード
+	modelManager->LoadModel("jet.obj"); // モデルは事前にロードしておく
+	modelManager->LoadModel("Missile.obj");
+	modelManager->LoadModel("Bullet.obj");  // 弾のモデル
+	modelManager->LoadModel("ground.obj");  // 地形のモデル
+	modelManager->LoadModel("skydome.obj"); // 地面のモデルもロード
 	// スカイボックス
-	TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("overcast_soil_puresky_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("moonless_golf_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("kloppenheim_02_puresky_4k.dds");
+	textureManager->LoadTexture("rostock_laage_airport_4k.dds");
+	textureManager->LoadTexture("qwantani_dusk_2_puresky_4k.dds");
+	textureManager->LoadTexture("overcast_soil_puresky_4k.dds");
+	textureManager->LoadTexture("moonless_golf_4k.dds");
+	textureManager->LoadTexture("kloppenheim_02_puresky_4k.dds");
 
 	//========================================
 	// カメラ設定
-	CameraManager::GetInstance()->AddCamera("TitleCamera");
+	cameraManager->AddCamera("TitleCamera");
 
 	// TitleCameraの初期化
 	titleCamera_ = std::make_unique<TitleCamera>();
-	titleCamera_->Initialize("TitleCamera");
+	titleCamera_->Initialize("TitleCamera", *engineContext_->cameraManager);
 	// FollowCameraをメインカメラに設定
-	CameraManager::GetInstance()->SetCurrentCamera("TitleCamera");
+	cameraManager->SetCurrentCamera("TitleCamera");
 
 	//========================================
 	// スプライト
@@ -98,7 +105,7 @@ void TitleScene::Initialize(SceneContext *context) {
 	//========================================
 	// プレイヤーの初期化（演出用）
 	player_ = std::make_unique<Player>();
-	player_->Initialize(object3dSetup, "jet.obj");
+	player_->Initialize(object3dSetup, "jet.obj", *engineContext_->input, *engineContext_->lineManager);
 	// プレイヤーの初期位置（カメラから見える位置）
 	Vector3 initialPos = {0.0f, 5.0f, 10.0f}; // カメラの前方
 	player_->GetObject3d()->GetTransform()->translate = initialPos;
@@ -163,6 +170,10 @@ void TitleScene::Finalize() {
 ///=============================================================================
 ///						更新
 void TitleScene::Update() {
+	assert(engineContext_);
+	Input *input = engineContext_->input;
+	CameraManager *cameraManager = engineContext_->cameraManager;
+
 	//========================================
 	// 経過時間の更新
 	totalElapsedTime_ += 1.0f / 60.0f;
@@ -221,7 +232,7 @@ void TitleScene::Update() {
 	//=========================================
 	// 雲の更新
 	if (cloud_) {
-		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), 1.0f / 60.0f);
+		cloud_->Update(*cameraManager->GetCurrentCamera(), 1.0f / 60.0f);
 	}
 
 	//========================================
@@ -245,7 +256,7 @@ void TitleScene::Update() {
 
 	//========================================
 	// シーン遷移
-	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+	if (input->TriggerKey(DIK_RETURN)) {
 		// トランジション開始
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::ZoomIn, 1.0f);
@@ -256,7 +267,7 @@ void TitleScene::Update() {
 		}
 	}
 	// コントローラ
-	if (Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
+	if (input->TriggerButton(XINPUT_GAMEPAD_A)) {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::ZoomIn, 0.8f);
 			sceneTransition_->SetOnCompleteCallback([this]() {
@@ -265,7 +276,7 @@ void TitleScene::Update() {
 		}
 	}
 	// シーンリセット
-	if (Input::GetInstance()->TriggerKey(DIK_R)) {
+	if (input->TriggerKey(DIK_R)) {
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::ZoomIn, 0.5f);
 			sceneTransition_->SetOnCompleteCallback([this]() {

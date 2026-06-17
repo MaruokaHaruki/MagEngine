@@ -7,6 +7,9 @@
  * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "GamePlayScene.h"
+#include "EngineContext.h"
+#include "Input.h"
+#include "Logger.h"
 #include "SceneContext.h"
 //========================================
 // Game
@@ -21,41 +24,41 @@
 #include "Player.h"
 #include "SceneTransition.h"
 #include "Skydome.h"
+#include <cassert>
 using namespace MagEngine;
 
 ///=============================================================================
 /// 初期化
 /// NOTE: contextからセットアップを取得
-void GamePlayScene::Initialize(SceneContext *context) {
-	//========================================
-	// NOTE: contextがnullptrでないかチェック
-	if (!context) {
-		return;
-	}
+void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) {
+	engineContext.Validate();
+	engineContext_ = &engineContext;
+	sceneContext_ = &sceneContext;
+	CameraManager *cameraManager = engineContext_->cameraManager;
 
-	// NOTE: contextからセットアップを取得
-	MagEngine::SpriteSetup *spriteSetup = context->GetSpriteSetup();
-	MagEngine::Object3dSetup *object3dSetup = context->GetObject3dSetup();
-	MagEngine::ParticleSetup *particleSetup = context->GetParticleSetup();
-	MagEngine::SkyboxSetup *skyboxSetup = context->GetSkyboxSetup();
-	MagEngine::CloudSetup *cloudSetup = context->GetCloudSetup();
+	// NOTE: EngineContextからセットアップを取得し、SceneContextと責務を分離する
+	MagEngine::SpriteSetup *spriteSetup = engineContext_->spriteSetup;
+	MagEngine::Object3dSetup *object3dSetup = engineContext_->object3dSetup;
+	MagEngine::ParticleSetup *particleSetup = engineContext_->particleSetup;
+	MagEngine::SkyboxSetup *skyboxSetup = engineContext_->skyboxSetup;
+	MagEngine::CloudSetup *cloudSetup = engineContext_->cloudSetup;
 
 	//========================================
 	// カメラ設定
-	CameraManager::GetInstance()->AddCamera("FollowCamera");
-	CameraManager::GetInstance()->GetCamera("FollowCamera")->SetTransform({{1.0f, 1.0f, 1.0f}, {0.3f, 0.0f, 0.0f}, {0.0f, 2.3f, -8.0f}});
+	cameraManager->AddCamera("FollowCamera");
+	cameraManager->GetCamera("FollowCamera")->SetTransform({{1.0f, 1.0f, 1.0f}, {0.3f, 0.0f, 0.0f}, {0.0f, 2.3f, -8.0f}});
 
 	//========================================
 	// FollowCameraの初期化
 	followCamera_ = std::make_unique<FollowCamera>();
-	followCamera_->Initialize("FollowCamera");
+	followCamera_->Initialize("FollowCamera", *engineContext_->cameraManager, *engineContext_->input);
 
 	//========================================
 	// DebugTextManagerにカメラを設定
-	DebugTextManager::GetInstance()->SetCamera(CameraManager::GetInstance()->GetCamera("FollowCamera"));
+	engineContext_->debugTextManager->SetCamera(cameraManager->GetCamera("FollowCamera"));
 
 	// モデルの環境マップ設定
-	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
+	engineContext_->modelManager->GetModelSetup()->SetEnvironmentTexture("overcast_soil_puresky_4k.dds");
 
 	//========================================
 	// スプライトクラス(Game)
@@ -94,11 +97,11 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	//========================================
 	// プレイヤー
 	player_ = std::make_unique<Player>();
-	player_->Initialize(object3dSetup, "jet.obj");
+	player_->Initialize(object3dSetup, "jet.obj", *engineContext_->input, *engineContext_->lineManager);
 	// FollowCameraにプレイヤーを設定
 	followCamera_->SetTarget(player_.get());
 	// FollowCameraをメインカメラに設定
-	CameraManager::GetInstance()->SetCurrentCamera("FollowCamera");
+	cameraManager->SetCurrentCamera("FollowCamera");
 
 
 
@@ -141,7 +144,7 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	enemyManager_ = std::make_unique<EnemyManager>();
 	
 	// プレイヤーにTrailEffectManagerを設定（弾・ミサイルトレイル用）
-	MagEngine::TrailEffectManager *trailEffectManager = context->GetTrailEffectManager();
+	MagEngine::TrailEffectManager *trailEffectManager = engineContext_->trailEffectManager;
 	
 	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup, trailEffectManager);
 	// プレイヤー参照を設定
@@ -158,16 +161,16 @@ void GamePlayScene::Initialize(SceneContext *context) {
 	//========================================
 	// 当たり判定（軽量システムで初期化）
 	collisionManager_ = std::make_unique<CollisionManager>();
-	collisionManager_->Initialize(32.0f, 256); // セルサイズ32.0f、最大256オブジェクト
+	collisionManager_->Initialize(*engineContext_->lineManager, 32.0f, 256); // セルサイズ32.0f、最大256オブジェクト
 
 	//========================================
 	// 敵の位置にデバッグテキストを配置（固定位置）
-	DebugTextManager::GetInstance()->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
+	engineContext_->debugTextManager->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
 
 	//========================================
 	// UI管理の初期化
 	uiManager_ = std::make_unique<UIManager>();
-	uiManager_->Initialize(spriteSetup, object3dSetup);
+	uiManager_->Initialize(spriteSetup, object3dSetup, *engineContext_->input, *engineContext_->cameraManager, *engineContext_->lineManager);
 
 	// HUDにFollowCameraを設定
 	if (followCamera_ && uiManager_->GetHUD()) {
@@ -287,6 +290,10 @@ void GamePlayScene::Finalize() {
 ///=============================================================================
 ///							更新
 void GamePlayScene::Update() {
+	assert(engineContext_);
+	Input *input = engineContext_->input;
+	CameraManager *cameraManager = engineContext_->cameraManager;
+
 	//========================================
 	// UI系の更新（メニュー状態確認用）
 	if (uiManager_) {
@@ -361,7 +368,7 @@ void GamePlayScene::Update() {
 	//========================================
 	// 雲の更新
 	if (cloud_) {
-		cloud_->Update(*CameraManager::GetInstance()->GetCurrentCamera(), effectiveDeltaTime);
+		cloud_->Update(*cameraManager->GetCurrentCamera(), effectiveDeltaTime);
 	}
 
 	//========================================
@@ -417,7 +424,7 @@ void GamePlayScene::Update() {
 	}
 
 	// デバック用にキーボードでゲームクリアを強制発動
-	if (Input::GetInstance()->TriggerKey(DIK_C)) {
+	if (input->TriggerKey(DIK_C)) {
 		isGameClear_ = true;
 		// UIManagerにゲームクリア状態を通知
 		if (uiManager_) {
@@ -440,7 +447,7 @@ void GamePlayScene::Update() {
 	//========================================
 	// 弾痕テスト用のデバッグコード
 	// SPACEキーで雲に弾痕を追加
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE) || Input::GetInstance()->GetRightTrigger()) {
+	if (input->TriggerKey(DIK_SPACE) || input->GetRightTrigger()) {
 		if (player_) {
 			// プレイヤーの位置から前方向に弾痕を作成
 			Vector3 origin = player_->GetPosition();
@@ -463,7 +470,7 @@ void GamePlayScene::Update() {
 	}
 
 	// Nキーでランダムな位置に弾痕を追加
-	if (Input::GetInstance()->TriggerKey(DIK_N) && cloud_) {
+	if (input->TriggerKey(DIK_N) && cloud_) {
 		// 雲の中心付近にランダムな弾痕を作成
 		Vector3 cloudCenter = cloud_->GetTransform().translate;
 		Vector3 randomOffset = {
@@ -488,7 +495,7 @@ void GamePlayScene::Update() {
 	}
 
 	// Mキーで全ての弾痕をクリア
-	if (Input::GetInstance()->TriggerKey(DIK_M) && cloud_) {
+	if (input->TriggerKey(DIK_M) && cloud_) {
 		cloud_->ClearBulletHoles();
 		Logger::Log("All bullet holes cleared", Logger::LogLevel::Info);
 	}
@@ -513,7 +520,7 @@ void GamePlayScene::Update() {
 		// プレイヤーの位置にデバッグテキストを配置
 		Vector3 playerPos = player_->GetPosition();
 		playerPos.y += 2.0f; // プレイヤーの少し上に表示
-		DebugTextManager::GetInstance()->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
+		engineContext_->debugTextManager->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
 
 		// ジャスト回避成功時のカメラズーム演出を開始
 		if (player_->IsJustAvoidanceSuccessThisFrame() && followCamera_) {
@@ -616,7 +623,7 @@ void GamePlayScene::Update() {
 #ifdef _DEBUG
 	//========================================
 	// タイトルへのシーン遷移（デバッグ用）
-	if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+	if (input->TriggerKey(DIK_RETURN)) {
 		// トランジション開始
 		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
 			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);

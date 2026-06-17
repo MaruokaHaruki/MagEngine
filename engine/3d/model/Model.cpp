@@ -31,9 +31,9 @@ namespace MagEngine {
 		// マテリアルバッファの作成
 		CreateMaterialBuffer();
 		// テクスチャの読み込み
-		TextureManager::GetInstance()->LoadTexture(modelData_.material.textureFilePath);
+		modelSetup_->GetTextureManager().LoadTexture(modelData_.material.textureFilePath);
 		// テクスチャ番号を取得して、メンバ変数に格納
-		textureIndex_ = TextureManager::GetInstance()->GetTextureIndex(modelData_.material.textureFilePath);
+		textureIndex_ = modelSetup_->GetTextureManager().GetTextureIndex(modelData_.material.textureFilePath);
 	}
 
 	///=============================================================================
@@ -57,11 +57,11 @@ namespace MagEngine {
 		commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
 
 		// SRVのDescriptorTableの設定
-		commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(modelData_.material.textureFilePath));
+		commandList->SetGraphicsRootDescriptorTable(2, modelSetup_->GetTextureManager().GetSrvHandleGPU(modelData_.material.textureFilePath));
 
 		// 環境マップテクスチャの設定
 		if(modelSetup_->HasEnvironmentTexture()) {
-			commandList->SetGraphicsRootDescriptorTable(7, TextureManager::GetInstance()->GetSrvHandleGPU(modelSetup_->GetEnvironmentTexture()));
+			commandList->SetGraphicsRootDescriptorTable(7, modelSetup_->GetTextureManager().GetSrvHandleGPU(modelSetup_->GetEnvironmentTexture()));
 		}
 
 		// 描画(DrawCall)
@@ -82,7 +82,7 @@ namespace MagEngine {
 		// マテリアルバッファの設定
 		commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
 		// SRVのDescriptorTableの設定
-		commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(modelData_.material.textureFilePath));
+		commandList->SetGraphicsRootDescriptorTable(2, modelSetup_->GetTextureManager().GetSrvHandleGPU(modelData_.material.textureFilePath));
 		// 描画(DrawCall)
 		commandList->DrawInstanced(6, instanceCount, 0, 0);
 	}
@@ -91,10 +91,10 @@ namespace MagEngine {
 	///						テクスチャの変更
 	void Model::ChangeTexture(const std::string &textureFilePath) {
 		// 新しいテクスチャを読み込む
-		TextureManager::GetInstance()->LoadTexture(textureFilePath);
+		modelSetup_->GetTextureManager().LoadTexture(textureFilePath);
 
 		// 新しいテクスチャのインデックスを取得して設定
-		textureIndex_ = TextureManager::GetInstance()->GetTextureIndex(textureFilePath);
+		textureIndex_ = modelSetup_->GetTextureManager().GetTextureIndex(textureFilePath);
 
 		// マテリアルデータを更新
 		modelData_.material.textureFilePath = textureFilePath;

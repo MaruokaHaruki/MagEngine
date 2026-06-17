@@ -21,9 +21,11 @@ namespace MagEngine {
 
 	///--------------------------------------------------------------
 	///                         初期化
-	void SpriteSetup::Initialize(DirectXCore *dxCore) {
+	void SpriteSetup::Initialize(DirectXCore *dxCore, TextureManager &textureManager) {
 		// DirectXCoreを記録
 		dxCore_ = dxCore;
+		// テクスチャ管理はFrameworkが所有するため、描画側では非所有参照として扱う
+		textureManager_ = &textureManager;
 
 		// グラフィックスパイプラインの生成
 		CreateGraphicsPipeline();

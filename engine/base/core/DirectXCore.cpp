@@ -27,7 +27,7 @@ namespace MagEngine {
 ///=============================================================================
 ///						描画前処理
 // TODO:ループ内の前処理後処理を作成
-	void DirectXCore::PreDraw(PostEffectManager *postEffectManager) {
+	void DirectXCore::PreDraw(PostEffectManager *postEffectManager, TextureManager &textureManager) {
 		/// バックバッファの決定
 		SettleCommandList();
 		/// バリア設定
@@ -48,9 +48,9 @@ namespace MagEngine {
 		D3D12_GPU_DESCRIPTOR_HANDLE srvHandle;
 
 		if(renderResourceIndex_ == 0) {
-			srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture0");
+			srvHandle = textureManager.GetSrvHandleGPU("RenderTexture0");
 		} else {
-			srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture1");
+			srvHandle = textureManager.GetSrvHandleGPU("RenderTexture1");
 		}
 
 		// srvHandle.ptr が 0 または異常な値でないか確認
@@ -64,7 +64,7 @@ namespace MagEngine {
 		// ポストエフェクトがある場合は適用
 		// TODO:ポストエフェクトマネージャをDirectXCoreに持たせるか検討
 		if(postEffectManager) {
-			postEffectManager->ApplyEffects();
+			postEffectManager->ApplyEffects(textureManager);
 		}
 	}
 
@@ -109,12 +109,10 @@ namespace MagEngine {
 		CreateSwapChain();
 		// フェンスの生成
 		CreateFence();
+		// DescriptorAllocatorの初期化
+		InitializeDescriptorAllocators();
 		// 深度バッファの生成
 		CreateDepthBuffer();
-		// 様々なヒープサイズの取得
-		CreateVariousDescriptorHeap();
-		// RTVディスクリプタヒープの生成
-		CreateRTVDescriptorHeap();
 		// スワップチェーンからリソースを取得
 		GetResourcesFromSwapChain();
 		// RTVの生成
@@ -342,40 +340,25 @@ namespace MagEngine {
 		//=======================================
 		// DepthStencilTextureをウィンドウのサイズで作成
 		depthStencilResource_ = CreateDepthStencilTextureResource(winApp_->GetWindowWidth(), winApp_->GetWindowHeight());
-		//=======================================
-		// dsv用DescriptorHeap
-		dsvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+		// NOTE:DSV DescriptorはDirectXCore所有Allocatorから確保し、Depthリソースより長く保持する
+		dsvHandle_ = dsvAllocator_.Allocate();
 		//=======================================
 		// dsvの設定
 		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 		dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;		   // Format。基本的にはResourceに合わせる
 		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D; // 2dTexture
 		// DSVHeapの先頭にDSVを作る
-		device_.Get()->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvDescriptorHeap_.Get()->GetCPUDescriptorHandleForHeapStart());
-
-		dsvHandle_ = dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+		device_.Get()->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc, dsvHandle_.cpuHandle);
 	}
 
 	///=============================================================================
-	///						各種ディスクリプタヒープの生成
-	void DirectXCore::CreateVariousDescriptorHeap() {
-		//=======================================
-		// DescriptorHeapのサイズを取得
-		// descriptorSizeSRV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		descriptorSizeRTV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		descriptorSizeDSV = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	}
-
-	///=============================================================================
-	///						RTVディスクリプタヒープ
-	void DirectXCore::CreateRTVDescriptorHeap() {
-		// ディスクリプタヒープの生成
-		rtvDescriptorHeap_ = nullptr;
-		rtvDescriptorHeapDesc_.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		rtvDescriptorHeapDesc_.NumDescriptors = 4;
-		hr_ = device_->CreateDescriptorHeap(&rtvDescriptorHeapDesc_, IID_PPV_ARGS(&rtvDescriptorHeap_));
-
-		assert(SUCCEEDED(hr_));
+	///						DescriptorAllocatorの初期化
+	void DirectXCore::InitializeDescriptorAllocators() {
+		// NOTE:現在は永続Descriptorのみを単調増加で扱う。フレーム一時DescriptorはFrameContext導入時に分離する
+		rtvAllocator_.Initialize(*device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, DescriptorCapacity::Rtv, false);
+		dsvAllocator_.Initialize(*device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, DescriptorCapacity::Dsv, false);
+		resourceAllocator_.Initialize(*device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, DescriptorCapacity::Resource, true);
+		samplerAllocator_.Initialize(*device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, DescriptorCapacity::Sampler, true);
 	}
 
 	///=============================================================================
@@ -394,18 +377,15 @@ namespace MagEngine {
 	void DirectXCore::CreateRenderTargetViews() {
 		rtvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;		// 出力結果をSRGBに変換して書き込む
 		rtvDesc_.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2dテクスチャとして書き込む
-		// ディスクリプタの先頭を取得する
-		rtvStarHandle_ = rtvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-		// RTVを2つ作るのでディスクリプタを2つ用意
+		// NOTE:SwapChain BackBufferのRTVはallocatorから順に確保し、手動ptr加算を行わない
 		//=======================================
 		// １つ目の作成
-		rtvHandles_[0] = rtvStarHandle_;
-		device_->CreateRenderTargetView(swapChainResource_[0].Get(), &rtvDesc_, rtvHandles_[0]);
+		swapChainRtvHandles_[0] = rtvAllocator_.Allocate();
+		device_->CreateRenderTargetView(swapChainResource_[0].Get(), &rtvDesc_, swapChainRtvHandles_[0].cpuHandle);
 		//=======================================
-		// 2つめのディスクリプハンドルの作成
-		rtvHandles_[1].ptr = rtvHandles_[0].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		// 2つめの作成
-		device_->CreateRenderTargetView(swapChainResource_[1].Get(), &rtvDesc_, rtvHandles_[1]);
+		swapChainRtvHandles_[1] = rtvAllocator_.Allocate();
+		device_->CreateRenderTargetView(swapChainResource_[1].Get(), &rtvDesc_, swapChainRtvHandles_[1].cpuHandle);
 	}
 
 	///=============================================================================
@@ -436,11 +416,11 @@ namespace MagEngine {
 	///						RenderTargetの設定
 	void DirectXCore::RenderTargetPreference() {
 		// 描画先のRTVを設定する
-		commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex_], false, &dsvHandle_);
+		commandList_->OMSetRenderTargets(1, &swapChainRtvHandles_[backBufferIndex_].cpuHandle, false, &dsvHandle_.cpuHandle);
 		// 指定した色で画面全体をクリアする	背景色！
 		float clearColor[] = { 0.05f, 0.05f, 0.05f, 1.0f }; // この色を変更することでウィンドウの色を黒に変更できます
-		commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex_], clearColor, 0, nullptr);
-		commandList_->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0F, 0, 0, nullptr);
+		commandList_->ClearRenderTargetView(swapChainRtvHandles_[backBufferIndex_].cpuHandle, clearColor, 0, nullptr);
+		commandList_->ClearDepthStencilView(dsvHandle_.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0F, 0, 0, nullptr);
 	}
 
 	///=============================================================================
@@ -604,30 +584,6 @@ namespace MagEngine {
 		//========================================
 		// 出力
 		return resource;
-	}
-
-	///=============================================================================
-	///						DescriptorHeapの生成関数
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCore::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible) {
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap = nullptr;
-		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{};
-		descriptorHeapDesc.Type = heapType;
-		descriptorHeapDesc.NumDescriptors = numDescriptors;
-		descriptorHeapDesc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		// NOTE:debugモードでのみエラーチェックを行う理由は、assertを使っているため
-		HRESULT hr = device_->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap));
-#ifdef _DEBUG
-		assert(SUCCEEDED(hr));
-#endif // _DEBUG
-	//
-		if(FAILED(hr)) {
-			// ディスクリプタヒープの生成がうまくいかなかったので起動できない
-			Logger::Log("Failed to Create Descriptor Heap.");
-			return nullptr;
-		}
-		// 成功したログを出力
-		Logger::Log("Descriptor heap created successfully.");
-		return descriptorHeap;
 	}
 
 	// HOTFIX :
@@ -872,16 +828,15 @@ namespace MagEngine {
 		// 現在と次の状態が異なる場合のみバリアを適用
 		commandList_->ResourceBarrier(1, &barrier);
 		//=======================================
-		// 以降のDSV設定やクリア処理...
-		uint32_t renderTargetIndex = 2 + renderResourceIndex_;
-		commandList_->OMSetRenderTargets(1, &rtvHandles_[renderTargetIndex], false, &dsvHandle_);
+		// NOTE:RenderTexture RTVはAllocatorから確保済みのHandleを保持して使う
+		commandList_->OMSetRenderTargets(1, &renderTextureRtvHandles_[renderResourceIndex_].cpuHandle, false, &dsvHandle_.cpuHandle);
 		//=======================================
 		// 指定した色で画面全体をクリアする#4c6cb3
 		float clearColor[] = { 0.298f, 0.427f, 0.698f, 1.0f }; // この色を変更することでウィンドウの色を黒に変更できます
-		commandList_->ClearRenderTargetView(rtvHandles_[renderTargetIndex], clearColor, 0, nullptr);
+		commandList_->ClearRenderTargetView(renderTextureRtvHandles_[renderResourceIndex_].cpuHandle, clearColor, 0, nullptr);
 		//=======================================
 		// 画面全体の深度をクリア
-		commandList_->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		commandList_->ClearDepthStencilView(dsvHandle_.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 		commandList_->RSSetViewports(1, &viewport_);	   // Viewportを設定
 		commandList_->RSSetScissorRects(1, &scissorRect_); // Scissorを設定
 	}
@@ -973,10 +928,10 @@ namespace MagEngine {
 			kRenderTargetClearValue,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		// ========================================
-		// RTVの設定
-		rtvHandles_[2].ptr = rtvHandles_[1].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		// NOTE:RTV DescriptorはAllocatorから確保し、BackBuffer数に依存した手動計算を避ける
+		renderTextureRtvHandles_[0] = rtvAllocator_.Allocate();
 		// レンダーターのビューを作成
-		device_->CreateRenderTargetView(renderTextureResources_[0].Get(), &rtvDesc_, rtvHandles_[2]);
+		device_->CreateRenderTargetView(renderTextureResources_[0].Get(), &rtvDesc_, renderTextureRtvHandles_[0].cpuHandle);
 		// assertはデバッグビルド時にのみ有効になる
 		// もし条件がfalseの場合、プログラムは終了する
 		renderTextureResources_[0]->SetName(L"renderTexture0");
@@ -992,9 +947,9 @@ namespace MagEngine {
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		//========================================
 		// RTVの設定
-		rtvHandles_[3].ptr = rtvHandles_[2].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		renderTextureRtvHandles_[1] = rtvAllocator_.Allocate();
 		// レンダーターのビューを作成
-		device_->CreateRenderTargetView(renderTextureResources_[1].Get(), &rtvDesc_, rtvHandles_[3]);
+		device_->CreateRenderTargetView(renderTextureResources_[1].Get(), &rtvDesc_, renderTextureRtvHandles_[1].cpuHandle);
 		// assertはデバッグビルド時にのみ有効になる
 		// もし条件がfalseの場合、プログラムは終了する
 		renderTextureResources_[1]->SetName(L"renderTexture1");
@@ -1140,26 +1095,6 @@ namespace MagEngine {
 		// 実際に生成
 		renderTextureGraphicsPipelineState_ = nullptr;
 		device_->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&renderTextureGraphicsPipelineState_));
-	}
-
-	///=============================================================================
-	///						DescriptorHandleの取得を関数化
-	///--------------------------------------------------------------
-	///						 CPU
-	D3D12_CPU_DESCRIPTOR_HANDLE DirectXCore::GetCPUDescriptorHandle(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index) {
-		D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		// NOTE:サブ式よりも先に乗算を行うため、括弧をつける
-		handleCPU.ptr += ( static_cast<unsigned long long>( descriptorSize ) * index );
-		return handleCPU;
-	}
-
-	///--------------------------------------------------------------
-	///						 GPU
-	D3D12_GPU_DESCRIPTOR_HANDLE DirectXCore::GetGPUDescriptorHandle(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index) {
-		D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-		// NOTE:サブ式よりも先に乗算を行うため、括弧をつける
-		handleGPU.ptr += ( static_cast<unsigned long long>( descriptorSize ) * index );
-		return handleGPU;
 	}
 
 	///=============================================================================

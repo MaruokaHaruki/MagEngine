@@ -1,12 +1,15 @@
 #pragma once
 #include "MagMath.h"
 using namespace MagMath;
-#include "Input.h"
 #include "Sprite.h"
 #include "SpriteSetup.h"
 #include <map>
 #include <memory>
 #include <string>
+
+namespace MagEngine {
+	class Input;
+}
 
 ///=============================================================================
 ///                        メニューボタン種類
@@ -47,7 +50,7 @@ class MenuUI {
 	///                        メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(MagEngine::SpriteSetup *spriteSetup);
+	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Input &input);
 
 	/// \brief 終了処理
 	void Finalize();
@@ -108,6 +111,7 @@ private:
 private:
 	// スプライト管理
 	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
+	MagEngine::Input *input_ = nullptr;
 	std::unique_ptr<MagEngine::Sprite> backgroundSprite_ = nullptr; // 背景パネル
 	std::unique_ptr<MagEngine::Sprite> titleSprite_ = nullptr;		// タイトル
 

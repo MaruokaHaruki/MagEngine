@@ -10,21 +10,30 @@
 #include "MagMath.h"
 using namespace MagMath;
 #include "BaseScene.h"
+#include <memory>
+#include <vector>
 //========================================
 // Game
 #include "Cloud.h"
-#include "TrailEffectManager.h"
+#include "LevelDataLoader.h"
+#include "MAudioG.h"
 #include "MagVoiceBridge.h"
+#include "Object3d.h"
+#include "Object3dSetup.h"
+#include "TrailEffectManager.h"
 
 // Forward declaration
 class SceneContext;
+namespace MagEngine {
+	struct EngineContext;
+}
 
 class DebugScene : public BaseScene {
 	///-----------l---------------------------------------------------
 	///                            メンバ関数
 public:
-	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
-	void Initialize(SceneContext *context) override;
+	/// \brief 初期化
+	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 	void Finalize() override;
 
 	/// \brief 更新
@@ -69,6 +78,11 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	//========================================
+	// Context
+	const MagEngine::EngineContext *engineContext_ = nullptr;
+	SceneContext *sceneContext_ = nullptr;
+
 	//========================================
 	// オーディオ
 	MagEngine::MAudioG *audio_;

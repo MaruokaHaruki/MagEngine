@@ -419,7 +419,7 @@ MagFramework::Initialize()
   │   ├─ SceneFactory
   │   └─ SceneContext 設定
   └─ GamePlayScene::Initialize()
-      ├─ CameraManager::GetInstance()
+      ├─ CameraManager 参照
       ├─ ModelManager::GetInstance()
       ├─ EnemyManager::Initialize()
       ├─ Player::Initialize()
@@ -448,7 +448,7 @@ void SceneManager::Initialize(
 #### 暗黙的な依存関係
 ```cpp
 // GamePlayScene.cpp L45
-CameraManager::GetInstance()->AddCamera("FollowCamera");
+cameraManager.AddCamera("FollowCamera");
 ```
 → SceneContext から取得できなくてシングルトンで取得
 → 初期化順序の制御が困難
@@ -523,7 +523,7 @@ Player *player_;  // 敵がプレイヤーを知っている
 ```cpp
 // Player.cpp L129, 159, 226, 291
 Input *input = Input::GetInstance();           // グローバル入力
-LineManager *lineManager = LineManager::GetInstance();  // グローバルデバッグ描画
+LineManager *lineManager = injectedLineManager;  // 注入済みのデバッグ描画
 ```
 
 #### 問題点

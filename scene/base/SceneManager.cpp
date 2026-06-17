@@ -8,6 +8,8 @@
  *         NOTE: シーン遷移は各シーンが設定したnextSceneNo_から判定
  *********************************************************************/
 #include "SceneManager.h"
+#include "DirectXCore.h"
+#include "EngineContext.h"
 #include "ImguiSetup.h"
 #include "SceneFactory.h"
 #include "SpriteSetup.h"
@@ -17,37 +19,20 @@
 #include "TitleScene.h"
 // private:
 #include "DebugScene.h"
+#include <cassert>
 
 ///=============================================================================
 /// NOTE: SceneContextにセットアップを設定して一元管理
 /// NOTE: ファクトリーパターンで初期シーンも生成
-void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
-							  MagEngine::Object3dSetup *object3dSetup,
-							  MagEngine::ParticleSetup *particleSetup,
-							  MagEngine::SkyboxSetup *skyboxSetup,
-							  MagEngine::CloudSetup *cloudSetup,
-							  MagEngine::TrailEffectSetup *trailEffectSetup,
-							  MagEngine::TrailEffectManager *trailEffectManager) {
+void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 	//========================================
-	// NOTE: SceneContextにすべてのセットアップを設定
-	sceneContext_.SetSpriteSetup(spriteSetup);
-	sceneContext_.SetObject3dSetup(object3dSetup);
-	sceneContext_.SetParticleSetup(particleSetup);
-	sceneContext_.SetSkyboxSetup(skyboxSetup);
-	sceneContext_.SetCloudSetup(cloudSetup);
-	sceneContext_.SetTrailEffectSetup(trailEffectSetup);
-	sceneContext_.SetTrailEffectManager(trailEffectManager);
+	// NOTE: Sceneの旧Singletonフォールバックを禁止するため、初期化時点で必須依存を検証
+	engineContext.Validate();
+	engineContext_ = &engineContext;
 
 	//========================================
-	// NOTE: 互換性のため、ローカル変数にも保存
-	// NOTE: 将来的にはこれらは削除可能
-	spriteSetup_ = spriteSetup;
-	object3dSetup_ = object3dSetup;
-	particleSetup_ = particleSetup;
-	skyboxSetup_ = skyboxSetup;
-	cloudSetup_ = cloudSetup;
-	trailEffectSetup_ = trailEffectSetup;
-	trailEffectManager_ = trailEffectManager;
+	// NOTE: SceneContextはEngineサービスを持たず、Scene管理情報だけを扱う
+	sceneContext_.SetSceneManager(this);
 
 	//========================================
 	// NOTE: ファクトリーが設定されていない場合は生成
@@ -58,7 +43,7 @@ void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 	}
 
 	// NOTE: 初期シーンをFactoryで生成
-	nowScene_ = sceneFactory_->CreateScene(SCENE::TITLE, &sceneContext_);
+	nowScene_ = sceneFactory_->CreateScene(SCENE::TITLE, *engineContext_, sceneContext_);
 
 	// シーンの初期設定
 	currentSceneNo_ = SCENE::TITLE;
@@ -68,8 +53,8 @@ void SceneManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 ///=============================================================================
 /// 終了処理
 void SceneManager::Finalize() {
-	if (spriteSetup_ && spriteSetup_->GetDXManager()) {
-		spriteSetup_->GetDXManager()->WaitForGpu();
+	if (engineContext_ && engineContext_->graphics) {
+		engineContext_->graphics->WaitForGpu();
 	}
 
 	if (nowScene_) {
@@ -91,14 +76,14 @@ void SceneManager::Update() {
 	// NOTE: シーン遷移判定（-1の場合は遷移しない）
 	if (prevSceneNo_ != currentSceneNo_ && currentSceneNo_ != -1) {
 		if (nowScene_) {
-			if (spriteSetup_ && spriteSetup_->GetDXManager()) {
-				spriteSetup_->GetDXManager()->WaitForGpu();
+			if (engineContext_ && engineContext_->graphics) {
+				engineContext_->graphics->WaitForGpu();
 			}
 			// 現在のシーンの終了処理
 			nowScene_->Finalize();
 		}
 		// NOTE: ファクトリーでシーンをSceneContextと共に生成
-		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_, &sceneContext_);
+		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_, *engineContext_, sceneContext_);
 	}
 
 	//========================================

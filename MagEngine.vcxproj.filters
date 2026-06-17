@@ -86,6 +86,9 @@
     <ClCompile Include="engine\base\core\DirectXCore.cpp">
       <Filter>engine\base\core</Filter>
     </ClCompile>
+    <ClCompile Include="engine\base\core\DescriptorAllocator.cpp">
+      <Filter>engine\base\core</Filter>
+    </ClCompile>
     <ClCompile Include="engine\base\imGui\ImguiSetup.cpp">
       <Filter>engine\base\imGui</Filter>
     </ClCompile>
@@ -354,6 +357,12 @@
     <ClInclude Include="engine\base\core\DirectXCore.h">
       <Filter>engine\base\core</Filter>
     </ClInclude>
+    <ClInclude Include="engine\base\core\DescriptorAllocator.h">
+      <Filter>engine\base\core</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\core\DescriptorHandle.h">
+      <Filter>engine\base\core</Filter>
+    </ClInclude>
     <ClInclude Include="engine\base\imGui\ImguiSetup.h">
       <Filter>engine\base\imGui</Filter>
     </ClInclude>
@@ -361,6 +370,9 @@
       <Filter>engine\base\core</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\framework\EngineApp.h">
+      <Filter>engine\base\framework</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\framework\EngineContext.h">
       <Filter>engine\base\framework</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\framework\MagFramework.h">

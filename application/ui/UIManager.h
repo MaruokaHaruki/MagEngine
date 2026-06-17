@@ -11,13 +11,22 @@
 #include "StartAnimation.h"
 #include <memory>
 
+namespace MagEngine {
+	class Input;
+	class CameraManager;
+	class LineManager;
+}
+
 ///=============================================================================
 ///                        UI管理クラス
 class UIManager {
 public:
 	/// \brief 初期化
 	void Initialize(MagEngine::SpriteSetup *spriteSetup,
-					MagEngine::Object3dSetup *object3dSetup);
+					MagEngine::Object3dSetup *object3dSetup,
+					MagEngine::Input &input,
+					MagEngine::CameraManager &cameraManager,
+					MagEngine::LineManager &lineManager);
 
 	/// \brief 終了処理
 	void Finalize();
@@ -85,6 +94,7 @@ public:
 private:
 	// スプライト設定
 	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
+	MagEngine::CameraManager *cameraManager_ = nullptr;
 
 	// UI要素
 	std::unique_ptr<GameOverUI> gameOverUI_;

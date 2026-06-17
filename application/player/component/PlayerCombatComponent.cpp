@@ -26,9 +26,11 @@ namespace {
 //=============================================================================
 // 初期化
 void PlayerCombatComponent::Initialize(MagEngine::Object3dSetup *object3dSetup,
-									   MagEngine::TrailEffectManager *trailEffectManager) {
+									   MagEngine::TrailEffectManager *trailEffectManager,
+									   MagEngine::LineManager *lineManager) {
 	object3dSetup_ = object3dSetup;
 	trailEffectManager_ = trailEffectManager;
+	lineManager_ = lineManager;
 	enemyManager_ = nullptr;
 
 	bullets_.clear();
@@ -135,7 +137,7 @@ void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 
 	}
 
 	auto missile = std::make_unique<PlayerMissile>();
-	missile->Initialize(object3dSetup_, trailEffectManager_, missileModelPath_, position, direction);
+	missile->Initialize(object3dSetup_, trailEffectManager_, lineManager_, missileModelPath_, position, direction);
 	missile->SetEnemyManager(enemyManager_);
 
 	if (target) {
@@ -211,7 +213,7 @@ void PlayerCombatComponent::ShootMultipleMissiles(const Vector3 &position, const
 		//        targets[i]->GetPosition().x, targets[i]->GetPosition().y, targets[i]->GetPosition().z);
 
 		auto missile = std::make_unique<PlayerMissile>();
-		missile->Initialize(object3dSetup_, trailEffectManager_, missileModelPath_, position, direction);
+		missile->Initialize(object3dSetup_, trailEffectManager_, lineManager_, missileModelPath_, position, direction);
 		missile->SetEnemyManager(enemyManager_);
 		missile->SetTarget(targets[i]);
 		missile->StartLockOn();

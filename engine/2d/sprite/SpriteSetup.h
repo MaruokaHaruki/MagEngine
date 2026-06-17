@@ -15,6 +15,7 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
+	class TextureManager;
 
 	///=============================================================================
 	///                            SpriteSetupクラス
@@ -45,7 +46,7 @@ namespace MagEngine {
 		 * \note   スプライト描画システムを初期化し、
 		 *         グラフィックスパイプラインを作成する
 		 */
-		void Initialize(DirectXCore *dxCore);
+		void Initialize(DirectXCore *dxCore, TextureManager &textureManager);
 
 		///=============================================================================
 		///                        描画設定
@@ -74,6 +75,10 @@ namespace MagEngine {
 		 */
 		DirectXCore *GetDXManager() const {
 			return dxCore_;
+		}
+
+		TextureManager &GetTextureManager() const {
+			return *textureManager_;
 		}
 
 		///--------------------------------------------------------------
@@ -109,6 +114,9 @@ namespace MagEngine {
 		///---------------------------------------
 		/// DirectXCore
 		DirectXCore *dxCore_ = nullptr;	  // DirectXCoreへのポインタ
+
+		/// COMMENT: Spriteはテクスチャの寿命を所有せず、Framework所有の管理器を参照する
+		TextureManager *textureManager_ = nullptr;
 
 		///---------------------------------------
 		/// パイプラインステート

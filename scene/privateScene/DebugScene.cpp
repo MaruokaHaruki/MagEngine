@@ -12,6 +12,7 @@
 #include "DebugScene.h"
 #include "CameraManager.h"
 #include "DebugTextManager.h"
+#include "EngineContext.h"
 #include "Input.h"
 #include "LevelDataLoader.h"
 #include "Logger.h"
@@ -22,6 +23,7 @@
 #include "TrailEffectManager.h"
 #include "TrailEffectPreset.h"
 #include "imgui.h"
+#include <cassert>
 using namespace MagEngine;
 
 namespace {
@@ -39,11 +41,11 @@ namespace {
 		return NormalizeOrDefault(forward, Vector3{0.0f, 0.0f, 1.0f});
 	}
 
-	Camera *GetCloudTestCamera() {
-		if (auto debugCamera = CameraManager::GetInstance()->GetCamera("DebugCamera")) {
+	Camera *GetCloudTestCamera(CameraManager &cameraManager) {
+		if (auto debugCamera = cameraManager.GetCamera("DebugCamera")) {
 			return debugCamera;
 		}
-		return CameraManager::GetInstance()->GetCurrentCamera();
+		return cameraManager.GetCurrentCamera();
 	}
 
 	CloudBulletHoleShape ToCloudHoleShape(int shape) {
@@ -111,24 +113,23 @@ namespace {
 ///=============================================================================
 /// 初期化
 /// NOTE: contextからセットアップを取得
-void DebugScene::Initialize(SceneContext *context) {
-	//========================================
-	// NOTE: contextがnullptrでないかチェック
-	if (!context) {
-		return;
-	}
+void DebugScene::Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) {
+	engineContext.Validate();
+	engineContext_ = &engineContext;
+	sceneContext_ = &sceneContext;
 
-	// NOTE: contextからセットアップを取得
-	MagEngine::Object3dSetup *object3dSetup = context->GetObject3dSetup();
-	MagEngine::CloudSetup *cloudSetup = context->GetCloudSetup();
-	MagEngine::TrailEffectManager *trailEffectManager = context->GetTrailEffectManager();
+	// NOTE: EngineサービスはEngineContextから取得し、SceneContextとの重複を避ける
+	MagEngine::Object3dSetup *object3dSetup = engineContext_->object3dSetup;
+	MagEngine::CloudSetup *cloudSetup = engineContext_->cloudSetup;
+	MagEngine::TrailEffectManager *trailEffectManager = engineContext_->trailEffectManager;
+	MagEngine::ModelManager *modelManager = engineContext_->modelManager;
 
 	// object3dSetupを保存（再読み込み時に使用）
 	object3dSetup_ = object3dSetup;
 
 	///--------------------------------------------------------------
 	/// 音声クラス
-	audio_ = MAudioG::GetInstance();
+	audio_ = engineContext_->audio;
 
 	///--------------------------------------------------------------
 	/// 2D系クラス
@@ -141,14 +142,14 @@ void DebugScene::Initialize(SceneContext *context) {
 	///--------------------------------------------------------------
 	/// 3D系クラス
 	// モデルの読み込み
-	ModelManager::GetInstance()->LoadModel("axisPlus.obj");
-	ModelManager::GetInstance()->LoadModel("ball.obj");
-	ModelManager::GetInstance()->LoadModel("terrain.obj");
-	ModelManager::GetInstance()->LoadModel("jet.obj"); // モデルは事前にロードしておく
+	modelManager->LoadModel("axisPlus.obj");
+	modelManager->LoadModel("ball.obj");
+	modelManager->LoadModel("terrain.obj");
+	modelManager->LoadModel("jet.obj"); // モデルは事前にロードしておく
 	//========================================
 	// 3Dオブジェクトクラス
 	// 映り込みの設定
-	ModelManager::GetInstance()->GetModelSetup()->SetEnvironmentTexture("moonless_golf_4k.dds");
+	modelManager->GetModelSetup()->SetEnvironmentTexture("moonless_golf_4k.dds");
 	// モンスターボール
 	objMonsterBall_ = std::make_unique<Object3d>();
 	objMonsterBall_->Initialize(object3dSetup);
@@ -289,7 +290,7 @@ void DebugScene::Update() {
 	//========================================
 	// Cloudの更新
 	if (cloud_ && enableCloudTest_) {
-		if (auto cloudCamera = GetCloudTestCamera()) {
+		if (auto cloudCamera = GetCloudTestCamera(*engineContext_->cameraManager)) {
 			cloud_->Update(*cloudCamera, 1.0f / 60.0f);
 		}
 	}
@@ -324,7 +325,8 @@ void DebugScene::Update() {
 
 	//========================================
 	// 雲の穴開けテスト（デバッグ用）
-	auto input = Input::GetInstance();
+	assert(engineContext_);
+	Input *input = engineContext_->input;
 
 	// Bキー: カメラ位置から前方に弾痕を作成
 	if (enableCloudTest_ && input->TriggerKey(DIK_B)) {
@@ -358,13 +360,14 @@ void DebugScene::AddCloudHoleFromDebugCamera() {
 		return;
 	}
 
-	auto camera = GetCloudTestCamera();
+	assert(engineContext_);
+	auto camera = GetCloudTestCamera(*engineContext_->cameraManager);
 	if (!camera) {
 		return;
 	}
 
 	Transform cameraTransform = camera->GetTransform();
-	Vector3 forward = CameraManager::GetInstance()->GetDebugCameraForward();
+	Vector3 forward = engineContext_->cameraManager->GetDebugCameraForward();
 	Vector3 origin = cameraTransform.translate;
 	const auto &cloudParams = cloud_->GetParams();
 	float hitDistance = 0.0f;
@@ -501,7 +504,8 @@ void DebugScene::DrawOverviewImGui() {
 	ImGui::Text("DebugScene Test Hub");
 	ImGui::Separator();
 
-	if (auto debugCamera = CameraManager::GetInstance()->GetCamera("DebugCamera")) {
+	if (engineContext_ && engineContext_->cameraManager) {
+		if (auto debugCamera = engineContext_->cameraManager->GetCamera("DebugCamera")) {
 		Transform cameraTransform = debugCamera->GetTransform();
 		ImGui::Text("DebugCamera");
 		ImGui::Text("Position: %.2f, %.2f, %.2f",
@@ -512,6 +516,9 @@ void DebugScene::DrawOverviewImGui() {
 					cameraTransform.rotate.x,
 					cameraTransform.rotate.y,
 					cameraTransform.rotate.z);
+		} else {
+			ImGui::TextDisabled("DebugCamera is not available.");
+		}
 	} else {
 		ImGui::TextDisabled("DebugCamera is not available.");
 	}
@@ -809,7 +816,7 @@ void DebugScene::ImGuiDraw() {
 	}
 	ImGui::End();
 
-	DebugTextManager::GetInstance()->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
+	engineContext_->debugTextManager->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
 	return;
 
 	// DebugSceneのImGui描画
@@ -1208,5 +1215,5 @@ void DebugScene::ImGuiDraw() {
 	//========================================
 	// SkyBoxの移動
 
-	DebugTextManager::GetInstance()->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
+	engineContext_->debugTextManager->AddText3D("Hello, DebugScene!", Vector3{0.0f, 0.0f, 0.0f}, Vector4{1.0f, 1.0f, 1.0f, 1.0f}, -1.0f, 1.0f);
 }

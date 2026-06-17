@@ -15,6 +15,7 @@
 namespace MagEngine {
 
 	class DirectXCore;
+	class TextureManager;
 
 	class PostEffectManager {
 	public:
@@ -44,7 +45,7 @@ namespace MagEngine {
 		bool IsEffectEnabled(EffectType type) const;
 
 		// 有効なエフェクトを適用
-		void ApplyEffects();
+		void ApplyEffects(TextureManager &textureManager);
 
 		// DirectXCoreへのアクセス
 		DirectXCore *GetDXCore() const {
@@ -68,7 +69,7 @@ namespace MagEngine {
 		/// @param effectType エフェクトタイプ
 		/// @param inputIndex 入力テクスチャインデックス
 		/// @param outputIndex 出力テクスチャインデックス
-		void ApplySingleEffect(EffectType effectType, uint32_t inputIndex, uint32_t outputIndex);
+		void ApplySingleEffect(EffectType effectType, uint32_t inputIndex, uint32_t outputIndex, TextureManager &textureManager);
 
 		//========================================
 		/// @brief レンダーターゲットを切り替え

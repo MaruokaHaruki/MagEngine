@@ -13,6 +13,7 @@ class EnemyManager;
 class EnemyBase; // Enemy から EnemyBase に変更
 namespace MagEngine {
 	class TrailEffectManager;
+	class LineManager;
 }
 
 ///=============================================================================
@@ -22,7 +23,8 @@ public:
 	///--------------------------------------------------------------
 	///                        メンバ関数
 	void Initialize(MagEngine::Object3dSetup *object3dSetup,
-					MagEngine::TrailEffectManager *trailEffectManager = nullptr);
+					MagEngine::TrailEffectManager *trailEffectManager = nullptr,
+					MagEngine::LineManager *lineManager = nullptr);
 	void Update(float deltaTime);
 
 	///--------------------------------------------------------------
@@ -152,6 +154,7 @@ private:
 	///                        メンバ変数
 	MagEngine::Object3dSetup *object3dSetup_;			// オブジェクト設定（弾生成用）
 	MagEngine::TrailEffectManager *trailEffectManager_; // トレイルエフェクト管理
+	MagEngine::LineManager *lineManager_;				// デバッグ線描画管理
 	EnemyManager *enemyManager_;						// 敵管理への参照（ミサイルターゲット用）
 
 	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト

@@ -12,19 +12,6 @@
 ///                        namespace MagEngine
 namespace MagEngine {
 	///=============================================================================
-	///						インスタンス設定
-	std::unique_ptr<TextureManager> TextureManager::instance_ = nullptr;
-
-	///=============================================================================
-	///							インスタンス生成
-	TextureManager *TextureManager::GetInstance() {
-		if (instance_ == nullptr) {
-			instance_ = std::make_unique<TextureManager>();
-		}
-		return instance_.get();
-	}
-
-	///=============================================================================
 	///								初期化
 	void TextureManager::Initialize(DirectXCore *dxCore, const std::string &textureDirectoryPath, SrvSetup *srvSetup) {
 		//---------------------------------------
@@ -107,15 +94,11 @@ namespace MagEngine {
 		textureData.metadata = mipImages.GetMetadata();
 		// テクスチャリソースの作成
 		textureData.resource = dxCore_->CreateTextureResource(textureData.metadata);
-		// テクスチャデータの要素数番号をSRVのインデックスとする
-		// uint32_t srvIndex = srvSetup_->Allocate();
 		// 中間リソース
 		textureData.interMediateResource = dxCore_->UploadTextureData(textureData.resource, mipImages);
-		// SRVの確保
-		textureData.srvIndex = srvSetup_->Allocate();
-		// 各ハンドルを取得
-		textureData.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData.srvIndex);
-		textureData.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData.srvIndex);
+		// NOTE:Texture SRVは共通Resource DescriptorAllocatorから確保する
+		textureData.srvHandle = dxCore_->GetResourceAllocator().Allocate();
+		assert(textureData.srvHandle.IsValid());
 
 		//---------------------------------------
 		// SRVの生成
@@ -136,14 +119,16 @@ namespace MagEngine {
 			srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels);
 		}
 		// SRVの生成
-		dxCore_->GetDevice().Get()->CreateShaderResourceView(textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);
+		dxCore_->GetDevice().Get()->CreateShaderResourceView(textureData.resource.Get(), &srvDesc, textureData.srvHandle.cpuHandle);
 	}
 
 	///=============================================================================
 	///								終了処理
 	void TextureManager::Finalize() {
-		// インスタンスの削除（unique_ptrが自動で管理）
-		instance_.reset();
+		// GPU同期後に呼ばれる前提で、SRV参照元のテクスチャを明示的に解放するため。
+		textureDatas_.clear();
+		dxCore_ = nullptr;
+		srvSetup_ = nullptr;
 	}
 
 	///=============================================================================
@@ -156,7 +141,7 @@ namespace MagEngine {
 		}
 
 		if (textureDatas_.contains(fullPath)) {
-			return textureDatas_.at(fullPath).srvIndex;
+			return textureDatas_.at(fullPath).srvHandle.index;
 		}
 		//---------------------------------------
 		// 検索化ヒットしない場合は停止
@@ -180,7 +165,7 @@ namespace MagEngine {
 		assert(textureDatas_.contains(fullPath));
 		// テクスチャデータの参照を取得
 		TextureData &textureData = textureDatas_[fullPath];
-		return textureData.srvHandleGPU;
+		return textureData.srvHandle.gpuHandle;
 	}
 
 	///=============================================================================
@@ -199,7 +184,7 @@ namespace MagEngine {
 		assert(textureDatas_.contains(fullPath));
 		// テクスチャデータの参照を取得
 		TextureData &textureData = textureDatas_[fullPath];
-		return textureData.srvHandleCPU;
+		return textureData.srvHandle.cpuHandle;
 	}
 
 	///=============================================================================
@@ -219,17 +204,14 @@ namespace MagEngine {
 	void TextureManager::CreateRenderTextureMetaData() {
 		TextureData &textureData1 = textureDatas_["RenderTexture0"];
 
-		textureData1.srvIndex = srvSetup_->Allocate();
-		textureData1.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData1.srvIndex);
-		textureData1.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData1.srvIndex);
-
-		srvSetup_->CreateOffScreenTexture(textureData1.srvIndex, 0);
+		textureData1.srvHandle = dxCore_->GetResourceAllocator().Allocate();
+		assert(textureData1.srvHandle.IsValid());
+		srvSetup_->CreateOffScreenTexture(textureData1.srvHandle.index, 0);
 
 		TextureData &textureData2 = textureDatas_["RenderTexture1"];
 
-		textureData2.srvIndex = srvSetup_->Allocate();
-		textureData2.srvHandleCPU = srvSetup_->GetSRVCPUDescriptorHandle(textureData2.srvIndex);
-		textureData2.srvHandleGPU = srvSetup_->GetSRVGPUDescriptorHandle(textureData2.srvIndex);
-		srvSetup_->CreateOffScreenTexture(textureData2.srvIndex, 1);
+		textureData2.srvHandle = dxCore_->GetResourceAllocator().Allocate();
+		assert(textureData2.srvHandle.IsValid());
+		srvSetup_->CreateOffScreenTexture(textureData2.srvHandle.index, 1);
 	}
 }

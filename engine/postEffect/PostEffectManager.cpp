@@ -38,7 +38,7 @@ namespace MagEngine {
 	}
 	///=============================================================================
 	///                        エフェクトの適用
-	void PostEffectManager::ApplyEffects() {
+	void PostEffectManager::ApplyEffects(TextureManager &textureManager) {
 		// 有効なエフェクトの数をカウント
 		int enabledEffectCount = 0;
 		EffectType enabledEffects[static_cast<size_t>(EffectType::Count)];
@@ -59,9 +59,9 @@ namespace MagEngine {
 
 			D3D12_GPU_DESCRIPTOR_HANDLE srvHandle;
 			if (renderResourceIndex == 0) {
-				srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture0");
+				srvHandle = textureManager.GetSrvHandleGPU("RenderTexture0");
 			} else {
-				srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture1");
+				srvHandle = textureManager.GetSrvHandleGPU("RenderTexture1");
 			}
 
 			assert(srvHandle.ptr != 0);
@@ -83,7 +83,7 @@ namespace MagEngine {
 			}
 
 			// エフェクトを適用
-			ApplySingleEffect(enabledEffects[i], inputIndex, outputIndex);
+			ApplySingleEffect(enabledEffects[i], inputIndex, outputIndex, textureManager);
 
 			// 最後のエフェクト以外は、次の入力用にピクセルシェーダーリソースに遷移
 			if (i < enabledEffectCount - 1) {
@@ -95,7 +95,7 @@ namespace MagEngine {
 	}
 	///=============================================================================
 	///                        単一エフェクトを適用
-	void PostEffectManager::ApplySingleEffect(EffectType effectType, uint32_t inputIndex, uint32_t outputIndex) {
+	void PostEffectManager::ApplySingleEffect(EffectType effectType, uint32_t inputIndex, uint32_t outputIndex, TextureManager &textureManager) {
 		D3D12_GPU_DESCRIPTOR_HANDLE srvHandle;
 
 		switch (effectType) {
@@ -112,9 +112,9 @@ namespace MagEngine {
 
 		// 入力テクスチャを設定
 		if (inputIndex == 0) {
-			srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture0");
+			srvHandle = textureManager.GetSrvHandleGPU("RenderTexture0");
 		} else {
-			srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("RenderTexture1");
+			srvHandle = textureManager.GetSrvHandleGPU("RenderTexture1");
 		}
 
 		assert(srvHandle.ptr != 0);
@@ -125,12 +125,8 @@ namespace MagEngine {
 	///                        レンダーターゲットを切り替え
 	void PostEffectManager::SwitchRenderTarget(uint32_t index) {
 		auto *cmdList = dxCore_->GetCommandList().Get();
-		auto rtvDescriptorHeap = dxCore_->GetRtvDescriptorHeap();
-		uint32_t descriptorSize = dxCore_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-		// RTVハンドルを取得
-		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-		rtvHandle.ptr += static_cast<unsigned long long>(descriptorSize) * (2 + index);
+		// NOTE:RTV DescriptorはDirectXCore内のAllocator確保済みHandleを使う
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = dxCore_->GetRenderTextureRtvHandle(index);
 
 		// レンダーターゲットをクリア
 		float clearColor[] = {0.298f, 0.427f, 0.698f, 1.0f};

@@ -8,6 +8,7 @@
  *         NOTE: SceneContextでセットアップ類をまとめて渡している
  *********************************************************************/
 #include "SceneFactory.h"
+#include "EngineContext.h"
 #include "Logger.h"
 #include "SceneContext.h"
 #include <memory>
@@ -24,7 +25,7 @@ using namespace Logger;
 ///=============================================================================
 /// NOTE: SceneContextを使用してシーンを生成
 ///       これにより7個の引数を1つに削減
-std::unique_ptr<BaseScene> SceneFactory::CreateScene(int sceneNo, SceneContext *context) {
+std::unique_ptr<BaseScene> SceneFactory::CreateScene(int sceneNo, const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) {
 	//========================================
 	// 次のシーンの生成
 	std::unique_ptr<BaseScene> nextScene = nullptr;
@@ -45,15 +46,12 @@ std::unique_ptr<BaseScene> SceneFactory::CreateScene(int sceneNo, SceneContext *
 	}
 
 	//========================================
-	// NOTE: contextがnullptrでないかチェック
-	if (!context) {
-		Log("SceneContext is nullptr", LogLevel::Error);
-		return nextScene;
-	}
+	// NOTE: 旧APIフォールバックを残さないため、生成時に必須Contextを検証する
+	engineContext.Validate();
 
 	//========================================
-	// シーンの初期化 - NOTE: 引数がcontextの1つに統一
-	nextScene->Initialize(context);
+	// シーンの初期化 - NOTE: EngineContextとSceneContextを分離して渡す
+	nextScene->Initialize(engineContext, sceneContext);
 
 	//========================================
 	// シーンを返す

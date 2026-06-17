@@ -7,17 +7,17 @@
  * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
 #include "ClearScene.h"
+#include "EngineContext.h"
 #include "Input.h"
+#include "SceneContext.h"
+#include <cassert>
 
 ///=============================================================================
 /// 初期化
-void ClearScene::Initialize(SceneContext *context) {
-	// NOTE: 引数が1つに削減された
-	// NOTE: contextから必要なセットアップにアクセスする場合は
-	//       context->GetXxxSetup()で取得できる
-
-	// 使用しない場合は何もしなくてもよい
-	context;
+void ClearScene::Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) {
+	engineContext.Validate();
+	engineContext_ = &engineContext;
+	sceneContext_ = &sceneContext;
 }
 
 ///=============================================================================
@@ -28,13 +28,16 @@ void ClearScene::Finalize() {
 ///=============================================================================
 ///						更新
 void ClearScene::Update() {
+	assert(engineContext_);
+	MagEngine::Input *input = engineContext_->input;
+
 	//========================================
 	// シーン遷移
-	if (MagEngine::Input::GetInstance()->PushKey(VK_SPACE)) {
+	if (input->PushKey(VK_SPACE)) {
 		SetSceneNo(TITLE);
 	}
 	// コントローラ
-	if (MagEngine::Input::GetInstance()->TriggerButton(XINPUT_GAMEPAD_A)) {
+	if (input->TriggerButton(XINPUT_GAMEPAD_A)) {
 		SetSceneNo(TITLE);
 	}
 }

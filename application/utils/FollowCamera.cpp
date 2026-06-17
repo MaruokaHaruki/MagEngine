@@ -6,6 +6,7 @@
 #include "Input.h"
 #include "MathFunc4x4.h"
 #include "Player.h"
+#include <cassert>
 #include <cmath>
 using namespace MagEngine;
 
@@ -24,12 +25,12 @@ namespace {
 
 ///=============================================================================
 ///						初期化
-void FollowCamera::Initialize(const std::string &cameraName) {
+void FollowCamera::Initialize(const std::string &cameraName, MagEngine::CameraManager &cameraManager, MagEngine::Input &input) {
 	cameraName_ = cameraName;
+	input_ = &input;
 
 	// カメラマネージャからカメラを取得
-	MagEngine::CameraManager *cameraManager = MagEngine::CameraManager::GetInstance();
-	camera_ = cameraManager->GetCamera(cameraName);
+	camera_ = cameraManager.GetCamera(cameraName);
 
 	// 初期パラメータの設定
 	target_ = nullptr;
@@ -180,22 +181,24 @@ void FollowCamera::Update() {
 ///=============================================================================
 ///						カメラ操作の入力処理
 void FollowCamera::HandleCameraInput() {
+	assert(input_);
+
 	// R キー: ズーム（カメラを近づける）
-	if (Input::GetInstance()->PushKey(DIK_R)) {
+	if (input_->PushKey(DIK_R)) {
 		targetZoomMultiplier_ = 0.7f; // 70%の距離に近づく
 	} else {
 		targetZoomMultiplier_ = 1.0f; // 通常の距離に戻す
 	}
 
 	// B キー: 引く（カメラを遠ざける）
-	if (Input::GetInstance()->PushKey(DIK_B)) {
+	if (input_->PushKey(DIK_B)) {
 		targetPullMultiplier_ = 1.3f; // 130%の距離に引く
 	} else {
 		targetPullMultiplier_ = 1.0f; // 通常の距離に戻す
 	}
 
 	// A キー: 左右に傾ける
-	if (Input::GetInstance()->PushKey(DIK_A)) {
+	if (input_->PushKey(DIK_A)) {
 		targetTiltAmount_ = 0.3f; // 約17度傾ける
 	} else {
 		targetTiltAmount_ = 0.0f; // 傾きをリセット

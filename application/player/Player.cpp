@@ -16,7 +16,8 @@
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
-#include "input.h"
+#include "Input.h"
+#include <cassert>
 #include <algorithm>
 #include <cmath> // std::abs, std::min, std::max のため
 using namespace MagEngine;
@@ -31,16 +32,18 @@ MagMath::Transform *Player::GetTransformSafe() const {
 
 //=======================================================================
 // 初期化
-void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath) {
+void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, MagEngine::Input &input, MagEngine::LineManager &lineManager) {
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize(object3dSetup);
 	obj_->SetModel(modelPath);
 	object3dSetup_ = object3dSetup;
+	input_ = &input;
+	lineManager_ = &lineManager;
 
 	// === 各コンポーネント初期化 ===
 	movementComponent_.Initialize();
 	healthComponent_.Initialize(100);
-	combatComponent_.Initialize(object3dSetup);
+	combatComponent_.Initialize(object3dSetup, nullptr, &lineManager);
 	lockedOnComponent_.Initialize(nullptr);
 	justAvoidanceComponent_.Initialize();
 	defeatComponent_.Initialize();
@@ -125,8 +128,8 @@ void Player::Update() {
 //=============================================================================
 // プレイヤーの動作関係処理（入力処理、移動、回転を統合）
 void Player::UpdateMovement(float deltaTime) {
-	// 入力情報を取得
-	Input *input = Input::GetInstance();
+	assert(input_);
+	Input *input = input_;
 	float moveX = 0.0f;
 	float moveY = 0.0f;
 
@@ -156,7 +159,8 @@ void Player::UpdateMovement(float deltaTime) {
 //=============================================================================
 // バレルロールとブーストの更新
 void Player::UpdateBarrelRollAndBoost(float deltaTime) {
-	Input *input = Input::GetInstance();
+	assert(input_);
+	Input *input = input_;
 
 	// === バレルロール入力（Shift または Aボタンのみ） ===
 	static bool wasBarrelRolling = false; // 前フレームでバレルロール中だったか
@@ -223,7 +227,8 @@ void Player::UpdateBarrelRollAndBoost(float deltaTime) {
 //=============================================================================
 // 弾の発射処理
 void Player::ProcessShooting() {
-	Input *input = Input::GetInstance();
+	assert(input_);
+	Input *input = input_;
 
 	const Vector3 playerPos = obj_->GetPosition();
 	// プレイヤーの正面は常にZ軸正方向（カメラから見てプレイヤーの前方）
@@ -288,7 +293,8 @@ void Player::Draw() {
 
 #ifdef _DEBUG
 	// ロックオン範囲の描画（コンポーネント情報を使用）
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 	Vector3 playerPos = GetPosition();
 	Vector3 playerForward = GetForwardVector();
 

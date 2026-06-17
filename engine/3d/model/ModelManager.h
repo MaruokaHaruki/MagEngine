@@ -19,6 +19,7 @@
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
+	class TextureManager;
 	class ModelManager {
 		///--------------------------------------------------------------
 		///						 シングルトン化
@@ -36,7 +37,7 @@ namespace MagEngine {
 		///							メンバ関数
 	public:
 		/// \brief 初期化
-		void Initialize(DirectXCore *dxCore);
+		void Initialize(DirectXCore *dxCore, TextureManager &textureManager);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  LoadMedel モデルの読み込み

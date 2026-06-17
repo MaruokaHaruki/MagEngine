@@ -13,6 +13,9 @@
 
 // Forward declaration
 class SceneContext;
+namespace MagEngine {
+	struct EngineContext;
+}
 
 ///=============================================================================
 ///                         抽象シーンファクトリ
@@ -23,7 +26,8 @@ public:
 
 	/// @brief シーンを作成する純粋仮想関数
 	/// @param sceneNo シーン番号
-	/// @param context シーンが使用するコンテキスト
+	/// @param engineContext シーンが使用するEngineサービス
+	/// @param sceneContext Scene管理用コンテキスト
 	/// @return 作成されたシーン
-	virtual std::unique_ptr<BaseScene> CreateScene(int sceneNo, SceneContext *context) = 0;
+	virtual std::unique_ptr<BaseScene> CreateScene(int sceneNo, const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) = 0;
 };

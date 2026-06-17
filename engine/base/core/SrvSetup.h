@@ -30,7 +30,7 @@ namespace MagEngine {
 
 		/// @brief IsFull SRVが満杯かどうか
 		bool IsFull() const {
-			return useIndex_ >= kMaxSRVCount_;
+			return !CanAllocate();
 		}
 
 		/// @brief CanAllocate 指定数のSRVを追加で確保できるか
@@ -41,13 +41,13 @@ namespace MagEngine {
 		/// @brief GetUsedCount 使用済みSRV数を取得
 		/// @return 使用済みSRV数
 		uint32_t GetUsedCount() const {
-			return useIndex_;
+			return dxCore_ ? dxCore_->GetResourceAllocator().GetAllocatedCount() : 0;
 		}
 
 		/// @brief GetFreeCount 残りSRV数を取得
 		/// @return 残りSRV数
 		uint32_t GetFreeCount() const {
-			return kMaxSRVCount_ - useIndex_;
+			return dxCore_ ? dxCore_->GetResourceAllocator().GetRemainingCount() : 0;
 		}
 
 		/// \brief CreateSRVforTexture2D SRV生成(テクスチャ用)
@@ -115,14 +115,5 @@ namespace MagEngine {
 		// DirectXCoreポインタ
 		DirectXCore *dxCore_ = nullptr;
 
-		//========================================
-		// SRV用ディスクリプタサイズ
-		uint32_t descriptorSizeSRV_ = 0;
-		// SRVディスクリプタヒープ
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap_ = nullptr;
-
-		//========================================
-		// 次に使用するディスクリプタのインデックス
-		uint32_t useIndex_ = 0;
 	};
 }

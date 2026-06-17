@@ -20,6 +20,7 @@
 // 自作関数
 #include "MagMath.h"
 #include "WstringUtility.h"
+#include "DescriptorAllocator.h"
 #include "Logger.h"
 #include "FullscreenPassRendere.h"
 #include "GrayscaleEffect.h"
@@ -54,6 +55,7 @@ namespace MagEngine {
 ///=============================================================================
 ///						クラス
 	class PostEffectManager;
+	class TextureManager;
 	class DirectXCore {
 	public:
 		///--------------------------------------------------------------
@@ -62,7 +64,7 @@ namespace MagEngine {
 		//========================================
 		/// @brief PostDraw 描画前処理
 		/// @param postEffectManager ポストエフェクトマネージャ
-		void PreDraw(PostEffectManager *postEffectManager = nullptr);
+		void PreDraw(PostEffectManager *postEffectManager, TextureManager &textureManager);
 
 		//========================================
 		/// @brief 描画前処理
@@ -124,12 +126,8 @@ namespace MagEngine {
 		void CreateDepthBuffer();
 
 		//========================================
-		/// @brief CreateVariousDescriptorHeap ディスクリプタヒープの生成
-		void CreateVariousDescriptorHeap();
-
-		//========================================
-		/// @brief CreateRTVDescriptorHeap RTVディスクリプタヒープの生成
-		void CreateRTVDescriptorHeap();
+		/// @brief InitializeDescriptorAllocators DescriptorAllocatorの初期化
+		void InitializeDescriptorAllocators();
 
 		//========================================
 		/// @brief GetResourcesFromSwapChain スワップチェーンからリソースを取得
@@ -183,14 +181,6 @@ namespace MagEngine {
 		/// @param  height
 		/// @return
 		Microsoft::WRL::ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(int32_t width, int32_t height);
-
-		//========================================
-		/// @brief CreateDescriptorHeap ディスクリプタヒープの生成
-		/// @param heapType ヒープタイプ
-		/// @param numDescriptors ディスクリプタ数
-		/// @param shaderVisible シェーダーから見えるかどうか
-		/// @return
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible);
 
 		//========================================
 		/// @brief CreateBufferResource バッファリソースの生成
@@ -262,22 +252,6 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///                        静的メンバ関数
 	private:
-		//========================================
-		/// @brief GetCPUDescriptorHandle CPUディスクリプタハンドルの取得
-		/// @param descriptorHeap ディスクリプタヒープ
-		/// @param descriptorSize
-		/// @param index
-		/// @return
-		D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
-
-		//========================================
-		/// @brief GetGPUDescriptorHandle GPUディスクリプタハンドルの取得
-		/// @param descriptorHeap
-		/// @param descriptorSize
-		/// @param index
-		/// @return
-		D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap, uint32_t descriptorSize, uint32_t index);
-
 		//========================================
 		/// @brief InitializeFixFPS FPS固定更新の初期化
 		void InitializeFixFPS();
@@ -355,10 +329,31 @@ namespace MagEngine {
 		}
 
 		//========================================
-		/// @brief GetRtvDescriptorHeap RTVディスクリプタヒープの取得
-		/// @return RTVディスクリプタヒープ
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetRtvDescriptorHeap() {
-			return rtvDescriptorHeap_;
+		/// @brief GetRenderTextureRtvHandle レンダーテクスチャRTV Handleの取得
+		/// @param index レンダーテクスチャIndex
+		D3D12_CPU_DESCRIPTOR_HANDLE GetRenderTextureRtvHandle(uint32_t index) const {
+			assert(index < 2);
+			return renderTextureRtvHandles_[index].cpuHandle;
+		}
+
+		/// @brief RTV Allocatorの取得
+		DescriptorAllocator &GetRtvAllocator() {
+			return rtvAllocator_;
+		}
+
+		/// @brief DSV Allocatorの取得
+		DescriptorAllocator &GetDsvAllocator() {
+			return dsvAllocator_;
+		}
+
+		/// @brief CBV/SRV/UAV Allocatorの取得
+		DescriptorAllocator &GetResourceAllocator() {
+			return resourceAllocator_;
+		}
+
+		/// @brief Sampler Allocatorの取得
+		DescriptorAllocator &GetSamplerAllocator() {
+			return samplerAllocator_;
 		}
 
 		//========================================
@@ -459,27 +454,21 @@ namespace MagEngine {
 
 		//========================================
 		// 深度バッファ
-		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_{};
+		DescriptorHandle dsvHandle_{};
 		Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource_;
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_;
 
 		//========================================
-		// DescriptorHeapサイズ
-		// uint32_t descriptorSizeSRV = 0;  // SRV
-		uint32_t descriptorSizeRTV = 0; // RTV
-		uint32_t descriptorSizeDSV = 0; // DSV
+		// DescriptorAllocator
+		DescriptorAllocator rtvAllocator_;
+		DescriptorAllocator dsvAllocator_;
+		DescriptorAllocator resourceAllocator_;
+		DescriptorAllocator samplerAllocator_;
 
 		//========================================
-		// RTVディスクリプタヒープ
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap_;
-		// RTVの数
-		D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc_{};
 		// RTVの設定
 		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc_{};
-		// ディスクリプタの先頭を取得する
-		D3D12_CPU_DESCRIPTOR_HANDLE rtvStarHandle_{};
-		// RTVを2つ作るのでディスクリプタを2つ用意
-		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[4]{}; // 2つ分のRTVを作るので4つ用意する
+		DescriptorHandle swapChainRtvHandles_[2]{};
+		DescriptorHandle renderTextureRtvHandles_[2]{};
 		// これから書き込むバックバッファのインデックスを取得
 		UINT backBufferIndex_ = 0;
 		// TransitionBarrierの設定

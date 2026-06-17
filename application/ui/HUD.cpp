@@ -1,12 +1,14 @@
 #define _USE_MATH_DEFINES
 #define NOMINMAX
 #include "HUD.h"
+#include "CameraManager.h"
 #include "EnemyBase.h"
 #include "EnemyManager.h"
 #include "Camera.h"
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 using namespace MagEngine;
 
@@ -15,7 +17,10 @@ const float SCREEN_HEIGHT = 720.0f;
 
 ///=============================================================================
 ///                        初期化
-void HUD::Initialize() {
+void HUD::Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineManager &lineManager) {
+	cameraManager_ = &cameraManager;
+	lineManager_ = &lineManager;
+
 	// HUD基本設定
 	hudScale_ = 0.85f;
 	hudDistance_ = 20.0f;
@@ -161,7 +166,7 @@ Vector3 HUD::GetHUDPosition(float screenX, float screenY) {
 	}
 
 	if (!currentCamera) {
-		currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+		currentCamera = cameraManager_->GetCurrentCamera();
 	}
 
 	if (!currentCamera) {
@@ -313,7 +318,7 @@ void HUD::Update(const Player *player) {
 	if (followCamera_) {
 		currentCamera_ = followCamera_->GetCamera();
 	} else {
-		currentCamera_ = CameraManager::GetInstance()->GetCurrentCamera();
+		currentCamera_ = cameraManager_->GetCurrentCamera();
 	}
 
 	UpdateAnimation();
@@ -385,7 +390,7 @@ void HUD::Draw() {
 	}
 
 	if (!currentCamera) {
-		currentCamera = CameraManager::GetInstance()->GetCurrentCamera();
+		currentCamera = cameraManager_->GetCurrentCamera();
 	}
 
 	if (!currentCamera) {
@@ -461,7 +466,8 @@ void HUD::Draw() {
 ///=============================================================================
 ///                        ガンボアサイト（シンプリファイド / エレガント照準 ）
 void HUD::DrawBoresight(float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	// 弾発射方向オフセット計算
 	Vector3 playerForward = {
@@ -542,7 +548,8 @@ void HUD::DrawBoresight(float progress) {
 ///=============================================================================
 ///                        ロールスケール（シンプル化版）
 void HUD::DrawRollScale(float rollAngle, float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	float radius = 5.0f * hudScale_; // サイズ縮小
 	Vector3 arcCenter = GetPlayerFrontPositionWithOffset(0.0f + rollScaleOffset_.x, radius - 0.5f + rollScaleOffset_.y, rollScaleOffset_);
@@ -600,7 +607,8 @@ void HUD::DrawRollScale(float rollAngle, float progress) {
 ///=============================================================================
 ///                        レーダー高度計
 void HUD::DrawRadarAltitude(float radarAlt, float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	Vector3 radarStart = GetHUDPosition(12.0f, -6.0f);
 
@@ -622,7 +630,8 @@ void HUD::DrawRadarAltitude(float radarAlt, float progress) {
 ///=============================================================================
 ///                        HUDフレーム改良版
 void HUD::DrawHUDFrame(float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	float cornerSize = 1.5f;
 	float frameSize = 12.0f;
@@ -696,7 +705,8 @@ void HUD::DrawHUDFrame(float progress) {
 ///=============================================================================
 ///                        ベロシティベクトル（簡潔化版）
 void HUD::DrawVelocityVector(float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	if (currentSpeed_ < 0.1f) {
 		return;
@@ -755,7 +765,8 @@ void HUD::DrawFlightPathMarker(float progress) {
 ///=============================================================================
 ///                        ピッチラダー（簡潔化版）
 void HUD::DrawPitchLadder(float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	float pitchDeg = RadiansToDegrees(playerRotation_.x);
 
@@ -806,7 +817,8 @@ void HUD::DrawPitchLadder(float progress) {
 ///=============================================================================
 ///                        方位テープ（シンプル化版）
 void HUD::DrawHeadingTape(float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	float tapeY = 7.0f;
 
@@ -861,7 +873,8 @@ void HUD::DrawHeadingTape(float progress) {
 ///=============================================================================
 ///                        G-Force表示（シンプル化版）
 void HUD::DrawGForceIndicator(float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	float posX = -10.5f;
 	float posY = -8.5f;
@@ -900,7 +913,8 @@ void HUD::DrawGForceIndicator(float progress) {
 ///=============================================================================
 ///                        ブースト＆回避統合UI（画面下部）
 void HUD::DrawBoostBarrel(float progress) {
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	// === 画面下部中央にブーストと回避UIを配置 ===
 	float centerX = 0.0f;
@@ -1060,7 +1074,8 @@ void HUD::DrawLockOnReticle(float progress) {
 	if (!lockOnTarget_)
 		return;
 
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	// ボアサイト中心 (HUDローカル座標)
 	float cx = boresightOffset_.x;
@@ -1127,7 +1142,8 @@ void HUD::DrawEnemyIndicators(float progress) {
 	if (!enemyManager)
 		return;
 
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 	Camera *camera = currentCamera_;
 	Vector3 screenCenter = {SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f, 0.0f};
 
@@ -1279,7 +1295,8 @@ void HUD::DrawJustAvoidanceNotification(float progress) {
 	// テキストを描画（LineManagerを使用）
 	// 簡略版：成功率をパーセンテージで表示
 	// NOTE: より詳細な実装にはDebugTextManagerやフォント描画システムの活用が必要
-	LineManager *lineManager = LineManager::GetInstance();
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
 
 	// パルス効果: スケールアニメーション
 	float pulseScale = 1.0f + 0.15f * sinf(animationTime_ * 8.0f);

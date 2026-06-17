@@ -7,6 +7,9 @@ using namespace MagMath;
 //========================================
 // 前方宣言
 class Player;
+namespace MagEngine {
+	class CameraManager;
+}
 
 //========================================
 // カメラワークフェーズ
@@ -32,7 +35,7 @@ class TitleCamera {
 	///							メンバ関数
 public:
 	/// \brief 初期化
-	void Initialize(const std::string &cameraName);
+	void Initialize(const std::string &cameraName, MagEngine::CameraManager &cameraManager);
 
 	/// \brief 更新
 	void Update();

@@ -8,6 +8,7 @@
  *********************************************************************/
 #pragma once
 #include "BaseScene.h"
+#include "MagMath.h"
 #include <memory>
 #include <vector>
 //========================================
@@ -22,10 +23,15 @@
 #include "Player.h"
 #include "SceneTransition.h"
 #include "Skydome.h"
+#include "Skybox.h"
+#include "Sprite.h"
 #include "TitleCamera.h"
 
 // Forward declaration
 class SceneContext;
+namespace MagEngine {
+	struct EngineContext;
+}
 
 ///=============================================================================
 ///                         タイトルシーンクラス
@@ -34,7 +40,7 @@ class TitleScene : public BaseScene {
 	///                            メンバ関数
 public:
 	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
-	void Initialize(SceneContext *context) override;
+	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 	void Finalize() override;
 
 	void Update() override;
@@ -69,6 +75,11 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	//========================================
+	// EngineContext
+	const MagEngine::EngineContext *engineContext_ = nullptr;
+	SceneContext *sceneContext_ = nullptr;
+
 	//========================================
 	// オブジェクト
 	std::unique_ptr<Player> player_;

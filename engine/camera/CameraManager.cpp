@@ -16,13 +16,6 @@
  ///                        namespace MagEngine
 namespace MagEngine {
 
-///=============================================================================
-///						シングルトンインスタンスの取得
-	CameraManager *CameraManager::GetInstance() {
-		static CameraManager instance;
-		return &instance;
-	}
-
 	///=============================================================================
 	///						終了処理
 	void CameraManager::Finalize() {
@@ -105,7 +98,7 @@ namespace MagEngine {
 
 	///=============================================================================
 	///                     カメラの更新
-	void CameraManager::UpdateAll() {
+	void CameraManager::UpdateAll(LineManager &lineManager) {
 		for(auto &pair : cameras_) {
 			if(pair.second) {
 				pair.second->Update();
@@ -113,19 +106,16 @@ namespace MagEngine {
 		}
 
 		// 現在のカメラをLineManagerに設定 (メインの描画用)
-		LineManager *lineManager = LineManager::GetInstance();
-		if(lineManager) {
-			Camera *currentCam = GetCurrentCamera();
-			if(currentCam) {
-				lineManager->SetDefaultCamera(currentCam);
-			}
+		Camera *currentCam = GetCurrentCamera();
+		if(currentCam) {
+			lineManager.SetDefaultCamera(currentCam);
 		}
 
 		// デバックカメラの更新
 		DebugCameraUpdate();
 
 		// デバッグ用の視覚情報を描画登録
-		DrawDebugVisualizations();
+		DrawDebugVisualizations(lineManager);
 	}
 
 	///=============================================================================
@@ -442,14 +432,9 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						デバッグ用の視覚情報を描画
-	void CameraManager::DrawDebugVisualizations() {
-		LineManager *lineManager = LineManager::GetInstance();
-		if(!lineManager) {
-			return;
-		}
-
+	void CameraManager::DrawDebugVisualizations(LineManager &lineManager) {
 		// LineManagerが現在使用しているカメラを一時的に保存
-		Camera *originalLineManagerCamera = lineManager->GetDefaultCamera();
+		Camera *originalLineManagerCamera = lineManager.GetDefaultCamera();
 		Camera *currentActiveMainCamera = GetCurrentCamera(); // メインの描画に使用するカメラ
 
 		for(auto const &[name, cam_ptr] : cameras_) {
@@ -471,7 +456,7 @@ namespace MagEngine {
 			// LineManagerのカメラを一時的にメインの描画カメラに設定
 			// これにより、非アクティブカメラの情報が、現在アクティブなカメラの視点から描画される
 			if(currentActiveMainCamera) {
-				lineManager->SetDefaultCamera(currentActiveMainCamera);
+				lineManager.SetDefaultCamera(currentActiveMainCamera);
 			}
 
 			MagMath::Transform camTransform = targetCamera->GetTransform();
@@ -485,32 +470,32 @@ namespace MagEngine {
 			MagMath::Vector3 forward = { 0.0f, 0.0f, 1.0f };
 			forward = Conversion(forward, rotationMatrix);
 			forward = Normalize(forward);
-			lineManager->DrawArrow(camPos, camPos + forward * axisLength, { 0.0f, 0.0f, 1.0f, 1.0f }, arrowHeadSize);
+			lineManager.DrawArrow(camPos, camPos + forward * axisLength, { 0.0f, 0.0f, 1.0f, 1.0f }, arrowHeadSize);
 
 			// カメラの上方ベクトル (Y軸) - 緑
 			MagMath::Vector3 up = { 0.0f, 1.0f, 0.0f };
 			up = Conversion(up, rotationMatrix);
 			up = Normalize(up);
-			lineManager->DrawArrow(camPos, camPos + up * axisLength, { 0.0f, 1.0f, 0.0f, 1.0f }, arrowHeadSize);
+			lineManager.DrawArrow(camPos, camPos + up * axisLength, { 0.0f, 1.0f, 0.0f, 1.0f }, arrowHeadSize);
 
 			// カメラの右方ベクトル (X軸) - 赤
 			MagMath::Vector3 right = { 1.0f, 0.0f, 0.0f };
 			right = Conversion(right, rotationMatrix);
 			right = Normalize(right);
-			lineManager->DrawArrow(camPos, camPos + right * axisLength, { 1.0f, 0.0f, 0.0f, 1.0f }, arrowHeadSize);
+			lineManager.DrawArrow(camPos, camPos + right * axisLength, { 1.0f, 0.0f, 0.0f, 1.0f }, arrowHeadSize);
 
 			// "DebugCamera" の場合、ターゲット情報を表示 (ターゲット追従モードがオンの場合)
 			if(name == "DebugCamera" && isDebugCameraTargetLocked_) {
-				lineManager->DrawLine(camPos, debugCameraTarget_, { 1.0f, 1.0f, 0.0f, 1.0f });
-				lineManager->DrawSphere(debugCameraTarget_, 0.1f, { 1.0f, 1.0f, 0.0f, 1.0f }, 8);
+				lineManager.DrawLine(camPos, debugCameraTarget_, { 1.0f, 1.0f, 0.0f, 1.0f });
+				lineManager.DrawSphere(debugCameraTarget_, 0.1f, { 1.0f, 1.0f, 0.0f, 1.0f }, 8);
 			}
 		}
 
 		// LineManagerのカメラを元に戻す
 		if(originalLineManagerCamera) {
-			lineManager->SetDefaultCamera(originalLineManagerCamera);
+			lineManager.SetDefaultCamera(originalLineManagerCamera);
 		} else if(currentActiveMainCamera) {
-			lineManager->SetDefaultCamera(currentActiveMainCamera);
+			lineManager.SetDefaultCamera(currentActiveMainCamera);
 		}
 	}
 

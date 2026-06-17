@@ -36,6 +36,9 @@ class Player;
 class EnemyManager;
 class SceneTransition;
 class SceneContext;
+namespace MagEngine {
+	struct EngineContext;
+}
 
 ///=============================================================================
 ///                         ゲームプレイシーンクラス
@@ -44,7 +47,7 @@ class GamePlayScene : public BaseScene {
 	///                            メンバ関数
 public:
 	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
-	void Initialize(SceneContext *context) override;
+	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 	void Finalize() override;
 
 	void Update() override;
@@ -79,6 +82,11 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	//========================================
+	// EngineContext
+	const MagEngine::EngineContext *engineContext_ = nullptr;
+	SceneContext *sceneContext_ = nullptr;
+
 	//========================================
 	// 当たり判定
 	std::unique_ptr<CollisionManager> collisionManager_;

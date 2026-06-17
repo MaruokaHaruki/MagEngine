@@ -18,11 +18,6 @@ namespace MagEngine {
 		//========================================
 		// DXCoreの設定
 		this->dxCore_ = dxCore;
-		//========================================
-		// ディスクリプタヒープの生成
-		descriptorHeap_ = dxCore_->CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount_, true);
-		// ディスクリプタ1個分のサイズを取得して記録
-		descriptorSizeSRV_ = dxCore_->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	}
 
 	///=============================================================================
@@ -30,33 +25,33 @@ namespace MagEngine {
 	void SrvSetup::PreDraw() {
 		// NOTE:描画前に必ず初期化済みヒープをバインドする前提
 		assert(dxCore_);
-		assert(descriptorHeap_);
-		ID3D12DescriptorHeap *descriptorHeaps[] = {descriptorHeap_.Get()};
-		dxCore_->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
+		assert(dxCore_->GetResourceAllocator().GetHeap());
+		ID3D12DescriptorHeap *descriptorHeaps[] = {
+			dxCore_->GetResourceAllocator().GetHeap(),
+			dxCore_->GetSamplerAllocator().GetHeap()
+		};
+		dxCore_->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	}
 
 	///=============================================================================
 	///						指定数のSRVを追加で確保できるか
 	bool SrvSetup::CanAllocate(uint32_t count) const {
-		return count <= ( kMaxSRVCount_ - useIndex_ );
+		return dxCore_ && count <= dxCore_->GetResourceAllocator().GetRemainingCount();
 	}
 
 	///=============================================================================
 	///						メモリ確保
 	uint32_t SrvSetup::Allocate() {
 		// NOTE:SRV範囲外アクセスはGPU側の不定動作になりやすいため、確保時点で止める
-		if(IsFull()) {
+		if(!CanAllocate()) {
 			assert(false);
 			Logger::Log("SRV descriptor heap is full.", Logger::LogLevel::Error);
 			return kInvalidSRVIndex_;
 		}
 
-		// returnする番号を一旦記録
-		uint32_t index = useIndex_;
-		// 次に使用するディスクリプタのインデックスを進める
-		useIndex_++;
-		// 上で記録した番号を返す
-		return index;
+		DescriptorHandle handle = dxCore_->GetResourceAllocator().Allocate();
+		assert(handle.IsValid());
+		return handle.index;
 	}
 
 	///=============================================================================
@@ -64,7 +59,6 @@ namespace MagEngine {
 	void SrvSetup::CreateSRVforTexture2D(uint32_t srvIndex, ID3D12Resource *pResource, DXGI_FORMAT format, UINT mipLevels) {
 		// NOTE:無効なSRV設定はCreateShaderResourceViewでは失敗を返せないため、呼び出し前に検証する
 		assert(dxCore_);
-		assert(descriptorHeap_);
 		assert(IsValidIndex(srvIndex));
 		assert(pResource);
 		assert(mipLevels > 0);
@@ -108,7 +102,6 @@ namespace MagEngine {
 	void SrvSetup::CreateRenderTextureSRV() {
 		// NOTE:RenderTexture用SRVは予約スロット0を使う既存仕様に合わせる
 		assert(dxCore_);
-		assert(descriptorHeap_);
 		//========================================
 		// ディスクリプタハンドルの取得
 		D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = GetSRVCPUDescriptorHandle(0);
@@ -130,22 +123,18 @@ namespace MagEngine {
 	///						 CPU
 	D3D12_CPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVCPUDescriptorHandle(uint32_t index) {
 		// NOTE:ハンドル計算は範囲外でも数値上は成立するため、ここで境界を保証する
-		assert(descriptorHeap_);
+		assert(dxCore_);
 		assert(IsValidIndex(index));
-		D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-		handleCPU.ptr += (descriptorSizeSRV_ * index);
-		return handleCPU;
+		return dxCore_->GetResourceAllocator().GetHandle(index).cpuHandle;
 	}
 
 	///--------------------------------------------------------------
 	///						 GPU
 	D3D12_GPU_DESCRIPTOR_HANDLE SrvSetup::GetSRVGPUDescriptorHandle(uint32_t index) {
 		// NOTE:GPUハンドルの範囲外指定はGPU実行時エラーになりやすいため、取得時点で検出する
-		assert(descriptorHeap_);
+		assert(dxCore_);
 		assert(IsValidIndex(index));
-		D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
-		handleGPU.ptr += (descriptorSizeSRV_ * index);
-		return handleGPU;
+		return dxCore_->GetResourceAllocator().GetHandle(index).gpuHandle;
 	}
 
 	///=============================================================================
