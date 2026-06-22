@@ -122,17 +122,6 @@ void EnemyManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	}
 }
 
-void EnemyManager::DrawTrail() {
-	for (auto &enemy : enemies_) {
-		if (enemy && enemy->IsAlive()) {
-			// EnemyGunner の DrawTrail を呼び出す
-			if (auto *gunner = dynamic_cast<EnemyGunner *>(enemy.get())) {
-				gunner->DrawTrail();
-			}
-		}
-	}
-}
-
 ///=============================================================================
 ///                        ImGui描画
 void EnemyManager::DrawImGui() {

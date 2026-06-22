@@ -287,58 +287,26 @@ void TitleScene::Update() {
 }
 
 ///=============================================================================
-///						2D描画
-void TitleScene::Object2DDraw() {
-	if (titleSprite_) {
-		titleSprite_->Draw();
-	}
-
-	// Press Enterを常に描画（透過度で制御）
-	if (pressEnterSprite_) {
-		pressEnterSprite_->Draw();
-	}
-
-	// トランジション描画（最前面）
-	if (sceneTransition_) {
-		sceneTransition_->Draw();
-	}
-}
-
-///=============================================================================
-///						3D不透明描画対象の登録
+///						描画対象の登録
 void TitleScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(skybox_) {
+		skybox_->RegisterRenderables(renderWorld);
+	}
 	if(player_) {
 		player_->RegisterRenderables(renderWorld);
 	}
-}
-
-///=============================================================================
-///						Particle描画
-void TitleScene::ParticleDraw() {
-}
-
-///=============================================================================
-///						Skybox描画
-void TitleScene::SkyboxDraw() {
-	if (skybox_) {
-		skybox_->Draw();
-	}
-}
-
-///=============================================================================
-///						Cloud描画
-void TitleScene::CloudDraw() {
-	//========================================
-	// 雲の描画
 	if (cloud_) {
-		cloud_->Draw();
+		cloud_->RegisterRenderables(renderWorld);
 	}
-}
-
-///=============================================================================
-///						TrailEffect描画
-void TitleScene::TrailEffectDraw() {
-	// タイトルシーンではTrailEffectは不要
+	if (titleSprite_) {
+		titleSprite_->RegisterRenderables(renderWorld);
+	}
+	if (pressEnterSprite_) {
+		pressEnterSprite_->RegisterRenderables(renderWorld);
+	}
+	if (sceneTransition_) {
+		sceneTransition_->RegisterRenderables(renderWorld);
+	}
 }
 
 ///=============================================================================

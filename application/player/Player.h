@@ -152,18 +152,6 @@ public:
 	/// @brief 3D不透明描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
-	///--------------------------------------------------------------
-	///                        武装描画
-	/// @brief 弾のトレイルエフェクトを描画
-	/// @details 弾の移動軌跡を表示するパーティクルエフェクト
-	/// @note TrailEffectManager で管理
-	void DrawBulletsTrails();
-	
-	/// @brief ミサイルのトレイルエフェクトを描画
-	/// @details ミサイルの移動軌跡を表示するパーティクルエフェクト
-	/// @note 追尾の様子がより視覚的に理解できる
-	void DrawMissilesTrails();
-
 	//========================================
 	// EnemyManager設定（ミサイル・ロックオン用）
 	/// @brief 敵マネージャーの設定

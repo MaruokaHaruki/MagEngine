@@ -181,13 +181,6 @@ void EnemyGunner::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	}
 }
 
-void EnemyGunner::DrawTrail() {
-	for (auto &bullet : bullets_) {
-		if (bullet)
-			bullet->DrawTrail();
-	}
-}
-
 ///=============================================================================
 ///                        ImGui描画
 void EnemyGunner::DrawImGui() {

@@ -3,6 +3,7 @@
 #include "MenuUI.h"
 #include "ImguiSetup.h"
 #include "Input.h"
+#include "engine/render/RenderWorld.h"
 #include <Xinput.h>
 #include <algorithm>
 #include <cassert>
@@ -355,6 +356,27 @@ void MenuUI::Draw() {
 		// テキストラベルの描画
 		if (info.textSprite) {
 			info.textSprite->Draw();
+		}
+	}
+}
+
+void MenuUI::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if (fadeAlpha_ < 0.01f) {
+		return;
+	}
+
+	if (backgroundSprite_) {
+		backgroundSprite_->RegisterRenderables(renderWorld);
+	}
+	if (titleSprite_) {
+		titleSprite_->RegisterRenderables(renderWorld);
+	}
+	for (auto &[button, info] : buttons_) {
+		if (info.sprite) {
+			info.sprite->RegisterRenderables(renderWorld);
+		}
+		if (info.textSprite) {
+			info.textSprite->RegisterRenderables(renderWorld);
 		}
 	}
 }

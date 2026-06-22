@@ -7,8 +7,7 @@
  * \note   デバイス、コマンドキューなどの初期化・管理処理を実装
  *********************************************************************/
 #include "DirectXCore.h"
-#include "PostEffectManager.h"
-#include "TextureManager.h"
+#include "engine/render/RenderBarrierRecorder.h"
 //========================================
 // 標準ライブラリ
 #include <vector>
@@ -27,7 +26,7 @@ namespace MagEngine {
 ///=============================================================================
 ///						描画前処理
 // TODO:ループ内の前処理後処理を作成
-	void DirectXCore::PreDraw(PostEffectManager *postEffectManager, TextureManager &textureManager) {
+	void DirectXCore::BeginPresentRenderTarget() {
 		/// バックバッファの決定
 		SettleCommandList();
 		/// バリア設定
@@ -40,32 +39,34 @@ namespace MagEngine {
 		commandList_->RSSetScissorRects(1, &scissorRect_);
 
 		commandList_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	}
 
-		// デフォルトのレンダーテクスチャ描画
-		commandList_->SetGraphicsRootSignature(renderTextureRootSignature_.Get());
-		commandList_->SetPipelineState(renderTextureGraphicsPipelineState_.Get());
+	void DirectXCore::SetRenderBarrierRecorder(RenderBarrierRecorder *recorder) {
+		renderBarrierRecorder_ = recorder;
+	}
 
-		D3D12_GPU_DESCRIPTOR_HANDLE srvHandle;
+	void DirectXCore::TransitionResource(
+		RenderResourceId resourceId,
+		ID3D12Resource &resource,
+		D3D12_RESOURCE_STATES beforeState,
+		D3D12_RESOURCE_STATES afterState,
+		RenderBarrierPoint point) {
+		assert(commandList_);
+		assert(beforeState != afterState);
 
-		if(renderResourceIndex_ == 0) {
-			srvHandle = textureManager.GetSrvHandleGPU("RenderTexture0");
-		} else {
-			srvHandle = textureManager.GetSrvHandleGPU("RenderTexture1");
+		if(renderBarrierRecorder_) {
+			renderBarrierRecorder_->Transition(*commandList_.Get(), resourceId, resource, beforeState, afterState, point);
+			return;
 		}
 
-		// srvHandle.ptr が 0 または異常な値でないか確認
-		assert(srvHandle.ptr != 0);
-
-		commandList_->SetGraphicsRootDescriptorTable(0, srvHandle);
-
-		commandList_->DrawInstanced(3, 1, 0, 0);
-
-		//========================================
-		// ポストエフェクトがある場合は適用
-		// TODO:ポストエフェクトマネージャをDirectXCoreに持たせるか検討
-		if(postEffectManager) {
-			postEffectManager->ApplyEffects(textureManager);
-		}
+		// NOTE: DirectX初期化中はRenderer/RenderGraphが未生成のため、低レベルBarrierだけを発行する。
+		barrier_.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier_.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier_.Transition.pResource = &resource;
+		barrier_.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrier_.Transition.StateBefore = beforeState;
+		barrier_.Transition.StateAfter = afterState;
+		commandList_->ResourceBarrier(1, &barrier_);
 	}
 
 	///=============================================================================
@@ -390,18 +391,12 @@ namespace MagEngine {
 	///=============================================================================
 	///						TransitionBarrierを張る
 	void DirectXCore::SetupTransitionBarrier() {
-		// ここでのバリアはTransition
-		barrier_.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		// Noneにしておく
-		barrier_.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		// バリアを張る対象のリソース。現在のバックバッファに対して行う
-		barrier_.Transition.pResource = swapChainResource_[currentBackBufferIndex_].Get();
-		// 遷移前の(現在)のResouceState
-		barrier_.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-		// 遷移後のReosuceState
-		barrier_.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		// TransitionBarrierを張る
-		commandList_->ResourceBarrier(1, &barrier_);
+		TransitionResource(
+			RenderResourceId::PresentColor,
+			*swapChainResource_[currentBackBufferIndex_].Get(),
+			D3D12_RESOURCE_STATE_PRESENT,
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			RenderBarrierPoint::BeginPresentRenderTarget);
 	}
 
 	///=============================================================================
@@ -441,10 +436,12 @@ namespace MagEngine {
 	void DirectXCore::CloseCommandList() {
 		// 画面に書く処理はすべて終わり。画面に映すので状態を遷移
 		// 今回はRenderTargetからPresebtにする
-		barrier_.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		barrier_.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-		// TransitionBarrierを張る
-		commandList_->ResourceBarrier(1, &barrier_);
+		TransitionResource(
+			RenderResourceId::PresentColor,
+			*swapChainResource_[currentBackBufferIndex_].Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PRESENT,
+			RenderBarrierPoint::BeforePresent);
 		// コマンドリストの内容を確定させる。すべてのコマンドを積んでからCloseすること
 		hr_ = commandList_->Close();
 		assert(SUCCEEDED(hr_));
@@ -824,17 +821,12 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 レンダーテクスチャの前処理
 	void DirectXCore::RenderTexturePreDraw() {
-		D3D12_RESOURCE_BARRIER barrier{};
-		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
-		//=======================================
-		// 現在の状態を使用して正しく設定
-		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		//=======================================
-		// 現在と次の状態が異なる場合のみバリアを適用
-		commandList_->ResourceBarrier(1, &barrier);
+		TransitionResource(
+			RenderResourceId::SceneColor,
+			*renderTextureResources_[renderResourceIndex_].Get(),
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			RenderBarrierPoint::RenderTexturePreDraw);
 		//=======================================
 		// NOTE:RenderTexture RTVはAllocatorから確保済みのHandleを保持して使う
 		commandList_->OMSetRenderTargets(1, &renderTextureRtvHandles_[renderResourceIndex_].cpuHandle, false, &dsvHandle_.cpuHandle);
@@ -852,16 +844,12 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 レンダーテクスチャの後処理
 	void DirectXCore::RenderTexturePostDraw() {
-		D3D12_RESOURCE_BARRIER barrier{};
-		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrier.Transition.pResource = renderTextureResources_[renderResourceIndex_].Get();
-		//=======================================
-		// 現在の状態を使用して正しく設定
-		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		//=======================================
-		commandList_->ResourceBarrier(1, &barrier);
+		TransitionResource(
+			RenderResourceId::SceneColor,
+			*renderTextureResources_[renderResourceIndex_].Get(),
+			D3D12_RESOURCE_STATE_RENDER_TARGET,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			RenderBarrierPoint::RenderTexturePostDraw);
 	}
 
 	///--------------------------------------------------------------

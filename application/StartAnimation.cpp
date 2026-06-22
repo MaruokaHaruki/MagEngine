@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include "StartAnimation.h"
 #include "ImguiSetup.h"
+#include "engine/render/RenderWorld.h"
 #include <algorithm>
 #include <cmath>
 using namespace MagEngine;
@@ -332,6 +333,22 @@ void StartAnimation::Draw() {
 	}
 	if (textSprite_) {
 		textSprite_->Draw();
+	}
+}
+
+void StartAnimation::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if (state_ == StartAnimationState::Idle) {
+		return;
+	}
+
+	if (topBar_) {
+		topBar_->RegisterRenderables(renderWorld);
+	}
+	if (bottomBar_) {
+		bottomBar_->RegisterRenderables(renderWorld);
+	}
+	if (textSprite_) {
+		textSprite_->RegisterRenderables(renderWorld);
 	}
 }
 

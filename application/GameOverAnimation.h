@@ -17,6 +17,10 @@ using namespace MagMath;
 #include <functional>
 #include <vector>
 
+namespace MagEngine {
+	class RenderWorld;
+}
+
 ///=============================================================================
 ///                        ゲームオーバー演出状態
 enum class GameOverAnimationState {
@@ -44,6 +48,9 @@ public:
 
 	/// \brief 描画
 	void Draw();
+
+	/// \brief Sprite描画対象を登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画（デバッグ用）
 	void DrawImGui();

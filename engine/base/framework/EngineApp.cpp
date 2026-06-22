@@ -42,36 +42,24 @@ namespace MagEngine {
 		MagFramework::RenderPreDraw();
 
 		//========================================
-		// Skybox共通描画設定（最背面）
-		MagFramework::SkyboxCommonDraw();
-
-		//========================================
-		// 3Dオブジェクト共通描画設定
+		// Sceneフェーズ描画（Skybox/Opaque/Cloud/Trail）
 		MagFramework::OpaqueRender();
 
 		//========================================
-		// クラウド共通描画設定（3Dオブジェクトの後）
-		MagFramework::CloudCommonDraw();
+		// Overlayフェーズ描画（Sprite）
+		MagFramework::ExecuteRenderPhase(RenderPhase::Overlay);
 
 		//========================================
-		// トレイルエフェクト共通描画設定
-		MagFramework::TrailEffectCommonDraw();
-
-		//========================================
-		// 2Dオブジェクト共通描画設定
-		MagFramework::Object2DCommonDraw();
-
-		//========================================
-		// パーティクル共通描画設定
-		MagFramework::ParticleCommonDraw();
+		// Overlay後フェーズ描画（Particleなど）
+		MagFramework::ExecuteRenderPhase(RenderPhase::PostOverlay);
 
 		//========================================
 		// レンダーテクスチャ後処理
 		MagFramework::RenderPostDraw();
 
 		//========================================
-		// 描画前処理
-		MagFramework::PreDraw();
+		// PostProcessフェーズ描画（SceneColorからPresentColorへ合成）
+		MagFramework::ExecuteRenderPhase(RenderPhase::PostProcess);
 
 		MagFramework::ImGuiPreDraw();
 		// ↓この間に書け!!!

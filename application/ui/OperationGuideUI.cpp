@@ -3,6 +3,7 @@
 #include "OperationGuideUI.h"
 #include "ImguiSetup.h"
 #include "Input.h"
+#include "engine/render/RenderWorld.h"
 #include <Xinput.h>
 #include <algorithm>
 #include <cassert>
@@ -406,6 +407,22 @@ void OperationGuideUI::Draw() {
 		// テキストラベルの描画
 		if (info.textSprite) {
 			info.textSprite->Draw();
+		}
+	}
+}
+
+void OperationGuideUI::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if (!isVisible_) {
+		return;
+	}
+
+	// NOTE: 背景Spriteは旧Drawでも無効化されていたため、描画順維持のため登録しない。
+	for (auto &[button, info] : buttons_) {
+		if (info.sprite) {
+			info.sprite->RegisterRenderables(renderWorld);
+		}
+		if (info.textSprite) {
+			info.textSprite->RegisterRenderables(renderWorld);
 		}
 	}
 }

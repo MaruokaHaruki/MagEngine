@@ -160,18 +160,6 @@ void PlayerCombatComponent::UpdateMissiles() {
 	UpdateProjectileList(missiles_);
 }
 
-void PlayerCombatComponent::DrawBulletsTrails() {
-	for (auto &bullet : bullets_) {
-		bullet->DrawTrail();
-	}
-}
-
-void PlayerCombatComponent::DrawMissilesTrails() {
-	for (auto &missile : missiles_) {
-		missile->DrawTrail();
-	}
-}
-
 void PlayerCombatComponent::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	for(auto &bullet : bullets_) {
 		if(bullet) {

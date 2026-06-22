@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include "GameOverUI.h"
 #include "ImguiSetup.h"
+#include "engine/render/RenderWorld.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -315,6 +316,28 @@ void GameOverUI::Draw() {
 	// メインテキスト描画
 	if (textSprite_) {
 		textSprite_->Draw();
+	}
+}
+
+void GameOverUI::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if (state_ == GameOverState::Idle || state_ == GameOverState::Done) {
+		return;
+	}
+
+	if (fadeBackgroundSprite_) {
+		fadeBackgroundSprite_->RegisterRenderables(renderWorld);
+	}
+	if (borderSprite1_) {
+		borderSprite1_->RegisterRenderables(renderWorld);
+	}
+	if (borderSprite2_) {
+		borderSprite2_->RegisterRenderables(renderWorld);
+	}
+	if (glowSprite_) {
+		glowSprite_->RegisterRenderables(renderWorld);
+	}
+	if (textSprite_) {
+		textSprite_->RegisterRenderables(renderWorld);
 	}
 }
 

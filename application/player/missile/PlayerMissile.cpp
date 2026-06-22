@@ -409,11 +409,8 @@ void PlayerMissile::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if(obj_ && isAlive_) {
 		obj_->RegisterRenderables(renderWorld);
 	}
-}
-
-void PlayerMissile::DrawTrail() {
 	if (trailEffect_) {
-		trailEffect_->Draw();
+		trailEffect_->RegisterRenderables(renderWorld);
 	}
 }
 

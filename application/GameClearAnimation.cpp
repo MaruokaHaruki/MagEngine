@@ -5,6 +5,7 @@
 #include "FollowCamera.h"
 #include "ImguiSetup.h"
 #include "Player.h"
+#include "engine/render/RenderWorld.h"
 #include <algorithm>
 #include <cmath>
 
@@ -371,6 +372,22 @@ void GameClearAnimation::Draw() {
 	}
 	if (textSprite_) {
 		textSprite_->Draw();
+	}
+}
+
+void GameClearAnimation::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if (state_ == GameClearAnimationState::Idle) {
+		return;
+	}
+
+	if (topBar_) {
+		topBar_->RegisterRenderables(renderWorld);
+	}
+	if (bottomBar_) {
+		bottomBar_->RegisterRenderables(renderWorld);
+	}
+	if (textSprite_) {
+		textSprite_->RegisterRenderables(renderWorld);
 	}
 }
 

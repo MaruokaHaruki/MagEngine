@@ -82,6 +82,7 @@ namespace MagEngine {
 
 	class Object3dSetup;
 	class Camera;
+	class RenderWorld;
 	class Particle {
 		///--------------------------------------------------------------
 		///							メンバ関数
@@ -94,6 +95,9 @@ namespace MagEngine {
 
 		/// \brief 描画
 		void Draw();
+
+		/// \brief RenderWorldへ描画対象として登録
+		void RegisterRenderables(RenderWorld &renderWorld);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  Emit
@@ -268,6 +272,9 @@ namespace MagEngine {
 		void SetCustomTextureSize(const MagMath::Vector2 &size) {
 			customTextureSize = size;
 		}
+
+		/// \brief 描画可能なインスタンスが存在するか
+		bool HasDrawableParticles() const;
 
 		///--------------------------------------------------------------
 		///							メンバ変数

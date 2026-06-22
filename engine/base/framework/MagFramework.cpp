@@ -138,8 +138,6 @@ namespace MagEngine {
 		object3dSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 		// Object3Dのライトマネージャ設定
 		object3dSetup_->SetLightManager(lightManager_.get());
-		// NOTE: RenderPassはObject3dSetupの描画状態を再利用し、旧描画順だけを置き換える
-		renderer_.Initialize(*object3dSetup_);
 
 		///--------------------------------------------------------------
 		///						 Skybox共通部
@@ -158,7 +156,6 @@ namespace MagEngine {
 		particleSetup_->Initialize(dxCore_.get(), srvSetup_.get(), *textureManager_);
 		// パーティクルのカメラ設定
 		particleSetup_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
-
 		///--------------------------------------------------------------
 		///						 クラウド共通部
 		cloudSetup_ = std::make_unique<CloudSetup>();
@@ -174,6 +171,8 @@ namespace MagEngine {
 		trailEffectSetup_->Initialize(dxCore_.get());
 		// トレイルエフェクトセットアップにSrvSetupを設定
 		trailEffectSetup_->SetSrvSetup(srvSetup_.get());
+		// NOTE: Scene/Overlay/PostOverlay/PostProcessの順に実行し、Present前の合成までPassで管理する。
+		renderer_.Initialize(*skyboxSetup_, *object3dSetup_, *cloudSetup_, *trailEffectSetup_, *spriteSetup_, *particleSetup_, *dxCore_, *postEffectManager_, *textureManager_);
 
 		///--------------------------------------------------------------
 		///						 トレイルエフェクトマネージャ
@@ -406,6 +405,7 @@ namespace MagEngine {
 	///=============================================================================
 	///                        レンダーテクスチャ前処理
 	void MagFramework::RenderPreDraw() {
+		renderer_.BeginFrameBarrierRecording();
 		dxCore_->RenderTexturePreDraw();
 		srvSetup_->PreDraw();
 		//========================================
@@ -420,14 +420,6 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
-	///						フレームワーク共通前処理
-	void MagFramework::PreDraw() {
-		//========================================
-		// ループ前処理(ポストエフェクト適用)
-		dxCore_->PreDraw(postEffectManager_.get(), *textureManager_);
-	}
-
-	///=============================================================================
 	///						フレームワーク共通後処理
 	void MagFramework::PostDraw() {
 		//========================================
@@ -439,6 +431,7 @@ namespace MagEngine {
 		//========================================
 		// ループ後処理
 		dxCore_->PostDraw();
+		renderer_.ValidateFrameBarriers();
 	}
 
 	///=============================================================================
@@ -487,27 +480,7 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
-	///						Object2D共通描画設定
-	void MagFramework::Object2DCommonDraw() {
-		//========================================
-		// スプライト共通描画設定
-		spriteSetup_->CommonDrawSetup();
-		// 2D描画
-		sceneManager_->Object2DDraw();
-	}
-
-	///=============================================================================
-	///						particle共通描画設定
-	void MagFramework::ParticleCommonDraw() {
-		//========================================
-		// パーティクル共通描画設定
-		particleSetup_->CommonDrawSetup();
-		// パーティクル描画
-		sceneManager_->ParticleDraw();
-	}
-
-	///=============================================================================
-	///						3D不透明描画
+	///						Sceneフェーズ描画
 	void MagFramework::OpaqueRender() {
 		renderWorld_.Clear();
 		sceneManager_->RegisterRenderables(renderWorld_);
@@ -515,37 +488,16 @@ namespace MagEngine {
 		auto commandList = dxCore_->GetCommandList();
 		assert(commandList);
 		RenderContext renderContext{*commandList.Get()};
-		renderer_.Render(renderContext, renderWorld_);
+		renderer_.ExecutePhase(RenderPhase::Scene, renderContext, renderWorld_);
 	}
 
 	///=============================================================================
-	///						Skybox共通描画設定
-	void MagFramework::SkyboxCommonDraw() {
-		//========================================
-		// Skybox共通描画設定
-		skyboxSetup_->CommonDrawSetup();
-		// Skybox描画（最初に描画して背景として扱う）
-		sceneManager_->SkyboxDraw();
-	}
-
-	///=============================================================================
-	///						Cloud共通描画設定
-	void MagFramework::CloudCommonDraw() {
-		//========================================
-		// Cloud共通描画設定
-		cloudSetup_->CommonDrawSetup();
-		// Cloud描画
-		sceneManager_->CloudDraw();
-	}
-
-	///=============================================================================
-	///						TrailEffect共通描画設定
-	void MagFramework::TrailEffectCommonDraw() {
-		//========================================
-		// TrailEffect共通描画設定
-		trailEffectSetup_->CommonDrawSetup();
-		// TrailEffect描画
-		sceneManager_->TrailEffectDraw();
+	///						指定フェーズのRenderPass描画
+	void MagFramework::ExecuteRenderPhase(RenderPhase phase) {
+		auto commandList = dxCore_->GetCommandList();
+		assert(commandList);
+		RenderContext renderContext{*commandList.Get()};
+		renderer_.ExecutePhase(phase, renderContext, renderWorld_);
 	}
 
 	///=============================================================================

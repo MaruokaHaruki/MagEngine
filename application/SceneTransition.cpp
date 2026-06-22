@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include "SceneTransition.h"
 #include "ImguiSetup.h"
+#include "engine/render/RenderWorld.h"
 #include <algorithm>
 #include <cmath>
 
@@ -159,6 +160,21 @@ void SceneTransition::Draw() {
 	for (auto &sprite : additionalSprites_) {
 		if (sprite) {
 			sprite->Draw();
+		}
+	}
+}
+
+void SceneTransition::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if (state_ == TransitionState::Idle) {
+		return;
+	}
+
+	if (transitionSprite_) {
+		transitionSprite_->RegisterRenderables(renderWorld);
+	}
+	for (auto &sprite : additionalSprites_) {
+		if (sprite) {
+			sprite->RegisterRenderables(renderWorld);
 		}
 	}
 }

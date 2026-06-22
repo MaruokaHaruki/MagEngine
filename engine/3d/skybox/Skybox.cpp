@@ -11,6 +11,7 @@
 #include "Camera.h"
 #include "LightManager.h"
 #include "MathFunc4x4.h"
+#include "engine/render/RenderWorld.h"
 #include "SkyboxSetup.h"
 #include "TextureManager.h"
 ///=============================================================================
@@ -133,6 +134,13 @@ namespace MagEngine {
 		//========================================
 		// 描画コール
 		commandList->DrawIndexedInstanced(static_cast<UINT>(indices_.size()), 1, 0, 0, 0);
+	}
+
+	void Skybox::RegisterRenderables(RenderWorld &renderWorld) {
+		SkyboxRenderItem item{};
+		item.skybox = this;
+		item.visible = !texturePath_.empty();
+		renderWorld.SetSkybox(item);
 	}
 
 	///=============================================================================

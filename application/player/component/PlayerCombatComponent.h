@@ -45,8 +45,6 @@ public:
 
 	///--------------------------------------------------------------
 	///                        描画
-	void DrawBulletsTrails();
-	void DrawMissilesTrails();
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	///--------------------------------------------------------------

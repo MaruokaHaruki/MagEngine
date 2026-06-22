@@ -1,6 +1,7 @@
 #include "UIManager.h"
 #include "CameraManager.h"
 #include "Player.h"
+#include "engine/render/RenderWorld.h"
 
 ///=============================================================================
 ///                        初期化
@@ -94,28 +95,28 @@ void UIManager::Update(const Player *player) {
 }
 
 ///=============================================================================
-///                        描画
-void UIManager::Draw() {
-	// メニューが開いている場合、メニューのみ描画
+///                        Sprite描画対象登録
+void UIManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	// NOTE: メニュー表示中は旧Drawと同じくゲーム中UIを隠し、メニューだけを登録する。
 	if (menuUI_ && menuUI_->IsOpen()) {
-		menuUI_->Draw();
+		menuUI_->RegisterRenderables(renderWorld);
 		return;
 	}
 
-	// メニューが閉じている場合、通常のUI描画
 	if (gameOverUI_) {
-		gameOverUI_->Draw();
+		gameOverUI_->RegisterRenderables(renderWorld);
 	}
 	if (gameClearAnimation_) {
-		gameClearAnimation_->Draw();
+		gameClearAnimation_->RegisterRenderables(renderWorld);
 	}
 	// ゲームオーバー/クリア時は操作ガイドUIを描画しない
 	if (operationGuideUI_ && !isGameOver_ && !isGameClear_) {
-		operationGuideUI_->Draw();
+		operationGuideUI_->RegisterRenderables(renderWorld);
 	}
 	if (startAnimation_) {
-		startAnimation_->Draw();
+		startAnimation_->RegisterRenderables(renderWorld);
 	}
+	// NOTE: HUD/LockOnHUDはLineManagerへの描画登録であり、SpritePassの対象外として既存Line経路を維持する。
 	if (hud_) {
 		hud_->Draw();
 	}
@@ -123,7 +124,7 @@ void UIManager::Draw() {
 		lockOnHUD_->Draw();
 	}
 	if (menuUI_) {
-		menuUI_->Draw();
+		menuUI_->RegisterRenderables(renderWorld);
 	}
 }
 

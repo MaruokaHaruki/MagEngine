@@ -636,74 +636,28 @@ void GamePlayScene::Update() {
 }
 
 ///=============================================================================
-///                        スプライト描画
-void GamePlayScene::Object2DDraw() {
-	//========================================
-	// UI系の描画（UIManager で統一管理）
-	if (uiManager_) {
-		uiManager_->Draw();
-	}
-
-	//========================================
-	// トランジションの描画
-	if (sceneTransition_) {
-		sceneTransition_->Draw();
-	}
-}
-
-///=============================================================================
-///                        3D不透明描画対象の登録
+///                        描画対象の登録
 void GamePlayScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if(skybox_) {
+		skybox_->RegisterRenderables(renderWorld);
+	}
 	if(player_) {
 		player_->RegisterRenderables(renderWorld);
 	}
 	if(enemyManager_ && !isGameClear_) {
 		enemyManager_->RegisterRenderables(renderWorld);
 	}
-}
-
-///=============================================================================
-///
-void GamePlayScene::ParticleDraw() {
-	//========================================
-	// パーティクル描画
-	if (particle_) {
-		particle_->Draw();
-	}
-}
-
-///=============================================================================
-///						Skybox描画
-void GamePlayScene::SkyboxDraw() {
-	//=========================================
-	// Skyboxの描画
-	if (skybox_) {
-		skybox_->Draw();
-	}
-}
-
-///=============================================================================
-///						Cloud描画
-void GamePlayScene::CloudDraw() {
-	//========================================
-	// 雲の描画
 	if (cloud_) {
-		cloud_->Draw();
+		cloud_->RegisterRenderables(renderWorld);
 	}
-}
-
-///=============================================================================
-///						TrailEffect描画
-void GamePlayScene::TrailEffectDraw() {
-	// プレイヤーの弾のトレイル描画
-	if (player_) {
-		player_->DrawBulletsTrails();
-		player_->DrawMissilesTrails();
+	if (particle_) {
+		particle_->RegisterRenderables(renderWorld);
 	}
-
-	// 敵の弾のトレイル描画
-	if (enemyManager_) {
-		enemyManager_->DrawTrail();
+	if (uiManager_) {
+		uiManager_->RegisterRenderables(renderWorld);
+	}
+	if (sceneTransition_) {
+		sceneTransition_->RegisterRenderables(renderWorld);
 	}
 }
 

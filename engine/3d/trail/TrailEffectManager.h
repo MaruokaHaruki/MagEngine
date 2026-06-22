@@ -21,6 +21,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						前方宣言
 	class TrailEffectSetup;
+	class RenderWorld;
 
 	///=============================================================================
 	///						クラス
@@ -44,6 +45,9 @@ namespace MagEngine {
 		 * \brief  描画
 		 */
 		void Draw();
+
+		/// @brief RenderWorldへ管理中のTrail描画対象を登録
+		void RegisterRenderables(RenderWorld &renderWorld);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  ImGui描画

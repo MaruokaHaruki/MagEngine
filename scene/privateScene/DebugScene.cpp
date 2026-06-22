@@ -440,12 +440,6 @@ void DebugScene::AddManualCloudHole() {
 }
 
 ///=============================================================================
-///						2D描画
-void DebugScene::Object2DDraw() {
-}
-
-///=============================================================================
-///						3D不透明描画対象の登録
 void DebugScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if(drawTestObjects_) {
 		if(objTerrain_) {
@@ -462,36 +456,11 @@ void DebugScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 			}
 		}
 	}
-}
-
-///=============================================================================
-///						パーティクル描画
-void DebugScene::ParticleDraw() {
-	// パーティクルの描画
-	// particleEmitter_->Draw();
-}
-
-///=============================================================================
-///						Skybox描画
-void DebugScene::SkyboxDraw() {
-	// Skyboxの描画
-}
-
-///=============================================================================
-///						Cloud描画
-void DebugScene::CloudDraw() {
-	// Cloudの描画
 	if (cloud_ && enableCloudTest_) {
-		cloud_->Draw();
+		cloud_->RegisterRenderables(renderWorld);
 	}
-}
-
-///=============================================================================
-///						TrailEffect描画
-void DebugScene::TrailEffectDraw() {
-	// TrailEffectの描画
 	if (trailEffectManager_) {
-		trailEffectManager_->Draw();
+		trailEffectManager_->RegisterRenderables(renderWorld);
 	}
 }
 

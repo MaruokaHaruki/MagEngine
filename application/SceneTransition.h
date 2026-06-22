@@ -6,6 +6,10 @@ using namespace MagMath;
 #include <functional>
 #include <memory>
 
+namespace MagEngine {
+	class RenderWorld;
+}
+
 ///=============================================================================
 ///                        トランジションタイプ
 enum class TransitionType {
@@ -56,6 +60,9 @@ public:
 
 	/// \brief 描画
 	void Draw();
+
+	/// \brief Sprite描画対象を登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画
 	void DrawImGui();

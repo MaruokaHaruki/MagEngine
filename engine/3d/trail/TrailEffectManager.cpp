@@ -9,6 +9,7 @@
 #include "TrailEffectManager.h"
 #include "Logger.h"
 #include "TrailEffectSetup.h"
+#include "engine/render/RenderWorld.h"
 #include "externals/imgui/imgui.h"
 #include "externals/json.hpp"
 #include <fstream>
@@ -56,6 +57,15 @@ namespace MagEngine {
 		for (auto &pair : activeEffects_) {
 			if (pair.second && pair.second->IsEnabled()) {
 				pair.second->Draw();
+			}
+		}
+	}
+
+	void TrailEffectManager::RegisterRenderables(RenderWorld &renderWorld) {
+		for (auto &pair : activeEffects_) {
+			if (pair.second && pair.second->IsEnabled()) {
+				// NOTE: Managerは所有を維持し、RenderWorldには描画フレーム中だけ有効な非所有参照を登録する。
+				pair.second->RegisterRenderables(renderWorld);
 			}
 		}
 	}

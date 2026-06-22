@@ -9,6 +9,7 @@ using namespace MagMath;
 
 namespace MagEngine {
 	class Input;
+	class RenderWorld;
 }
 
 ///=============================================================================
@@ -73,6 +74,9 @@ public:
 
 	/// \brief 描画
 	void Draw();
+
+	/// \brief Sprite描画対象を登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画
 	void DrawImGui();

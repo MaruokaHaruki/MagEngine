@@ -7,6 +7,7 @@
  * \note   Multiple visual effects for stylish animation
  *********************************************************************/
 #include "GameOverAnimation.h"
+#include "engine/render/RenderWorld.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -313,6 +314,28 @@ void GameOverAnimation::Draw() {
 			// Particle rendering (simplified - just a small quad)
 			// In a real implementation, you'd render actual particle sprites
 		}
+	}
+}
+
+void GameOverAnimation::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
+	if (state_ == GameOverAnimationState::Idle || state_ == GameOverAnimationState::Done) {
+		return;
+	}
+
+	if (fadeBackgroundSprite_) {
+		fadeBackgroundSprite_->RegisterRenderables(renderWorld);
+	}
+	if (borderSprite1_) {
+		borderSprite1_->RegisterRenderables(renderWorld);
+	}
+	if (borderSprite2_) {
+		borderSprite2_->RegisterRenderables(renderWorld);
+	}
+	if (glowSprite_) {
+		glowSprite_->RegisterRenderables(renderWorld);
+	}
+	if (textSprite_) {
+		textSprite_->RegisterRenderables(renderWorld);
 	}
 }
 

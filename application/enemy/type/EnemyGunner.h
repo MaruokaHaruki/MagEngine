@@ -46,9 +46,6 @@ public:
 	/// \brief 3D不透明描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
 
-	/// \brief トレイル描画
-	void DrawTrail();
-
 	/// \brief ImGui描画
 	void DrawImGui() override;
 

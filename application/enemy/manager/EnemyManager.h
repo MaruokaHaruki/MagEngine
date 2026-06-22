@@ -62,8 +62,6 @@ public:
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief トレイル描画
-	void DrawTrail();
-
 	/// \brief ImGui描画
 	void DrawImGui();
 

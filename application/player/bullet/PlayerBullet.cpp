@@ -84,11 +84,8 @@ void PlayerBullet::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if(isAlive_ && obj_) {
 		obj_->RegisterRenderables(renderWorld);
 	}
-}
-
-void PlayerBullet::DrawTrail() {
 	if (trailEffect_) {
-		trailEffect_->Draw();
+		trailEffect_->RegisterRenderables(renderWorld);
 	}
 }
 

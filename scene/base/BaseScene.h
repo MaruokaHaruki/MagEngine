@@ -42,26 +42,11 @@ public:
 	/// \brief 更新
 	virtual void Update() = 0;
 
-	/// \brief 2D描画
-	virtual void Object2DDraw() = 0;
-
-	/// \brief 3D不透明描画対象の登録
+	/// \brief 描画対象の登録
 	virtual void RegisterRenderables(MagEngine::RenderWorld &renderWorld) = 0;
-
-	/// \brief パーティクル描画
-	virtual void ParticleDraw() = 0;
-
-	/// \brief Skybox描画
-	virtual void SkyboxDraw() = 0;
 
 	/// \brief ImGui描画
 	virtual void ImGuiDraw() = 0;
-
-	/// \brief Cloud描画
-	virtual void CloudDraw() = 0;
-
-	/// \brief TrailEffect描画
-	virtual void TrailEffectDraw() = 0;
 
 	/**----------------------------------------------------------------------------
 	 * \brief  ~BaseScene 抽象クラスのデストラクタ

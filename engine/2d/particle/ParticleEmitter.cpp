@@ -28,11 +28,6 @@ namespace MagEngine {
 		}
 	}
 
-	void ParticleEmitter::Draw() {
-		// 取得したパーティクルの描画はParticleクラスに任せない
-		particle_->Draw();
-	}
-
 	void ParticleEmitter::Emit() {
 		// エミッター位置からパーティクルを生成
 		particle_->Emit(name_, transform_.translate, count_);

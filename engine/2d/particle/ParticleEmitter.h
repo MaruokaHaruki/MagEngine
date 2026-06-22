@@ -27,9 +27,6 @@ namespace MagEngine {
 		/// COMMENT: 可変長の elapsedTime_ を deltaTime パラメータで動的対応
 		void Update(float deltaTime = 1.0f / 60.0f);
 
-		/// \brief 描画
-		void Draw();
-
 		/// @brief Emit
 		/// \details COMMENT: バッチ発生させるパーティクルをGPUで処理することで CPU 負荷軽減
 		void Emit();

@@ -39,23 +39,8 @@ public:
 	/// \brief 更新
 	void Update() override;
 
-	/// @brie 2D描画
-	void Object2DDraw() override;
-
-	/// \brief 3D描画
+	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
-
-	/// \brief パーティクル描画
-	void ParticleDraw() override;
-
-	/// \brief Skybox描画
-	void SkyboxDraw() override;
-
-	/// \brief Cloud描画
-	void CloudDraw() override;
-
-	/// \brief TrailEffect描画
-	void TrailEffectDraw() override;
 
 	/// \brief ImGui描画
 	void ImGuiDraw() override;

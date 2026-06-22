@@ -101,11 +101,8 @@ void EnemyBullet::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if(isAlive_ && obj_) {
 		obj_->RegisterRenderables(renderWorld);
 	}
-}
-
-void EnemyBullet::DrawTrail() {
 	if (trailEffect_) {
-		trailEffect_->Draw();
+		trailEffect_->RegisterRenderables(renderWorld);
 	}
 }
 

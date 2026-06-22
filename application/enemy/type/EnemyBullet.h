@@ -46,9 +46,6 @@ public:
 	/// \brief 3D不透明描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
-	/// \brief トレイル描画
-	void DrawTrail();
-
 	/// \brief 生存確認
 	bool IsAlive() const {
 		return isAlive_;

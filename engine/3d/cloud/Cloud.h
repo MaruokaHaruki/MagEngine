@@ -19,6 +19,7 @@ namespace MagEngine {
 	class Camera;
 	class CloudSetup;
 	class LightManager;
+	class RenderWorld;
 
 	///=============================================================================
 	///						構造体
@@ -136,6 +137,9 @@ namespace MagEngine {
 
 		/// @brief 描画
 		void Draw();
+
+		/// @brief RenderWorldへ描画対象として登録
+		void RegisterRenderables(RenderWorld &renderWorld);
 
 	/// @brief ImGui描画
 	/// COMMENT: DEBUG ビルド時のみ実行。UI は Release では不要

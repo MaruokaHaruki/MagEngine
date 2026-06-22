@@ -7,6 +7,10 @@ using namespace MagMath;
 #include <memory>
 #include <string>
 
+namespace MagEngine {
+	class RenderWorld;
+}
+
 // 前方宣言
 class FollowCamera;
 class Player;
@@ -39,6 +43,9 @@ public:
 
 	/// \brief 描画
 	void Draw();
+
+	/// \brief Sprite描画対象を登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画
 	void DrawImGui();

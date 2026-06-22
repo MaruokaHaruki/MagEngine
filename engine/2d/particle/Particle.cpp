@@ -1,5 +1,6 @@
 #include "Particle.h"
 #include "Camera.h"
+#include "engine/render/RenderWorld.h"
 #include "TextureManager.h"
 //---------------------------------------
 // 数学関数　
@@ -140,9 +141,6 @@ namespace MagEngine {
 		// コマンドリストの取得
 		ID3D12GraphicsCommandList *commandList = particleSetup_->GetDXManager()->GetCommandList().Get();
 
-		// 共通の描画設定を適用
-		particleSetup_->CommonDrawSetup();
-
 		// 頂点バッファをセット (ループの外で一度だけ)
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
@@ -167,6 +165,26 @@ namespace MagEngine {
 			// インスタンスカウントをリセット
 			group.instanceCount = 0;
 		}
+	}
+
+	void Particle::RegisterRenderables(RenderWorld &renderWorld) {
+		if(!HasDrawableParticles()) {
+			return;
+		}
+
+		ParticleRenderItem item{};
+		item.particle = this;
+		item.visible = true;
+		renderWorld.AddParticle(item);
+	}
+
+	bool Particle::HasDrawableParticles() const {
+		for(const auto &groupPair : particleGroups) {
+			if(groupPair.second.instanceCount > 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	///=============================================================================

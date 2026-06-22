@@ -35,23 +35,8 @@ public:
 	/// @brief 更新処理
 	void Update();
 
-	/// @brief Object2D描画
-	void Object2DDraw();
-
-	/// @brief 3D不透明描画対象の登録
+	/// @brief 描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
-
-	/// @brief Particle描画
-	void ParticleDraw();
-
-	/// @brief Skybox描画
-	void SkyboxDraw();
-
-	/// @brief Cloud描画
-	void CloudDraw();
-
-	/// @brief TrailEffect描画
-	void TrailEffectDraw();
 
 	/// @brief ImGui描画
 	void ImGuiDraw();

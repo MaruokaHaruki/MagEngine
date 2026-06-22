@@ -292,14 +292,6 @@ void Player::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	combatComponent_.RegisterRenderables(renderWorld);
 }
 
-void Player::DrawBulletsTrails() {
-	combatComponent_.DrawBulletsTrails();
-}
-
-void Player::DrawMissilesTrails() {
-	combatComponent_.DrawMissilesTrails();
-}
-
 //=============================================================================
 // ImGui描画
 void Player::DrawImGui() {

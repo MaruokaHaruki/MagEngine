@@ -32,6 +32,7 @@ namespace MagEngine {
 	class SkyboxSetup;
 	class Camera;
 	class LightManager;
+	class RenderWorld;
 	///=============================================================================
 	///								クラス
 	class Skybox {
@@ -46,6 +47,9 @@ namespace MagEngine {
 
 		/// \brief 描画
 		void Draw();
+
+		/// \brief RenderWorldへ描画対象として登録
+		void RegisterRenderables(RenderWorld &renderWorld);
 
 		///--------------------------------------------------------------
 		///						 静的メンバ関数

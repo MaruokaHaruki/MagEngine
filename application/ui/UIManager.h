@@ -15,6 +15,7 @@ namespace MagEngine {
 	class Input;
 	class CameraManager;
 	class LineManager;
+	class RenderWorld;
 }
 
 ///=============================================================================
@@ -34,8 +35,8 @@ public:
 	/// \brief 更新
 	void Update(const class Player *player);
 
-	/// \brief 2D描画
-	void Draw();
+	/// \brief Sprite描画対象を登録
+	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画
 	void DrawImGui();

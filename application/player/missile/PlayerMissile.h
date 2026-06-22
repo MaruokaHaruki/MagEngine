@@ -49,8 +49,6 @@ public:
 	void Update();
 	/// @brief 3D不透明描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
-	/// @brief DrawTrail トレイル描画
-	void DrawTrail();
 	/// @brief DrawDebugInfo デバッグ情報描画
 	void DrawDebugInfo();
 	/// @brief DrawImGui ImGui描画

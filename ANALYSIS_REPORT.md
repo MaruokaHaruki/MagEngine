@@ -993,3 +993,974 @@ commandList_->Reset(commandAllocator_.Get(), nullptr);
 
 #### 補足
 現状はまだ `ExecuteCommandList()` に Present、Signal、次フレーム準備がまとまっている。次の整理として `MoveToNextFrame()` と `WaitForGpu()` に分けると、リサイズや終了処理も読みやすくなる。
+
+---
+
+## 11. RenderPass依存管理と簡易RenderGraph基盤（2026年6月18日）
+
+### 11.1 今回追加した目的
+
+Skybox、Opaque、Cloud、Trail、Particle は `RenderPassEntry` によって実行順を管理できるようになったが、各Passがどの描画リソースをRead/WriteするかはRendererから見えなかった。
+
+今回、完全なRenderGraphではなく、以下の検証用メタデータ基盤を追加した。
+
+```text
+Pass登録
+↓
+Read/Writeリソース宣言
+↓
+依存関係構築
+↓
+依存違反・競合検証
+↓
+既存のPhase + order順で実行
+```
+
+### 11.2 追加した論理リソース
+
+現時点でPass間共有の検証に必要なリソースだけを定義した。
+
+```text
+SceneColor
+- DirectXCore::RenderTexturePreDraw() でRTVとして設定されるレンダーテクスチャ
+- RenderTexturePostDraw() でPixelShaderResourceへ遷移され、最終合成でBackBufferへ表示される
+
+SceneDepth
+- DirectXCore::RenderTexturePreDraw() でDSVとして設定・ClearされるDepthStencil
+- 3D系Passと一部2D/ParticleがDepth Testに利用する
+```
+
+Cloud専用の中間リソースは現在のPass実装上確認できなかったため、今回は追加していない。
+
+### 11.3 Passごとのリソース宣言
+
+```text
+SkyboxRenderPass
+- Phase: Scene
+- Order: 100
+- Write: SceneColor
+- Read: SceneDepth
+- 根拠: SkyboxSetup はDepth Test有効、DepthWriteMask ZERO
+
+OpaqueRenderPass
+- Phase: Scene
+- Order: 200
+- ReadWrite: SceneColor, SceneDepth
+- 根拠: Object3dSetup はDepth Test有効、DepthWriteMask ALL
+
+CloudRenderPass
+- Phase: Scene
+- Order: 300
+- ReadWrite: SceneColor, SceneDepth
+- 根拠: CloudSetup はAlpha Blend有効、DepthWriteMask ALL
+
+TrailRenderPass
+- Phase: Scene
+- Order: 400
+- ReadWrite: SceneColor, SceneDepth
+- 根拠: TrailEffectSetup はAlpha Blend有効、DepthWriteMask ALL
+
+ParticleRenderPass
+- Phase: After2D
+- Order: 100
+- ReadWrite: SceneColor
+- Read: SceneDepth
+- 根拠: ParticleSetup はAlpha Blend有効、DepthWriteMask ZERO
+```
+
+Resource State は今回の宣言には含めていない。既存Barrierを変更せず、まず論理依存の検証だけに留めるため。
+
+### 11.4 RenderGraphの責務
+
+`engine/render/RenderGraph.h/cpp` を追加し、依存関係の正本をここへ集約した。
+
+```text
+持つもの
+- 外部初期化済み論理リソース
+- Pass間依存辺
+
+持たないもの
+- GPU Resource本体
+- CommandList
+- Descriptor Heap
+- Resource Barrier実行
+- RenderTarget生成
+- Pass所有権
+- Pass実行処理
+```
+
+実行責務は引き続き `Renderer::ExecutePhase()` が持つ。
+
+### 11.5 構築される依存関係
+
+現在のPass宣言から、代表的には以下の依存が構築される。
+
+```text
+Skybox -> Opaque
+- SceneColor: Write -> ReadWrite
+- SceneDepth: Read後のOpaque Writeは外部初期化済みDepthへ順序付きでアクセス
+
+Opaque -> Cloud
+- SceneColor: ReadWrite -> ReadWrite
+- SceneDepth: ReadWrite -> ReadWrite
+
+Cloud -> Trail
+- SceneColor: ReadWrite -> ReadWrite
+- SceneDepth: ReadWrite -> ReadWrite
+
+Trail -> Particle
+- SceneColor: ReadWrite -> ReadWrite
+- SceneDepth: ReadWrite -> Read
+```
+
+2D描画はまだRenderPass化されていないため、RenderGraph上のPass依存としては表現していない。現在は既存順序どおり `TrailRenderPass` と `ParticleRenderPass` の間に固定実行される。
+
+### 11.6 検証内容
+
+`Renderer::Initialize()` のPass登録完了後に、1回だけGraphを構築・検証する。
+
+```text
+検出するもの
+- 外部リソースでも先行Writerでもない未初期化Read
+- 同一Pass内の同一リソース重複宣言
+- 同一Phase/同一Orderでの不定なWrite競合
+- 依存グラフの循環
+- 依存順とPhase/order実行順の矛盾
+```
+
+毎フレームのGraph再構築やトポロジカルソートは行わない。現在の描画順を変えないことを優先している。
+
+### 11.7 Resource Barrierの扱い
+
+今回の変更ではBarrierを自動生成しない。
+
+```text
+維持した既存Barrier
+- RenderTexturePreDraw(): PixelShaderResource -> RenderTarget
+- RenderTexturePostDraw(): RenderTarget -> PixelShaderResource
+- DirectXCore::PreDraw/PostDraw(): BackBufferのPresent/RenderTarget遷移
+- Texture Upload時のCopyDest -> PixelShaderResource
+```
+
+RenderGraphのRead/Write宣言は、将来のBarrier自動生成とState検証へ接続するためのメタデータとして扱う。
+
+### 11.8 今回の実装による改善
+
+```text
+Before
+- 描画順はPhase/orderのみ
+- Passが何を読む/書くかRendererから不可視
+- Order変更による破綻を検出しづらい
+
+After
+- PassごとにSceneColor/SceneDepthのRead/Writeを宣言
+- Write->Read、Write->Write、ReadWrite依存を構築
+- 初期化時に依存違反をassertで検出
+- 現在の描画順と描画結果は維持
+```
+
+### 11.9 残る課題
+
+```text
+残課題
+- Sprite/2D描画がまだRenderPass化されていない
+- PostEffectがRenderGraphのPassとして表現されていない
+- Resource State宣言と既存Barrierの整合性検証は未実装
+- 依存グラフのトポロジカルソート結果はまだ実行順に使っていない
+```
+
+次に優先すべき改修は、2D描画を `SpriteRenderPass` へ移行し、`SceneColor` へのReadWriteを明示すること。
+
+---
+
+## 12. SpriteRenderPassへの2D描画移行
+
+### 12.1 改修前の2D描画経路
+
+改修前は、RenderGraph管理外の固定関数として2D Sprite描画が実行されていた。
+
+```text
+RenderPreDraw
+↓
+ExecutePhase(Scene)
+  ├─ SkyboxRenderPass
+  ├─ OpaqueRenderPass
+  ├─ CloudRenderPass
+  └─ TrailRenderPass
+↓
+MagFramework::Object2DCommonDraw()
+  ├─ SpriteSetup::CommonDrawSetup()
+  └─ SceneManager::Object2DDraw()
+      └─ Scene/UI::Draw()
+↓
+ExecutePhase(After2D)
+  └─ ParticleRenderPass
+↓
+RenderPostDraw
+```
+
+この構成では、TrailとParticleの間に入るSprite描画がRenderGraphへ宣言されず、Pass間依存として検証できなかった。
+
+### 12.2 移行内容
+
+`SpriteRenderPass`を追加し、Sprite用PSO、RootSignature、DescriptorHeap、Topology設定をPassへ集約した。SceneとUIはSpriteを直接描画せず、`RenderWorld`へ非所有参照として登録する。
+
+```text
+RenderPreDraw
+↓
+ExecutePhase(Scene)
+  ├─ SkyboxRenderPass
+  ├─ OpaqueRenderPass
+  ├─ CloudRenderPass
+  └─ TrailRenderPass
+↓
+ExecutePhase(Overlay)
+  └─ SpriteRenderPass
+↓
+ExecutePhase(PostOverlay)
+  └─ ParticleRenderPass
+↓
+RenderPostDraw
+```
+
+### 12.3 Sprite描画順の管理方式
+
+`RenderWorld`へ`SpriteRenderItem`を追加した。
+
+```text
+SpriteRenderItem
+- Sprite* sprite
+- uint32_t submissionOrder
+- bool visible
+```
+
+今回の既存UIにはLayer/Order概念が無く、旧実装はDraw呼び出し順で重なり順を決めていた。そのため、`RenderWorld::AddSprite()`で`submissionOrder`を発行し、登録順を決定的な描画順として保持する。RenderPass側では毎フレームの追加ソートを行わない。
+
+### 12.4 UI登録経路
+
+主要な登録経路は以下。
+
+```text
+TitleScene
+↓
+titleSprite / pressEnterSprite / SceneTransition
+↓
+RenderWorld::AddSprite
+
+GamePlayScene
+↓
+UIManager
+↓
+GameOverUI / GameClearAnimation / OperationGuideUI / StartAnimation / MenuUI
+↓
+RenderWorld::AddSprite
+
+GamePlayScene
+↓
+SceneTransition
+↓
+RenderWorld::AddSprite
+```
+
+`MenuUI`は旧挙動と同じく、Menu表示中はMenuのみを登録する。`OperationGuideUI`の背景Spriteは旧`Draw()`でも無効化されていたため登録していない。HUD/LockOnHUDはSpriteではなくLineManager描画であるため、SpriteRenderPass対象外としつつ、`UIManager::RegisterRenderables()`から既存LineManager経路への登録を維持した。Line描画のRenderPass化は別改修で扱う。
+
+### 12.5 RenderGraph Read/Write宣言
+
+SpritePassを以下で登録した。
+
+```text
+Pass ID: Sprite
+実装: SpriteRenderPass
+Phase: Overlay
+Order: 100
+Reads: なし
+Writes: なし
+ReadWrites:
+- SceneColor
+- SceneDepth
+```
+
+通常UI SpriteならDepth不要に見えるが、現行`SpriteSetup`のPSOは`DepthEnable = true`、`DepthWriteMask = ALL`である。Blend/Depth設定を変更しない条件を優先し、`SceneDepth`もReadWriteとして宣言した。
+
+### 12.6 Trail→Sprite→Particle依存
+
+現在のPass宣言から、代表的に以下の依存が構築される。
+
+```text
+TrailRenderPass
+↓ SceneColor / SceneDepth
+SpriteRenderPass
+↓ SceneColor / SceneDepth
+ParticleRenderPass
+```
+
+`Renderer::Initialize()`でPass登録後に`RenderGraph::Build()`と`RenderGraph::Validate()`を実行する。Debug x64ビルド時点で、未初期化Read、循環、Phase/orderと依存順の矛盾は発生していない。
+
+### 12.7 削除した旧API
+
+削除した旧方式は以下。
+
+```text
+- BaseScene::Object2DDraw
+- SceneManager::Object2DDraw
+- MagFramework::Object2DCommonDraw
+- EngineAppからのObject2DCommonDraw呼び出し
+- 各SceneのObject2DDraw override
+- SceneからのSprite直接Draw呼び出し
+```
+
+`Sprite::Draw()`自体は低レベル描画関数として残し、呼び出し元を`SpriteRenderPass`へ限定した。
+
+### 12.8 ビルド結果
+
+```text
+Command:
+MSBuild.exe MagEngine.sln /m /p:Configuration=Debug /p:Platform=x64
+
+Configuration: Debug
+Platform: x64
+Result: Success
+Warnings: 0
+Errors: 0
+```
+
+最初のビルドでは、`RenderWorld.h`のinclude pathが`engine/render`を含んでいないことにより失敗した。追加したincludeを`engine/render/RenderWorld.h`へ統一して修正した。
+
+### 12.9 実行確認できていない項目
+
+GUI実行は行っていないため、以下は未確認。
+
+```text
+- TitleSceneの実表示
+- GamePlaySceneへの遷移
+- Menu UI / OperationGuide UI / Fade / Transitionの実表示
+- SpriteとParticleの実画面上の前後関係
+- DirectX 12 Debug Layerの実行時メッセージ
+```
+
+静的確認とDebug x64ビルドでは、RenderGraph構築・検証の呼び出し、および旧2D描画APIの削除を確認した。
+
+### 12.10 次の改修候補
+
+次はPostEffectをRenderPass化し、SceneColor入力とPresent出力をRenderGraph上で明示するのが最も効果的。現在の描画終端がRenderGraph外に残っているため、フレーム全体の依存関係を把握しづらい。
+
+---
+
+## 13. PostEffectRenderPassへのFullscreen描画移行
+
+### 13.1 改修前のPostEffect経路
+
+改修前は、SceneColorに相当するRenderTextureへの描画完了後、`DirectXCore::PreDraw()`がBackBufferをRenderTargetへ遷移し、Fullscreen Triangle描画とPostEffect適用を固定処理として実行していた。
+
+```text
+RenderTexturePreDraw
+↓
+ExecutePhase(Scene / Overlay / PostOverlay)
+↓
+RenderTexturePostDraw
+  - SceneColor: RenderTarget -> PixelShaderResource
+↓
+DirectXCore::PreDraw
+  - BackBuffer: Present -> RenderTarget
+  - BackBuffer Clear
+  - RenderTexture SRVを設定
+  - Fullscreen Triangle描画
+  - PostEffectManager::ApplyEffects
+↓
+ImGui
+↓
+PostDraw
+  - BackBuffer: RenderTarget -> Present
+  - ExecuteCommandLists
+  - Present
+  - Fence Signal
+```
+
+この構成では、SceneColorからBackBufferへの最終合成がRenderGraph上に現れず、Particle後にPostEffectがSceneColorを読む依存を検証できなかった。
+
+### 13.2 移行内容
+
+`PostEffectRenderPass`を追加し、BackBufferへのFullscreen描画をRenderer管理のPassとして実行するようにした。
+
+```text
+RenderTexturePreDraw
+↓
+ExecutePhase(Scene)
+↓
+ExecutePhase(Overlay)
+↓
+ExecutePhase(PostOverlay)
+↓
+RenderTexturePostDraw
+↓
+ExecutePhase(PostProcess)
+  └─ PostEffectRenderPass
+↓
+ImGui
+↓
+PostDraw / Present
+```
+
+`Present()`、CommandQueue実行、Fence Signal、FrameContext更新は引き続き`DirectXCore::PostDraw()`側に残した。PostEffectPassはPresentそのものを担当しない。
+
+### 13.3 SceneColorとPresentColorの定義
+
+```text
+SceneColor
+- 対応GPU Resource: DirectXCoreの現在RenderTexture
+- 用途: Skybox/Opaque/Cloud/Trail/Sprite/Particleの描画先
+- Writer: Scene系Pass、Overlay系Pass、Particle
+- Reader: PostEffectRenderPass
+- Barrier: RenderTexturePreDrawでRTV化、RenderTexturePostDrawでSRV化
+
+SceneDepth
+- 対応GPU Resource: DirectXCoreのDepthStencil
+- 用途: Scene/Sprite/ParticleのDepth参照または書き込み
+- Writer: Opaque/Cloud/Trail/Sprite
+- Reader: Skybox/Particle
+- Barrier: 既存手動管理を維持
+
+PresentColor
+- 対応GPU Resource: SwapChainの現在BackBuffer
+- 用途: PostEffectRenderPassの出力先、ImGuiの描画先、Present対象
+- Writer: PostEffectRenderPass、ImGui
+- Reader: Present処理
+- Barrier: PostEffectRenderPass開始時にRTV化、PostDrawでPresent化
+```
+
+GPU Resource本体はRenderGraphへ渡していない。RenderGraphは論理リソース名だけを保持する。
+
+### 13.4 RenderGraph Read/Write宣言
+
+`RenderResourceId::PresentColor`を追加し、外部リソースとして登録した。`PostEffectRenderPass`の宣言は以下。
+
+```text
+Pass ID: PostEffect
+実装: PostEffectRenderPass
+Phase: PostProcess
+Order: 100
+Reads:
+- SceneColor
+Writes:
+- PresentColor
+ReadWrites:
+- なし
+```
+
+これにより、`SceneColor`の最後のWriterである`ParticleRenderPass`から`PostEffectRenderPass`への依存が構築される。
+
+### 13.5 Resource Barrierの配置
+
+```text
+SceneColor描画開始:
+- DirectXCore::RenderTexturePreDraw
+- PixelShaderResource -> RenderTarget
+
+SceneColorをSRVへ変更:
+- DirectXCore::RenderTexturePostDraw
+- RenderTarget -> PixelShaderResource
+
+PresentColorをRTVへ変更:
+- PostEffectRenderPass
+- DirectXCore::BeginPresentRenderTarget
+- Present -> RenderTarget
+
+PresentColorをPresentへ変更:
+- DirectXCore::CloseCommandList
+- RenderTarget -> Present
+```
+
+Barrierの自動生成は行っていない。既存の手動Barrierを責務ごとに移動・維持した。
+
+### 13.6 PresentとImGuiの責務分離
+
+```text
+PostEffectRenderPass:
+- BackBufferをRenderTargetへ遷移
+- BackBuffer RTVを設定
+- Viewport/Scissor/Topologyを設定
+- PostEffectManager::ApplyEffectsでFullscreen描画
+
+ImGui:
+- PostEffect後のBackBufferへ従来どおり描画
+
+DirectXCore::PostDraw:
+- FPS固定
+- BackBufferをPresentへ遷移
+- CommandList Close
+- ExecuteCommandLists
+- Present
+- Fence Signal
+```
+
+ImGuiは今回RenderPass化していない。
+
+### 13.7 削除した旧方式
+
+削除・整理した旧方式は以下。
+
+```text
+- EngineAppからの固定PostEffect前処理呼び出し
+- MagFramework::PreDraw
+- DirectXCore::PreDraw(PostEffectManager*, TextureManager&)
+- DirectXCore内のFullscreen描画固定実行
+- DirectXCore内のPostEffectManager::ApplyEffects直接呼び出し
+- DirectXCore.cppの不要なPostEffectManager/TextureManager include
+```
+
+低レベルなFullscreen描画PSO、RootSignature、`PostEffectManager::ApplyEffects()`は、`PostEffectRenderPass`から呼ばれる実装として維持した。
+
+### 13.8 ビルド結果
+
+```text
+Command:
+MSBuild.exe MagEngine.sln /m /p:Configuration=Debug /p:Platform=x64
+
+Configuration: Debug
+Platform: x64
+Result: Success
+Warnings: 0
+Errors: 0
+```
+
+### 13.9 実行確認できていない項目
+
+GUI実行は行っていないため、以下は未確認。
+
+```text
+- 実画面でのPostEffect適用結果
+- PostEffect無効時の画面表示
+- 複数PostEffect有効時の見た目
+- ImGuiの実表示位置
+- DirectX 12 Debug Layerの実行時メッセージ
+```
+
+静的確認とDebug x64ビルドでは、PostEffectPass登録、SceneColor Read、PresentColor Write、ParticleからPostEffectへの依存構築、旧固定呼び出し削除を確認した。
+
+### 13.10 次の改修候補
+
+次はResource State宣言と手動Barrierの整合性検証を追加するのが最も効果的。RenderGraphに論理Read/Writeは揃ってきたため、実際の手動Barrierが宣言と矛盾していないかを検証できる段階に入っている。
+
+---
+
+## 14. Resource State宣言と手動Barrier整合性検証
+
+### 14.1 改修前の課題
+
+改修前のRenderGraphは、`SceneColor`、`SceneDepth`、`PresentColor`のRead/Write依存は検証できていたが、実際のD3D12 Resource Stateと手動`ResourceBarrier`の整合性は検証できなかった。
+
+```text
+確認できていたこと
+- Pass間のRead/Write依存
+- 循環依存
+- 実行順と依存順の矛盾
+
+確認できていなかったこと
+- PostEffect前にSceneColorがPixelShaderResource状態か
+- PresentColorがPostEffect時にRenderTarget状態か
+- Present前にPresentColorがPresent状態へ戻っているか
+- PassのRequired Stateと手動Barrierが一致しているか
+```
+
+### 14.2 Required State宣言の追加内容
+
+`RenderPassResourceUsage`へ`requiredState`を追加した。
+
+```text
+RenderPassResourceUsage
+- RenderResourceId resource
+- RenderResourceAccess access
+- RenderResourceState requiredState
+```
+
+今回追加した`RenderResourceState`は、現在使っている状態を中心にした軽量enumであり、RenderGraphはD3D12 Resource本体やCommandListを所有しない。
+
+```text
+RenderTarget
+PixelShaderResource
+DepthWrite
+DepthRead
+Present
+CopySource
+CopyDest
+GenericRead
+```
+
+### 14.3 各PassのRequired State
+
+```text
+Skybox
+- SceneColor: Write / RenderTarget
+- SceneDepth: Read / DepthWrite
+
+Opaque
+- SceneColor: ReadWrite / RenderTarget
+- SceneDepth: ReadWrite / DepthWrite
+
+Cloud
+- SceneColor: ReadWrite / RenderTarget
+- SceneDepth: ReadWrite / DepthWrite
+
+Trail
+- SceneColor: ReadWrite / RenderTarget
+- SceneDepth: ReadWrite / DepthWrite
+
+Sprite
+- SceneColor: ReadWrite / RenderTarget
+- SceneDepth: ReadWrite / DepthWrite
+
+Particle
+- SceneColor: ReadWrite / RenderTarget
+- SceneDepth: Read / DepthWrite
+
+PostEffect
+- SceneColor: Read / PixelShaderResource
+- PresentColor: Write / RenderTarget
+```
+
+`SceneDepth`はParticleなどでRead用途でも、現在の実装ではDepthStencilをフレーム中`DepthWrite`状態のDSVとして扱い続けている。そのため、今回のRequired Stateは実際の手動Barrier配置に合わせて`DepthWrite`としている。
+
+### 14.4 手動Barrier記録の仕組み
+
+`RenderResourceBarrierRecord`を追加し、実コードに存在する手動Barrierのメタ情報をRenderGraphへ登録するようにした。
+
+```text
+RenderResourceBarrierRecord
+- resource
+- beforeState
+- afterState
+- label
+- sequence
+```
+
+登録しているManual Barrierは以下。
+
+```text
+DirectXCore::RenderTexturePreDraw
+- SceneColor: PixelShaderResource -> RenderTarget
+
+DirectXCore::RenderTexturePostDraw
+- SceneColor: RenderTarget -> PixelShaderResource
+
+DirectXCore::BeginPresentRenderTarget
+- PresentColor: Present -> RenderTarget
+
+DirectXCore::CloseCommandList
+- PresentColor: RenderTarget -> Present
+```
+
+実際のBarrier発行箇所は変更していない。今回追加したのは検証用メタ情報のみ。
+
+### 14.5 Resource State整合性検証
+
+`RenderGraph::Validate()`に以下を追加した。
+
+```text
+Required State未設定検出
+- 各RenderPassResourceUsageのrequiredStateがUnknownならassert
+
+Initial State未設定検出
+- 使用する論理リソースに初期状態が無ければassert
+
+Manual Barrier整合性検証
+- 記録されたbeforeStateが現在追跡中の状態と一致しなければassert
+- 一致した場合のみafterStateへ更新
+
+Pass Required State検証
+- Pass実行時点の追跡状態とrequiredStateが一致しなければassert
+
+Final State検証
+- フレーム終端状態が期待値と一致しなければassert
+```
+
+この検証は実行順を変更せず、既存の固定Phase/order順を検証用シーケンスへ写して行う。
+
+### 14.6 Resource State Timeline
+
+```text
+SceneColor
+Initial:
+- PixelShaderResource
+Transitions:
+- RenderTexturePreDraw: PixelShaderResource -> RenderTarget
+- RenderTexturePostDraw: RenderTarget -> PixelShaderResource
+Pass required states:
+- Skybox/Opaque/Cloud/Trail/Sprite/Particle: RenderTarget
+- PostEffect: PixelShaderResource
+Final:
+- PixelShaderResource
+
+SceneDepth
+Initial:
+- DepthWrite
+Transitions:
+- なし
+Pass required states:
+- Skybox/Opaque/Cloud/Trail/Sprite/Particle: DepthWrite
+Final:
+- DepthWrite
+
+PresentColor
+Initial:
+- Present
+Transitions:
+- BeginPresentRenderTarget: Present -> RenderTarget
+- CloseCommandList: RenderTarget -> Present
+Pass required states:
+- PostEffect: RenderTarget
+- ImGui: RenderGraph外だがRenderTarget状態のBackBufferへ描画
+Final:
+- Present
+```
+
+### 14.7 自動Barrier生成をまだ行わない理由
+
+今回の目的は、現在の手動BarrierがPassのRequired Stateと矛盾していないことを検証することに限定した。
+
+```text
+まだ行わないこと
+- RenderGraphからResourceBarrierを発行する
+- GPU Resource本体をRenderGraphへ渡す
+- State Trackerを本格導入する
+- Barrier最適化を行う
+- トポロジカルソート結果で実行順を変える
+```
+
+自動生成へ進む前に、既存の手動Barrierと宣言の差分を検出できる状態を作ることを優先した。
+
+### 14.8 ビルド結果
+
+```text
+Command:
+MSBuild.exe MagEngine.sln /m /p:Configuration=Debug /p:Platform=x64
+
+Configuration: Debug
+Platform: x64
+Result: Success
+Warnings: 0
+Errors: 0
+```
+
+### 14.9 実行確認できていない項目
+
+GUI実行は行っていないため、以下は未確認。
+
+```text
+- 実画面での描画結果
+- Scene切り替え後の状態
+- DirectX 12 Debug LayerのResource State関連メッセージ
+```
+
+静的確認とDebug x64ビルドでは、RenderGraphのRead/Write依存検証、Required State検証、Manual Barrier整合性検証が初期化時に通ることを確認した。
+
+### 14.10 次の改修候補
+
+次は、手動Barrier記録を実際のBarrier発行ヘルパーへ統合するのが最も自然。現在は検証用メタ情報をRenderer初期化時に登録しているため、将来的にはBarrier発行と記録を同じ入口に寄せると、記録漏れを防ぎやすくなる。
+
+## 15. 手動ResourceBarrier発行とRenderGraph記録の統合
+
+### 15.1 改修前の二重管理リスク
+
+前回までの構成では、実際の`ID3D12GraphicsCommandList::ResourceBarrier()`発行は`DirectXCore`側にあり、検証用の`RenderResourceBarrierRecord`は`Renderer::Initialize()`で別途登録していた。
+
+```text
+変更前:
+DirectXCore
+- 実際のResourceBarrierを発行
+
+Renderer
+- RenderGraphへ検証用Barrierを登録
+```
+
+この構成では、BarrierのBefore/Afterや発行位置を変更したときに、実処理と検証用メタ情報がずれる可能性があった。
+
+### 15.2 統合したBarrier発行ヘルパー
+
+`RenderBarrierRecorder`を追加し、1回のTransition要求で実Barrier発行とRenderGraph記録を同時に行うようにした。
+
+```text
+変更後:
+呼び出し側
+↓
+RenderBarrierRecorder::Transition
+├─ D3D12_RESOURCE_BARRIERを生成
+├─ CommandList::ResourceBarrierを発行
+└─ RenderGraph::RecordManualBarrierへ同じ内容を記録
+```
+
+`RenderGraph`は引き続きCommandListやGPU Resource本体を所有しない。`RecordManualBarrier()`もBarrierを発行せず、記録だけを行う。
+
+### 15.3 Barrier Pointの固定化
+
+自由文字列ラベルの代わりに、固定enumの`RenderBarrierPoint`を追加した。
+
+```text
+RenderTexturePreDraw
+RenderTexturePostDraw
+BeginPresentRenderTarget
+BeforePresent
+```
+
+Debug用途の文字列化は`ToString(RenderBarrierPoint)`で行う。呼び出し箇所ごとに任意文字列を渡さないため、記録名の表記揺れを避けられる。
+
+### 15.4 移行したBarrier
+
+```text
+Barrier Point: RenderTexturePreDraw
+Resource: SceneColor
+Before: PixelShaderResource
+After: RenderTarget
+実際のResource: renderTextureResources_[renderResourceIndex_]
+呼び出し側: DirectXCore::RenderTexturePreDraw
+
+Barrier Point: RenderTexturePostDraw
+Resource: SceneColor
+Before: RenderTarget
+After: PixelShaderResource
+実際のResource: renderTextureResources_[renderResourceIndex_]
+呼び出し側: DirectXCore::RenderTexturePostDraw
+
+Barrier Point: BeginPresentRenderTarget
+Resource: PresentColor
+Before: Present
+After: RenderTarget
+実際のResource: swapChainResource_[currentBackBufferIndex_]
+呼び出し側: DirectXCore::SetupTransitionBarrier
+
+Barrier Point: BeforePresent
+Resource: PresentColor
+Before: RenderTarget
+After: Present
+実際のResource: swapChainResource_[currentBackBufferIndex_]
+呼び出し側: DirectXCore::CloseCommandList
+```
+
+`DirectXCore`はRenderer初期化後に`RenderBarrierRecorder`の非所有ポインタを受け取り、フレーム中の上記Barrierを統合ヘルパー経由で発行する。DirectX初期化中はRenderer/RenderGraphがまだ存在しないため、従来どおり低レベルBarrierだけを発行するフォールバックを残した。
+
+### 15.5 実行時記録と検証タイミング
+
+Barrier記録はフレーム単位にした。
+
+```text
+RenderTexturePreDraw直前:
+- RenderGraph::ClearRecordedBarriers
+
+描画中:
+- RenderBarrierRecorder::Transitionが実Barrier発行と記録を同時実行
+
+PostDraw後:
+- RenderGraph::ValidateRecordedResourceStates
+```
+
+検証は`PresentColor`が`Present`へ戻った後に行う。これにより、Final State検証が`BeforePresent`後の状態を対象にできる。
+
+### 15.6 維持した検証
+
+```text
+初期化時:
+- Read/Write依存検証
+- 未初期化Read検出
+- 循環依存検出
+- 実行順矛盾検出
+- Required State未設定検出
+- Initial State未設定検出
+
+フレーム終了時:
+- Barrier不足検出
+- Barrier Before State不一致検出
+- Pass Required State不一致検出
+- Final State不一致検出
+```
+
+Barrier自動生成は行っていない。状態遷移の判断は従来どおり呼び出し側が行い、`RenderBarrierRecorder`は発行と記録だけを担当する。
+
+### 15.7 SceneDepthの扱い
+
+`SceneDepth`にはTransitionを追加していない。
+
+```text
+Initial State: DepthWrite
+実行中State: DepthWrite維持
+Transition追加: なし
+```
+
+Skybox、Opaque、Cloud、Trail、Sprite、Particleはいずれも現行実装ではDSVを`DepthWrite`状態で扱っている。ParticleはRead用途として宣言しているが、D3D12 Resource Stateとしては既存Barrierが存在しないため、今回も推測で`DepthRead`へ変更していない。
+
+### 15.8 直接ResourceBarrier呼び出しの残存
+
+検索上、直接`ResourceBarrier()`は以下に残っている。
+
+```text
+直接ResourceBarrier()残存件数: 4
+
+engine/render/RenderBarrierRecorder.cpp
+- 統合ヘルパー本体
+- 正当
+
+engine/base/core/DirectXCore.cpp
+- Renderer/RenderGraph未生成のDirectX初期化中フォールバック
+- 正当
+
+engine/base/core/DirectXCore.cpp
+- Texture Upload後のCopyDest -> GenericRead遷移
+- SceneColor/PresentColorのフレームBarrierではないため今回は対象外
+
+engine/postEffect/PostEffectManager.cpp
+- 複数PostEffect用の内部ピンポンRenderTexture切り替え
+- SceneColor/PresentColorのGraph管理対象外として今回は対象外
+```
+
+今後、PostEffectの内部RenderTextureをGraph上の論理リソースとして扱う場合は、この箇所も統合対象にできる。
+
+### 15.9 現在の描画順
+
+描画順は変更していない。
+
+```text
+RenderTexturePreDraw
+↓
+ExecutePhase(Scene)
+↓
+ExecutePhase(Overlay)
+↓
+ExecutePhase(PostOverlay)
+↓
+RenderTexturePostDraw
+↓
+ExecutePhase(PostProcess)
+↓
+ImGui
+↓
+PostDraw / Present
+```
+
+### 15.10 ビルド結果
+
+```text
+Command:
+MSBuild.exe MagEngine.sln /m /p:Configuration=Debug /p:Platform=x64
+
+Configuration: Debug
+Platform: x64
+Result: Success
+Warnings: 0
+Errors: 0
+```
+
+### 15.11 実行確認できていない項目
+
+GUI実行は行っていないため、以下は未確認。
+
+```text
+- 実画面での描画結果
+- RenderGraph実行時検証が実機フレームで最後まで通ること
+- DirectX 12 Debug LayerのResource State関連メッセージ
+- Scene切り替え後の表示
+- 終了時クラッシュの有無
+```
+
+静的確認とDebug x64ビルドでは、`SceneColor`と`PresentColor`の通常Barrierが統合ヘルパー経由になっていること、旧`AddManualBarrier`呼び出しが残っていないことを確認した。
+
+### 15.12 次の改修候補
+
+次は、Required Stateから最小限のTransition Barrierを自動生成する前段階として、PostEffect内部のピンポンRenderTextureを論理リソースとしてRenderGraphに登録するのがよい。

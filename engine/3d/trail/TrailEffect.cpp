@@ -9,6 +9,7 @@
 #include "TrailEffect.h"
 #include "Logger.h"
 #include "TrailEffectSetup.h"
+#include "engine/render/RenderWorld.h"
 #include "externals/imgui/imgui.h"
 #include <stdexcept>
 
@@ -69,6 +70,15 @@ namespace MagEngine {
 		//========================================
 		// Emitterを描画
 		emitter_.Draw();
+	}
+
+	void TrailEffect::RegisterRenderables(RenderWorld &renderWorld) {
+		if (!enabled_) {
+			return;
+		}
+
+		// NOTE: RenderWorldは所有しない。TrailEffectの寿命は弾やScene側が描画完了まで保証する。
+		renderWorld.AddTrail(TrailRenderItem{this, true});
 	}
 
 	///=============================================================================

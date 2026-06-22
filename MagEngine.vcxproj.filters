@@ -92,13 +92,37 @@
     <ClCompile Include="engine\base\core\FrameContext.cpp">
       <Filter>engine\base\core</Filter>
     </ClCompile>
+    <ClCompile Include="engine\render\CloudRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
     <ClCompile Include="engine\render\OpaqueRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\ParticleRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\PostEffectRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\RenderBarrierRecorder.cpp">
       <Filter>engine\render</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\Renderer.cpp">
       <Filter>engine\render</Filter>
     </ClCompile>
+    <ClCompile Include="engine\render\RenderGraph.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
     <ClCompile Include="engine\render\RenderWorld.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\SkyboxRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\SpriteRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\TrailRenderPass.cpp">
       <Filter>engine\render</Filter>
     </ClCompile>
     <ClCompile Include="engine\base\imGui\ImguiSetup.cpp">
@@ -378,10 +402,22 @@
     <ClInclude Include="engine\base\core\FrameContext.h">
       <Filter>engine\base\core</Filter>
     </ClInclude>
+    <ClInclude Include="engine\render\CloudRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
     <ClInclude Include="engine\render\IRenderPass.h">
       <Filter>engine\render</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\OpaqueRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\ParticleRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\PostEffectRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\RenderBarrierRecorder.h">
       <Filter>engine\render</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\Renderer.h">
@@ -390,7 +426,19 @@
     <ClInclude Include="engine\render\RenderContext.h">
       <Filter>engine\render</Filter>
     </ClInclude>
+    <ClInclude Include="engine\render\RenderGraph.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
     <ClInclude Include="engine\render\RenderWorld.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\SkyboxRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\SpriteRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\TrailRenderPass.h">
       <Filter>engine\render</Filter>
     </ClInclude>
     <ClInclude Include="engine\base\imGui\ImguiSetup.h">

@@ -26,6 +26,7 @@
 #include "Logger.h"
 #include "FullscreenPassRendere.h"
 #include "GrayscaleEffect.h"
+#include "engine/render/RenderGraph.h"
 #include "WinApp.h"
 //========================================
 // ReportLiveObj
@@ -57,6 +58,7 @@ namespace MagEngine {
 ///=============================================================================
 ///						クラス
 	class PostEffectManager;
+	class RenderBarrierRecorder;
 	class TextureManager;
 	class DirectXCore {
 	public:
@@ -64,9 +66,11 @@ namespace MagEngine {
 		///						 メンバ関数
 
 		//========================================
-		/// @brief PostDraw 描画前処理
-		/// @param postEffectManager ポストエフェクトマネージャ
-		void PreDraw(PostEffectManager *postEffectManager, TextureManager &textureManager);
+		/// @brief PresentColorへの描画準備
+		void BeginPresentRenderTarget();
+
+		/// @brief フレーム中の手動Barrier発行をRenderGraph記録と同期する
+		void SetRenderBarrierRecorder(RenderBarrierRecorder *recorder);
 
 		//========================================
 		/// @brief 描画前処理
@@ -266,6 +270,13 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///                        静的メンバ関数
 	private:
+		void TransitionResource(
+			RenderResourceId resourceId,
+			ID3D12Resource &resource,
+			D3D12_RESOURCE_STATES beforeState,
+			D3D12_RESOURCE_STATES afterState,
+			RenderBarrierPoint point);
+
 		//========================================
 		/// @brief InitializeFixFPS FPS固定更新の初期化
 		void InitializeFixFPS();
@@ -460,6 +471,7 @@ namespace MagEngine {
 		// フレーム単位のコマンド記録状態
 		std::array<FrameContext, FramesInFlight> frameContexts_;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
+		RenderBarrierRecorder *renderBarrierRecorder_ = nullptr;
 		uint32_t currentFrameContextIndex_ = 0;
 
 		//========================================

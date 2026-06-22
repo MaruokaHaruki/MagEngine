@@ -87,26 +87,16 @@ namespace MagEngine {
 		void RenderPreDraw();
 		/// @biref レンダーテクスチャ後処理
 		void RenderPostDraw();
-		/// @brief フレームワーク共通前処理
-		void PreDraw();
 		/// @brief フレームワーク共通後処理
 		void PostDraw();
 		/// @brief ImGuiの更新前処理
 		void ImGuiPreDraw();
 		/// @brief ImGuiの更新後処理
 		void ImGuiPostDraw();
-		/// @brief オブジェクト2D共通描画設定
-		void Object2DCommonDraw();
-		/// @brief パーティクル共通描画設定
-		void ParticleCommonDraw();
-		/// @brief 3D不透明描画
+		/// @brief Sceneフェーズ描画
 		void OpaqueRender();
-		/// @brief Skybox共通描画設定
-		void SkyboxCommonDraw();
-		/// @brief Cloud共通描画設定
-		void CloudCommonDraw();
-		/// @brief TrailEffect共通描画設定
-		void TrailEffectCommonDraw();
+		/// @brief 指定フェーズのRenderPass描画
+		void ExecuteRenderPhase(RenderPhase phase);
 
 		///--------------------------------------------------------------
 		///							入出力関数

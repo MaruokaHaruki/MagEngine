@@ -34,6 +34,7 @@
 namespace MagEngine {
 	///=============================================================================
 	///								前方宣言
+	class RenderWorld;
 	class SpriteSetup;
 
 	///=============================================================================
@@ -88,6 +89,12 @@ namespace MagEngine {
 		 *         事前にSpriteSetup::CommonDrawSetup()を呼び出すこと
 		 */
 		void Draw();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  RegisterRenderables 描画対象として登録
+		 * \note   Spriteの所有権はScene/UI側に残し、RenderWorldへは非所有参照だけを渡す
+		 */
+		void RegisterRenderables(RenderWorld &renderWorld);
 
 		///=============================================================================
 		///                        基本設定（メソッドチェーン対応）

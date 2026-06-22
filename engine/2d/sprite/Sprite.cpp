@@ -7,6 +7,7 @@
  * \note   軽量で高速な2Dスプライト描画を実現
  *********************************************************************/
 #include "Sprite.h"
+#include "engine/render/RenderWorld.h"
 #include "SpriteSetup.h"
 #include "TextureManager.h"
 
@@ -110,6 +111,10 @@ namespace MagEngine {
 
 		// 描画コール（インスタンス描画、6頂点 = 2三角形）
 		commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	}
+
+	void Sprite::RegisterRenderables(RenderWorld &renderWorld) {
+		renderWorld.AddSprite(SpriteRenderItem{this, 0, true});
 	}
 
 	///=============================================================================

@@ -13,6 +13,7 @@
 #include "LightManager.h"
 #include "Logger.h"
 #include "TextureManager.h"
+#include "engine/render/RenderWorld.h"
 #include "externals/imgui/imgui.h"
 #include <array>
 #include <stdexcept>
@@ -264,9 +265,6 @@ namespace MagEngine {
 			return;
 		}
 
-		//========================================
-		// COMMENT: 共通描画設定はフレーム毎に1回。複数オブジェクトの描画前に済ませる
-		setup_->CommonDrawSetup();
 		auto commandList = setup_->GetDXCore()->GetCommandList();
 
 		//========================================
@@ -303,6 +301,17 @@ namespace MagEngine {
 		//========================================
 		// COMMENT: フルスクリーン三角形描画（インスタンス化なし）
 		commandList->DrawInstanced(3, 1, 0, 0);
+	}
+
+	void Cloud::RegisterRenderables(RenderWorld &renderWorld) {
+		if(!enabled_ || !setup_) {
+			return;
+		}
+
+		CloudRenderItem item{};
+		item.cloud = this;
+		item.visible = true;
+		renderWorld.SetCloud(item);
 	}
 
 	///--------------------------------------------------------------

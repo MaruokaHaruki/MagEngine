@@ -94,50 +94,10 @@ void SceneManager::Update() {
 }
 
 ///=============================================================================
-/// 2D描画
-void SceneManager::Object2DDraw() {
-	if (nowScene_) {
-		nowScene_->Object2DDraw();
-	}
-}
-
-///=============================================================================
 /// 3D不透明描画対象の登録
 void SceneManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if (nowScene_) {
 		nowScene_->RegisterRenderables(renderWorld);
-	}
-}
-
-///=============================================================================
-/// パーティクル描画
-void SceneManager::ParticleDraw() {
-	if (nowScene_) {
-		nowScene_->ParticleDraw();
-	}
-}
-
-///=============================================================================
-/// Skybox描画
-void SceneManager::SkyboxDraw() {
-	if (nowScene_) {
-		nowScene_->SkyboxDraw();
-	}
-}
-
-///=============================================================================
-/// Cloud描画
-void SceneManager::CloudDraw() {
-	if (nowScene_) {
-		nowScene_->CloudDraw();
-	}
-}
-
-///=============================================================================
-/// TrailEffect描画
-void SceneManager::TrailEffectDraw() {
-	if (nowScene_) {
-		nowScene_->TrailEffectDraw();
 	}
 }
 
