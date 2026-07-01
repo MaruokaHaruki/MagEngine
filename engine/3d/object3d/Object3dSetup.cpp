@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "Object3dSetup.h"
 #include "Logger.h"
+#include "engine/render/PipelineBuilder.h"
 using namespace Logger;
 ///=============================================================================
 ///                        namespace MagEngine
@@ -126,106 +127,41 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						 グラフィックスパイプラインの作成
+	PipelineRecipe Object3dSetup::CreateDefaultRecipe(ID3D12RootSignature *rootSignature) {
+		PipelineRecipe recipe{};
+		recipe.vertexShader = {L"resources/shader/Object3d.VS.hlsl", L"main", L"vs_6_0"};
+		recipe.pixelShader = {L"resources/shader/Object3d.PS.hlsl", L"main", L"ps_6_0"};
+		recipe.rootSignature = rootSignature;
+		recipe.inputLayout = {
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		};
+		recipe.blendState.AlphaToCoverageEnable = FALSE;
+		recipe.blendState.IndependentBlendEnable = FALSE;
+		recipe.blendState.RenderTarget[0].BlendEnable = FALSE;
+		recipe.blendState.RenderTarget[0].LogicOpEnable = FALSE;
+		recipe.blendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		recipe.rasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+		recipe.rasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+		recipe.depthStencilState.DepthEnable = true;
+		recipe.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		recipe.depthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		recipe.renderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		recipe.depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		recipe.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return recipe;
+	}
+
+	PipelineRecipe Object3dSetup::CreatePipelineRecipe() const {
+		return CreateDefaultRecipe(rootSignature_.Get());
+	}
+
 	void Object3dSetup::CreateGraphicsPipeline() {
-		//========================================
-		// RoorSignatureの作成
 		CreateRootSignature();
-
-		//========================================
-		// InputLayoutの設定を行う
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
-		// 頂点データ
-		inputElementDescs[0].SemanticName = "POSITION";
-		inputElementDescs[0].SemanticIndex = 0;
-		inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-		// 画像座標データ
-		inputElementDescs[1].SemanticName = "TEXCOORD";
-		inputElementDescs[1].SemanticIndex = 0;
-		inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-		inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-		// 法線データ
-		inputElementDescs[2].SemanticName = "NORMAL";
-		inputElementDescs[2].SemanticIndex = 0;
-		inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-		inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-		D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-		inputLayoutDesc.pInputElementDescs = inputElementDescs;
-		inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-		//========================================
-		// BlendStateの設定を行う(αブレンディング)
-		D3D12_BLEND_DESC blendDesc{};
-		blendDesc.AlphaToCoverageEnable = FALSE;
-		blendDesc.IndependentBlendEnable = FALSE;
-		D3D12_RENDER_TARGET_BLEND_DESC renderTargetBlendDesc{};
-		// renderTargetBlendDesc.BlendEnable = TRUE;
-		// renderTargetBlendDesc.LogicOpEnable = FALSE;
-		// renderTargetBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-		// renderTargetBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-		// renderTargetBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
-		// renderTargetBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-		// renderTargetBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
-		// renderTargetBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-		// renderTargetBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-		renderTargetBlendDesc.BlendEnable = FALSE; // ブレンディングを無効化
-		renderTargetBlendDesc.LogicOpEnable = FALSE;
-		renderTargetBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-		blendDesc.RenderTarget[0] = renderTargetBlendDesc;
-
-		//========================================
-		// RasterizerStateの設定を行う
-		D3D12_RASTERIZER_DESC rasterizerDesc{};
-		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-		rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-
-		//========================================
-		// Shaderをcompileする
-		Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(L"resources/shader/Object3d.VS.hlsl", L"vs_6_0");
-		if(!vertexShaderBlob) {
-			throw std::runtime_error("ENGINE MESSAGE: Object3d Failed to compile vertex shader :(");
-		}
-		Log("Object3d Vertex shader created successfully :)", LogLevel::Success);
-
-		Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Object3d.PS.hlsl", L"ps_6_0");
-		if(!pixelShaderBlob) {
-			throw std::runtime_error("ENGINE MESSAGE: Object3d Failed to compile pixel shader :(");
-		}
-		Log("Object3d Pixel shader state created successfully :)", LogLevel::Success);
-
-		//========================================
-		// PSOを生成する
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-		graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
-		graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-		graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
-		graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
-		graphicsPipelineStateDesc.BlendState = blendDesc;
-		graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-		graphicsPipelineStateDesc.NumRenderTargets = 1;
-		graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-		graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		graphicsPipelineStateDesc.SampleDesc.Count = 1;
-		graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
-		//========================================
-		// DepthStencilStateの設定を行う
-		D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-		depthStencilDesc.DepthEnable = true;
-		depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-		depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-		graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-		graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-		//========================================
-		// 実際に生成
-		HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-			IID_PPV_ARGS(&graphicsPipelineState_));
-		if(FAILED(hr)) {
-			throw std::runtime_error("ENGINE MESSAGE: Object3d Failed to create graphics pipeline state :(");
-		}
+		// NOTE: Object3D固有設定はRecipeに残し、PSO生成の定型処理だけBuilderへ委譲する。
+		PipelineBuilder builder(*dxCore_->GetDevice().Get(), *dxCore_);
+		graphicsPipelineState_ = builder.CreateGraphicsPipeline(CreatePipelineRecipe());
 		Log("Object3d Graphics pipeline state created successfully :)", LogLevel::Success);
 	}
 }

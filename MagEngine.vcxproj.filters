@@ -95,10 +95,19 @@
     <ClCompile Include="engine\render\CloudRenderPass.cpp">
       <Filter>engine\render</Filter>
     </ClCompile>
+    <ClCompile Include="engine\render\LineRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
     <ClCompile Include="engine\render\OpaqueRenderPass.cpp">
       <Filter>engine\render</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\ParticleRenderPass.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\PipelineBuilder.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\PipelineRecipe.cpp">
       <Filter>engine\render</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\PostEffectRenderPass.cpp">
@@ -111,6 +120,9 @@
       <Filter>engine\render</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\RenderGraph.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\RenderTransitionExecutor.cpp">
       <Filter>engine\render</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\RenderWorld.cpp">
@@ -408,10 +420,19 @@
     <ClInclude Include="engine\render\IRenderPass.h">
       <Filter>engine\render</Filter>
     </ClInclude>
+    <ClInclude Include="engine\render\LineRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
     <ClInclude Include="engine\render\OpaqueRenderPass.h">
       <Filter>engine\render</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\ParticleRenderPass.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\PipelineBuilder.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\PipelineRecipe.h">
       <Filter>engine\render</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\PostEffectRenderPass.h">
@@ -427,6 +448,9 @@
       <Filter>engine\render</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\RenderGraph.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\RenderTransitionExecutor.h">
       <Filter>engine\render</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\RenderWorld.h">
@@ -526,6 +550,9 @@
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="engine\postEffect\grayscale\GrayscaleEffect.h">
+      <Filter>engine\postEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\postEffect\PostEffectParameterSet.h">
       <Filter>engine\postEffect</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\particle\ParticleSetup.h">

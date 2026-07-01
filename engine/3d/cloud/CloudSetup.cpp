@@ -9,6 +9,7 @@
 #include "CloudSetup.h"
 #include "DirectXCore.h"
 #include "Logger.h"
+#include "engine/render/PipelineBuilder.h"
 #include <stdexcept>
 using namespace Logger;
 ///=============================================================================
@@ -132,95 +133,45 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						 グラフィックスパイプラインの作成
+	PipelineRecipe CloudSetup::CreateDefaultRecipe(ID3D12RootSignature *rootSignature) {
+		PipelineRecipe recipe{};
+		recipe.vertexShader = {L"resources/shader/Cloud.VS.hlsl", L"main", L"vs_6_0"};
+		recipe.pixelShader = {L"resources/shader/Cloud.PS.hlsl", L"main", L"ps_6_0"};
+		recipe.rootSignature = rootSignature;
+		recipe.inputLayout = {
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		};
+		recipe.blendState.AlphaToCoverageEnable = FALSE;
+		recipe.blendState.IndependentBlendEnable = FALSE;
+		recipe.blendState.RenderTarget[0].BlendEnable = TRUE;
+		recipe.blendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		recipe.blendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		recipe.blendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		recipe.blendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+		recipe.blendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+		recipe.blendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		recipe.blendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		recipe.rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		recipe.rasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+		recipe.depthStencilState.DepthEnable = true;
+		recipe.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+		recipe.depthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		recipe.renderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		recipe.depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		recipe.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return recipe;
+	}
+
+	PipelineRecipe CloudSetup::CreatePipelineRecipe() const {
+		return CreateDefaultRecipe(rootSignature_.Get());
+	}
+
 	void CloudSetup::CreateGraphicsPipeline() {
-		//========================================
-		// RoorSignatureの作成
 		CreateRootSignature();
-
-		//========================================
-		// InputLayoutの設定を行う
-		D3D12_INPUT_ELEMENT_DESC elements[2] = {};
-		// 頂点データ（位置）
-		elements[0].SemanticName = "POSITION";
-		elements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-		elements[0].AlignedByteOffset = 0;
-
-		// テクスチャ座標データ
-		elements[1].SemanticName = "TEXCOORD";
-		elements[1].SemanticIndex = 0;
-		elements[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-		elements[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-		D3D12_INPUT_LAYOUT_DESC inputLayout{};
-		inputLayout.pInputElementDescs = elements;
-		inputLayout.NumElements = _countof(elements);
-
-		//========================================
-		// Shaderをcompileする
-		Microsoft::WRL::ComPtr<IDxcBlob> vs = dxCore_->CompileShader(L"resources/shader/Cloud.VS.hlsl", L"vs_6_0");
-		if (!vs) {
-			throw std::runtime_error("Cloud vertex shader compile failed.");
-		}
-		Log("Cloud Vertex shader created successfully :)", LogLevel::Success);
-
-		Microsoft::WRL::ComPtr<IDxcBlob> ps = dxCore_->CompileShader(L"resources/shader/Cloud.PS.hlsl", L"ps_6_0");
-		if (!ps) {
-			throw std::runtime_error("Cloud pixel shader compile failed.");
-		}
-		Log("Cloud Pixel shader created successfully :)", LogLevel::Success);
-
-		//========================================
-		// BlendStateの設定を行う（αブレンディング）
-		D3D12_BLEND_DESC blend{};
-		blend.AlphaToCoverageEnable = FALSE;
-		blend.IndependentBlendEnable = FALSE;
-		D3D12_RENDER_TARGET_BLEND_DESC rtBlend{};
-		rtBlend.BlendEnable = TRUE;
-		rtBlend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-		rtBlend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-		rtBlend.BlendOp = D3D12_BLEND_OP_ADD;
-		rtBlend.SrcBlendAlpha = D3D12_BLEND_ONE;
-		rtBlend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
-		rtBlend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-		rtBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-		blend.RenderTarget[0] = rtBlend;
-
-		//========================================
-		// RasterizerStateの設定を行う
-		D3D12_RASTERIZER_DESC raster{};
-		raster.CullMode = D3D12_CULL_MODE_NONE; // 両面描画
-		raster.FillMode = D3D12_FILL_MODE_SOLID;
-
-		//========================================
-		// PSOを生成する
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
-		desc.pRootSignature = rootSignature_.Get();
-		desc.InputLayout = inputLayout;
-		desc.VS = {vs->GetBufferPointer(), vs->GetBufferSize()};
-		desc.PS = {ps->GetBufferPointer(), ps->GetBufferSize()};
-		desc.BlendState = blend;
-		desc.RasterizerState = raster;
-		desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-		desc.NumRenderTargets = 1;
-		desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-		desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		desc.SampleDesc.Count = 1;
-
-		//========================================
-		// DepthStencilStateの設定を行う
-		D3D12_DEPTH_STENCIL_DESC depth{};
-		depth.DepthEnable = TRUE;
-		depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;	// 深度書き込みを有効に
-		depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; // Object3dと同じ比較関数
-		desc.DepthStencilState = depth;
-		desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-		//========================================
-		// 実際に生成
-		HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState_));
-		if (FAILED(hr)) {
-			throw std::runtime_error("Cloud graphics pipeline creation failed.");
-		}
+		// NOTE: Noise/SDF/Descriptor処理は描画データ側に残し、PSO生成の定型処理だけBuilderへ委譲する。
+		PipelineBuilder builder(*dxCore_->GetDevice().Get(), *dxCore_);
+		pipelineState_ = builder.CreateGraphicsPipeline(CreatePipelineRecipe());
 		Log("Cloud graphics pipeline created.", LogLevel::Success);
 	}
 }

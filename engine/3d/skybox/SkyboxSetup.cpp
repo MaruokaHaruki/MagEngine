@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "SkyboxSetup.h"
 #include "Logger.h"
+#include "engine/render/PipelineBuilder.h"
 using namespace Logger;
 ///=============================================================================
 ///                        namespace MagEngine
@@ -109,86 +110,39 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						 グラフィックスパイプラインの作成
+	PipelineRecipe SkyboxSetup::CreateDefaultRecipe(ID3D12RootSignature *rootSignature) {
+		PipelineRecipe recipe{};
+		recipe.vertexShader = {L"resources/shader/Skybox.VS.hlsl", L"main", L"vs_6_0"};
+		recipe.pixelShader = {L"resources/shader/Skybox.PS.hlsl", L"main", L"ps_6_0"};
+		recipe.rootSignature = rootSignature;
+		recipe.inputLayout = {
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		};
+		recipe.blendState.AlphaToCoverageEnable = FALSE;
+		recipe.blendState.IndependentBlendEnable = FALSE;
+		recipe.blendState.RenderTarget[0].BlendEnable = FALSE;
+		recipe.blendState.RenderTarget[0].LogicOpEnable = FALSE;
+		recipe.blendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		recipe.rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		recipe.rasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+		recipe.depthStencilState.DepthEnable = true;
+		recipe.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+		recipe.depthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		recipe.renderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		recipe.depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		recipe.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return recipe;
+	}
+
+	PipelineRecipe SkyboxSetup::CreatePipelineRecipe() const {
+		return CreateDefaultRecipe(rootSignature_.Get());
+	}
+
 	void SkyboxSetup::CreateGraphicsPipeline() {
-		//========================================
-		// RoorSignatureの作成
 		CreateRootSignature();
-
-		//========================================
-		// InputLayoutの設定を行う
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
-		// 頂点データ（位置のみ）
-		inputElementDescs[0].SemanticName = "POSITION";
-		inputElementDescs[0].SemanticIndex = 0;
-		inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-		D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-		inputLayoutDesc.pInputElementDescs = inputElementDescs;
-		inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-		//========================================
-		// BlendStateの設定を行う
-		D3D12_BLEND_DESC blendDesc{};
-		blendDesc.AlphaToCoverageEnable = FALSE;
-		blendDesc.IndependentBlendEnable = FALSE;
-		D3D12_RENDER_TARGET_BLEND_DESC renderTargetBlendDesc{};
-		renderTargetBlendDesc.BlendEnable = FALSE;
-		renderTargetBlendDesc.LogicOpEnable = FALSE;
-		renderTargetBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-		blendDesc.RenderTarget[0] = renderTargetBlendDesc;
-
-		//========================================
-		// RasterizerStateの設定を行う（スカイボックスは内側から見るため）
-		D3D12_RASTERIZER_DESC rasterizerDesc{};
-		rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE; // カリングを無効にして内側から見えるようにする
-		rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-
-		//========================================
-		// Shaderをcompileする
-		Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCore_->CompileShader(L"resources/shader/Skybox.VS.hlsl", L"vs_6_0");
-		if (!vertexShaderBlob) {
-			throw std::runtime_error("ENGINE MESSAGE: Skybox Failed to compile vertex shader :(");
-		}
-		Log("Skybox Vertex shader created successfully :)", LogLevel::Success);
-
-		Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCore_->CompileShader(L"resources/shader/Skybox.PS.hlsl", L"ps_6_0");
-		if (!pixelShaderBlob) {
-			throw std::runtime_error("ENGINE MESSAGE: Skybox Failed to compile pixel shader :(");
-		}
-		Log("Skybox Pixel shader created successfully :)", LogLevel::Success);
-
-		//========================================
-		// PSOを生成する
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-		graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
-		graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
-		graphicsPipelineStateDesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
-		graphicsPipelineStateDesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
-		graphicsPipelineStateDesc.BlendState = blendDesc;
-		graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
-		graphicsPipelineStateDesc.NumRenderTargets = 1;
-		graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-		graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		graphicsPipelineStateDesc.SampleDesc.Count = 1;
-		graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
-		//========================================
-		// DepthStencilStateの設定を行う（スカイボックスは最遠にする）
-		D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-		depthStencilDesc.DepthEnable = true;
-		depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // 深度書き込みを無効
-		depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-		graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-		graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-		//========================================
-		// 実際に生成
-		HRESULT hr = dxCore_->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-																	   IID_PPV_ARGS(&graphicsPipelineState_));
-		if (FAILED(hr)) {
-			throw std::runtime_error("ENGINE MESSAGE: Skybox Failed to create graphics pipeline state :(");
-		}
+		// NOTE: Cubemap用Descriptor設定は変更せず、PSO生成の定型処理だけBuilderへ委譲する。
+		PipelineBuilder builder(*dxCore_->GetDevice().Get(), *dxCore_);
+		graphicsPipelineState_ = builder.CreateGraphicsPipeline(CreatePipelineRecipe());
 		Log("Skybox Graphics pipeline state created successfully :)", LogLevel::Success);
 	}
 }

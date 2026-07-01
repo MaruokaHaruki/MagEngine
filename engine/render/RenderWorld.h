@@ -10,6 +10,7 @@
 
 namespace MagEngine {
 	class Cloud;
+	class LineManager;
 	class Object3d;
 	class Particle;
 	class Skybox;
@@ -47,6 +48,12 @@ namespace MagEngine {
 		bool visible = true;
 	};
 
+	struct LineRenderItem {
+		LineManager *lineManager = nullptr;
+		uint32_t submissionOrder = 0;
+		bool visible = true;
+	};
+
 	class RenderWorld {
 	public:
 		/// @brief 前フレームの非所有参照を消し、確保済み容量は再利用する
@@ -63,6 +70,9 @@ namespace MagEngine {
 
 		/// @brief Sprite描画対象を登録
 		void AddSprite(const SpriteRenderItem &item);
+
+		/// @brief Line描画対象を登録
+		void AddLine(const LineRenderItem &item);
 
 		/// @brief フレームで使用するCloudを登録
 		void SetCloud(const CloudRenderItem &item);
@@ -96,6 +106,11 @@ namespace MagEngine {
 			return spriteItems_;
 		}
 
+		/// @brief Line描画対象を取得
+		const std::vector<LineRenderItem> &GetLineItems() const {
+			return lineItems_;
+		}
+
 	private:
 		// NOTE: SceneやGameObjectの所有権は持たない。参照先は描画完了までScene側が保持する。
 		std::optional<SkyboxRenderItem> skyboxItem_;
@@ -103,7 +118,9 @@ namespace MagEngine {
 		std::vector<OpaqueRenderItem> opaqueItems_;
 		std::vector<TrailRenderItem> trailItems_;
 		std::vector<SpriteRenderItem> spriteItems_;
+		std::vector<LineRenderItem> lineItems_;
 		std::vector<ParticleRenderItem> particleItems_;
 		uint32_t nextSpriteSubmissionOrder_ = 0;
+		uint32_t nextLineSubmissionOrder_ = 0;
 	};
 }

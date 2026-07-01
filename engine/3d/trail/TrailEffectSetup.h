@@ -7,6 +7,7 @@
  * \note   トレイルレンダリング用のルートシグネチャとパイプライン設定を管理
  *********************************************************************/
 #pragma once
+#include "engine/render/PipelineRecipe.h"
 #include <d3d12.h>
 #include <stdexcept>
 #include <wrl/client.h>
@@ -86,6 +87,17 @@ namespace MagEngine {
 		 * \brief  グラフィックスパイプラインの作成
 		 */
 		void CreateGraphicsPipeline();
+
+		/**----------------------------------------------------------------------------
+		 * \brief  所有中のRootSignatureを使ってTrail用Recipeを作成
+		 */
+		PipelineRecipe CreatePipelineRecipe() const;
+
+	public:
+		/**----------------------------------------------------------------------------
+		 * \brief  Trail用PSO設定をRecipeとして作成
+		 */
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
 
 		///--------------------------------------------------------------
 		///						 メンバ変数

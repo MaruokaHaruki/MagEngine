@@ -12,12 +12,14 @@
 #include "IRenderPass.h"
 #include "RenderBarrierRecorder.h"
 #include "RenderGraph.h"
+#include "RenderTransitionExecutor.h"
 
 namespace MagEngine {
 	class CloudSetup;
 	class Object3dSetup;
 	class ParticleSetup;
 	class DirectXCore;
+	class LineManager;
 	class PostEffectManager;
 	class SkyboxSetup;
 	class SpriteSetup;
@@ -33,6 +35,7 @@ namespace MagEngine {
 		Trail,
 		Sprite,
 		Particle,
+		Line,
 		PostEffect,
 	};
 
@@ -57,9 +60,10 @@ namespace MagEngine {
 
 	class Renderer {
 	public:
-		void Initialize(SkyboxSetup &skyboxSetup, Object3dSetup &object3dSetup, CloudSetup &cloudSetup, TrailEffectSetup &trailEffectSetup, SpriteSetup &spriteSetup, ParticleSetup &particleSetup, DirectXCore &dxCore, PostEffectManager &postEffectManager, TextureManager &textureManager);
+		void Initialize(SkyboxSetup &skyboxSetup, Object3dSetup &object3dSetup, CloudSetup &cloudSetup, TrailEffectSetup &trailEffectSetup, SpriteSetup &spriteSetup, ParticleSetup &particleSetup, LineManager &lineManager, DirectXCore &dxCore, PostEffectManager &postEffectManager, TextureManager &textureManager);
 		void BeginFrameBarrierRecording();
 		void ValidateFrameBarriers() const;
+		void ReportSmokeTestDiagnostics() const;
 		void ExecutePhase(RenderPhase phase, RenderContext &renderContext, const RenderWorld &renderWorld);
 		void AddPass(RenderPassEntry entry);
 		const RenderGraph &GetRenderGraph() const {
@@ -76,5 +80,6 @@ namespace MagEngine {
 		std::vector<RenderPassEntry> renderPasses_;
 		RenderGraph renderGraph_;
 		RenderBarrierRecorder renderBarrierRecorder_{renderGraph_};
+		std::unique_ptr<RenderTransitionExecutor> renderTransitionExecutor_;
 	};
 }

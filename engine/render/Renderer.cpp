@@ -3,6 +3,7 @@
 #include "CloudRenderPass.h"
 #include "DirectXCore.h"
 #include "IRenderPass.h"
+#include "LineRenderPass.h"
 #include "OpaqueRenderPass.h"
 #include "ParticleRenderPass.h"
 #include "PostEffectRenderPass.h"
@@ -11,9 +12,11 @@
 #include "SkyboxRenderPass.h"
 #include "SpriteRenderPass.h"
 #include "TrailRenderPass.h"
+#include "Logger.h"
 
 #include <algorithm>
 #include <cassert>
+#include <format>
 #include <tuple>
 
 namespace MagEngine {
@@ -22,9 +25,39 @@ namespace MagEngine {
 		constexpr int32_t kSceneOpaqueOrder = 200;
 		constexpr int32_t kSceneCloudOrder = 300;
 		constexpr int32_t kSceneTrailOrder = 400;
+		constexpr int32_t kSceneLineOrder = 50;
 		constexpr int32_t kOverlaySpriteOrder = 100;
 		constexpr int32_t kPostOverlayParticleOrder = 100;
 		constexpr int32_t kPostProcessPostEffectOrder = 100;
+
+		RenderBarrierPoint ToBarrierPoint(RenderTransitionBoundary boundary) {
+			switch(boundary) {
+			case RenderTransitionBoundary::RenderTexturePreDraw:
+				return RenderBarrierPoint::RenderTexturePreDraw;
+			case RenderTransitionBoundary::RenderTexturePostDraw:
+				return RenderBarrierPoint::RenderTexturePostDraw;
+			case RenderTransitionBoundary::BeginPresentRenderTarget:
+				return RenderBarrierPoint::BeginPresentRenderTarget;
+			case RenderTransitionBoundary::BeforePresent:
+				return RenderBarrierPoint::BeforePresent;
+			}
+			return RenderBarrierPoint::RenderTexturePreDraw;
+		}
+
+		bool HasExecutedPlan(
+			const std::vector<RenderResourceBarrierRecord> &barriers,
+			const RenderResourceTransitionPlan &plan) {
+			if(!plan.boundary.has_value()) {
+				return false;
+			}
+			const RenderBarrierPoint point = ToBarrierPoint(*plan.boundary);
+			return std::any_of(barriers.begin(), barriers.end(), [&](const RenderResourceBarrierRecord &barrier) {
+				return barrier.resource == plan.resource &&
+					   barrier.beforeState == plan.beforeState &&
+					   barrier.afterState == plan.afterState &&
+					   barrier.point == point;
+			});
+		}
 	}
 
 	std::string_view ToString(RenderPassId passId) {
@@ -41,6 +74,8 @@ namespace MagEngine {
 			return "Sprite";
 		case RenderPassId::Particle:
 			return "Particle";
+		case RenderPassId::Line:
+			return "Line";
 		case RenderPassId::PostEffect:
 			return "PostEffect";
 		}
@@ -61,8 +96,9 @@ namespace MagEngine {
 		return "Unknown";
 	}
 
-	void Renderer::Initialize(SkyboxSetup &skyboxSetup, Object3dSetup &object3dSetup, CloudSetup &cloudSetup, TrailEffectSetup &trailEffectSetup, SpriteSetup &spriteSetup, ParticleSetup &particleSetup, DirectXCore &dxCore, PostEffectManager &postEffectManager, TextureManager &textureManager) {
+	void Renderer::Initialize(SkyboxSetup &skyboxSetup, Object3dSetup &object3dSetup, CloudSetup &cloudSetup, TrailEffectSetup &trailEffectSetup, SpriteSetup &spriteSetup, ParticleSetup &particleSetup, LineManager &lineManager, DirectXCore &dxCore, PostEffectManager &postEffectManager, TextureManager &textureManager) {
 		renderPasses_.clear();
+		renderTransitionExecutor_.reset();
 		renderGraph_ = RenderGraph{};
 		renderGraph_.AddExternalResource(RenderResourceId::SceneColor);
 		renderGraph_.AddExternalResource(RenderResourceId::SceneDepth);
@@ -136,6 +172,16 @@ namespace MagEngine {
 			},
 			std::make_unique<ParticleRenderPass>(particleSetup)});
 		AddPass(RenderPassEntry{
+			RenderPassId::Line,
+			RenderPhase::Scene,
+			kSceneLineOrder,
+			true,
+			{
+				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
+				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
+			},
+			std::make_unique<LineRenderPass>(lineManager)});
+		AddPass(RenderPassEntry{
 			RenderPassId::PostEffect,
 			RenderPhase::PostProcess,
 			kPostProcessPostEffectOrder,
@@ -148,6 +194,8 @@ namespace MagEngine {
 		SortPasses();
 		renderGraph_.Build(renderPasses_);
 		renderGraph_.Validate(renderPasses_);
+		renderTransitionExecutor_ = std::make_unique<RenderTransitionExecutor>(renderGraph_, renderPasses_, renderBarrierRecorder_, dxCore);
+		dxCore.SetRenderTransitionExecutor(renderTransitionExecutor_.get());
 	}
 
 	void Renderer::BeginFrameBarrierRecording() {
@@ -155,7 +203,95 @@ namespace MagEngine {
 	}
 
 	void Renderer::ValidateFrameBarriers() const {
-		renderGraph_.ValidateRecordedResourceStates(renderPasses_);
+		const RenderGraphValidationResult result = renderGraph_.ValidateRecordedResourceStatesForTesting(renderPasses_);
+		if(!result.isValid) {
+			// NOTE: assert直前に詳細を残し、Debug Layer停止時でもRenderGraph側の原因を追えるようにする。
+			Logger::Log("RenderGraph frame barrier validation failed.", Logger::LogLevel::Error);
+			for(RenderGraphValidationError error : result.errors) {
+				Logger::Log(std::format("RenderGraph validation error: {}", ToString(error)), Logger::LogLevel::Error);
+			}
+			ReportSmokeTestDiagnostics();
+			assert(result.isValid && "RenderGraph frame barrier validation failed.");
+		}
+	}
+
+	void Renderer::ReportSmokeTestDiagnostics() const {
+#ifdef _DEBUG
+		const RenderGraphValidationResult result = renderGraph_.ValidateRecordedResourceStatesForTesting(renderPasses_);
+		Logger::Log(result.isValid ? "RenderGraph frame validation: Success." : "RenderGraph frame validation: Failed.",
+					result.isValid ? Logger::LogLevel::Success : Logger::LogLevel::Error);
+		for(RenderGraphValidationError error : result.errors) {
+			Logger::Log(std::format("RenderGraph validation error: {}", ToString(error)), Logger::LogLevel::Error);
+		}
+
+		Logger::Log(std::format("RenderPass execution order: {}", renderPasses_.size()), Logger::LogLevel::Info);
+		for(const RenderPassEntry &entry : renderPasses_) {
+			// NOTE: Smoke Test時に固定順序とPhaseの崩れをログだけで確認できるようにする。
+			Logger::Log(std::format("RenderPass {} Phase={} Order={} Enabled={}",
+									ToString(entry.id),
+									ToString(entry.phase),
+									entry.order,
+									entry.enabled),
+						Logger::LogLevel::Info);
+		}
+
+		const std::vector<RenderResourceBarrierRecord> &barriers = renderGraph_.GetManualBarriers();
+		Logger::Log(std::format("RenderGraph recorded manual barriers: {}", barriers.size()), Logger::LogLevel::Info);
+		for(const RenderResourceBarrierRecord &barrier : barriers) {
+			Logger::Log(std::format("Barrier Seq={} Resource={} {} -> {} Point={}",
+									barrier.sequence,
+									ToString(barrier.resource),
+									ToString(barrier.beforeState),
+									ToString(barrier.afterState),
+									ToString(barrier.point)),
+						Logger::LogLevel::Info);
+		}
+
+		const std::vector<RenderResourceTransitionPlan> plans = renderGraph_.BuildTransitionPlan(renderPasses_);
+		const RenderTransitionPlanComparisonResult comparison = renderGraph_.CompareTransitionPlanWithManualBarriers(renderPasses_);
+		Logger::Log(std::format("RenderGraph transition plan: {} manual barriers: {} match={}",
+								plans.size(),
+								barriers.size(),
+								comparison.isMatch),
+					comparison.isMatch ? Logger::LogLevel::Success : Logger::LogLevel::Warning);
+		for(const RenderResourceTransitionPlan &plan : plans) {
+			const bool autoTransitionEnabled = RenderTransitionExecutor::IsAutoTransitionSupported(plan);
+			const bool executed = HasExecutedPlan(barriers, plan);
+			Logger::Log(std::format("Plan Seq={} Resource={} {} -> {} Boundary={} AutoTransitionEnabled={} ExecutionResult={}",
+									plan.sequenceIndex,
+									ToString(plan.resource),
+									ToString(plan.beforeState),
+									ToString(plan.afterState),
+									plan.boundary.has_value() ? ToString(*plan.boundary) : "None",
+									autoTransitionEnabled,
+									executed ? "Executed" : "NotExecuted"),
+						Logger::LogLevel::Info);
+		}
+		for(const RenderResourceTransitionPlan &missing : comparison.missingManualBarriers) {
+			Logger::Log(std::format("Missing manual barrier: Seq={} Resource={} {} -> {}",
+									missing.sequenceIndex,
+									ToString(missing.resource),
+									ToString(missing.beforeState),
+									ToString(missing.afterState)),
+						Logger::LogLevel::Warning);
+		}
+		for(const RenderResourceBarrierRecord &unexpected : comparison.unexpectedManualBarriers) {
+			Logger::Log(std::format("Unexpected manual barrier: Seq={} Resource={} {} -> {} Point={}",
+									unexpected.sequence,
+									ToString(unexpected.resource),
+									ToString(unexpected.beforeState),
+									ToString(unexpected.afterState),
+									ToString(unexpected.point)),
+						Logger::LogLevel::Warning);
+		}
+		for(const RenderTransitionMismatch &mismatch : comparison.mismatches) {
+			Logger::Log(std::format("Transition mismatch: {} ExpectedSeq={} ActualSeq={}",
+									ToString(mismatch.type),
+									mismatch.expected.sequenceIndex,
+									mismatch.actual.sequence),
+						Logger::LogLevel::Warning);
+		}
+#endif
 	}
 
 	void Renderer::ExecutePhase(RenderPhase phase, RenderContext &renderContext, const RenderWorld &renderWorld) {

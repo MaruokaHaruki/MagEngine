@@ -9,6 +9,7 @@
 #pragma once
 #include "Camera.h"
 #include "DirectXCore.h"
+#include "engine/render/PipelineRecipe.h"
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
@@ -35,6 +36,13 @@ namespace MagEngine {
 
 		/// @brief グラフィックスパイプラインの作成
 		void CreateGraphicsPipeline();
+
+		/// @brief 所有中のRootSignatureを使ってObject3D用Recipeを作成
+		PipelineRecipe CreatePipelineRecipe() const;
+
+	public:
+		/// @brief Object3D用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
 
 		///--------------------------------------------------------------
 		///							入出力関数

@@ -7,11 +7,98 @@
  * \note   ゲームループと初期化・終了処理の実装
  *********************************************************************/
 #include "MagFramework.h"
+#include "Logger.h"
 #include "WinApp.h"
 #include "engine/render/RenderContext.h"
+
+#include <format>
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
+	namespace {
+		const char *ToString(PostEffectManager::PostEffectResourceSlot slot) {
+			switch(slot) {
+			case PostEffectManager::PostEffectResourceSlot::Ping:
+				return "Ping";
+			case PostEffectManager::PostEffectResourceSlot::Pong:
+				return "Pong";
+			}
+			return "Unknown";
+		}
+
+		const char *ToString(PostEffectManager::PostEffectStage stage) {
+			switch(stage) {
+			case PostEffectManager::PostEffectStage::BeforeEffect:
+				return "BeforeEffect";
+			case PostEffectManager::PostEffectStage::AfterEffect:
+				return "AfterEffect";
+			}
+			return "Unknown";
+		}
+
+		const char *ToString(PostEffectManager::PostEffectTransitionMismatchReason reason) {
+			switch(reason) {
+			case PostEffectManager::PostEffectTransitionMismatchReason::MissingRecordedTransition:
+				return "MissingRecordedTransition";
+			case PostEffectManager::PostEffectTransitionMismatchReason::UnexpectedRecordedTransition:
+				return "UnexpectedRecordedTransition";
+			case PostEffectManager::PostEffectTransitionMismatchReason::SlotMismatch:
+				return "SlotMismatch";
+			case PostEffectManager::PostEffectTransitionMismatchReason::BeforeStateMismatch:
+				return "BeforeStateMismatch";
+			case PostEffectManager::PostEffectTransitionMismatchReason::AfterStateMismatch:
+				return "AfterStateMismatch";
+			case PostEffectManager::PostEffectTransitionMismatchReason::StageMismatch:
+				return "StageMismatch";
+			case PostEffectManager::PostEffectTransitionMismatchReason::SequenceMismatch:
+				return "SequenceMismatch";
+			}
+			return "Unknown";
+		}
+
+		void ReportPostEffectInternalDiagnostics(const PostEffectManager &postEffectManager) {
+			const auto &plan = postEffectManager.GetResourceTransitionPlan();
+			const auto &executed = postEffectManager.GetResourceTransitions();
+			const PostEffectManager::PostEffectTransitionComparisonResult comparison =
+				postEffectManager.CompareResourceTransitionPlanWithRecordedTransitions();
+
+			Logger::Log(std::format("PostEffect Internal Plan: Count={}", plan.size()), Logger::LogLevel::Info);
+			for(const PostEffectManager::PostEffectResourceTransition &transition : plan) {
+				Logger::Log(std::format("PostEffect Internal Plan Seq={} Slot={} ResourceIndex={} Stage={} 0x{:X} -> 0x{:X}",
+										transition.sequence,
+										ToString(transition.slot),
+										transition.resourceIndex,
+										ToString(transition.stage),
+										static_cast<uint32_t>(transition.beforeState),
+										static_cast<uint32_t>(transition.afterState)),
+							Logger::LogLevel::Info);
+			}
+
+			Logger::Log(std::format("PostEffect Internal Executed: Count={}", executed.size()), Logger::LogLevel::Info);
+			for(const PostEffectManager::PostEffectResourceTransition &transition : executed) {
+				Logger::Log(std::format("PostEffect Internal Executed Seq={} Slot={} ResourceIndex={} Stage={} 0x{:X} -> 0x{:X}",
+										transition.sequence,
+										ToString(transition.slot),
+										transition.resourceIndex,
+										ToString(transition.stage),
+										static_cast<uint32_t>(transition.beforeState),
+										static_cast<uint32_t>(transition.afterState)),
+							Logger::LogLevel::Info);
+			}
+
+			Logger::Log(std::format("PostEffect Internal Mismatch: Count={} Match={}",
+									comparison.mismatches.size(),
+									comparison.isMatch),
+						comparison.isMatch ? Logger::LogLevel::Success : Logger::LogLevel::Warning);
+			for(const PostEffectManager::PostEffectTransitionMismatch &mismatch : comparison.mismatches) {
+				Logger::Log(std::format("PostEffect Internal Mismatch Reason={} ExpectedSeq={} ActualSeq={}",
+										ToString(mismatch.reason),
+										mismatch.expected.sequence,
+										mismatch.actual.sequence),
+							Logger::LogLevel::Warning);
+			}
+		}
+	}
 
 	///=============================================================================
 	///						実行
@@ -172,7 +259,7 @@ namespace MagEngine {
 		// トレイルエフェクトセットアップにSrvSetupを設定
 		trailEffectSetup_->SetSrvSetup(srvSetup_.get());
 		// NOTE: Scene/Overlay/PostOverlay/PostProcessの順に実行し、Present前の合成までPassで管理する。
-		renderer_.Initialize(*skyboxSetup_, *object3dSetup_, *cloudSetup_, *trailEffectSetup_, *spriteSetup_, *particleSetup_, *dxCore_, *postEffectManager_, *textureManager_);
+		renderer_.Initialize(*skyboxSetup_, *object3dSetup_, *cloudSetup_, *trailEffectSetup_, *spriteSetup_, *particleSetup_, *lineManager_, *dxCore_, *postEffectManager_, *textureManager_);
 
 		///--------------------------------------------------------------
 		///						 トレイルエフェクトマネージャ
@@ -408,9 +495,6 @@ namespace MagEngine {
 		renderer_.BeginFrameBarrierRecording();
 		dxCore_->RenderTexturePreDraw();
 		srvSetup_->PreDraw();
-		//========================================
-		//  Lineの描画
-		lineManager_->Draw();
 	}
 
 	///=============================================================================
@@ -484,6 +568,8 @@ namespace MagEngine {
 	void MagFramework::OpaqueRender() {
 		renderWorld_.Clear();
 		sceneManager_->RegisterRenderables(renderWorld_);
+		// NOTE: HUD/LockOnHUD/Debug LineはLineManagerに集約されるため、描画実行はLineRenderPassへ委譲する。
+		renderWorld_.AddLine(LineRenderItem{lineManager_.get()});
 
 		auto commandList = dxCore_->GetCommandList();
 		assert(commandList);
@@ -517,6 +603,37 @@ namespace MagEngine {
 		if (ImGui::Checkbox("Vignette", &vignetteEnabled)) {
 			postEffectManager_->SetEffectEnabled(PostEffectManager::EffectType::Vignette, vignetteEnabled);
 		}
+
+#ifdef _DEBUG
+		ImGui::Separator();
+		ImGui::Text("RenderGraph barriers: %zu", renderer_.GetRenderGraph().GetManualBarriers().size());
+		const std::vector<PostEffectManager::PostEffectResourceTransition> &plan = postEffectManager_->GetResourceTransitionPlan();
+		const std::vector<PostEffectManager::PostEffectResourceTransition> &transitions = postEffectManager_->GetResourceTransitions();
+		const PostEffectManager::PostEffectTransitionComparisonResult comparison =
+			postEffectManager_->CompareResourceTransitionPlanWithRecordedTransitions();
+		ImGui::Text("PostEffect internal plan: %zu", plan.size());
+		ImGui::Text("PostEffect internal executed: %zu", transitions.size());
+		ImGui::Text("PostEffect internal mismatch: %zu", comparison.mismatches.size());
+		for(size_t i = 0; i < transitions.size(); ++i) {
+			const PostEffectManager::PostEffectResourceTransition &transition = transitions[i];
+			// NOTE: PostEffect内部遷移は簡易RenderGraph外なので、Smoke Test用に直近フレームの実行結果だけ見せる。
+			ImGui::Text("Transition %zu: Seq=%u %s[%u] %s 0x%X -> 0x%X",
+						i,
+						transition.sequence,
+						ToString(transition.slot),
+						transition.resourceIndex,
+						ToString(transition.stage),
+						static_cast<uint32_t>(transition.beforeState),
+						static_cast<uint32_t>(transition.afterState));
+		}
+		if(ImGui::Button("Report Render Diagnostics")) {
+			renderer_.ReportSmokeTestDiagnostics();
+			ReportPostEffectInternalDiagnostics(*postEffectManager_);
+			if(dxCore_) {
+				dxCore_->ReportDebugMessages();
+			}
+		}
+#endif
 
 		ImGui::End();
 	}

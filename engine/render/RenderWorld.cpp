@@ -7,8 +7,10 @@ namespace MagEngine {
 		opaqueItems_.clear();
 		trailItems_.clear();
 		spriteItems_.clear();
+		lineItems_.clear();
 		particleItems_.clear();
 		nextSpriteSubmissionOrder_ = 0;
+		nextLineSubmissionOrder_ = 0;
 	}
 
 	void RenderWorld::AddOpaque(const OpaqueRenderItem &item) {
@@ -28,6 +30,13 @@ namespace MagEngine {
 		// NOTE: 透明Spriteは登録順が見た目に直結するため、RenderWorld側で決定的な順序を発行する。
 		registeredItem.submissionOrder = nextSpriteSubmissionOrder_++;
 		spriteItems_.push_back(registeredItem);
+	}
+
+	void RenderWorld::AddLine(const LineRenderItem &item) {
+		LineRenderItem registeredItem = item;
+		// NOTE: LineManagerは一括描画型のため、コマンド分解せずManager参照だけを描画フレームへ渡す。
+		registeredItem.submissionOrder = nextLineSubmissionOrder_++;
+		lineItems_.push_back(registeredItem);
 	}
 
 	void RenderWorld::SetCloud(const CloudRenderItem &item) {

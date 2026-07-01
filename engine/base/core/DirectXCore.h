@@ -26,7 +26,9 @@
 #include "Logger.h"
 #include "FullscreenPassRendere.h"
 #include "GrayscaleEffect.h"
+#include "engine/render/PipelineRecipe.h"
 #include "engine/render/RenderGraph.h"
+#include "engine/render/RenderTransitionExecutor.h"
 #include "WinApp.h"
 //========================================
 // ReportLiveObj
@@ -60,7 +62,7 @@ namespace MagEngine {
 	class PostEffectManager;
 	class RenderBarrierRecorder;
 	class TextureManager;
-	class DirectXCore {
+	class DirectXCore : public IRenderResourceResolver {
 	public:
 		///--------------------------------------------------------------
 		///						 メンバ関数
@@ -71,6 +73,17 @@ namespace MagEngine {
 
 		/// @brief フレーム中の手動Barrier発行をRenderGraph記録と同期する
 		void SetRenderBarrierRecorder(RenderBarrierRecorder *recorder);
+
+		/// @brief Transition Planから外部境界Barrierを発行するExecutorを設定
+		void SetRenderTransitionExecutor(RenderTransitionExecutor *executor);
+
+		/// @brief RenderGraph外の内部描画処理が同じBarrier発行口を使うための非所有参照
+		RenderBarrierRecorder *GetRenderBarrierRecorder() const {
+			return renderBarrierRecorder_;
+		}
+
+		/// @brief RenderGraph外で論理ResourceIdを実D3D12 Resourceへ解決する
+		ID3D12Resource *ResolveRenderResource(RenderResourceId resourceId) override;
 
 		//========================================
 		/// @brief 描画前処理
@@ -110,6 +123,9 @@ namespace MagEngine {
 		//========================================
 		/// @brief SetupErrorHandling エラーハンドリングの設定
 		void SetupErrorHandling();
+
+		/// @brief Debug LayerのInfoQueue設定
+		void ConfigureDebugInfoQueue();
 
 		//========================================
 		/// @brief CreateCommandQueue コマンドキューの生成
@@ -174,6 +190,9 @@ namespace MagEngine {
 		//========================================
 		/// @brief CheckResourceLeaks リソースリークのチェック
 		void CheckResourceLeaks();
+
+		/// @brief D3D12 Debug Layerに蓄積されたメッセージをDebug出力へ流す
+		void ReportDebugMessages() const;
 
 		//========================================
 		/// @brief CreateDXCCompiler DXCコンパイラーの初期化
@@ -266,6 +285,9 @@ namespace MagEngine {
 		//========================================
 		/// @brief CreateOffScreenPipeLine オフスクリーン用のパイプラインを生成
 		void CreateOffScreenPipeLine();
+
+		/// @brief RenderTexture表示用Fullscreen PSO設定をRecipeとして作成
+		PipelineRecipe CreateRenderTexturePipelineRecipe() const;
 
 		///--------------------------------------------------------------
 		///                        静的メンバ関数
@@ -472,6 +494,7 @@ namespace MagEngine {
 		std::array<FrameContext, FramesInFlight> frameContexts_;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
 		RenderBarrierRecorder *renderBarrierRecorder_ = nullptr;
+		RenderTransitionExecutor *renderTransitionExecutor_ = nullptr;
 		uint32_t currentFrameContextIndex_ = 0;
 
 		//========================================

@@ -10,6 +10,7 @@
 #include "DirectXCore.h"
 #include "Camera.h"
 #include "SrvSetup.h"
+#include "engine/render/PipelineRecipe.h"
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
@@ -44,6 +45,9 @@ namespace MagEngine {
 		*/
 		void CreateGraphicsPipeline();
 
+		/// @brief 所有中のRootSignatureを使ってLine用Recipeを作成
+		PipelineRecipe CreateRecipe() const;
+
 		///--------------------------------------------------------------
 		///                         入出力関数
 	public:
@@ -69,6 +73,9 @@ namespace MagEngine {
 		* \return
 		*/
 		Camera *GetDefaultCamera() { return defaultCamera_; }
+
+		/// @brief Line用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
 
 
 		///--------------------------------------------------------------

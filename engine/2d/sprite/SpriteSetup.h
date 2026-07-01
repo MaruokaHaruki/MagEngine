@@ -11,6 +11,7 @@
 ///=============================================================================
 ///						インクルード
 #include "DirectXCore.h"
+#include "engine/render/PipelineRecipe.h"
 
 ///=============================================================================
 ///                        namespace MagEngine
@@ -81,6 +82,9 @@ namespace MagEngine {
 			return *textureManager_;
 		}
 
+		/// @brief Sprite用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
+
 		///--------------------------------------------------------------
 		///						 プライベート関数
 	private:
@@ -107,6 +111,9 @@ namespace MagEngine {
 		 *         - デプスステンシルステートの設定
 		 */
 		void CreateGraphicsPipeline();
+
+		/// @brief 所有中のRootSignatureを使ってSprite用Recipeを作成
+		PipelineRecipe CreateRecipe() const;
 
 		///--------------------------------------------------------------
 		///						 メンバ変数

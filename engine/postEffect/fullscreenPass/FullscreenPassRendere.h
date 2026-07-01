@@ -6,6 +6,8 @@
  * \date   July 2025
  *********************************************************************/
 #pragma once
+#include "PostEffectParameterSet.h"
+#include "engine/render/PipelineRecipe.h"
 //========================================
 // 標準ライブラリ
 #include <string>
@@ -44,6 +46,18 @@ namespace MagEngine {
 
 		void CreateRootSignature();
 
+		/// \brief 所有中のRootSignatureとShader PathからRecipeを作成
+		PipelineRecipe CreatePipelineRecipe() const;
+
+		/// \brief Fullscreen描画用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature, const std::wstring &vertexShaderPath, const std::wstring &pixelShaderPath);
+
+		/// \brief Fullscreen描画用Root Parameter配置を取得
+		static PostEffectBindingLayout CreateBindingLayout();
+
+		/// \brief 所有RootSignatureと一致するRoot Parameter配置を取得
+		PostEffectBindingLayout GetBindingLayout() const;
+
 		///--------------------------------------------------------------
 		///							メンバ変数
 	private:
@@ -66,4 +80,13 @@ namespace MagEngine {
 		// ピクセルシェーダーのパス
 		std::wstring pixelShaderPath_;
 	};
+
+	inline PostEffectBindingLayout FullscreenPassRendere::CreateBindingLayout() {
+		// NOTE: Fullscreen描画の入力TextureもRootParameter 0のSRVとして扱う既存仕様を明示する。
+		return PostEffectBindingLayout{0, PostEffectBindingLayout::kInvalidRootParameter};
+	}
+
+	inline PostEffectBindingLayout FullscreenPassRendere::GetBindingLayout() const {
+		return CreateBindingLayout();
+	}
 }

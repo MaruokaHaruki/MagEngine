@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "DirectXCore.h"
 #include "engine/render/RenderBarrierRecorder.h"
+#include "engine/render/PipelineBuilder.h"
 //========================================
 // 標準ライブラリ
 #include <vector>
@@ -43,6 +44,22 @@ namespace MagEngine {
 
 	void DirectXCore::SetRenderBarrierRecorder(RenderBarrierRecorder *recorder) {
 		renderBarrierRecorder_ = recorder;
+	}
+
+	void DirectXCore::SetRenderTransitionExecutor(RenderTransitionExecutor *executor) {
+		renderTransitionExecutor_ = executor;
+	}
+
+	ID3D12Resource *DirectXCore::ResolveRenderResource(RenderResourceId resourceId) {
+		switch(resourceId) {
+		case RenderResourceId::SceneColor:
+			return renderTextureResources_[renderResourceIndex_].Get();
+		case RenderResourceId::PresentColor:
+			return swapChainResource_[currentBackBufferIndex_].Get();
+		case RenderResourceId::SceneDepth:
+			return depthStencilResource_.Get();
+		}
+		return nullptr;
 	}
 
 	void DirectXCore::TransitionResource(
@@ -175,10 +192,16 @@ namespace MagEngine {
 #ifdef _DEBUG
 		debugController_ = nullptr;
 		if(SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController_)))) {
-			// デバックレイヤーを有効化する
+			// NOTE: Device生成前だけ有効。Graphics Tools未導入環境では起動継続する。
 			debugController_->EnableDebugLayer();
-			// GPU側でもチェックを行うようにする
+			Logger::Log("D3D12 Debug Layer enabled.", Logger::LogLevel::Success);
+#if defined(MAGENGINE_ENABLE_GPU_VALIDATION)
+			// NOTE: GPU-Based Validationは重いため、明示フラグを定義した開発時だけ有効化する。
 			debugController_->SetEnableGPUBasedValidation(TRUE);
+			Logger::Log("D3D12 GPU-Based Validation enabled.", Logger::LogLevel::Warning);
+#endif
+		} else {
+			Logger::Log("D3D12 Debug Layer is unavailable. Install Graphics Tools to enable it.", Logger::LogLevel::Warning);
 		}
 #endif
 	}
@@ -248,16 +271,18 @@ namespace MagEngine {
 	///=============================================================================
 	///						エラー・警告の場合即停止(初期化完了のあとに行う)
 	void DirectXCore::SetupErrorHandling() {
+		ConfigureDebugInfoQueue();
+	}
+
+	///=============================================================================
+	///						Debug InfoQueueの設定
+	void DirectXCore::ConfigureDebugInfoQueue() {
 #ifdef _DEBUG
 		infoQueue_ = nullptr;
 		if(SUCCEEDED(device_->QueryInterface(IID_PPV_ARGS(&infoQueue_)))) {
-			/// やべぇエラー時に停止
+			// NOTE: Smoke Testでは重大度の高い破綻だけ停止し、WARNINGはログ確認対象にする。
 			infoQueue_->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-			/// エラー時に停止
 			infoQueue_->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-			/// 警告時に停止
-			// NOTE:開放を忘れた場合、以下のコードをコメントアウトすること
-			infoQueue_->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
 			//=======================================
 			// 特定のエラーの無視など
 			// 抑制するメッセージのID
@@ -274,6 +299,9 @@ namespace MagEngine {
 			filter.DenyList.pSeverityList = severities;
 			// 指定したメッセージの表示を抑制する
 			infoQueue_->PushStorageFilter(&filter);
+			Logger::Log("D3D12 InfoQueue configured. Break on CORRUPTION and ERROR.", Logger::LogLevel::Info);
+		} else {
+			Logger::Log("D3D12 InfoQueue is unavailable.", Logger::LogLevel::Warning);
 		}
 #endif //  _DEBUG
 	}
@@ -391,6 +419,10 @@ namespace MagEngine {
 	///=============================================================================
 	///						TransitionBarrierを張る
 	void DirectXCore::SetupTransitionBarrier() {
+		if(renderTransitionExecutor_) {
+			renderTransitionExecutor_->ExecuteBoundary(*commandList_.Get(), RenderTransitionBoundary::BeginPresentRenderTarget);
+			return;
+		}
 		TransitionResource(
 			RenderResourceId::PresentColor,
 			*swapChainResource_[currentBackBufferIndex_].Get(),
@@ -436,12 +468,16 @@ namespace MagEngine {
 	void DirectXCore::CloseCommandList() {
 		// 画面に書く処理はすべて終わり。画面に映すので状態を遷移
 		// 今回はRenderTargetからPresebtにする
-		TransitionResource(
-			RenderResourceId::PresentColor,
-			*swapChainResource_[currentBackBufferIndex_].Get(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			D3D12_RESOURCE_STATE_PRESENT,
-			RenderBarrierPoint::BeforePresent);
+		if(renderTransitionExecutor_) {
+			renderTransitionExecutor_->ExecuteBoundary(*commandList_.Get(), RenderTransitionBoundary::BeforePresent);
+		} else {
+			TransitionResource(
+				RenderResourceId::PresentColor,
+				*swapChainResource_[currentBackBufferIndex_].Get(),
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
+				D3D12_RESOURCE_STATE_PRESENT,
+				RenderBarrierPoint::BeforePresent);
+		}
 		// コマンドリストの内容を確定させる。すべてのコマンドを積んでからCloseすること
 		hr_ = commandList_->Close();
 		assert(SUCCEEDED(hr_));
@@ -521,13 +557,43 @@ namespace MagEngine {
 	///=============================================================================
 	///						リソースリークチェック
 	void DirectXCore::CheckResourceLeaks() {
+#ifdef _DEBUG
 		Microsoft::WRL::ComPtr<IDXGIDebug> debug;
 		if(SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
-			// 開放を忘れてエラーが出た場合、205行目をコメントアウト
+			// NOTE: 外部ライブラリ由来のLive Objectも出るため、Smoke Testでは内容を確認して分類する。
 			debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 			debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
 			debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
+		} else {
+			Logger::Log("DXGI debug interface is unavailable. Live Object report skipped.", Logger::LogLevel::Warning);
 		}
+#endif
+	}
+
+	///=============================================================================
+	///						Debug Layerメッセージの出力
+	void DirectXCore::ReportDebugMessages() const {
+#ifdef _DEBUG
+		if(!infoQueue_) {
+			Logger::Log("D3D12 InfoQueue is unavailable. Debug messages cannot be reported.", Logger::LogLevel::Warning);
+			return;
+		}
+
+		const UINT64 messageCount = infoQueue_->GetNumStoredMessages();
+		Logger::Log(std::format("D3D12 InfoQueue stored messages: {}", messageCount), messageCount == 0 ? Logger::LogLevel::Success : Logger::LogLevel::Warning);
+
+		for(UINT64 i = 0; i < messageCount; ++i) {
+			SIZE_T messageLength = 0;
+			if(FAILED(infoQueue_->GetMessage(i, nullptr, &messageLength)) || messageLength == 0) {
+				continue;
+			}
+			std::vector<char> messageBuffer(messageLength);
+			auto *message = reinterpret_cast<D3D12_MESSAGE *>(messageBuffer.data());
+			if(SUCCEEDED(infoQueue_->GetMessage(i, message, &messageLength))) {
+				Logger::Log(std::format("D3D12 Message[{}]: {}", i, message->pDescription), Logger::LogLevel::Warning);
+			}
+		}
+#endif
 	}
 
 	///=============================================================================
@@ -821,12 +887,16 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 レンダーテクスチャの前処理
 	void DirectXCore::RenderTexturePreDraw() {
-		TransitionResource(
-			RenderResourceId::SceneColor,
-			*renderTextureResources_[renderResourceIndex_].Get(),
-			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			D3D12_RESOURCE_STATE_RENDER_TARGET,
-			RenderBarrierPoint::RenderTexturePreDraw);
+		if(renderTransitionExecutor_) {
+			renderTransitionExecutor_->ExecuteBoundary(*commandList_.Get(), RenderTransitionBoundary::RenderTexturePreDraw);
+		} else {
+			TransitionResource(
+				RenderResourceId::SceneColor,
+				*renderTextureResources_[renderResourceIndex_].Get(),
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_RENDER_TARGET,
+				RenderBarrierPoint::RenderTexturePreDraw);
+		}
 		//=======================================
 		// NOTE:RenderTexture RTVはAllocatorから確保済みのHandleを保持して使う
 		commandList_->OMSetRenderTargets(1, &renderTextureRtvHandles_[renderResourceIndex_].cpuHandle, false, &dsvHandle_.cpuHandle);
@@ -844,6 +914,10 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 レンダーテクスチャの後処理
 	void DirectXCore::RenderTexturePostDraw() {
+		if(renderTransitionExecutor_) {
+			renderTransitionExecutor_->ExecuteBoundary(*commandList_.Get(), RenderTransitionBoundary::RenderTexturePostDraw);
+			return;
+		}
 		TransitionResource(
 			RenderResourceId::SceneColor,
 			*renderTextureResources_[renderResourceIndex_].Get(),
@@ -1019,78 +1093,27 @@ namespace MagEngine {
 
 	///--------------------------------------------------------------
 	///                        オフスクリーン用のパイプラインを生成
+	PipelineRecipe DirectXCore::CreateRenderTexturePipelineRecipe() const {
+		PipelineRecipe recipe{};
+		recipe.vertexShader = {L"resources/shader/FullScreen.VS.hlsl", L"main", L"vs_6_0"};
+		recipe.pixelShader = {L"resources/shader/FullScreen.PS.hlsl", L"main", L"ps_6_0"};
+		recipe.rootSignature = renderTextureRootSignature_.Get();
+		// NOTE: Fullscreen描画は頂点IDで生成する既存Shader仕様のため、InputLayoutは空のまま維持する。
+		recipe.blendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		recipe.rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		recipe.rasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+		recipe.depthStencilState.DepthEnable = false;
+		recipe.renderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		recipe.depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		recipe.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		return recipe;
+	}
+
 	void DirectXCore::CreateOffScreenPipeLine() {
 		CreateOffScreenRootSignature();
-
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
-		inputElementDescs[0].SemanticName = "POSITION";
-		inputElementDescs[0].SemanticIndex = 0;
-		inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-		inputElementDescs[1].SemanticName = "TEXCOORD";
-		inputElementDescs[1].SemanticIndex = 0;
-		inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-		inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
-		D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
-		inputLayoutDesc.pInputElementDescs = nullptr;
-		inputLayoutDesc.NumElements = 0;
-
-		// BlendStateの設定
-		D3D12_BLEND_DESC blendDesc{};
-
-		// すべての要素数を書き込む
-		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-		// RasiterzerStateの設定
-		D3D12_RASTERIZER_DESC rasterizerDesc{};
-
-		// 裏面(時計回り)を表示しない
-		rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
-
-		// 三角形の中を塗りつぶす
-		rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-
-		// Shaderをコンパイルする
-		Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"resources/shader/FullScreen.VS.hlsl", L"vs_6_0");
-		assert(vertexShaderBlob != nullptr);
-
-		Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"resources/shader/FullScreen.PS.hlsl", L"ps_6_0");
-		assert(pixelShaderBlob != nullptr);
-
-		// DepthStencilStateの設定
-		D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
-
-		// Depthの機能を有効化する
-		depthStencilDesc.DepthEnable = false;
-
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-		graphicsPipelineStateDesc.pRootSignature = renderTextureRootSignature_.Get();							  // RootSignature
-		graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;												  // InputLayout
-		graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() }; // VertexShader
-		graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };	  // PixelShader
-		graphicsPipelineStateDesc.BlendState = blendDesc;														  // BlendState
-		graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;												  // RasterizerState
-
-		// 書き込むRTVの情報
-		graphicsPipelineStateDesc.NumRenderTargets = 1;
-		graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
-		// 利用するトポロジ(形状)のタイプ.。三角形
-		graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-
-		// どのように画面に色をつけるか
-		graphicsPipelineStateDesc.SampleDesc.Count = 1;
-		graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
-		// DepthStencilの設定
-		graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-		graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-		// 実際に生成
-		renderTextureGraphicsPipelineState_ = nullptr;
-		device_->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&renderTextureGraphicsPipelineState_));
+		// NOTE: RenderTextureやBarrier管理は既存経路に残し、PSO生成の定型処理だけBuilderへ委譲する。
+		PipelineBuilder builder(*device_.Get(), *this);
+		renderTextureGraphicsPipelineState_ = builder.CreateGraphicsPipeline(CreateRenderTexturePipelineRecipe());
 	}
 
 	///=============================================================================

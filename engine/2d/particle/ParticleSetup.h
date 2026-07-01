@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "DirectXCore.h"
 #include "SrvSetup.h"
+#include "engine/render/PipelineRecipe.h"
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
@@ -41,6 +42,9 @@ namespace MagEngine {
 		 * \brief  CreateGraphicsPipeline グラフィックスパイプラインの作成
 		 */
 		void CreateGraphicsPipeline();
+
+		/// @brief 所有中のRootSignatureを使ってParticle用Recipeを作成
+		PipelineRecipe CreateRecipe() const;
 
 		///--------------------------------------------------------------
 		///							入出力関数
@@ -95,6 +99,9 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> GetGraphicsPipelineState() const {
 			return graphicsPipelineState_;
 		}
+
+		/// @brief Particle用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
 
 		///--------------------------------------------------------------
 		///							メンバ変数

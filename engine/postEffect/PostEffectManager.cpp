@@ -7,7 +7,11 @@
  *********************************************************************/
 #include "PostEffectManager.h"
 #include "DirectXCore.h"
+#include "PostEffectParameterSet.h"
+#include "engine/render/RenderBarrierRecorder.h"
 #include "TextureManager.h"
+
+#include <utility>
 
 ///=============================================================================
 ///                        namespace MagEngine
@@ -36,9 +40,34 @@ namespace MagEngine {
 	bool PostEffectManager::IsEffectEnabled(EffectType type) const {
 		return effectEnabled_[static_cast<size_t>(type)];
 	}
+
+	uint32_t PostEffectManager::CountEnabledEffects() const {
+		uint32_t enabledEffectCount = 0;
+		for (size_t i = 0; i < static_cast<size_t>(EffectType::Count); ++i) {
+			if (effectEnabled_[i]) {
+				++enabledEffectCount;
+			}
+		}
+		return enabledEffectCount;
+	}
+
+	std::vector<PostEffectManager::PostEffectResourceTransition> PostEffectManager::BuildResourceTransitionPlan() const {
+		if (!dxCore_) {
+			return {};
+		}
+		return BuildResourceTransitionPlan(CountEnabledEffects(), dxCore_->GetRenderResourceIndex());
+	}
+
+	PostEffectManager::PostEffectTransitionComparisonResult PostEffectManager::CompareResourceTransitionPlanWithRecordedTransitions() const {
+		return CompareResourceTransitionPlanWithRecordedTransitions(resourceTransitionPlan_, resourceTransitions_);
+	}
+
 	///=============================================================================
 	///                        エフェクトの適用
 	void PostEffectManager::ApplyEffects(TextureManager &textureManager) {
+		resourceTransitionPlan_.clear();
+		resourceTransitions_.clear();
+
 		// 有効なエフェクトの数をカウント
 		int enabledEffectCount = 0;
 		EffectType enabledEffects[static_cast<size_t>(EffectType::Count)];
@@ -65,7 +94,9 @@ namespace MagEngine {
 			}
 
 			assert(srvHandle.ptr != 0);
-			dxCore_->GetCommandList()->SetGraphicsRootDescriptorTable(0, srvHandle);
+			PostEffectParameterSet parameters(PostEffectBindingLayout{0, PostEffectBindingLayout::kInvalidRootParameter});
+			parameters.SetSourceTexture(srvHandle);
+			parameters.Bind(*dxCore_->GetCommandList().Get());
 			dxCore_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 			return;
 		}
@@ -73,12 +104,18 @@ namespace MagEngine {
 		// 複数エフェクトをピンポンバッファで適用
 		uint32_t inputIndex = dxCore_->GetRenderResourceIndex();
 		uint32_t outputIndex = 1 - inputIndex;
+		resourceTransitionPlan_ = BuildResourceTransitionPlan(static_cast<uint32_t>(enabledEffectCount), inputIndex);
 
 		for (int i = 0; i < enabledEffectCount; ++i) {
 			// 最後のエフェクト以外は、次のエフェクト用にレンダーターゲットを切り替える
 			if (i < enabledEffectCount - 1) {
 				// レンダーターゲットに遷移
-				SetTextureBarrier(outputIndex, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				TransitionPostEffectResource(
+					ToResourceSlot(outputIndex),
+					PostEffectStage::BeforeEffect,
+					outputIndex,
+					D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+					D3D12_RESOURCE_STATE_RENDER_TARGET);
 				SwitchRenderTarget(outputIndex);
 			}
 
@@ -87,7 +124,12 @@ namespace MagEngine {
 
 			// 最後のエフェクト以外は、次の入力用にピクセルシェーダーリソースに遷移
 			if (i < enabledEffectCount - 1) {
-				SetTextureBarrier(outputIndex, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+				TransitionPostEffectResource(
+					ToResourceSlot(outputIndex),
+					PostEffectStage::AfterEffect,
+					outputIndex,
+					D3D12_RESOURCE_STATE_RENDER_TARGET,
+					D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 				// ピンポン: 入力と出力を入れ替え
 				std::swap(inputIndex, outputIndex);
 			}
@@ -97,13 +139,16 @@ namespace MagEngine {
 	///                        単一エフェクトを適用
 	void PostEffectManager::ApplySingleEffect(EffectType effectType, uint32_t inputIndex, uint32_t outputIndex, TextureManager &textureManager) {
 		D3D12_GPU_DESCRIPTOR_HANDLE srvHandle;
+		PostEffectBindingLayout bindingLayout{};
 
 		switch (effectType) {
 		case EffectType::Grayscale:
 			grayscaleEffect_->PreDraw();
+			bindingLayout = grayscaleEffect_->GetBindingLayout();
 			break;
 		case EffectType::Vignette:
 			vignetting_->PreDraw();
+			bindingLayout = vignetting_->GetBindingLayout();
 			break;
 		// 他のエフェクトもここに追加
 		default:
@@ -118,7 +163,9 @@ namespace MagEngine {
 		}
 
 		assert(srvHandle.ptr != 0);
-		dxCore_->GetCommandList()->SetGraphicsRootDescriptorTable(0, srvHandle);
+		PostEffectParameterSet parameters(bindingLayout);
+		parameters.SetSourceTexture(srvHandle);
+		parameters.Bind(*dxCore_->GetCommandList().Get());
 		dxCore_->GetCommandList()->DrawInstanced(3, 1, 0, 0);
 	}
 	///=============================================================================
@@ -138,13 +185,35 @@ namespace MagEngine {
 	///=============================================================================
 	///                        テクスチャバリアを設定
 	void PostEffectManager::SetTextureBarrier(uint32_t index, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState) {
-		D3D12_RESOURCE_BARRIER barrier{};
-		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrier.Transition.pResource = dxCore_->GetRenderTextureResource(index).Get();
-		barrier.Transition.StateBefore = beforeState;
-		barrier.Transition.StateAfter = afterState;
+		TransitionPostEffectResource(
+			ToResourceSlot(index),
+			beforeState == D3D12_RESOURCE_STATE_RENDER_TARGET ? PostEffectStage::AfterEffect : PostEffectStage::BeforeEffect,
+			index,
+			beforeState,
+			afterState);
+	}
 
-		dxCore_->GetCommandList()->ResourceBarrier(1, &barrier);
+	void PostEffectManager::TransitionPostEffectResource(
+		PostEffectResourceSlot slot,
+		PostEffectStage stage,
+		uint32_t index,
+		D3D12_RESOURCE_STATES beforeState,
+		D3D12_RESOURCE_STATES afterState) {
+		assert(dxCore_);
+		auto commandList = dxCore_->GetCommandList();
+		auto resource = dxCore_->GetRenderTextureResource(index);
+		assert(commandList);
+		assert(resource);
+		assert(dxCore_->GetRenderBarrierRecorder() && "PostEffect internal barriers require RenderBarrierRecorder after Renderer initialization.");
+
+		// NOTE: PostEffect内部ResourceはSceneColorと同じ実体を共有し得るため、一般RenderGraphには固定IDとして露出しない。
+		dxCore_->GetRenderBarrierRecorder()->Transition(*commandList.Get(), *resource.Get(), beforeState, afterState);
+		resourceTransitions_.push_back(PostEffectResourceTransition{
+			slot,
+			beforeState,
+			afterState,
+			stage,
+			static_cast<uint32_t>(resourceTransitions_.size()),
+			index});
 	}
 }
