@@ -16,7 +16,7 @@
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
-#include "engine/render/RenderWorld.h"
+#include "engine/render/pass/RenderWorld.h"
 #include "Input.h"
 #include <cassert>
 #include <algorithm>

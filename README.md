@@ -19,12 +19,19 @@ DirectX 12を用いた自作ゲームエンジンです。
 - DirectX 12対応GPU
 
 ## フォルダ構成
-- `application/`: ゲーム側の実装
-- `engine/`: 描画、入力、音声、数学、基盤処理
-- `scene/`: シーン管理と各シーン
+- `application/`: この作品固有のゲームロジック
+- `engine/base/`: DirectX 12初期化、Window、フレームワーク、EngineContext
+- `engine/render/`: Renderer、RenderGraph、RenderPass、Pipeline、PostEffect、描画Resource管理
+- `engine/graphics/`: Sprite、Particle、Object3D、Skybox、Cloud、Trail、Lineなどの描画機能
+- `engine/math/`: Vector、Matrix、Transform、数学関数
+- `engine/input/`: Keyboard、Mouse、GamePad入力
+- `engine/audio/`: 音声再生、音声管理
+- `engine/integration/`: Windows APIや外部機能との連携処理
+- `scene/`: Scene遷移、Scene基底、各Scene実装
 - `resources/`: Shader、Texture、Model、Sound、Config
-- `externals/`: DirectXTex、imgui、assimpヘッダなどの外部依存
 - `tests/`: RenderGraph / PipelineRecipeなどのCPU検証コード
+- `docs/`: 設計資料、分析レポート、使用ガイド
+- `externals/`: DirectXTex、imgui、assimpヘッダなどの外部依存
 
 ## ビルド手順
 1. `MagEngine.sln`をVisual Studioで開く

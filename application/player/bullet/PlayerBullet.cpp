@@ -1,7 +1,7 @@
 #include "PlayerBullet.h"
 #include "Object3d.h"
 #include "TrailEffectManager.h"
-#include "engine/render/RenderWorld.h"
+#include "engine/render/pass/RenderWorld.h"
 using namespace MagEngine;
 
 void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,

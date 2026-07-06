@@ -26,9 +26,9 @@
 #include "Logger.h"
 #include "FullscreenPassRendere.h"
 #include "GrayscaleEffect.h"
-#include "engine/render/PipelineRecipe.h"
-#include "engine/render/RenderGraph.h"
-#include "engine/render/RenderTransitionExecutor.h"
+#include "engine/render/pipeline/PipelineRecipe.h"
+#include "engine/render/graph/RenderGraph.h"
+#include "engine/render/graph/RenderTransitionExecutor.h"
 #include "WinApp.h"
 //========================================
 // ReportLiveObj

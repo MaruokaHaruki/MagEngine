@@ -1,10 +1,10 @@
-#include "engine/render/RenderBarrierRecorder.h"
-#include "engine/render/PipelineRecipe.h"
-#include "engine/render/RenderTransitionExecutor.h"
+#include "engine/render/graph/RenderBarrierRecorder.h"
+#include "engine/render/pipeline/PipelineRecipe.h"
+#include "engine/render/graph/RenderTransitionExecutor.h"
 #include "engine/render/Renderer.h"
-#include "engine/postEffect/fullscreenPass/FullscreenPassRendere.h"
-#include "engine/postEffect/PostEffectParameterSet.h"
-#include "engine/postEffect/PostEffectManager.h"
+#include "engine/render/post_effect/fullscreenPass/FullscreenPassRendere.h"
+#include "engine/render/post_effect/PostEffectParameterSet.h"
+#include "engine/render/post_effect/PostEffectManager.h"
 
 #include <algorithm>
 #include <cstdlib>

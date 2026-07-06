@@ -9,7 +9,7 @@
 #include "MagFramework.h"
 #include "Logger.h"
 #include "WinApp.h"
-#include "engine/render/RenderContext.h"
+#include "engine/render/pass/RenderContext.h"
 
 #include <format>
 ///=============================================================================

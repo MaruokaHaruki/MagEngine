@@ -18,7 +18,7 @@
 #include "MathUtility.h"
 #include "ModelManager.h"
 #include "Object3d.h"
-#include "engine/render/RenderWorld.h"
+#include "engine/render/pass/RenderWorld.h"
 #include "PlayerConstants.h"
 #include "TrailEffectManager.h"
 #include <algorithm>

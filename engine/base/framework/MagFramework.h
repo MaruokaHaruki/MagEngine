@@ -49,7 +49,7 @@
 #include "EditorLayout.h"
 #include "GameViewportPanel.h"
 #include "engine/render/Renderer.h"
-#include "engine/render/RenderWorld.h"
+#include "engine/render/pass/RenderWorld.h"
 
 ///=============================================================================
 ///                        namespace MagEngine

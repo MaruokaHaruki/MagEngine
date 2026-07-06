@@ -4,7 +4,7 @@
 #include "Particle.h"
 #include "Player.h"
 #include "TrailEffectManager.h"
-#include "engine/render/RenderWorld.h"
+#include "engine/render/pass/RenderWorld.h"
 #include <cmath>
 using namespace MagEngine;
 

@@ -1,7 +1,7 @@
 #include "UIManager.h"
 #include "CameraManager.h"
 #include "Player.h"
-#include "engine/render/RenderWorld.h"
+#include "engine/render/pass/RenderWorld.h"
 
 ///=============================================================================
 ///                        初期化

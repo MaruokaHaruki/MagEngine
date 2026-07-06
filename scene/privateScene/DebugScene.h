@@ -17,7 +17,7 @@ using namespace MagMath;
 #include "Cloud.h"
 #include "LevelDataLoader.h"
 #include "MAudioG.h"
-#include "MagVoiceBridge.h"
+#include "engine/integration/MagVoiceBridge.h"
 #include "Object3d.h"
 #include "Object3dSetup.h"
 #include "TrailEffectManager.h"

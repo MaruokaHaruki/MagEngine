@@ -7,8 +7,8 @@
  * \note   デバイス、コマンドキューなどの初期化・管理処理を実装
  *********************************************************************/
 #include "DirectXCore.h"
-#include "engine/render/RenderBarrierRecorder.h"
-#include "engine/render/PipelineBuilder.h"
+#include "engine/render/graph/RenderBarrierRecorder.h"
+#include "engine/render/pipeline/PipelineBuilder.h"
 //========================================
 // 標準ライブラリ
 #include <vector>

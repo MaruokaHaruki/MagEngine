@@ -7,7 +7,7 @@
  * \note   Multiple visual effects for stylish animation
  *********************************************************************/
 #include "GameOverAnimation.h"
-#include "engine/render/RenderWorld.h"
+#include "engine/render/pass/RenderWorld.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>

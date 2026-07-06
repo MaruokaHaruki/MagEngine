@@ -1,0 +1,88 @@
+/*********************************************************************
+ * \file   CloudSetup.h
+ * \brief  雲描画のセットアップクラス
+ *
+ * \author Harukichimaru
+ * \date   December 2024
+ * \note   雲レンダリング用のルートシグネチャとパイプライン設定を管理
+ *********************************************************************/
+#pragma once
+#include "engine/render/pipeline/PipelineRecipe.h"
+#include <d3d12.h>
+#include <wrl/client.h>
+///=============================================================================
+///                        namespace MagEngine
+namespace MagEngine {
+	// 前方宣言
+	class DirectXCore;
+	class LightManager;
+	///=============================================================================
+	///						クラス
+	class CloudSetup {
+		///--------------------------------------------------------------
+		///						 メンバ関数
+	public:
+		/// @brief 初期化
+		/// @param dxCore DirectXCoreポインタ
+		void Initialize(DirectXCore *dxCore);
+
+		/// @brief 共通描画設定
+		void CommonDrawSetup();
+
+		///--------------------------------------------------------------
+		///						 入出力関数
+	public:
+		/// @brief GetDXCore DirectXCoreの取得
+		/// @return DirectXCoreポインタ
+		DirectXCore *GetDXCore() const {
+			return dxCore_;
+		}
+
+		/// @brief SetLightManager ライトマネージャの設定
+		/// @param lightManager ライトマネージャポインタ
+		void SetLightManager(LightManager *lightManager) {
+			this->lightManager_ = lightManager;
+		}
+
+		/// @brief GetLightManager ライトマネージャの取得
+		/// @return ライトマネージャポインタ
+		LightManager *GetLightManager() {
+			return lightManager_;
+		}
+
+		///--------------------------------------------------------------
+		///						 静的メンバ関数
+	private:
+		/// @brief ルートシグネチャの作成
+		void CreateRootSignature();
+
+		/// @brief グラフィックスパイプラインの作成
+		void CreateGraphicsPipeline();
+
+		/// @brief 所有中のRootSignatureを使ってCloud用Recipeを作成
+		PipelineRecipe CreatePipelineRecipe() const;
+
+	public:
+		/// @brief Cloud用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
+
+		///--------------------------------------------------------------
+		///							メンバ変数
+	private:
+		//========================================
+		// DirectXCoreポインタ
+		DirectXCore *dxCore_ = nullptr;
+
+		//========================================
+		// LightManagerポインタ
+		LightManager *lightManager_ = nullptr;
+
+		//========================================
+		// RootSignature
+		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+
+		//========================================
+		// グラフィックスパイプライン
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+	};
+}
