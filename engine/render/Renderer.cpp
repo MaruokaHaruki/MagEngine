@@ -158,7 +158,7 @@ namespace MagEngine {
 			true,
 			{
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
-				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
+				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
 			},
 			std::make_unique<SpriteRenderPass>(spriteSetup)});
 		AddPass(RenderPassEntry{

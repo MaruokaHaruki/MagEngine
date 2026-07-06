@@ -396,6 +396,9 @@
     <ClInclude Include="engine\graphics\sprite\Sprite.h">
       <Filter>engine\graphics\sprite</Filter>
     </ClInclude>
+    <ClInclude Include="engine\graphics\sprite\SpriteRenderMode.h">
+      <Filter>engine\graphics\sprite</Filter>
+    </ClInclude>
     <ClInclude Include="engine\render\resource\texture\TextureManager.h">
       <Filter>engine\render\resource\texture</Filter>
     </ClInclude>

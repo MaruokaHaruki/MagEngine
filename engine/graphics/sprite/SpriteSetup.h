@@ -11,12 +11,35 @@
 ///=============================================================================
 ///						インクルード
 #include "DirectXCore.h"
+#include "SpriteRenderMode.h"
 #include "engine/render/pipeline/PipelineRecipe.h"
+#include "engine/math/structure/graphics/Light.h"
 
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
 	class TextureManager;
+
+	struct SpriteRootParameterBinding {
+		static constexpr uint32_t kMaterial = 0;
+		static constexpr uint32_t kTransformation = 1;
+		static constexpr uint32_t kTexture = 2;
+		static constexpr uint32_t kDirectionalLight = 3;
+	};
+
+	struct SpriteDrawBinding {
+		D3D12_GPU_VIRTUAL_ADDRESS material = 0;
+		D3D12_GPU_VIRTUAL_ADDRESS transformation = 0;
+		D3D12_GPU_DESCRIPTOR_HANDLE texture{};
+		D3D12_GPU_VIRTUAL_ADDRESS directionalLight = 0;
+
+		bool IsValid() const {
+			return material != 0 &&
+				   transformation != 0 &&
+				   texture.ptr != 0 &&
+				   directionalLight != 0;
+		}
+	};
 
 	///=============================================================================
 	///                            SpriteSetupクラス
@@ -64,7 +87,7 @@ namespace MagEngine {
 		 *   // ...
 		 * \endcode
 		 */
-		void CommonDrawSetup();
+		void CommonDrawSetup(SpriteRenderMode renderMode = SpriteRenderMode::Ui);
 
 		///=============================================================================
 		///                        アクセッサ
@@ -82,7 +105,19 @@ namespace MagEngine {
 			return *textureManager_;
 		}
 
-		/// @brief Sprite用PSO設定をRecipeとして作成
+		D3D12_GPU_VIRTUAL_ADDRESS GetDirectionalLightGPUVirtualAddress() const {
+			return directionalLightBuffer_ ? directionalLightBuffer_->GetGPUVirtualAddress() : 0;
+		}
+
+		void SetDirectionalLight(const MagMath::DirectionalLight &directionalLight);
+
+		/// @brief World Sprite用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateWorldPipelineRecipe(ID3D12RootSignature *rootSignature);
+
+		/// @brief UI Sprite用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateUiPipelineRecipe(ID3D12RootSignature *rootSignature);
+
+		/// @brief 既存テスト互換用。World Spriteの既存Depth契約を返す
 		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
 
 		///--------------------------------------------------------------
@@ -111,9 +146,11 @@ namespace MagEngine {
 		 *         - デプスステンシルステートの設定
 		 */
 		void CreateGraphicsPipeline();
+		void CreateDirectionalLightBuffer();
 
 		/// @brief 所有中のRootSignatureを使ってSprite用Recipeを作成
-		PipelineRecipe CreateRecipe() const;
+		PipelineRecipe CreateWorldRecipe() const;
+		PipelineRecipe CreateUiRecipe() const;
 
 		///--------------------------------------------------------------
 		///						 メンバ変数
@@ -128,6 +165,11 @@ namespace MagEngine {
 		///---------------------------------------
 		/// パイプラインステート
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;			  // ルートシグネチャ
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;	  // グラフィックスパイプライン
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> worldPipelineState_;	  // World Sprite用グラフィックスパイプライン
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> uiPipelineState_;		  // UI Sprite用グラフィックスパイプライン
+
+		/// COMMENT: Sprite shaderはenableLightingに関係なくb1を参照可能な契約なので、有効なCBVを常時保持する。
+		Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightBuffer_;
+		MagMath::DirectionalLight *directionalLightData_ = nullptr;
 	};
 }

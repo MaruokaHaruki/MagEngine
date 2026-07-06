@@ -28,6 +28,7 @@
 //========================================
 // 自作
 #include "MagMath.h"
+#include "SpriteRenderMode.h"
 
 ///=============================================================================
 ///                        namespace MagEngine
@@ -95,6 +96,16 @@ namespace MagEngine {
 		 * \note   Spriteの所有権はScene/UI側に残し、RenderWorldへは非所有参照だけを渡す
 		 */
 		void RegisterRenderables(RenderWorld &renderWorld);
+
+		Sprite *SetRenderMode(SpriteRenderMode renderMode) {
+			// NOTE: 既存Spriteは画面座標UI前提のため、World化は呼び出し側が明示した場合だけ行う。
+			renderMode_ = renderMode;
+			return this;
+		}
+
+		SpriteRenderMode GetRenderMode() const {
+			return renderMode_;
+		}
 
 		///=============================================================================
 		///                        基本設定（メソッドチェーン対応）
@@ -426,5 +437,6 @@ namespace MagEngine {
 		/// テクスチャ範囲指定（スプライトシート用）
 		MagMath::Vector2 textureLeftTop_ = {0.0f, 0.0f};	  // テクスチャ左上座標
 		MagMath::Vector2 textureSize_ = {0.0f, 0.0f};		  // テクスチャ切り出しサイズ
+		SpriteRenderMode renderMode_ = SpriteRenderMode::Ui;
 	};
 }

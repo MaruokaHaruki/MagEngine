@@ -1689,6 +1689,111 @@ git diff --check:
   Success
 ```
 
+---
+
+## 27. Sprite DirectionalLight CBVバインド安定化
+
+### 27.1 不整合内容
+
+`SpriteSetup.cpp`のRoot Signatureは`Root Parameter 3`に`DirectionalLight CBV (b1)`を定義していたが、`Sprite::Draw()`は`Root Parameter 0 / 1 / 2`のみをBindしていた。
+
+`Sprite.PS.hlsl`は`gDirectionalLight : register(b1)`を持ち、`enableLighting != 0`の場合に参照するため、ライト有効Spriteが未Bind CBVを読む可能性があった。
+
+### 27.2 修正したBinding契約
+
+SpriteのRoot Parameter契約を以下として定数化した。
+
+```text
+0: Material CBV
+1: Transformation CBV
+2: Texture SRV
+3: DirectionalLight CBV
+```
+
+`Sprite::Draw()`では`SpriteDrawBinding`を作成し、Material / Transform / Texture / DirectionalLightを検証してからBindする。`enableLighting == 0`でもShader側のb1契約を満たすため、`Root Parameter 3`には常に有効なGPU Virtual AddressをBindする。
+
+### 27.3 DirectionalLight CBVの所有
+
+`SpriteSetup`がSprite用のデフォルトDirectionalLight CBVを所有する。理由は、Sprite Shaderのb1契約を全Spriteで満たし、個別SpriteがライトCBVの寿命を持たないようにするため。
+
+既定値は白色、正規化済み前提の方向、強度1.0で初期化する。将来LightManager連携を行う場合も、`SpriteSetup::SetDirectionalLight()`経由で差し替えられる。
+
+### 27.4 UI / World Sprite分類方針
+
+`SpriteRenderMode`を追加した。
+
+```text
+Ui
+World
+```
+
+現状のSprite利用箇所はTitle、SceneTransition、GameOver/GameClear、Menu、OperationGuideなど画面座標のUI用途が中心だったため、既定値は`Ui`にした。World用途は既存見た目を壊さないよう、`Sprite::SetRenderMode(SpriteRenderMode::World)`で明示した場合のみ使用する。
+
+### 27.5 Depth方針
+
+UI Sprite用PSO:
+
+```text
+DepthEnable = false
+DepthWriteMask = ZERO
+```
+
+UI SpriteはOverlay合成用途のため、後続のOverlay / ParticleをSceneDepthで隠さない。
+
+World Sprite用PSO:
+
+```text
+DepthEnable = true
+DepthWriteMask = ALL
+DepthFunc = LESS_EQUAL
+```
+
+既存Sprite PSOのDepth方針はWorld用として維持し、将来の奥行き判定が必要なSpriteの見た目を変えない。
+
+### 27.6 RenderPass / RenderGraph上の扱い
+
+`SpriteRenderPass`は`SpriteRenderItem::renderMode`に応じてUI用PSO / World用PSOをBindする。
+
+現在の登録経路はUI Spriteが中心のため、Renderer上のSprite Passの`SceneDepth` Usageは`Read`へ寄せた。RenderGraph構造やPass分割は行っていない。
+
+### 27.7 CPUテスト
+
+`tests\RenderValidationTests.cpp`へ以下を追加した。
+
+```text
+Sprite Root Parameter定数の契約
+DirectionalLight CBVを含むDraw Binding検証
+DirectionalLight CBV Address未設定検出
+UI Sprite RecipeがDepth Write Allではないこと
+World Sprite Recipeが既存Depth Write Allを維持すること
+SpriteRenderModeがRenderWorldのSpriteRenderItemへ保持されること
+```
+
+実行結果:
+
+```text
+Render validation tests: 271/271 passed
+```
+
+CPUテスト実行時、既存Debug objを再利用したため未使用GPU初期化関数の未解決シンボル表示が出た。テスト対象のCPU契約コードは実行され、全テストは成功した。
+
+### 27.8 ビルド結果
+
+```text
+Debug x64 build:
+  Success
+  Warnings: 0
+  Errors: 0
+```
+
+### 27.9 GPU確認
+
+実GPUでのHUD / LockOnHUD / enableLighting表示確認は未実施。今回の確認はDebug x64ビルド、CPU RenderValidationTests、静的検索まで。
+
+### 27.10 次の改修候補
+
+Spriteの実利用がUI中心である状態を維持するなら、次は`SpriteSetup::SetDirectionalLight()`をLightManager更新経路へ接続するか、World Sprite専用の登録経路をScene側へ明示する。
+
 ## 27. engine内部責務別フォルダ整理
 
 ### 27.1 目的

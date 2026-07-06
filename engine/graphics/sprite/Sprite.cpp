@@ -103,18 +103,33 @@ namespace MagEngine {
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		// マテリアルとトランスフォーム行列の設定
-		commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
-		commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
+		SpriteDrawBinding binding{};
+		binding.material = materialBuffer_->GetGPUVirtualAddress();
+		binding.transformation = transformationMatrixBuffer_->GetGPUVirtualAddress();
+		binding.texture = spriteSetup_->GetTextureManager().GetSrvHandleGPU(textureFilePath_);
+		binding.directionalLight = spriteSetup_->GetDirectionalLightGPUVirtualAddress();
+
+		#ifdef _DEBUG
+		if (!binding.IsValid()) {
+			throw std::runtime_error("Sprite: Draw binding is missing a required root parameter resource.");
+		}
+		#endif
+
+		commandList->SetGraphicsRootConstantBufferView(SpriteRootParameterBinding::kMaterial, binding.material);
+		commandList->SetGraphicsRootConstantBufferView(SpriteRootParameterBinding::kTransformation, binding.transformation);
 
 		// テクスチャの設定
-		commandList->SetGraphicsRootDescriptorTable(2, spriteSetup_->GetTextureManager().GetSrvHandleGPU(textureFilePath_));
+		commandList->SetGraphicsRootDescriptorTable(SpriteRootParameterBinding::kTexture, binding.texture);
+
+		// DirectionalLightはenableLightingの値に関係なく、Shader側のb1契約を常に満たす
+		commandList->SetGraphicsRootConstantBufferView(SpriteRootParameterBinding::kDirectionalLight, binding.directionalLight);
 
 		// 描画コール（インスタンス描画、6頂点 = 2三角形）
 		commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 	}
 
 	void Sprite::RegisterRenderables(RenderWorld &renderWorld) {
-		renderWorld.AddSprite(SpriteRenderItem{this, 0, true});
+		renderWorld.AddSprite(SpriteRenderItem{this, 0, true, renderMode_});
 	}
 
 	///=============================================================================

@@ -344,6 +344,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\base\core\WinApp.h" />
     <ClInclude Include="engine\graphics\sprite\SpriteSetup.h" />
     <ClInclude Include="engine\graphics\sprite\Sprite.h" />
+    <ClInclude Include="engine\graphics\sprite\SpriteRenderMode.h" />
     <ClInclude Include="engine\math\structure\common\Vector2.h" />
     <ClInclude Include="engine\render\resource\texture\TextureManager.h" />
     <ClInclude Include="engine\graphics\object3d\Object3dSetup.h" />

@@ -5,6 +5,8 @@
 #include "engine/render/post_effect/fullscreenPass/FullscreenPassRendere.h"
 #include "engine/render/post_effect/PostEffectParameterSet.h"
 #include "engine/render/post_effect/PostEffectManager.h"
+#include "engine/graphics/sprite/SpriteSetup.h"
+#include "engine/render/pass/RenderWorld.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -102,7 +104,7 @@ namespace {
 			}));
 		passes.push_back(MakePass(RenderPassId::Sprite, RenderPhase::Overlay, 100, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
-				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
+				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
 			}));
 		passes.push_back(MakePass(RenderPassId::Particle, RenderPhase::PostOverlay, 100, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
@@ -143,14 +145,11 @@ namespace {
 	}
 
 	PipelineRecipe MakeSpriteRecipeForTesting() {
-		PipelineRecipe recipe{};
-		recipe.vertexShader = {L"resources/shader/Sprite.VS.hlsl", L"main", L"vs_6_0"};
-		recipe.pixelShader = {L"resources/shader/Sprite.PS.hlsl", L"main", L"ps_6_0"};
-		recipe.rootSignature = FakeRootSignature();
-		recipe.renderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-		recipe.depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-		recipe.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		return recipe;
+		return SpriteSetup::CreateWorldPipelineRecipe(FakeRootSignature());
+	}
+
+	PipelineRecipe MakeUiSpriteRecipeForTesting() {
+		return SpriteSetup::CreateUiPipelineRecipe(FakeRootSignature());
 	}
 
 	PipelineRecipe MakeLineRecipeForTesting() {
@@ -678,6 +677,61 @@ namespace {
 		Expect(result, recipe.primitiveTopologyType == D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, "PipelineRecipeTest_SpriteDefaults_Topology");
 	}
 
+	void SpriteBindingContractTest_RootParameters(TestResult &result) {
+		Expect(result, SpriteRootParameterBinding::kMaterial == 0, "SpriteBindingContractTest_MaterialRoot");
+		Expect(result, SpriteRootParameterBinding::kTransformation == 1, "SpriteBindingContractTest_TransformRoot");
+		Expect(result, SpriteRootParameterBinding::kTexture == 2, "SpriteBindingContractTest_TextureRoot");
+		Expect(result, SpriteRootParameterBinding::kDirectionalLight == 3, "SpriteBindingContractTest_DirectionalLightRoot");
+		Expect(result, SpriteRootParameterBinding::kDirectionalLight != SpriteRootParameterBinding::kTexture, "SpriteBindingContractTest_DirectionalLightNoDuplicate");
+
+		const uint32_t mismatchedDirectionalLightRoot = 2;
+		Expect(result, mismatchedDirectionalLightRoot != SpriteRootParameterBinding::kDirectionalLight, "SpriteBindingContractTest_RootMismatchDetected");
+	}
+
+	void SpriteBindingContractTest_DrawBinding(TestResult &result) {
+		SpriteDrawBinding binding{};
+		binding.material = 0x1000;
+		binding.transformation = 0x2000;
+		binding.texture.ptr = 0x3000;
+		binding.directionalLight = 0x4000;
+		Expect(result, binding.IsValid(), "SpriteBindingContractTest_DrawBindingValid");
+
+		binding.directionalLight = 0;
+		Expect(result, !binding.IsValid(), "SpriteBindingContractTest_MissingDirectionalLightDetected");
+	}
+
+	void PipelineRecipeTest_SpriteUiWorldDepth(TestResult &result) {
+		const PipelineRecipe worldRecipe = MakeSpriteRecipeForTesting();
+		const PipelineRecipe uiRecipe = MakeUiSpriteRecipeForTesting();
+
+		Expect(result, worldRecipe.Validate().isValid, "PipelineRecipeTest_SpriteWorld_Valid");
+		Expect(result, worldRecipe.depthStencilState.DepthEnable == TRUE, "PipelineRecipeTest_SpriteWorld_DepthEnable");
+		Expect(result, worldRecipe.depthStencilState.DepthWriteMask == D3D12_DEPTH_WRITE_MASK_ALL, "PipelineRecipeTest_SpriteWorld_DepthWriteAll");
+		Expect(result, worldRecipe.depthStencilState.DepthFunc == D3D12_COMPARISON_FUNC_LESS_EQUAL, "PipelineRecipeTest_SpriteWorld_DepthFunc");
+
+		Expect(result, uiRecipe.Validate().isValid, "PipelineRecipeTest_SpriteUi_Valid");
+		Expect(result, uiRecipe.depthStencilState.DepthWriteMask != D3D12_DEPTH_WRITE_MASK_ALL, "PipelineRecipeTest_SpriteUi_DepthWriteAllDetected");
+		Expect(result, uiRecipe.depthStencilState.DepthWriteMask == D3D12_DEPTH_WRITE_MASK_ZERO, "PipelineRecipeTest_SpriteUi_DepthWriteZero");
+		Expect(result, uiRecipe.depthStencilState.DepthEnable == FALSE, "PipelineRecipeTest_SpriteUi_DepthDisabled");
+	}
+
+	void SpriteRenderModeTest_RenderWorldKeepsClassification(TestResult &result) {
+		RenderWorld renderWorld;
+		SpriteRenderItem uiItem{};
+		uiItem.renderMode = SpriteRenderMode::Ui;
+		renderWorld.AddSprite(uiItem);
+
+		SpriteRenderItem worldItem{};
+		worldItem.renderMode = SpriteRenderMode::World;
+		renderWorld.AddSprite(worldItem);
+
+		const std::vector<SpriteRenderItem> &items = renderWorld.GetSpriteItems();
+		Expect(result, items.size() == 2, "SpriteRenderModeTest_Count");
+		Expect(result, items[0].renderMode == SpriteRenderMode::Ui, "SpriteRenderModeTest_UiMode");
+		Expect(result, items[1].renderMode == SpriteRenderMode::World, "SpriteRenderModeTest_WorldMode");
+		Expect(result, items[0].submissionOrder == 0 && items[1].submissionOrder == 1, "SpriteRenderModeTest_SubmissionOrder");
+	}
+
 	void PipelineRecipeTest_LineDepthWrite(TestResult &result) {
 		const PipelineRecipe recipe = MakeLineRecipeForTesting();
 		Expect(result, recipe.Validate().isValid, "PipelineRecipeTest_LineDepthWrite_Valid");
@@ -1095,6 +1149,10 @@ int main() {
 	RenderBarrierRecorderTest_RecordTransition(result);
 	RenderBarrierRecorderTest_InvalidInputs(result);
 	PipelineRecipeTest_SpriteDefaults(result);
+	SpriteBindingContractTest_RootParameters(result);
+	SpriteBindingContractTest_DrawBinding(result);
+	PipelineRecipeTest_SpriteUiWorldDepth(result);
+	SpriteRenderModeTest_RenderWorldKeepsClassification(result);
 	PipelineRecipeTest_LineDepthWrite(result);
 	PipelineRecipeTest_ParticleBlendAndDepth(result);
 	PipelineRecipeTest_Object3dDefaults(result);

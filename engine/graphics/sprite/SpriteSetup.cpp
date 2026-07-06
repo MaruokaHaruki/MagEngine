@@ -28,6 +28,9 @@ namespace MagEngine {
 		// テクスチャ管理はFrameworkが所有するため、描画側では非所有参照として扱う
 		textureManager_ = &textureManager;
 
+		// Sprite.PS.hlslのb1契約を満たすため、ライト無効Spriteでも有効なCBVを用意する
+		CreateDirectionalLightBuffer();
+
 		// グラフィックスパイプラインの生成
 		CreateGraphicsPipeline();
 	}
@@ -38,15 +41,15 @@ namespace MagEngine {
 
 	///--------------------------------------------------------------
 	///                         共通描画設定
-	void SpriteSetup::CommonDrawSetup() {
+	void SpriteSetup::CommonDrawSetup(SpriteRenderMode renderMode) {
 		// コマンドリストを取得（変数にキャッシュして効率化）
 		auto commandList = dxCore_->GetCommandList();
 
 		// ルートシグネチャを設定
 		commandList->SetGraphicsRootSignature(rootSignature_.Get());
 
-		// グラフィックスパイプラインステートを設定
-		commandList->SetPipelineState(graphicsPipelineState_.Get());
+		// UIは深度を書かず、Worldは既存のDepthWrite契約を維持する
+		commandList->SetPipelineState(renderMode == SpriteRenderMode::Ui ? uiPipelineState_.Get() : worldPipelineState_.Get());
 
 		// プリミティブトポロジーを設定（三角形リスト）
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -78,25 +81,25 @@ namespace MagEngine {
 		D3D12_ROOT_PARAMETER rootParameters[4]{};
 
 		// b0: Material（マテリアル定数バッファ）
-		rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-		rootParameters[0].Descriptor.ShaderRegister = 0;	  // b0
+		rootParameters[SpriteRootParameterBinding::kMaterial].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[SpriteRootParameterBinding::kMaterial].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[SpriteRootParameterBinding::kMaterial].Descriptor.ShaderRegister = 0;	  // b0
 
 		// b0: TransformationMatrix（変換行列定数バッファ）
-		rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-		rootParameters[1].Descriptor.ShaderRegister = 0;	  // b0
+		rootParameters[SpriteRootParameterBinding::kTransformation].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[SpriteRootParameterBinding::kTransformation].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		rootParameters[SpriteRootParameterBinding::kTransformation].Descriptor.ShaderRegister = 0;	  // b0
 
 		// t0: Texture（テクスチャ）
-		rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-		rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-		rootParameters[2].DescriptorTable.pDescriptorRanges = &descriptorRange;
-		rootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
+		rootParameters[SpriteRootParameterBinding::kTexture].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParameters[SpriteRootParameterBinding::kTexture].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[SpriteRootParameterBinding::kTexture].DescriptorTable.pDescriptorRanges = &descriptorRange;
+		rootParameters[SpriteRootParameterBinding::kTexture].DescriptorTable.NumDescriptorRanges = 1;
 
 		// b1: DirectionalLight（ライト定数バッファ - 将来の拡張用）
-		rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-		rootParameters[3].Descriptor.ShaderRegister = 1;	  // b1
+		rootParameters[SpriteRootParameterBinding::kDirectionalLight].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameters[SpriteRootParameterBinding::kDirectionalLight].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[SpriteRootParameterBinding::kDirectionalLight].Descriptor.ShaderRegister = 1;	  // b1
 
 		descriptionRootSignature.pParameters = rootParameters;
 		descriptionRootSignature.NumParameters = 4;
@@ -146,7 +149,7 @@ namespace MagEngine {
 		Log("Sprite root signature created successfully", LogLevel::Success);
 	}
 
-	PipelineRecipe SpriteSetup::CreateDefaultRecipe(ID3D12RootSignature *rootSignature) {
+	PipelineRecipe SpriteSetup::CreateWorldPipelineRecipe(ID3D12RootSignature *rootSignature) {
 		PipelineRecipe recipe{};
 		recipe.vertexShader = {L"resources/shader/Sprite.VS.hlsl", L"main", L"vs_6_0"};
 		recipe.pixelShader = {L"resources/shader/Sprite.PS.hlsl", L"main", L"ps_6_0"};
@@ -175,8 +178,24 @@ namespace MagEngine {
 		return recipe;
 	}
 
-	PipelineRecipe SpriteSetup::CreateRecipe() const {
-		return CreateDefaultRecipe(rootSignature_.Get());
+	PipelineRecipe SpriteSetup::CreateUiPipelineRecipe(ID3D12RootSignature *rootSignature) {
+		PipelineRecipe recipe = CreateWorldPipelineRecipe(rootSignature);
+		// NOTE: UI Spriteは画面合成用のため、後続Overlay/Particleを深度で隠さない。
+		recipe.depthStencilState.DepthEnable = false;
+		recipe.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+		return recipe;
+	}
+
+	PipelineRecipe SpriteSetup::CreateDefaultRecipe(ID3D12RootSignature *rootSignature) {
+		return CreateWorldPipelineRecipe(rootSignature);
+	}
+
+	PipelineRecipe SpriteSetup::CreateWorldRecipe() const {
+		return CreateWorldPipelineRecipe(rootSignature_.Get());
+	}
+
+	PipelineRecipe SpriteSetup::CreateUiRecipe() const {
+		return CreateUiPipelineRecipe(rootSignature_.Get());
 	}
 
 	///--------------------------------------------------------------
@@ -185,7 +204,26 @@ namespace MagEngine {
 		CreateRootSignature();
 		// NOTE: Sprite固有設定はRecipeに残し、PSO生成の定型処理だけBuilderへ委譲する。
 		PipelineBuilder builder(*dxCore_->GetDevice().Get(), *dxCore_);
-		graphicsPipelineState_ = builder.CreateGraphicsPipeline(CreateRecipe());
+		worldPipelineState_ = builder.CreateGraphicsPipeline(CreateWorldRecipe());
+		uiPipelineState_ = builder.CreateGraphicsPipeline(CreateUiRecipe());
 		Log("Sprite graphics pipeline state created successfully", LogLevel::Success);
+	}
+
+	void SpriteSetup::CreateDirectionalLightBuffer() {
+		const size_t bufferSize = (sizeof(MagMath::DirectionalLight) + 255) & ~255;
+		directionalLightBuffer_ = dxCore_->CreateBufferResource(bufferSize);
+		directionalLightBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&directionalLightData_));
+
+		MagMath::DirectionalLight defaultLight{};
+		defaultLight.color = {1.0f, 1.0f, 1.0f, 1.0f};
+		defaultLight.direction = {0.0f, 0.0f, 1.0f};
+		defaultLight.intensity = 1.0f;
+		SetDirectionalLight(defaultLight);
+	}
+
+	void SpriteSetup::SetDirectionalLight(const MagMath::DirectionalLight &directionalLight) {
+		if (directionalLightData_) {
+			*directionalLightData_ = directionalLight;
+		}
 	}
 }

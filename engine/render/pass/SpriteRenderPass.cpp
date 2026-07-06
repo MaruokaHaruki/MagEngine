@@ -17,12 +17,18 @@ namespace MagEngine {
 			return;
 		}
 
-		spriteSetup_.CommonDrawSetup();
-
+		SpriteRenderMode currentRenderMode = SpriteRenderMode::Ui;
+		bool hasBoundPipeline = false;
 		for (const SpriteRenderItem &item : items) {
 			assert(item.sprite && "SpriteRenderItem::sprite must not be null.");
 			if (!item.visible || item.sprite == nullptr) {
 				continue;
+			}
+
+			if (!hasBoundPipeline || currentRenderMode != item.renderMode) {
+				currentRenderMode = item.renderMode;
+				spriteSetup_.CommonDrawSetup(currentRenderMode);
+				hasBoundPipeline = true;
 			}
 
 			item.sprite->Draw();

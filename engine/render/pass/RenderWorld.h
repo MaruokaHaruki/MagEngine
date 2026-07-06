@@ -8,6 +8,8 @@
 #include <optional>
 #include <vector>
 
+#include "engine/graphics/sprite/SpriteRenderMode.h"
+
 namespace MagEngine {
 	class Cloud;
 	class LineManager;
@@ -46,6 +48,7 @@ namespace MagEngine {
 		Sprite *sprite = nullptr;
 		uint32_t submissionOrder = 0;
 		bool visible = true;
+		SpriteRenderMode renderMode = SpriteRenderMode::Ui;
 	};
 
 	struct LineRenderItem {
