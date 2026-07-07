@@ -51,6 +51,9 @@ private:
 	void AddCloudHoleFromDebugCamera();
 	void AddRandomCloudHole();
 	void AddManualCloudHole();
+	MagEngine::CloudHoleData BuildSelectedCloudHole(const Vector3 &origin, const Vector3 &direction) const;
+	void AdvanceCloudHoleShape(int direction);
+	void AdvanceCloudHoleCategory(int direction);
 	void DrawOverviewImGui();
 	void DrawCloudTestImGui();
 	void DrawTrailTestImGui();
@@ -140,8 +143,12 @@ private:
 	Vector3 manualBulletDirection_{0.0f, 0.0f, 1.0f};  // マニュアル追加用の方向
 	int cloudHoleBurstCount_ = 4;
 	float cloudHoleRandomSpread_ = 0.8f;
-	int cloudHoleShape_ = 0;
-	float cloudHoleShapeAngle_ = 0.0f;
+	MagEngine::CloudHoleShape cloudHoleShape_ = MagEngine::CloudHoleShape::Circle;
+	MagEngine::CloudHoleShapeCategory cloudHoleCategory_ = MagEngine::CloudHoleShapeCategory::Basic;
+	float cloudHoleRotation_ = 0.0f;
+	float cloudHoleAspectRatio_ = 1.0f;
+	bool cloudHoleRoundEnabled_ = false;
+	bool cloudHoleOnionEnabled_ = false;
 
 	//========================================
 	// マイク入力テスト用

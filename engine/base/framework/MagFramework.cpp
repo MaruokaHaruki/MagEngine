@@ -479,6 +479,10 @@ namespace MagEngine {
 		// ダイレクトX
 		if (dxCore_) {
 			dxCore_->ReleaseDirectX();
+#ifdef _DEBUG
+			// NOTE: D3D12の簡易終了レポートでは所有元を追いづらいため、標準Live Objectレポートを明示する。
+			dxCore_->CheckResourceLeaks();
+#endif
 			dxCore_.reset();
 		}
 		//========================================

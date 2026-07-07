@@ -27,7 +27,7 @@
 using namespace MagEngine;
 
 namespace {
-	Vector3 NormalizeOrDefault(const Vector3 &value, const Vector3 &fallback) {
+	Vector3 NormalizeOrDefaultLocal(const Vector3 &value, const Vector3 &fallback) {
 		float length = sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
 		if (length <= 0.0001f) {
 			return fallback;
@@ -38,7 +38,7 @@ namespace {
 	Vector3 GetCameraForward(const Transform &transform) {
 		MagMath::Matrix4x4 rotationMatrix = MagMath::MakeRotateMatrix(transform.rotate);
 		Vector3 forward = {rotationMatrix.m[0][2], rotationMatrix.m[1][2], rotationMatrix.m[2][2]};
-		return NormalizeOrDefault(forward, Vector3{0.0f, 0.0f, 1.0f});
+		return NormalizeOrDefaultLocal(forward, Vector3{0.0f, 0.0f, 1.0f});
 	}
 
 	Camera *GetCloudTestCamera(CameraManager &cameraManager) {
@@ -46,19 +46,6 @@ namespace {
 			return debugCamera;
 		}
 		return cameraManager.GetCurrentCamera();
-	}
-
-	CloudBulletHoleShape ToCloudHoleShape(int shape) {
-		switch (shape) {
-		case 1:
-			return CloudBulletHoleShape::Box;
-		case 2:
-			return CloudBulletHoleShape::Diamond;
-		case 3:
-			return CloudBulletHoleShape::Star;
-		default:
-			return CloudBulletHoleShape::Circle;
-		}
 	}
 
 	bool IntersectRayAabb(const Vector3 &rayOrigin, const Vector3 &rayDirection, const Vector3 &boxCenter, const Vector3 &boxSize, float &hitDistance) {
@@ -328,20 +315,39 @@ void DebugScene::Update() {
 	assert(engineContext_);
 	Input *input = engineContext_->input;
 
-	// Bキー: カメラ位置から前方に弾痕を作成
-	if (enableCloudTest_ && input->TriggerKey(DIK_B)) {
+	// Jキー: カメラ位置から前方に弾痕を作成
+	if (enableCloudTest_ && input->TriggerKey(DIK_J)) {
 		AddCloudHoleFromDebugCamera();
 	}
 
-	// Nキー: ランダムな位置に弾痕を作成
-	if (enableCloudTest_ && input->TriggerKey(DIK_N)) {
+	// Kキー: ランダムな位置に弾痕を作成
+	if (enableCloudTest_ && input->TriggerKey(DIK_K)) {
 		AddRandomCloudHole();
 	}
 
-	// Mキー: すべての弾痕をクリア
-	if (enableCloudTest_ && input->TriggerKey(DIK_M) && cloud_) {
+	// Lキー: すべての弾痕をクリア
+	if (enableCloudTest_ && input->TriggerKey(DIK_L) && cloud_) {
 		cloud_->ClearBulletHoles();
 		Logger::Log("Cleared all bullet holes", Logger::LogLevel::Info);
+	}
+
+	if (enableCloudTest_ && input->TriggerKey(DIK_N)) {
+		AdvanceCloudHoleShape(1);
+	}
+	if (enableCloudTest_ && input->TriggerKey(DIK_M)) {
+		AdvanceCloudHoleShape(-1);
+	}
+	if (enableCloudTest_ && input->TriggerKey(DIK_B)) {
+		AdvanceCloudHoleCategory(1);
+	}
+	if (enableCloudTest_ && input->TriggerKey(DIK_V)) {
+		AdvanceCloudHoleCategory(-1);
+	}
+	if (enableCloudTest_ && input->TriggerKey(DIK_R)) {
+		cloudHoleRoundEnabled_ = !cloudHoleRoundEnabled_;
+	}
+	if (enableCloudTest_ && input->TriggerKey(DIK_O)) {
+		cloudHoleOnionEnabled_ = !cloudHoleOnionEnabled_;
 	}
 
 	if (enableCloudTest_ && autoCloudHole_) {
@@ -353,6 +359,35 @@ void DebugScene::Update() {
 	} else {
 		autoCloudHoleTimer_ = 0.0f;
 	}
+}
+
+MagEngine::CloudHoleData DebugScene::BuildSelectedCloudHole(const Vector3 &origin, const Vector3 &direction) const {
+	CloudHoleData hole = MakeCloudHolePreset(cloudHoleShape_);
+	hole.position = origin;
+	hole.direction = NormalizeOrDefaultLocal(direction, Vector3{0.0f, 0.0f, 1.0f});
+	hole.startRadius = bulletHoleStartRadius_;
+	hole.endRadius = bulletHoleEndRadius_;
+	hole.coneLength = bulletHoleConeLength_;
+	hole.lifetime = bulletHoleLifeTime_;
+	hole.maxLifetime = bulletHoleLifeTime_;
+	hole.rotation = cloudHoleRotation_;
+	hole.aspectRatio = cloudHoleAspectRatio_;
+	if (cloudHoleRoundEnabled_) {
+		hole.flags |= CloudHoleFlag_Rounded;
+	}
+	if (cloudHoleOnionEnabled_) {
+		hole.flags |= CloudHoleFlag_Onion;
+	}
+	return SanitizeCloudHoleData(hole);
+}
+
+void DebugScene::AdvanceCloudHoleShape(int direction) {
+	cloudHoleShape_ = AdvanceCloudHoleShapeInCategory(cloudHoleShape_, cloudHoleCategory_, direction);
+}
+
+void DebugScene::AdvanceCloudHoleCategory(int direction) {
+	cloudHoleCategory_ = MagEngine::AdvanceCloudHoleCategory(cloudHoleCategory_, direction);
+	cloudHoleShape_ = GetFirstShapeInCategory(cloudHoleCategory_);
 }
 
 void DebugScene::AddCloudHoleFromDebugCamera() {
@@ -385,15 +420,7 @@ void DebugScene::AddCloudHoleFromDebugCamera() {
 		Logger::Log("Cloud hole ray did not hit cloud AABB", Logger::LogLevel::Warning);
 	}
 
-	cloud_->AddBulletHole(
-		origin,
-		forward,
-		bulletHoleStartRadius_,
-		bulletHoleEndRadius_,
-		bulletHoleConeLength_,
-		bulletHoleLifeTime_,
-		ToCloudHoleShape(cloudHoleShape_),
-		cloudHoleShapeAngle_);
+	cloud_->AddBulletHole(BuildSelectedCloudHole(origin, forward));
 	Logger::Log("Added cloud hole from DebugCamera", Logger::LogLevel::Info);
 }
 
@@ -411,19 +438,11 @@ void DebugScene::AddRandomCloudHole() {
 
 	float randomYaw = static_cast<float>(rand()) / RAND_MAX * 3.14159f * 2.0f;
 	float randomPitch = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.8f;
-	Vector3 randomDir = NormalizeOrDefault(
+	Vector3 randomDir = NormalizeOrDefaultLocal(
 		Vector3{sin(randomYaw), randomPitch, cos(randomYaw)},
 		Vector3{0.0f, 0.0f, 1.0f});
 
-	cloud_->AddBulletHole(
-		Vector3{randomX, randomY, randomZ},
-		randomDir,
-		bulletHoleStartRadius_,
-		bulletHoleEndRadius_,
-		bulletHoleConeLength_,
-		bulletHoleLifeTime_,
-		ToCloudHoleShape(cloudHoleShape_),
-		cloudHoleShapeAngle_);
+	cloud_->AddBulletHole(BuildSelectedCloudHole(Vector3{randomX, randomY, randomZ}, randomDir));
 }
 
 void DebugScene::AddManualCloudHole() {
@@ -431,11 +450,8 @@ void DebugScene::AddManualCloudHole() {
 		return;
 	}
 
-	manualBulletDirection_ = NormalizeOrDefault(manualBulletDirection_, Vector3{0.0f, 0.0f, 1.0f});
-	cloud_->AddBulletHole(manualBulletOrigin_, manualBulletDirection_,
-						  bulletHoleStartRadius_, bulletHoleEndRadius_,
-						  bulletHoleConeLength_, bulletHoleLifeTime_,
-						  ToCloudHoleShape(cloudHoleShape_), cloudHoleShapeAngle_);
+	manualBulletDirection_ = NormalizeOrDefaultLocal(manualBulletDirection_, Vector3{0.0f, 0.0f, 1.0f});
+	cloud_->AddBulletHole(BuildSelectedCloudHole(manualBulletOrigin_, manualBulletDirection_));
 	Logger::Log("Added manual cloud hole", Logger::LogLevel::Info);
 }
 
@@ -544,9 +560,12 @@ void DebugScene::DrawCloudTestImGui() {
 
 	ImGui::Separator();
 	ImGui::Text("Hole Controls");
-	ImGui::BulletText("B: Add from camera forward");
-	ImGui::BulletText("N: Add random hole");
-	ImGui::BulletText("M: Clear all holes");
+	ImGui::BulletText("J: Add from camera forward");
+	ImGui::BulletText("K: Add random hole");
+	ImGui::BulletText("L: Clear all holes");
+	ImGui::BulletText("N/M: Next/Previous shape");
+	ImGui::BulletText("B/V: Next/Previous category");
+	ImGui::BulletText("R/O: Toggle Round/Onion");
 
 	if (ImGui::Button("Add From Camera Forward")) {
 		AddCloudHoleFromDebugCamera();
@@ -573,9 +592,31 @@ void DebugScene::DrawCloudTestImGui() {
 
 	ImGui::Separator();
 	ImGui::Text("Hole Shape");
-	const char *shapeItems[] = {"Circle", "Box", "Diamond", "Star"};
-	ImGui::Combo("Section Shape", &cloudHoleShape_, shapeItems, IM_ARRAYSIZE(shapeItems));
-	ImGui::SliderFloat("Shape Angle", &cloudHoleShapeAngle_, -3.14159f, 3.14159f, "%.2f rad");
+	ImGui::Text("Cloud Hole Shape: %s", ToString(cloudHoleShape_).data());
+	ImGui::Text("Category: %s", ToString(cloudHoleCategory_).data());
+	ImGui::Text("Round: %s", cloudHoleRoundEnabled_ ? "On" : "Off");
+	ImGui::Text("Onion: %s", cloudHoleOnionEnabled_ ? "On" : "Off");
+	if (IsCloudHoleExperimentalShape(cloudHoleShape_)) {
+		ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.2f, 1.0f), "Experimental Shape Warning");
+	}
+	if (ImGui::Button("Previous Shape")) {
+		AdvanceCloudHoleShape(-1);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Next Shape")) {
+		AdvanceCloudHoleShape(1);
+	}
+	if (ImGui::Button("Previous Category")) {
+		AdvanceCloudHoleCategory(-1);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Next Category")) {
+		AdvanceCloudHoleCategory(1);
+	}
+	ImGui::Checkbox("Round Modifier", &cloudHoleRoundEnabled_);
+	ImGui::Checkbox("Onion Modifier", &cloudHoleOnionEnabled_);
+	ImGui::SliderFloat("Rotation", &cloudHoleRotation_, -3.14159f, 3.14159f, "%.2f rad");
+	ImGui::SliderFloat("Aspect Ratio", &cloudHoleAspectRatio_, 0.05f, 5.0f, "%.2f");
 	ImGui::SliderFloat("Start Radius", &bulletHoleStartRadius_, 0.1f, 20.0f);
 	ImGui::SliderFloat("End Radius", &bulletHoleEndRadius_, 0.05f, 20.0f);
 	ImGui::SliderFloat("Cone Length", &bulletHoleConeLength_, 1.0f, 2000.0f);

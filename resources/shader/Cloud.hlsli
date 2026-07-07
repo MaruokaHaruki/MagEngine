@@ -95,8 +95,14 @@ struct BulletHoleGPU {
     float endRadius;     // 弾痕の終了半径（出口）
     float lifeTime;      // 残存時間(0.0～1.0、1.0=完全、0.0=消滅)
     float coneLength;    // 円錐の長さ
-    float shapeType;     // 断面形状タイプ
-    float shapeParam;    // 形状別パラメータ
+    float rotation;      // 断面形状の回転
+    float aspectRatio;   // 断面形状の非一様スケール
+    uint shape;          // CloudHoleShape ID
+    uint flags;          // CloudHoleFlags
+    uint polygonPointCount;
+    uint padding0;
+    float4 shapeParams0;
+    float4 shapeParams1;
 };
 
 // 弾痕配列定数バッファ（b2）
@@ -104,6 +110,8 @@ cbuffer BulletHoleBufferCB : register(b2)
 {
     BulletHoleGPU gBulletHoles[4];  // CPU側の固定バッファ数と一致させる
 };
+
+#include "CloudBulletHole.hlsli"
 
 ///=============================================================================
 ///                      ライト構造体（Object3dと同じ）
@@ -318,117 +326,6 @@ float CylinderSDF(float3 p, float3 origin, float3 direction, float radius)
     // 垂直距離から半径を引いてSDF値を返す
     // なぜ：負値なら円柱内部、正値なら外部と判定できるため
     return length(perpendicular) - radius;
-}
-
-///=============================================================================
-///                      弾痕マスク計算（円錐形状対応）
-/// @brief すべての弾痕からの影響を計算し、雲密度へのマスク値を返す
-/// @param position 評価点（ワールド空間）
-/// @return マスク値（0.0=完全に空洞、1.0=影響なし）
-/// @note FinalDensity(p) = BaseDensity(p) * BulletMask(p) という形で合成する
-/// @note 円錐形状により入口から徐々に狭まる自然な弾痕を表現
-///
-/// ===== 最適化メモ =====
-/// - アクティブな弾痕数をCPU側の固定バッファ数に制限
-/// - 軸方向判定で圏外を即座に除外 → 計算スキップで15-20%改善
-float CalculateBulletHoleMask(float3 position)
-{
-    float mask = 1.0f;
-    
-    //! 弾痕がない場合は即座にリターン（ループ回避で高速化）
-    if (gBulletHoleCount <= 0) return 1.0f;
-    
-    //! CPU側で転送される最大数と揃え、未初期化領域を参照しない
-    int activeBullets = min(gBulletHoleCount, 4);
-    
-    for (int i = 0; i < activeBullets; ++i)
-    {
-        // 弾痕データを取得
-        BulletHoleGPU hole = gBulletHoles[i];
-        
-        // 評価点から弾痕原点へのベクトル
-        float3 offset = position - hole.origin;
-        
-        // 弾の進行方向への投影（縦軸方向の距離）
-        float axialDist = dot(offset, hole.direction);
-        
-        //! 最適化：軸方向で圏外判定→早期スキップ
-        //! 円錐の範囲外なら以降の計算をスキップ（if-break最適化）
-        if (axialDist < 0.0f || axialDist > hole.coneLength) {
-            continue; // 円錐の範囲外は処理スキップ
-        }
-        
-        // 半径方向の距離（横軸方向の距離）
-        float3 perpendicular = offset - axialDist * hole.direction;
-        float radialDist = length(perpendicular);
-        
-        //========================================
-        // 円錐形状：軸方向の位置に応じて半径が変化
-        // 理由: 入口（startRadius）から出口（endRadius）に向かって狭まるため
-        float t = axialDist / hole.coneLength; // 0.0（入口）～1.0（出口）
-        float currentRadius = lerp(hole.startRadius, hole.endRadius, t);
-        
-        //========================================
-        // 断面形状SDF
-        // 理由: 弾道方向は共通にし、断面だけを差し替えることで多様な穴形状を表現するため
-        if (radialDist > currentRadius * 1.75f) continue;
-
-        float3 localUp = (abs(hole.direction.y) < 0.95f) ? float3(0.0f, 1.0f, 0.0f) : float3(1.0f, 0.0f, 0.0f);
-        float3 axisX = normalize(cross(localUp, hole.direction));
-        float3 axisY = cross(hole.direction, axisX);
-        float2 sectionPos = float2(dot(perpendicular, axisX), dot(perpendicular, axisY));
-
-        float shapeAngle = hole.shapeParam;
-        float2 rotatedSection = float2(
-            sectionPos.x * cos(shapeAngle) - sectionPos.y * sin(shapeAngle),
-            sectionPos.x * sin(shapeAngle) + sectionPos.y * cos(shapeAngle));
-
-        float shapeDist = radialDist - currentRadius;
-        int shapeType = (int)(hole.shapeType + 0.5f);
-        if (shapeType == 1) {
-            float2 d = abs(rotatedSection) - currentRadius;
-            shapeDist = length(max(d, 0.0f)) + min(max(d.x, d.y), 0.0f);
-        } else if (shapeType == 2) {
-            shapeDist = (abs(rotatedSection.x) + abs(rotatedSection.y)) * 0.70710678f - currentRadius;
-        } else if (shapeType == 3) {
-            float starAngle = atan2(rotatedSection.y, rotatedSection.x);
-            float starRadius = currentRadius * (0.72f + 0.28f * cos(starAngle * 5.0f));
-            shapeDist = length(rotatedSection) - starRadius;
-        }
-
-        float shapeFalloff = saturate((shapeDist + currentRadius) / (currentRadius * 1.5f + 0.001f));
-        float radialMask = smoothstep(0.0f, 1.0f, shapeFalloff);
-        
-        //========================================
-        // 軸方向のフォールオフ（入口と出口で滑らかに）
-        // 理由: 弾痕が弾の進行方向に沿って徐々に薄くなるため
-        float entryFade = smoothstep(0.0f, hole.coneLength * 0.2f, axialDist); // 入口側のフェード
-        float exitFade = smoothstep(hole.coneLength, hole.coneLength * 0.8f, axialDist); // 出口側のフェード
-        float axialMask = entryFade * exitFade;
-        
-        //========================================
-        // 半径方向と軸方向を組み合わせた3Dフォールオフ
-        // 理由: より自然な3次元的な空洞を表現するため
-        float holeMask = max(radialMask, 1.0f - axialMask);
-        
-        //========================================
-        // エッジのさらなるソフト化（二重smoothstep）
-        // 理由: より滑らかな境界を実現するため
-        holeMask = smoothstep(0.0f, 1.0f, holeMask);
-        holeMask = smoothstep(0.0f, 1.0f, holeMask); // 二重適用でさらに滑らかに
-        
-        //========================================
-        // 残存時間によるフェードアウト
-        // 理由: 時間経過で弾痕が徐々に消えていく様子を表現するため
-        holeMask = lerp(1.0f, holeMask, hole.lifeTime);
-        
-        //========================================
-        // 複数の弾痕の影響を乗算で合成
-        // 理由: 複数の弾痕が重なると、より強く空洞が開くため
-        mask *= holeMask;
-    }
-    
-    return mask;
 }
 
 ///=============================================================================

@@ -7,8 +7,10 @@
  * \note   ボリュメトリック雲のレンダリングを管理
  *********************************************************************/
 #pragma once
+#include "CloudHoleTypes.h"
 #include "MagMath.h"
 #include <cstdint>
+#include <vector>
 #include <d3d12.h>
 #include <wrl/client.h>
 ///=============================================================================
@@ -49,15 +51,14 @@ namespace MagEngine {
 		float endRadius = 0.2f;						  ///< 弾痕の終了半径（出口）
 		float lifeTime = 1.0f;						  ///< 残存時間（0.0～1.0、1.0=完全、0.0=消滅）
 		float coneLength = 10.0f;					  ///< 円錐の長さ
-		float shapeType = 0.0f;						  ///< 断面形状タイプ
-		float shapeParam = 0.0f;						  ///< 形状別パラメータ
-	};
-
-	enum class CloudBulletHoleShape {
-		Circle = 0,
-		Box = 1,
-		Diamond = 2,
-		Star = 3,
+		float rotation = 0.0f;						  ///< 断面形状の回転
+		float aspectRatio = 1.0f;					  ///< 断面形状の非一様スケール
+		uint32_t shape = 0;							  ///< CloudHoleShape ID
+		uint32_t flags = 0;							  ///< CloudHoleFlags
+		uint32_t polygonPointCount = 0;				  ///< Polygon系の辺数
+		uint32_t padding0 = 0;						  ///< 16 byte境界維持
+		MagMath::Vector4 shapeParams0{0.0f, 0.0f, 0.0f, 0.0f}; ///< 形状別パラメータ
+		MagMath::Vector4 shapeParams1{0.0f, 0.0f, 0.0f, 0.0f}; ///< Modifier / 曲線補助パラメータ
 	};
 
 	/**----------------------------------------------------------------------------	 * \brief  CloudRenderParams 雲レンダリングパラメータ（GPU用）
@@ -166,6 +167,10 @@ namespace MagEngine {
 						   float lifeTime = 15.0f,
 						   CloudBulletHoleShape shape = CloudBulletHoleShape::Circle,
 						   float shapeParam = 0.0f);
+
+		/// @brief 共通パラメータを持つSDF穴を追加する
+		/// @note Shapeごとの個別構造体を増やさず、固定CBレイアウトを維持するための入口。
+		void AddBulletHole(const CloudHoleData &holeData);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  すべての弾痕をクリアする
@@ -301,21 +306,6 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							メンバ変数
 	private:
-		/**----------------------------------------------------------------------------		 * \brief  BulletHole 弾痕データ(CPU側)
-		 * \note   CPU側で管理する弾痕情報
-		 */
-		struct BulletHole {
-			MagMath::Vector3 origin;	// 弾の開始位置
-			MagMath::Vector3 direction; // 弾の正規化方向ベクトル
-			float startRadius;			// 弾痕の開始半径（入口）
-			float endRadius;			// 弾痕の終了半径（出口）
-			float coneLength;			// 円錐の長さ
-			float lifeTime;				// 残存時間（秒単位）
-			float maxLifeTime;			// 最大残存時間（秒単位）
-			CloudBulletHoleShape shape; // 断面形状
-			float shapeParam;			// 形状別パラメータ
-		};
-
 		/**----------------------------------------------------------------------------		 * \brief  FullscreenVertex フルスクリーン頂点構造体
 		 * \note   画面全体を覆う三角形用の頂点データ
 		 */
@@ -358,7 +348,7 @@ namespace MagEngine {
 
 		//========================================
 		// 弾痕管理
-		std::vector<BulletHole> bulletHoles_;	 // 弾痕配列(CPU側)
+		std::vector<CloudHoleData> bulletHoles_; // 弾痕配列(CPU側)
 		BulletHoleBuffer bulletHoleBufferCPU_{}; // 弾痕バッファ(CPU側)
 
 		//========================================

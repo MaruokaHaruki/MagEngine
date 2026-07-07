@@ -15,7 +15,9 @@
 #include "TextureManager.h"
 #include "engine/render/pass/RenderWorld.h"
 #include "externals/imgui/imgui.h"
+#include <algorithm>
 #include <array>
+#include <cstring>
 #include <stdexcept>
 ///=============================================================================
 ///                        namespace MagEngine
@@ -331,33 +333,35 @@ namespace MagEngine {
 							  float lifeTime,
 							  CloudBulletHoleShape shape,
 							  float shapeParam) {
-		//========================================
-		// 最大数を超える場合は最も古い弾痕を削除
-		// COMMENT: メモリ使用量を制限し、GPUバッファサイズを固定するため
+		CloudHoleData holeData = MakeCloudHolePreset(shape);
+		holeData.position = origin;
+		holeData.direction = NormalizeOrDefault(direction, {0.0f, 1.0f, 0.0f});
+		holeData.startRadius = startRadius;
+		holeData.endRadius = endRadius;
+		holeData.coneLength = coneLength;
+		holeData.lifetime = lifeTime;
+		holeData.maxLifetime = lifeTime;
+		holeData.rotation = shapeParam;
+		AddBulletHole(holeData);
+	}
+
+	///=============================================================================
+	///						弾痕を追加
+	void Cloud::AddBulletHole(const CloudHoleData &holeData) {
 		if (bulletHoles_.size() >= BulletHoleBuffer::kMaxBulletHoles) {
 			bulletHoles_.erase(bulletHoles_.begin());
 		}
 
-		//========================================
-		// 新しい弾痕を追加（円錐形状）
-		BulletHole hole;
-		hole.origin = origin;
-		hole.direction = MagMath::Normalize(direction); // 方向を正規化
-		hole.startRadius = startRadius;					// 入口の半径
-		hole.endRadius = endRadius;						// 出口の半径
-		hole.coneLength = coneLength;					// 円錐の長さ
-		hole.lifeTime = lifeTime;
-		hole.maxLifeTime = lifeTime;
-		hole.shape = shape;
-		hole.shapeParam = shapeParam;
+		// NOTE: Shape別の危険値をCPU側で丸め、Shader側のゼロ除算や不正ID分岐を避ける。
+		CloudHoleData hole = SanitizeCloudHoleData(holeData);
 		bulletHoles_.push_back(hole);
 
 		// COMMENT: DEBUG ビルドのみログ出力（Release では削除）
 #ifdef _DEBUG
 		Logger::Log("BulletHole added at (" +
-						std::to_string(origin.x) + ", " +
-						std::to_string(origin.y) + ", " +
-						std::to_string(origin.z) + ")",
+						std::to_string(hole.position.x) + ", " +
+						std::to_string(hole.position.y) + ", " +
+						std::to_string(hole.position.z) + ")",
 					Logger::LogLevel::Info);
 #endif // DEBUG
 	}
@@ -384,7 +388,7 @@ namespace MagEngine {
 		// 各弾痕の残存時間を減少させる
 		// NOTE : 時間経過で弾痕を自然に消えさせるため
 		for (auto &hole : bulletHoles_) {
-			hole.lifeTime -= deltaTime;
+			hole.lifetime -= deltaTime;
 		}
 
 		//========================================
@@ -393,7 +397,7 @@ namespace MagEngine {
 		//        視覚的には変わらず、処理負荷を20-30%削減
 		bulletHoles_.erase(
 			std::remove_if(bulletHoles_.begin(), bulletHoles_.end(),
-						   [](const BulletHole &hole) { return hole.lifeTime <= 0.1f; }),
+						   [](const CloudHoleData &hole) { return hole.lifetime <= 0.1f; }),
 			bulletHoles_.end());
 	}
 
@@ -411,6 +415,7 @@ namespace MagEngine {
 		size_t maxHoles = static_cast<size_t>(BulletHoleBuffer::kMaxBulletHoles);
 		int validCount = static_cast<int>((std::min)(bulletHoles_.size(), maxHoles));
 		paramsCPU_.bulletHoleCount = validCount;
+		bulletHoleBufferCPU_ = {};
 
 		//========================================
 		// CPU側の弾痕データをGPUフォーマットに変換（円錐対応）
@@ -420,17 +425,22 @@ namespace MagEngine {
 			auto &gpuHole = bulletHoleBufferCPU_.bulletHoles[i];
 
 			// 位置、方向、円錐パラメータをコピー
-			gpuHole.origin = hole.origin;
+			gpuHole.origin = hole.position;
 			gpuHole.direction = hole.direction;
 			gpuHole.startRadius = hole.startRadius; // 入口の半径
 			gpuHole.endRadius = hole.endRadius;		// 出口の半径
 			gpuHole.coneLength = hole.coneLength;	// 円錐の長さ
-			gpuHole.shapeType = static_cast<float>(hole.shape);
-			gpuHole.shapeParam = hole.shapeParam;
+			gpuHole.rotation = hole.rotation;
+			gpuHole.aspectRatio = hole.aspectRatio;
+			gpuHole.shape = static_cast<uint32_t>(hole.shape);
+			gpuHole.flags = hole.flags;
+			gpuHole.polygonPointCount = hole.polygonPointCount;
+			gpuHole.shapeParams0 = hole.shapeParams0;
+			gpuHole.shapeParams1 = hole.shapeParams1;
 
 			// 残存時間を0.0～1.0に正規化
 			// COMMENT: シェーダーでフェードアウト処理をしやすくするため
-			gpuHole.lifeTime = (hole.maxLifeTime > 0.0f) ? (hole.lifeTime / hole.maxLifeTime) : 0.0f;
+			gpuHole.lifeTime = (hole.maxLifetime > 0.0f) ? (hole.lifetime / hole.maxLifetime) : 0.0f;
 		}
 
 		//========================================

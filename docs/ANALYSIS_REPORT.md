@@ -2271,3 +2271,226 @@ GPU確認:
 ### 28.10 次の改修候補
 
 HUD Lineの座標系を画面ピクセル基準へ整理すると、カメラ距離やFOV変化に対して太さをさらに安定させられる。
+
+---
+
+## 29. Cloud弾痕 / 雲穴 SDF Shape拡張
+
+### 29.1 目的
+
+Cloudの弾痕穴をCircle / Box / Diamond / Starの固定選択から、Inigo Quilez系の2D distance function形状をShape IDで選択できる構造へ拡張した。
+
+性能上の制約として、各穴は`CloudHoleShape`で指定された1種類のSDFだけを評価する。全Shapeを順番に評価して`min`を取る方式は採用していない。
+
+### 29.2 Shape一覧とカテゴリ
+
+Basic:
+- Circle
+- RoundedBox
+- ChamferBox
+- Box
+- OrientedBox
+- Segment
+- Rhombus
+- Trapezoid
+- Parallelogram
+
+Polygon:
+- EquilateralTriangle
+- IsoscelesTriangle
+- Triangle
+- UnevenCapsule
+- Pentagon
+- Hexagon
+- Octagon
+- Hexagram
+- Pentagram
+- RegularStar
+
+Circular:
+- Pie
+- CutDisk
+- Arc
+- Ring
+- Horseshoe
+- Vesica
+- OrientedVesica
+- Moon
+
+Organic:
+- RoundedCross
+- Egg
+- Heart
+- Cross
+- RoundedX
+- Polygon
+- Ellipse
+
+Curve:
+- Parabola
+- ParabolaSegment
+- QuadraticBezier
+- BlobbyCross
+- Tunnel
+- Stairs
+- QuadraticCircle
+- Hyperbola
+- CoolS
+- CircleWave
+
+Experimental:
+- QuadraticBezier
+- Hyperbola
+- CoolS
+- CircleWave
+- Tunnel
+- Stairs
+- BlobbyCross
+- Polygon
+
+実装Shape総数は44である。`Count`は穴形状として使用しない。
+
+### 29.3 CloudHoleData拡張
+
+`engine/graphics/cloud/CloudHoleTypes.h`を追加し、以下を集約した。
+
+- `CloudHoleShape`
+- `CloudHoleShapeCategory`
+- `CloudHoleFlags`
+- `CloudHoleData`
+- Shape名変換
+- Category分類
+- Debug用Shape循環
+- Shape別Preset
+- `SanitizeCloudHoleData`
+
+`CloudHoleData`はShapeごとの個別構造体を増やさず、`shapeParams0`、`shapeParams1`、`flags`、`polygonPointCount`で共通表現する。
+
+CircleのPresetは`aspectRatio = 1.0f`、modifierなし、追加パラメータなしを維持し、既存の円形穴の既定挙動を変えない。
+
+### 29.4 SDF include分離
+
+`resources/shader/CloudHoleSdf.hlsli`を追加し、SDF本体を`Cloud.hlsli`から分離した。
+
+構成:
+- 共通関数: `Dot2`、`Rotate2D`、`SafeAspectRatio`、`TransformHoleLocalPosition`
+- Basic SDF
+- Polygon SDF
+- Circular SDF
+- Organic SDF
+- Curve SDF
+- Modifier: Round / Onion
+- `EvaluateCloudHoleSdf`
+
+`resources/shader/CloudBulletHole.hlsli`は穴ごとの軸方向判定、局所座標変換、選択Shapeの評価、既存Cloud密度マスクへの合成だけを担当する。
+
+### 29.5 Shape別Preset
+
+主なPreset:
+- RoundedBox: corner radius 0.2
+- Trapezoid: top ratio 0.6
+- RegularStar / Pentagram: point count 5、inner ratio 0.45
+- Ring: thickness 0.2
+- Moon: offset 0.45
+- Cross: arm width 0.28
+- Ellipse: aspect ratio 1.5
+- Parabola: curvature 1.0
+- Stairs: steps 5
+- CircleWave: wave amount 0.5、frequency 6
+
+Presetは`SanitizeCloudHoleData`を通して、安全な半径、寿命、aspectRatio、polygonPointCountへ補正する。
+
+### 29.6 Round / Onion Modifier
+
+`CloudHoleFlags`でRoundとOnionを任意適用できるようにした。
+
+- Round: `d -= roundRadius`
+- Onion: `d = abs(d) - thickness`
+
+modifier未使用時は分岐に入らず、Circleの既定挙動には影響しない。
+
+### 29.7 Debug操作
+
+DebugSceneのCloud Hole操作を以下へ更新した。
+
+- `J`: 選択Shapeをカメラ前方基準で生成
+- `K`: 選択Shapeをランダム位置に生成
+- `L`: 全雲穴クリア
+- `N`: 次のShape
+- `M`: 前のShape
+- `B`: 次カテゴリ
+- `V`: 前カテゴリ
+- `R`: Round modifier切替
+- `O`: Onion modifier切替
+
+Debug UIには現在のShape、Category、Round / Onion状態、Rotation、Aspect Ratio、Experimental警告を表示する。
+
+### 29.8 性能制約
+
+維持した制約:
+- Cloud RaymarchのMAX_STEPSは変更なし
+- LightMarch回数は変更なし
+- Noise / FBM構造は変更なし
+- Cloud Lightingは変更なし
+- RenderGraph / Barrierは変更なし
+- Cloud PSOは変更なし
+- Texture参照の追加なし
+- GPU Resource追加なし
+- 各穴で評価するSDFはShape IDに対応する1種類のみ
+
+通常ランダム候補とExperimental候補はCPU側分類で分離できる状態にした。
+
+### 29.9 CPUテスト
+
+`tests/RenderValidationTests.cpp`へCloudHoleTypesのCPUテストを追加した。
+
+検証内容:
+- 全Shape IDの有効性
+- `Count`をShapeとして扱わないこと
+- Category分類
+- Circle Presetの既定値
+- 各Shape Presetの安全範囲
+- Shape / Category循環
+- Round / Onion flagsのmask
+- aspectRatio clamp
+- Polygon辺数clamp
+- Star point count安全範囲
+- Ring thickness安全範囲
+- NaN / Infinity補正
+
+実行結果:
+- 今回の作業内では未完了
+- 理由: `RenderValidationTests.cpp`は独立`main`を持つ`None`管理ファイルであり、一時exe化時に`DirectXCore`、`DirectXTex`、WinAPI、FrameContextまでリンク依存が広がったため
+- Debug / Releaseの本体ビルドではコンパイル対象外である
+
+### 29.10 ビルド / Shader確認
+
+DXC単体確認:
+- `Cloud.VS.hlsl`: 成功
+- `Cloud.PS.hlsl`: 成功
+
+Debug x64ビルド:
+- 成功
+- 警告0
+- エラー0
+
+Release x64ビルド:
+- 成功
+- 警告0
+- エラー0
+
+### 29.11 GPU確認
+
+今回の作業内では実GPUでカテゴリ別Shape表示確認は未実施。
+
+実機で確認すべき項目:
+- Basic: Circle / RoundedBox / Rhombus
+- Polygon: Hexagon / Pentagram / RegularStar
+- Circular: Ring / Moon / Horseshoe
+- Organic: Heart / RoundedX / Egg
+- Curve: Parabola / QuadraticBezier / CircleWave
+- 回転、aspectRatio、Round、Onionの反映
+- 複数穴での破綻なし
+- D3D12 ERROR: 0
+- D3D12 CORRUPTION: 0
+- Device Removedなし

@@ -8,12 +8,14 @@
 #include "engine/render/post_effect/PostEffectParameterSet.h"
 #include "engine/render/post_effect/PostEffectManager.h"
 #include "engine/graphics/sprite/SpriteSetup.h"
+#include "engine/graphics/cloud/CloudHoleTypes.h"
 #include "engine/render/pass/RenderWorld.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -66,6 +68,66 @@ namespace {
 		}
 		++result.failed;
 		std::cerr << "FAILED: " << name << '\n';
+	}
+
+	void CloudHoleTypesTest_CategoriesAndPresets(TestResult &result) {
+		Expect(result, IsCloudHoleShapeValid(CloudHoleShape::Circle), "CloudHoleTypes_CircleValid");
+		Expect(result, !IsCloudHoleShapeValid(static_cast<uint32_t>(CloudHoleShape::Count)), "CloudHoleTypes_CountInvalid");
+		Expect(result, GetCloudHoleShapeCategory(CloudHoleShape::Circle) == CloudHoleShapeCategory::Basic, "CloudHoleTypes_BasicCategory");
+		Expect(result, GetCloudHoleShapeCategory(CloudHoleShape::Hexagon) == CloudHoleShapeCategory::Polygon, "CloudHoleTypes_PolygonCategory");
+		Expect(result, GetCloudHoleShapeCategory(CloudHoleShape::Ring) == CloudHoleShapeCategory::Circular, "CloudHoleTypes_CircularCategory");
+		Expect(result, GetCloudHoleShapeCategory(CloudHoleShape::Heart) == CloudHoleShapeCategory::Organic, "CloudHoleTypes_OrganicCategory");
+		Expect(result, GetCloudHoleShapeCategory(CloudHoleShape::Parabola) == CloudHoleShapeCategory::Curve, "CloudHoleTypes_CurveCategory");
+		Expect(result, IsCloudHoleExperimentalShape(CloudHoleShape::QuadraticBezier), "CloudHoleTypes_ExperimentalCandidate");
+
+		const CloudHoleData circle = MakeCloudHolePreset(CloudHoleShape::Circle);
+		Expect(result, circle.shape == CloudHoleShape::Circle, "CloudHoleTypes_CirclePresetShape");
+		Expect(result, circle.aspectRatio == 1.0f, "CloudHoleTypes_CirclePresetAspect");
+		Expect(result, circle.shapeParams0.x == 0.0f, "CloudHoleTypes_CirclePresetNoModifier");
+
+		for(uint32_t shapeId = 0; shapeId < static_cast<uint32_t>(CloudHoleShape::Count); ++shapeId) {
+			const CloudHoleData preset = MakeCloudHolePreset(static_cast<CloudHoleShape>(shapeId));
+			Expect(result, IsCloudHoleShapeValid(preset.shape), "CloudHoleTypes_PresetShapeValid");
+			Expect(result, preset.startRadius > 0.0f, "CloudHoleTypes_PresetStartRadius");
+			Expect(result, preset.endRadius > 0.0f, "CloudHoleTypes_PresetEndRadius");
+			Expect(result, preset.aspectRatio >= 0.05f, "CloudHoleTypes_PresetAspectSafe");
+		}
+
+		Expect(result, AdvanceCloudHoleShapeInCategory(CloudHoleShape::Circle, CloudHoleShapeCategory::Basic, -1) == CloudHoleShape::Parallelogram, "CloudHoleTypes_ShapeWrapPrevious");
+		Expect(result, AdvanceCloudHoleShapeInCategory(CloudHoleShape::Parallelogram, CloudHoleShapeCategory::Basic, 1) == CloudHoleShape::Circle, "CloudHoleTypes_ShapeWrapNext");
+		Expect(result, AdvanceCloudHoleCategory(CloudHoleShapeCategory::Basic, -1) == CloudHoleShapeCategory::Experimental, "CloudHoleTypes_CategoryWrapPrevious");
+	}
+
+	void CloudHoleTypesTest_Sanitize(TestResult &result) {
+		CloudHoleData invalid{};
+		invalid.shape = static_cast<CloudHoleShape>(999u);
+		invalid.startRadius = -1.0f;
+		invalid.endRadius = std::numeric_limits<float>::infinity();
+		invalid.lifetime = std::numeric_limits<float>::quiet_NaN();
+		invalid.maxLifetime = -2.0f;
+		invalid.aspectRatio = 0.0f;
+		invalid.flags = 0xffffffffu;
+		invalid.polygonPointCount = 2u;
+		invalid.shapeParams0 = {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), 1.0f, -1.0f};
+		invalid.shapeParams1 = {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), 2.0f, 3.0f};
+
+		const CloudHoleData sanitized = SanitizeCloudHoleData(invalid);
+		Expect(result, sanitized.shape == CloudHoleShape::Circle, "CloudHoleTypes_InvalidShapeFallback");
+		Expect(result, sanitized.startRadius > 0.0f, "CloudHoleTypes_StartRadiusClamped");
+		Expect(result, sanitized.endRadius > 0.0f, "CloudHoleTypes_EndRadiusClamped");
+		Expect(result, sanitized.maxLifetime > 0.0f, "CloudHoleTypes_MaxLifetimeClamped");
+		Expect(result, sanitized.aspectRatio >= 0.05f, "CloudHoleTypes_AspectClamped");
+		Expect(result, (sanitized.flags & ~(CloudHoleFlag_Rounded | CloudHoleFlag_Onion)) == 0u, "CloudHoleTypes_FlagsMasked");
+
+		CloudHoleData polygon = MakeCloudHolePreset(CloudHoleShape::Polygon);
+		polygon.polygonPointCount = 2u;
+		polygon = SanitizeCloudHoleData(polygon);
+		Expect(result, polygon.polygonPointCount >= 3u && polygon.polygonPointCount <= 8u, "CloudHoleTypes_PolygonPointClamp");
+
+		CloudHoleData ring = MakeCloudHolePreset(CloudHoleShape::Ring);
+		Expect(result, ring.shapeParams0.x >= 0.0f && ring.shapeParams0.x <= 1.0f, "CloudHoleTypes_RingThicknessSafe");
+		CloudHoleData star = MakeCloudHolePreset(CloudHoleShape::RegularStar);
+		Expect(result, star.shapeParams0.x >= 3.0f && star.shapeParams0.x <= 8.0f, "CloudHoleTypes_StarPointCountSafe");
 	}
 
 	RenderPassEntry MakePass(RenderPassId id, RenderPhase phase, int32_t order, std::vector<RenderPassResourceUsage> usages) {
@@ -1332,6 +1394,8 @@ int main() {
 	PipelineRecipeTest_Object3dDefaults(result);
 	PipelineRecipeTest_SkyboxDefaults(result);
 	PipelineRecipeTest_CloudDefaults(result);
+	CloudHoleTypesTest_CategoriesAndPresets(result);
+	CloudHoleTypesTest_Sanitize(result);
 	PipelineRecipeTest_TrailDefaults(result);
 	PipelineRecipeTest_PostEffectDefaults(result);
 	PipelineRecipeTest_ValidationErrors(result);
