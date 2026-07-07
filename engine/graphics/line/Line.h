@@ -8,7 +8,9 @@
  *********************************************************************/
 #pragma once
 #include "Light.h"
+#include "LineStyle.h"
 #include "MagMath.h"
+#include <span>
 #include <vector>
 //========================================
 // DX12include
@@ -37,8 +39,13 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							メンバ関数
 	public:
+		~Line();
+
 		/// \brief 初期化
 		void Initialize(LineSetup *lineSetup);
+
+		/// @brief GPUリソースを解放する
+		void Finalize();
 
 		/// \brief 更新
 		void Update();
@@ -69,6 +76,11 @@ namespace MagEngine {
 		 * \param  thickness 線の太さ
 		 */
 		void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness = 1.0f);
+		void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const LineStyle &style, LineRenderMode batchMode);
+		void AddPolyline(std::span<const MagMath::Vector3> points, const LineStyle &style, LineRenderMode batchMode);
+		void AddRect(const MagMath::Vector3 &min, const MagMath::Vector3 &max, const LineStyle &style, LineRenderMode batchMode);
+		void AddCornerBracket(const MagMath::Vector3 &center, const MagMath::Vector3 &halfSize, float cornerLength, const LineStyle &style, LineRenderMode batchMode);
+		void AddArrow(const MagMath::Vector3 &position, const MagMath::Vector3 &direction, float size, const LineStyle &style, LineRenderMode batchMode);
 
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
@@ -83,6 +95,9 @@ namespace MagEngine {
 		 * \return
 		 */
 		void CreateTransformationMatrixBuffer();
+		void AppendHudLineQuad(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const LineStyle &style);
+		void AppendLineSegment(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const LineStyle &style, LineRenderMode batchMode);
+		static LineStyle SanitizeStyle(const LineStyle &style);
 
 		///--------------------------------------------------------------
 		///							入出力関数
@@ -181,6 +196,7 @@ namespace MagEngine {
 		//---------------------------------------
 		// 頂点バッファ
 		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_ = nullptr;
+		LineVertex *mappedVertexData_ = nullptr;
 		// バッファリソースの使い道を指すポインタ
 		D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ = {};
 

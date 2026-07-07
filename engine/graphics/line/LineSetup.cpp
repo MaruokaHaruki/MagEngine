@@ -35,8 +35,8 @@ namespace MagEngine {
 		commandList->SetGraphicsRootSignature(rootSignature_.Get());
 		// グラフィックスパイプラインステートをセット
 		commandList->SetPipelineState(renderMode == LineRenderMode::Hud ? hudPipelineState_.Get() : worldPipelineState_.Get());
-		// プリミティブトポロジーをセットする(Line用にLINELISTに変更)
-		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+		// NOTE: Worldは既存LINELIST、HUDは太線Quad用TRIANGLELISTで同じLineRenderPass経路を使う。
+		commandList->IASetPrimitiveTopology(renderMode == LineRenderMode::Hud ? D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST : D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 	}
 
 	///=============================================================================
@@ -103,6 +103,8 @@ namespace MagEngine {
 		// HUD系は既存のScene深度に依存させず、画面前面の安定描画を優先する。
 		recipe.depthStencilState.DepthEnable = false;
 		recipe.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+		recipe.rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		recipe.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		return recipe;
 	}
 

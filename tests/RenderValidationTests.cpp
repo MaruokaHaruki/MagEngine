@@ -3,6 +3,7 @@
 #include "engine/render/graph/RenderTransitionExecutor.h"
 #include "engine/render/Renderer.h"
 #include "engine/graphics/line/LineSetup.h"
+#include "engine/graphics/line/LineStyle.h"
 #include "engine/render/post_effect/fullscreenPass/FullscreenPassRendere.h"
 #include "engine/render/post_effect/PostEffectParameterSet.h"
 #include "engine/render/post_effect/PostEffectManager.h"
@@ -10,8 +11,10 @@
 #include "engine/render/pass/RenderWorld.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -169,6 +172,69 @@ namespace {
 
 	PipelineRecipe MakeHudLineRecipeForTesting() {
 		return LineSetup::CreateHudPipelineRecipe(FakeRootSignature());
+	}
+
+	struct CpuLineBuildResult {
+		size_t vertexCount = 0;
+		size_t lineCount = 0;
+	};
+
+	float CpuLength(const MagMath::Vector2 &v) {
+		return std::sqrt(v.x * v.x + v.y * v.y);
+	}
+
+	LineStyle SanitizeLineStyleForTesting(LineStyle style) {
+		if(style.thickness < 0.01f) {
+			style.thickness = 0.01f;
+		}
+		if(style.color.w < 0.0f) {
+			style.color.w = 0.0f;
+		} else if(style.color.w > 1.0f) {
+			style.color.w = 1.0f;
+		}
+		if(style.dashLength <= 0.0f || style.gapLength < 0.0f) {
+			style.dashed = false;
+		}
+		return style;
+	}
+
+	CpuLineBuildResult BuildHudLineForTesting(const MagMath::Vector2 &start, const MagMath::Vector2 &end, LineStyle style, size_t vertexLimit = 100000) {
+		style = SanitizeLineStyleForTesting(style);
+		const MagMath::Vector2 delta{end.x - start.x, end.y - start.y};
+		const float length = CpuLength(delta);
+		if(length <= 0.0001f || style.color.w <= 0.0f) {
+			return {};
+		}
+		CpuLineBuildResult result{};
+		if(style.dashed) {
+			float cursor = 0.0f;
+			int guard = 0;
+			while(cursor < length && guard < 1024) {
+				const float dashEnd = (cursor + style.dashLength < length) ? cursor + style.dashLength : length;
+				if(dashEnd > cursor && result.vertexCount + 6 <= vertexLimit) {
+					result.vertexCount += 6;
+					++result.lineCount;
+				}
+				cursor = dashEnd + style.gapLength;
+				++guard;
+			}
+			return result;
+		}
+		if(result.vertexCount + 6 <= vertexLimit) {
+			result.vertexCount += 6;
+			++result.lineCount;
+		}
+		return result;
+	}
+
+	CpuLineBuildResult BuildPolylineForTesting(std::span<const MagMath::Vector2> points, const LineStyle &style) {
+		CpuLineBuildResult result{};
+		for(size_t i = 1; i < points.size(); ++i) {
+			const CpuLineBuildResult segment = BuildHudLineForTesting(points[i - 1], points[i], style);
+			result.vertexCount += segment.vertexCount;
+			result.lineCount += segment.lineCount;
+		}
+		return result;
 	}
 
 	PipelineRecipe MakeParticleRecipeForTesting() {
@@ -789,7 +855,57 @@ namespace {
 		Expect(result, recipe.Validate().isValid, "PipelineRecipeTest_HudLineDepthNoWrite_Valid");
 		Expect(result, recipe.depthStencilState.DepthEnable == FALSE, "PipelineRecipeTest_HudLineDepthNoWrite_Disable");
 		Expect(result, recipe.depthStencilState.DepthWriteMask == D3D12_DEPTH_WRITE_MASK_ZERO, "PipelineRecipeTest_HudLineDepthNoWrite_WriteZero");
-		Expect(result, recipe.primitiveTopologyType == D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, "PipelineRecipeTest_HudLineDepthNoWrite_Topology");
+		Expect(result, recipe.primitiveTopologyType == D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE, "PipelineRecipeTest_HudLineDepthNoWrite_Topology");
+		Expect(result, recipe.rasterizerState.CullMode == D3D12_CULL_MODE_NONE, "PipelineRecipeTest_HudLineDepthNoWrite_CullNone");
+	}
+
+	void LineStyleTest_HudLineBuildsQuad(TestResult &result) {
+		LineStyle style{};
+		style.mode = LineRenderMode::Hud;
+		style.thickness = 4.0f;
+		const CpuLineBuildResult horizontal = BuildHudLineForTesting({0.0f, 0.0f}, {10.0f, 0.0f}, style);
+		const CpuLineBuildResult vertical = BuildHudLineForTesting({0.0f, 0.0f}, {0.0f, 10.0f}, style);
+		const CpuLineBuildResult diagonal = BuildHudLineForTesting({0.0f, 0.0f}, {10.0f, 10.0f}, style);
+		Expect(result, horizontal.vertexCount == 6, "LineStyleTest_HorizontalQuad");
+		Expect(result, vertical.vertexCount == 6, "LineStyleTest_VerticalQuad");
+		Expect(result, diagonal.vertexCount == 6, "LineStyleTest_DiagonalQuad");
+	}
+
+	void LineStyleTest_ShapeExpansion(TestResult &result) {
+		LineStyle style{};
+		style.mode = LineRenderMode::Hud;
+		const MagMath::Vector2 polyline[] = {{0.0f, 0.0f}, {10.0f, 0.0f}, {10.0f, 10.0f}};
+		const CpuLineBuildResult polylineResult = BuildPolylineForTesting(polyline, style);
+		const size_t rectVertices = BuildHudLineForTesting({0.0f, 0.0f}, {10.0f, 0.0f}, style).vertexCount * 4;
+		const size_t bracketVertices = BuildHudLineForTesting({0.0f, 0.0f}, {10.0f, 0.0f}, style).vertexCount * 8;
+		const size_t arrowVertices = BuildHudLineForTesting({0.0f, 0.0f}, {10.0f, 0.0f}, style).vertexCount * 3;
+		Expect(result, polylineResult.lineCount == 2 && polylineResult.vertexCount == 12, "LineStyleTest_Polyline");
+		Expect(result, rectVertices == 24, "LineStyleTest_RectFourEdges");
+		Expect(result, bracketVertices == 48, "LineStyleTest_CornerBracketEightEdges");
+		Expect(result, arrowVertices == 18, "LineStyleTest_ArrowThreeEdges");
+	}
+
+	void LineStyleTest_DashedAndInvalidInputs(TestResult &result) {
+		LineStyle style{};
+		style.mode = LineRenderMode::Hud;
+		style.dashed = true;
+		style.dashLength = 4.0f;
+		style.gapLength = 2.0f;
+		const CpuLineBuildResult dashed = BuildHudLineForTesting({0.0f, 0.0f}, {10.0f, 0.0f}, style);
+		Expect(result, dashed.lineCount == 2 && dashed.vertexCount == 12, "LineStyleTest_DashedVisibleSegments");
+
+		LineStyle invalid = style;
+		invalid.thickness = -1.0f;
+		invalid.color.w = 2.0f;
+		invalid.dashLength = 0.0f;
+		const LineStyle sanitized = SanitizeLineStyleForTesting(invalid);
+		Expect(result, sanitized.thickness == 0.01f, "LineStyleTest_ThicknessClamp");
+		Expect(result, sanitized.color.w == 1.0f, "LineStyleTest_AlphaClamp");
+		Expect(result, !sanitized.dashed, "LineStyleTest_InvalidDashDisabled");
+
+		Expect(result, BuildHudLineForTesting({0.0f, 0.0f}, {0.0f, 0.0f}, style).vertexCount == 0, "LineStyleTest_ZeroLengthIgnored");
+		Expect(result, BuildPolylineForTesting(std::span<const MagMath::Vector2>{}, style).vertexCount == 0, "LineStyleTest_EmptyPolyline");
+		Expect(result, BuildHudLineForTesting({0.0f, 0.0f}, {10.0f, 0.0f}, style, 5).vertexCount == 0, "LineStyleTest_VertexLimitDropsWholeQuad");
 	}
 
 	void PipelineRecipeTest_ParticleBlendAndDepth(TestResult &result) {
@@ -1209,6 +1325,9 @@ int main() {
 	LineRenderModeTest_RenderWorldKeepsClassification(result);
 	PipelineRecipeTest_LineDepthWrite(result);
 	PipelineRecipeTest_HudLineDepthNoWrite(result);
+	LineStyleTest_HudLineBuildsQuad(result);
+	LineStyleTest_ShapeExpansion(result);
+	LineStyleTest_DashedAndInvalidInputs(result);
 	PipelineRecipeTest_ParticleBlendAndDepth(result);
 	PipelineRecipeTest_Object3dDefaults(result);
 	PipelineRecipeTest_SkyboxDefaults(result);

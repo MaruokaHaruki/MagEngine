@@ -249,6 +249,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\graphics\line\Line.h" />
     <ClInclude Include="engine\graphics\line\LineSetup.h" />
     <ClInclude Include="engine\graphics\line\LineManager.h" />
+    <ClInclude Include="engine\graphics\line\LineStyle.h" />
     <ClInclude Include="engine\base\imGui\BasePanel.h" />
     <ClInclude Include="engine\base\imGui\EditorLayout.h" />
     <ClInclude Include="engine\base\imGui\EditorState.h" />

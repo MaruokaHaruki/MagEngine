@@ -390,6 +390,9 @@
     <ClInclude Include="engine\graphics\line\LineManager.h">
       <Filter>engine\graphics\line</Filter>
     </ClInclude>
+    <ClInclude Include="engine\graphics\line\LineStyle.h">
+      <Filter>engine\graphics\line</Filter>
+    </ClInclude>
     <ClInclude Include="engine\graphics\sprite\SpriteSetup.h">
       <Filter>engine\graphics\sprite</Filter>
     </ClInclude>

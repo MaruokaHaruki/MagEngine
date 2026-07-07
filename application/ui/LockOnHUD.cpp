@@ -218,23 +218,27 @@ void LockOnHUD::DrawBracketMarker(const Vector3 &markerPos, const Vector3 &camer
 	// ---- 4コーナーL字ブラケットを描く汎用ラムダ ----
 	auto DrawCorners = [&](float s, const Vector4 &col, float thick) {
 		float arm = s * 0.52f; // アームの長さ (ブラケット辺の比率)
+		MagEngine::LineStyle style{};
+		style.mode = LineRenderMode::Hud;
+		style.color = col;
+		style.thickness = thick;
 
 		// 左上
 		Vector3 tl = markerPos - rightDir * s + upDir * s;
-		lineManager_->DrawLine(tl, tl + rightDir * arm, col, thick);
-		lineManager_->DrawLine(tl, tl - upDir * arm, col, thick);
+		lineManager_->DrawLine(tl, tl + rightDir * arm, style);
+		lineManager_->DrawLine(tl, tl - upDir * arm, style);
 		// 右上
 		Vector3 tr = markerPos + rightDir * s + upDir * s;
-		lineManager_->DrawLine(tr, tr - rightDir * arm, col, thick);
-		lineManager_->DrawLine(tr, tr - upDir * arm, col, thick);
+		lineManager_->DrawLine(tr, tr - rightDir * arm, style);
+		lineManager_->DrawLine(tr, tr - upDir * arm, style);
 		// 左下
 		Vector3 bl = markerPos - rightDir * s - upDir * s;
-		lineManager_->DrawLine(bl, bl + rightDir * arm, col, thick);
-		lineManager_->DrawLine(bl, bl + upDir * arm, col, thick);
+		lineManager_->DrawLine(bl, bl + rightDir * arm, style);
+		lineManager_->DrawLine(bl, bl + upDir * arm, style);
 		// 右下
 		Vector3 br = markerPos + rightDir * s - upDir * s;
-		lineManager_->DrawLine(br, br - rightDir * arm, col, thick);
-		lineManager_->DrawLine(br, br + upDir * arm, col, thick);
+		lineManager_->DrawLine(br, br - rightDir * arm, style);
+		lineManager_->DrawLine(br, br + upDir * arm, style);
 	};
 
 	// ========== 未ロック：薄いアンバーの細いブラケット ==========
@@ -258,8 +262,12 @@ void LockOnHUD::DrawBracketMarker(const Vector3 &markerPos, const Vector3 &camer
 		float dotR = size * 0.17f;
 		Vector4 dotCol = accentColor;
 		dotCol.w = 1.0f;
-		lineManager_->DrawLine(markerPos - rightDir * dotR, markerPos + rightDir * dotR, dotCol, 2.5f);
-		lineManager_->DrawLine(markerPos - upDir * dotR, markerPos + upDir * dotR, dotCol, 2.5f);
+		MagEngine::LineStyle dotStyle{};
+		dotStyle.mode = LineRenderMode::Hud;
+		dotStyle.color = dotCol;
+		dotStyle.thickness = 2.5f;
+		lineManager_->DrawLine(markerPos - rightDir * dotR, markerPos + rightDir * dotR, dotStyle);
+		lineManager_->DrawLine(markerPos - upDir * dotR, markerPos + upDir * dotR, dotStyle);
 	}
 }
 

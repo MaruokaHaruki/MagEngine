@@ -43,6 +43,12 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void LineManager::Finalize() {
+		if (worldLine_) {
+			worldLine_->Finalize();
+		}
+		if (hudLine_) {
+			hudLine_->Finalize();
+		}
 		worldLine_.reset();
 		hudLine_.reset();
 		lineSetup_.reset();
@@ -82,13 +88,6 @@ namespace MagEngine {
 		// Gridの描画
 		if (isDrawGrid_) {
 			DrawGrid(gridSize_, gridDivisions_, gridColor_);
-		}
-		// ラインの更新
-		if (worldLine_) {
-			worldLine_->Update();
-		}
-		if (hudLine_) {
-			hudLine_->Update();
 		}
 	}
 
@@ -180,7 +179,7 @@ namespace MagEngine {
 		Logger::Log(std::format("- World batch Draw call count: {}", diagnostics_.worldDrawCallCount), Logger::LogLevel::Info);
 		Logger::Log(std::format("- HUD batch Draw call count: {}", diagnostics_.hudDrawCallCount), Logger::LogLevel::Info);
 		Logger::Log(std::format("- HUD PSO bound: {}", diagnostics_.hudPsoBound), Logger::LogLevel::Info);
-		Logger::Log("- HUD primitive topology: LINELIST", Logger::LogLevel::Info);
+		Logger::Log("- HUD primitive topology: TRIANGLELIST", Logger::LogLevel::Info);
 		Logger::Log(std::format("- HUD vertex buffer size: {}", diagnostics_.hudVertexBufferSizeInBytes), Logger::LogLevel::Info);
 		Logger::Log("- Current render target name: SceneColor", Logger::LogLevel::Info);
 		Logger::Log(std::format("- Current command list valid: {}", diagnostics_.hudCommandListValid), Logger::LogLevel::Info);
@@ -201,22 +200,87 @@ namespace MagEngine {
 	///=============================================================================
 	///						ラインの追加
 	void LineManager::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness) {
+		LineStyle style{};
+		style.mode = renderMode_;
+		style.color = color;
+		style.thickness = thickness;
+		DrawLine(start, end, style);
+	}
+
+	void LineManager::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const LineStyle &style) {
 		if (!isDrawLine_) {
 			return;
 		}
-		// ラインの追加（太さを指定）
-		Line *line = GetLine(renderMode_);
+		// NOTE: Style指定時は呼び出し元が意図したHUD/Worldバッチを優先し、既存の一時RenderMode漏れに影響されないようにする。
+		Line *line = GetLine(style.mode);
 		if (!line) {
 			return;
 		}
-		line->DrawLine(start, end, color, thickness);
-		if (renderMode_ == LineRenderMode::Hud) {
+		line->DrawLine(start, end, style, style.mode);
+		if (style.mode == LineRenderMode::Hud) {
 			if (activeHudLineSourceIsLockOn_) {
 				++diagnostics_.lockOnHudLineAddCount;
 			} else {
 				++diagnostics_.hudLineAddCount;
 			}
 		}
+	}
+
+	void LineManager::AddLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color) {
+		DrawLine(start, end, color);
+	}
+
+	void LineManager::AddLine(const MagMath::Vector2 &start, const MagMath::Vector2 &end, const LineStyle &style) {
+		DrawLine({start.x, start.y, 0.0f}, {end.x, end.y, 0.0f}, style);
+	}
+
+	void LineManager::AddPolyline(std::span<const MagMath::Vector2> points, const LineStyle &style) {
+		if (points.size() < 2) {
+			return;
+		}
+		for (size_t i = 1; i < points.size(); ++i) {
+			AddLine(points[i - 1], points[i], style);
+		}
+	}
+
+	void LineManager::AddPolyline(std::span<const MagMath::Vector3> points, const LineStyle &style) {
+		Line *line = GetLine(style.mode);
+		if (!line) {
+			return;
+		}
+		line->AddPolyline(points, style, style.mode);
+	}
+
+	void LineManager::AddRect(const MagMath::Vector2 &min, const MagMath::Vector2 &max, const LineStyle &style) {
+		Line *line = GetLine(style.mode);
+		if (!line) {
+			return;
+		}
+		line->AddRect({min.x, min.y, 0.0f}, {max.x, max.y, 0.0f}, style, style.mode);
+	}
+
+	void LineManager::AddCornerBracket(const MagMath::Vector2 &center, const MagMath::Vector2 &halfSize, float cornerLength, const LineStyle &style) {
+		AddCornerBracket({center.x, center.y, 0.0f}, {halfSize.x, halfSize.y, 0.0f}, cornerLength, style);
+	}
+
+	void LineManager::AddCornerBracket(const MagMath::Vector3 &center, const MagMath::Vector3 &halfSize, float cornerLength, const LineStyle &style) {
+		Line *line = GetLine(style.mode);
+		if (!line) {
+			return;
+		}
+		line->AddCornerBracket(center, halfSize, cornerLength, style, style.mode);
+	}
+
+	void LineManager::AddArrow(const MagMath::Vector2 &position, const MagMath::Vector2 &direction, float size, const LineStyle &style) {
+		AddArrow({position.x, position.y, 0.0f}, {direction.x, direction.y, 0.0f}, size, style);
+	}
+
+	void LineManager::AddArrow(const MagMath::Vector3 &position, const MagMath::Vector3 &direction, float size, const LineStyle &style) {
+		Line *line = GetLine(style.mode);
+		if (!line) {
+			return;
+		}
+		line->AddArrow(position, direction, size, style, style.mode);
 	}
 
 	Line *LineManager::GetLine(LineRenderMode renderMode) const {

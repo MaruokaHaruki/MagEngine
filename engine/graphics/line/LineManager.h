@@ -11,9 +11,11 @@
 #include "DirectXCore.h"
 #include "Line.h"
 #include "LineRenderMode.h"
+#include "LineStyle.h"
 #include "LineSetup.h"
 #include "SrvSetup.h"
 #include <memory>
+#include <span>
 #include <string>
  ///=============================================================================
  ///                        namespace MagEngine
@@ -88,6 +90,16 @@ namespace MagEngine {
 		/// @param color 色
 		/// @param thickness 線の太さ
 		void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness = 1.0f);
+		void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const LineStyle &style);
+		void AddLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color);
+		void AddLine(const MagMath::Vector2 &start, const MagMath::Vector2 &end, const LineStyle &style);
+		void AddPolyline(std::span<const MagMath::Vector2> points, const LineStyle &style);
+		void AddPolyline(std::span<const MagMath::Vector3> points, const LineStyle &style);
+		void AddRect(const MagMath::Vector2 &min, const MagMath::Vector2 &max, const LineStyle &style);
+		void AddCornerBracket(const MagMath::Vector2 &center, const MagMath::Vector2 &halfSize, float cornerLength, const LineStyle &style);
+		void AddCornerBracket(const MagMath::Vector3 &center, const MagMath::Vector3 &halfSize, float cornerLength, const LineStyle &style);
+		void AddArrow(const MagMath::Vector2 &position, const MagMath::Vector2 &direction, float size, const LineStyle &style);
+		void AddArrow(const MagMath::Vector3 &position, const MagMath::Vector3 &direction, float size, const LineStyle &style);
 
 		/// @brief HUD更新が実行されたことを記録する
 		void NotifyHudUpdate() {

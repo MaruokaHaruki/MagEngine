@@ -2177,3 +2177,97 @@ Errors: 0
 ### 27.9 次の改修候補
 
 次は、LockOnHUDに画面外端インジケータを追加すると、ロックオン状態の視認性をもう一段上げられる。
+
+## 28. Line Style / HUD Quad Line
+
+### 28.1 導入前の制約
+
+Line描画はWorld / HUDのBatch分離後も、頂点形式とPrimitiveTopologyはどちらもLINELISTを前提としていた。
+そのためHUD用途ではLine幅がハードウェアやドライバ依存になりやすく、LockOnHUDや航空機HUD風の太線・破線表現を安定して扱いにくかった。
+
+### 28.2 World / HUD Lineの責務分離
+
+World Line:
+- 既存のLINELIST経路を維持
+- 既存Depth設定を維持
+- Debug Lineやワールド補助線の見た目を変えない
+
+HUD Line:
+- HUD専用PSOをTRIANGLELISTへ変更
+- DepthEnable = false
+- DepthWriteMask = ZERO
+- 太線はLine SegmentをQuadへ展開して描画
+
+### 28.3 HUD Quad方式を採用した理由
+
+HUD Lineは画面前面で安定表示する必要があるため、ハードウェアLine幅に依存しないQuad方式へ寄せた。
+1本ごとのDrawは行わず、既存のLineバッチと永続Map方式を維持し、HUD Line頂点をTRIANGLELISTとしてまとめて転送する。
+
+### 28.4 LineStyle項目
+
+`LineStyle`を追加した。
+
+- `mode`
+- `color`
+- `thickness`
+- `dashed`
+- `dashLength`
+- `gapLength`
+
+`thickness`は最小値へClampし、Alphaは0.0から1.0へClampする。
+不正な破線指定は大量分割や無限ループを避けるため、通常線へフォールバックする。
+
+### 28.5 追加API
+
+`LineManager`へStyle指定APIを追加した。
+
+- `DrawLine(start, end, LineStyle)`
+- `AddLine(Vector3, Vector3, Vector4)`
+- `AddLine(Vector2, Vector2, LineStyle)`
+- `AddPolyline(...)`
+- `AddRect(...)`
+- `AddCornerBracket(...)`
+- `AddArrow(...)`
+
+既存の`DrawLine(Vector3, Vector3, Vector4, float)`は互換維持のため残している。
+
+### 28.6 バッチ構成
+
+World Line Batch:
+- 既存`Line`インスタンス
+- LINELIST
+- World PSO
+
+HUD Line Batch:
+- HUD用`Line`インスタンス
+- TRIANGLELIST
+- HUD PSO
+- Line Segmentを6頂点Quadへ展開
+
+### 28.7 頂点上限時の扱い
+
+既存の上限100000頂点を維持した。
+HUD Quadは6頂点単位のため、上限超過時は途中まで追加せず、そのLine Segment単位で破棄する。
+
+### 28.8 LockOnHUDへの適用
+
+LockOnHUDのブラケットと中心十字をStyle指定APIへ移行した。
+敵選択、ロックオン判定、カメラ計算、画面外判定ロジックは変更していない。
+
+### 28.9 検証
+
+CPUテスト:
+- RenderValidationTests: 300/300 passed
+
+Debug x64ビルド:
+- 成功
+- 警告0
+- エラー0
+
+GPU確認:
+- この作業内では未実施
+- 実機では太さ、Alpha、破線、LockOnブラケット、World Debug Lineの表示確認が必要
+
+### 28.10 次の改修候補
+
+HUD Lineの座標系を画面ピクセル基準へ整理すると、カメラ距離やFOV変化に対して太さをさらに安定させられる。

@@ -16,8 +16,6 @@ const float SCREEN_WIDTH = 1280.0f;
 const float SCREEN_HEIGHT = 720.0f;
 
 namespace {
-	constexpr bool kEnableFixedHudLineTestBracket = true;
-
 	class ScopedLineRenderMode {
 	public:
 		ScopedLineRenderMode(MagEngine::LineManager &lineManager, MagEngine::LineRenderMode renderMode)
@@ -440,28 +438,6 @@ void HUD::Draw() {
 	ScopedLineRenderMode lineModeGuard(*lineManager_, LineRenderMode::Hud);
 	ScopedHudLineSource lineSourceGuard(*lineManager_);
 	lineManager_->NotifyHudUpdate();
-
-#ifdef _DEBUG
-	if constexpr (kEnableFixedHudLineTestBracket) {
-		const Vector4 testColor = {1.0f, 1.0f, 1.0f, 1.0f};
-		const float halfWidth = 2.4f;
-		const float halfHeight = 1.5f;
-		const float arm = 0.65f;
-		const float thickness = 3.0f;
-		const Vector3 tl = GetHUDPosition(-halfWidth, halfHeight);
-		const Vector3 tr = GetHUDPosition(halfWidth, halfHeight);
-		const Vector3 bl = GetHUDPosition(-halfWidth, -halfHeight);
-		const Vector3 br = GetHUDPosition(halfWidth, -halfHeight);
-		lineManager_->DrawLine(tl, GetHUDPosition(-halfWidth + arm, halfHeight), testColor, thickness);
-		lineManager_->DrawLine(tl, GetHUDPosition(-halfWidth, halfHeight - arm), testColor, thickness);
-		lineManager_->DrawLine(tr, GetHUDPosition(halfWidth - arm, halfHeight), testColor, thickness);
-		lineManager_->DrawLine(tr, GetHUDPosition(halfWidth, halfHeight - arm), testColor, thickness);
-		lineManager_->DrawLine(bl, GetHUDPosition(-halfWidth + arm, -halfHeight), testColor, thickness);
-		lineManager_->DrawLine(bl, GetHUDPosition(-halfWidth, -halfHeight + arm), testColor, thickness);
-		lineManager_->DrawLine(br, GetHUDPosition(halfWidth - arm, -halfHeight), testColor, thickness);
-		lineManager_->DrawLine(br, GetHUDPosition(halfWidth, -halfHeight + arm), testColor, thickness);
-	}
-#endif
 
 	if (deployProgress_ <= 0.0f) {
 		return;
