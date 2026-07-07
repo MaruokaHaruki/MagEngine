@@ -27,14 +27,14 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						共通化処理
-	void LineSetup::CommonDrawSetup() {
+	void LineSetup::CommonDrawSetup(LineRenderMode renderMode) {
 		// コマンドリストの取得
 		//  NOTE:Getを複数回呼び出すのは非効率的なので、変数に保持しておく
 		auto commandList = dxCore_->GetCommandList();
 		// ルートシグネイチャのセット
 		commandList->SetGraphicsRootSignature(rootSignature_.Get());
 		// グラフィックスパイプラインステートをセット
-		commandList->SetPipelineState(graphicsPipelineState_.Get());
+		commandList->SetPipelineState(renderMode == LineRenderMode::Hud ? hudPipelineState_.Get() : worldPipelineState_.Get());
 		// プリミティブトポロジーをセットする(Line用にLINELISTに変更)
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 	}
@@ -76,7 +76,7 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						グラフィックスパイプラインの作成
-	PipelineRecipe LineSetup::CreateDefaultRecipe(ID3D12RootSignature *rootSignature) {
+	PipelineRecipe LineSetup::CreateWorldPipelineRecipe(ID3D12RootSignature *rootSignature) {
 		PipelineRecipe recipe{};
 		recipe.vertexShader = {L"resources/shader/Line.VS.hlsl", L"main", L"vs_6_0"};
 		recipe.pixelShader = {L"resources/shader/Line.PS.hlsl", L"main", L"ps_6_0"};
@@ -98,15 +98,24 @@ namespace MagEngine {
 		return recipe;
 	}
 
+	PipelineRecipe LineSetup::CreateHudPipelineRecipe(ID3D12RootSignature *rootSignature) {
+		PipelineRecipe recipe = CreateWorldPipelineRecipe(rootSignature);
+		// HUD系は既存のScene深度に依存させず、画面前面の安定描画を優先する。
+		recipe.depthStencilState.DepthEnable = false;
+		recipe.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+		return recipe;
+	}
+
 	PipelineRecipe LineSetup::CreateRecipe() const {
-		return CreateDefaultRecipe(rootSignature_.Get());
+		return CreateWorldPipelineRecipe(rootSignature_.Get());
 	}
 
 	void LineSetup::CreateGraphicsPipeline() {
 		CreateRootSignature();
-		// NOTE: Line固有のDepth Write設定はRecipeに残し、PSO生成だけBuilderへ委譲する。
+		// NOTE: World/HUDで深度方針を分けるが、PSO生成の責務はBuilderへ閉じる。
 		PipelineBuilder builder(*dxCore_->GetDevice().Get(), *dxCore_);
-		graphicsPipelineState_ = builder.CreateGraphicsPipeline(CreateRecipe());
-		Logger::Log("Line Graphics pipeline state created successfully :)", Logger::LogLevel::Success);
+		worldPipelineState_ = builder.CreateGraphicsPipeline(CreateWorldPipelineRecipe(rootSignature_.Get()));
+		hudPipelineState_ = builder.CreateGraphicsPipeline(CreateHudPipelineRecipe(rootSignature_.Get()));
+		Logger::Log("Line Graphics pipeline states created successfully :)", Logger::LogLevel::Success);
 	}
 }

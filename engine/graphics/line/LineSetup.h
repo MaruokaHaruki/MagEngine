@@ -9,6 +9,7 @@
 #pragma once
 #include "DirectXCore.h"
 #include "Camera.h"
+#include "LineRenderMode.h"
 #include "SrvSetup.h"
 #include "engine/render/pipeline/PipelineRecipe.h"
 ///=============================================================================
@@ -29,7 +30,7 @@ namespace MagEngine {
 		/**----------------------------------------------------------------------------
 		* \brief  CommonDrawSetup 共通描画設定
 		*/
-		void CommonDrawSetup();
+		void CommonDrawSetup(LineRenderMode renderMode = LineRenderMode::World);
 
 		///--------------------------------------------------------------
 		///                         静的メンバ関数
@@ -74,8 +75,16 @@ namespace MagEngine {
 		*/
 		Camera *GetDefaultCamera() { return defaultCamera_; }
 
-		/// @brief Line用PSO設定をRecipeとして作成
-		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature);
+		/// @brief World Line用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateWorldPipelineRecipe(ID3D12RootSignature *rootSignature);
+
+		/// @brief HUD Line用PSO設定をRecipeとして作成
+		static PipelineRecipe CreateHudPipelineRecipe(ID3D12RootSignature *rootSignature);
+
+		/// @brief 互換維持用の既定Recipe
+		static PipelineRecipe CreateDefaultRecipe(ID3D12RootSignature *rootSignature) {
+			return CreateWorldPipelineRecipe(rootSignature);
+		}
 
 
 		///--------------------------------------------------------------
@@ -93,7 +102,8 @@ namespace MagEngine {
 
 		//========================================
 		// グラフィックスパイプライン
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState_;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> worldPipelineState_;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> hudPipelineState_;
 
 		//========================================
 		// デフォルトカメラ

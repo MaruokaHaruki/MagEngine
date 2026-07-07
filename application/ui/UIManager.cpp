@@ -116,7 +116,7 @@ void UIManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if (startAnimation_) {
 		startAnimation_->RegisterRenderables(renderWorld);
 	}
-	// NOTE: HUD/LockOnHUDはLineManagerへの描画登録であり、SpritePassの対象外として既存Line経路を維持する。
+	// NOTE: HUD/LockOnHUDはLineManagerへHUDモードで蓄積し、LineRenderPassへ委譲する。
 	if (hud_) {
 		hud_->Draw();
 	}

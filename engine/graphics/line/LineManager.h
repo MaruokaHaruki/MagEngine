@@ -10,6 +10,7 @@
 #include "MagMath.h"
 #include "DirectXCore.h"
 #include "Line.h"
+#include "LineRenderMode.h"
 #include "LineSetup.h"
 #include "SrvSetup.h"
 #include <memory>
@@ -20,6 +21,23 @@ namespace MagEngine {
 ///=============================================================================
 ///						ラインマネージャ
 	class LineManager {
+	public:
+		struct Diagnostics {
+			bool hudUpdateCalled = false;
+			bool lockOnHudUpdateCalled = false;
+			uint32_t hudLineAddCount = 0;
+			uint32_t lockOnHudLineAddCount = 0;
+			size_t worldVertexCountBeforeDraw = 0;
+			size_t hudVertexCountBeforeDraw = 0;
+			size_t hudVertexBufferSizeInBytes = 0;
+			uint32_t renderWorldLineItemCount = 0;
+			uint32_t lineRenderPassExecuteCount = 0;
+			uint32_t worldDrawCallCount = 0;
+			uint32_t hudDrawCallCount = 0;
+			bool hudPsoBound = false;
+			bool hudCommandListValid = false;
+		};
+
 		///--------------------------------------------------------------
 		///						 メンバ関数
 	public:
@@ -40,13 +58,29 @@ namespace MagEngine {
 		void Update();
 
 		/// @brief 描画処理
+		void Draw(LineRenderMode renderMode);
+
+		/// @brief 現在の描画モードで描画する
 		void Draw();
 
 		/// @brief ImGuiの描画
 		void DrawImGui();
 
+		/// @brief 要求時だけLine診断を出力する
+		void ReportDiagnostics() const;
+
 		/// @brief ラインのクリア
 		void ClearLines();
+
+		/// @brief 以降のDrawLineをどのバッチへ積むかを切り替える
+		void SetRenderMode(LineRenderMode renderMode) {
+			renderMode_ = renderMode;
+		}
+
+		/// @brief 現在のバッチを取得する
+		LineRenderMode GetRenderMode() const {
+			return renderMode_;
+		}
 
 		/// @brief ラインの描画
 		/// @param start 始点
@@ -54,6 +88,42 @@ namespace MagEngine {
 		/// @param color 色
 		/// @param thickness 線の太さ
 		void DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness = 1.0f);
+
+		/// @brief HUD更新が実行されたことを記録する
+		void NotifyHudUpdate() {
+			diagnostics_.hudUpdateCalled = true;
+		}
+
+		/// @brief LockOnHUD更新が実行されたことを記録する
+		void NotifyLockOnHudUpdate() {
+			diagnostics_.lockOnHudUpdateCalled = true;
+		}
+
+		/// @brief HUD生成中のLine追加数を記録する
+		void BeginHudLineSource(bool lockOnHud) {
+			activeHudLineSourceIsLockOn_ = lockOnHud;
+		}
+
+		/// @brief HUD生成元の記録を解除する
+		void EndHudLineSource() {
+			activeHudLineSourceIsLockOn_ = false;
+		}
+
+		/// @brief RenderWorldへ登録されたLine item数を記録する
+		void SetRenderWorldLineItemCount(uint32_t count) {
+			diagnostics_.renderWorldLineItemCount = count;
+		}
+
+		/// @brief LineRenderPassが実行されたことを記録する
+		void NotifyLineRenderPassExecuted() {
+			++diagnostics_.lineRenderPassExecuteCount;
+		}
+
+		/// @brief 現在の頂点数を取得する
+		size_t GetVertexCount(LineRenderMode renderMode) const;
+
+		/// @brief HUD頂点バッファサイズを取得する
+		size_t GetHudVertexBufferSizeInBytes() const;
 
 		/// @brief グリッドの描画
 		/// @param gridSize グリッドサイズ
@@ -220,6 +290,8 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 メンバ変数
 	private:
+		Line *GetLine(LineRenderMode renderMode) const;
+
 		// DirectXCore への参照
 		DirectXCore *dxCore_ = nullptr;
 		// SrvSetup への参照
@@ -227,7 +299,8 @@ namespace MagEngine {
 
 		//========================================
 		// ライン
-		std::unique_ptr<Line> line_;
+		std::unique_ptr<Line> worldLine_;
+		std::unique_ptr<Line> hudLine_;
 
 		//========================================
 		// LineSetup インスタンス
@@ -251,5 +324,12 @@ namespace MagEngine {
 
 		// 球を描画するか
 		bool isDrawSphere_ = true;
+
+		// 現在の線バッチ
+		LineRenderMode renderMode_ = LineRenderMode::World;
+
+		// NOTE: Report Render Diagnosticsで直近フレームのHUD Line経路を追えるよう、軽量なカウンタだけ保持する。
+		Diagnostics diagnostics_{};
+		bool activeHudLineSourceIsLockOn_ = false;
 	};
 }

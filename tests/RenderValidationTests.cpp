@@ -2,6 +2,7 @@
 #include "engine/render/pipeline/PipelineRecipe.h"
 #include "engine/render/graph/RenderTransitionExecutor.h"
 #include "engine/render/Renderer.h"
+#include "engine/graphics/line/LineSetup.h"
 #include "engine/render/post_effect/fullscreenPass/FullscreenPassRendere.h"
 #include "engine/render/post_effect/PostEffectParameterSet.h"
 #include "engine/render/post_effect/PostEffectManager.h"
@@ -82,10 +83,6 @@ namespace {
 
 	std::vector<RenderPassEntry> MakeDefaultPasses() {
 		std::vector<RenderPassEntry> passes;
-		passes.push_back(MakePass(RenderPassId::Line, RenderPhase::Scene, 50, {
-				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
-				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
-			}));
 		passes.push_back(MakePass(RenderPassId::Skybox, RenderPhase::Scene, 100, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::Write, RenderResourceState::RenderTarget},
 				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
@@ -102,6 +99,10 @@ namespace {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
 				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
 			}));
+		passes.push_back(MakePass(RenderPassId::Line, RenderPhase::Scene, 450, {
+				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
+				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
+			}));
 		passes.push_back(MakePass(RenderPassId::Sprite, RenderPhase::Overlay, 100, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
 				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
@@ -109,6 +110,9 @@ namespace {
 		passes.push_back(MakePass(RenderPassId::Particle, RenderPhase::PostOverlay, 100, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
 				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
+			}));
+		passes.push_back(MakePass(RenderPassId::HudLine, RenderPhase::PostOverlay, 50, {
+				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
 			}));
 		passes.push_back(MakePass(RenderPassId::PostEffect, RenderPhase::PostProcess, 100, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::Read, RenderResourceState::PixelShaderResource},
@@ -140,6 +144,13 @@ namespace {
 		});
 	}
 
+	const RenderPassEntry *FindPass(const std::vector<RenderPassEntry> &passes, RenderPassId id) {
+		const auto it = std::find_if(passes.begin(), passes.end(), [&](const RenderPassEntry &pass) {
+			return pass.id == id;
+		});
+		return it == passes.end() ? nullptr : &(*it);
+	}
+
 	ID3D12RootSignature *FakeRootSignature() {
 		return reinterpret_cast<ID3D12RootSignature *>(0x1);
 	}
@@ -153,16 +164,11 @@ namespace {
 	}
 
 	PipelineRecipe MakeLineRecipeForTesting() {
-		PipelineRecipe recipe{};
-		recipe.vertexShader = {L"resources/shader/Line.VS.hlsl", L"main", L"vs_6_0"};
-		recipe.pixelShader = {L"resources/shader/Line.PS.hlsl", L"main", L"ps_6_0"};
-		recipe.rootSignature = FakeRootSignature();
-		recipe.renderTargetFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-		recipe.depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-		recipe.primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-		recipe.depthStencilState.DepthEnable = true;
-		recipe.depthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-		return recipe;
+		return LineSetup::CreateWorldPipelineRecipe(FakeRootSignature());
+	}
+
+	PipelineRecipe MakeHudLineRecipeForTesting() {
+		return LineSetup::CreateHudPipelineRecipe(FakeRootSignature());
 	}
 
 	PipelineRecipe MakeParticleRecipeForTesting() {
@@ -443,7 +449,7 @@ namespace {
 		RecordDefaultBarriers(graph);
 		graph.ClearRecordedBarriers();
 		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::RenderTarget, RenderResourceState::RenderTarget, RenderBarrierPoint::RenderTexturePreDraw, 10u});
-		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::RenderTarget, RenderResourceState::PixelShaderResource, RenderBarrierPoint::RenderTexturePostDraw, 165u});
+		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::RenderTarget, RenderResourceState::PixelShaderResource, RenderBarrierPoint::RenderTexturePostDraw, 175u});
 		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::PresentColor, RenderResourceState::Present, RenderResourceState::RenderTarget, RenderBarrierPoint::BeginPresentRenderTarget, 166u});
 		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::PresentColor, RenderResourceState::RenderTarget, RenderResourceState::Present, RenderBarrierPoint::BeforePresent, 1000u});
 		const RenderTransitionPlanComparisonResult comparison = graph.CompareTransitionPlanWithManualBarriers(MakeDefaultPasses());
@@ -472,7 +478,7 @@ namespace {
 	void RenderGraphTest_CompareTransitionPlanBoundaryMismatch(TestResult &result) {
 		RenderGraph graph;
 		AddDefaultStates(graph);
-		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::PixelShaderResource, RenderResourceState::RenderTarget, RenderBarrierPoint::RenderTexturePostDraw, 165u});
+		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::PixelShaderResource, RenderResourceState::RenderTarget, RenderBarrierPoint::RenderTexturePostDraw, 175u});
 		const RenderTransitionPlanComparisonResult comparison = graph.CompareTransitionPlanWithManualBarriers(MakeDefaultPasses());
 		Expect(result, !comparison.isMatch, "RenderGraphTest_CompareTransitionPlanBoundaryMismatch_Result");
 		Expect(result, !comparison.mismatches.empty() && comparison.mismatches.front().type == RenderTransitionMismatchType::Boundary, "RenderGraphTest_CompareTransitionPlanBoundaryMismatch_Type");
@@ -491,25 +497,31 @@ namespace {
 	void RenderGraphTest_LinePassResourceUsage(TestResult &result) {
 		RenderGraph graph;
 		AddDefaultStates(graph);
-		std::vector<RenderPassEntry> passes;
-		passes.push_back(MakePass(RenderPassId::Line, RenderPhase::Scene, 50, {
-				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
-				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
-			}));
-		passes.push_back(MakePass(RenderPassId::Skybox, RenderPhase::Scene, 100, {
-				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
-				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
-			}));
+		const std::vector<RenderPassEntry> passes = MakeDefaultPasses();
 		const RenderGraphValidationResult validation = graph.ValidateForTesting(passes);
 		Expect(result, validation.isValid, "RenderGraphTest_LinePassResourceUsage_Valid");
-		Expect(result, passes[0].phase == RenderPhase::Scene && passes[0].order < passes[1].order, "RenderGraphTest_LinePassResourceUsage_Order");
+		const RenderPassEntry *worldLine = FindPass(passes, RenderPassId::Line);
+		const RenderPassEntry *hudLine = FindPass(passes, RenderPassId::HudLine);
+		Expect(result, worldLine && hudLine, "RenderGraphTest_LinePassResourceUsage_PassExists");
+		Expect(result, worldLine && worldLine->phase == RenderPhase::Scene && worldLine->order == 450, "RenderGraphTest_LinePassResourceUsage_WorldOrder");
+		Expect(result, hudLine && hudLine->phase == RenderPhase::PostOverlay && hudLine->order == 50, "RenderGraphTest_LinePassResourceUsage_HudOrder");
+		const bool worldDeclaresDepth = worldLine && std::any_of(worldLine->resourceUsages.begin(), worldLine->resourceUsages.end(), [](const RenderPassResourceUsage &usage) {
+			return usage.resource == RenderResourceId::SceneDepth &&
+				   usage.access == RenderResourceAccess::ReadWrite &&
+				   usage.requiredState == RenderResourceState::DepthWrite;
+		});
+		const bool hudDeclaresDepth = hudLine && std::any_of(hudLine->resourceUsages.begin(), hudLine->resourceUsages.end(), [](const RenderPassResourceUsage &usage) {
+			return usage.resource == RenderResourceId::SceneDepth;
+		});
+		Expect(result, worldDeclaresDepth, "RenderGraphTest_LinePassResourceUsage_WorldDepth");
+		Expect(result, !hudDeclaresDepth, "RenderGraphTest_LinePassResourceUsage_HudNoDepth");
 	}
 
 	void RenderGraphTest_LinePassMissingSceneColor(TestResult &result) {
 		RenderGraph graph;
 		AddDefaultStates(graph);
 		std::vector<RenderPassEntry> passes;
-		passes.push_back(MakePass(RenderPassId::Line, RenderPhase::Scene, 50, {
+		passes.push_back(MakePass(RenderPassId::Line, RenderPhase::Scene, 450, {
 				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
 			}));
 		const RenderGraphValidationResult validation = graph.ValidateForTesting(passes);
@@ -526,7 +538,7 @@ namespace {
 		RenderGraph graph;
 		AddDefaultStates(graph);
 		std::vector<RenderPassEntry> passes;
-		passes.push_back(MakePass(RenderPassId::Line, RenderPhase::Scene, 50, {
+		passes.push_back(MakePass(RenderPassId::Line, RenderPhase::Scene, 450, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
 			}));
 		const RenderGraphValidationResult validation = graph.ValidateForTesting(passes);
@@ -535,6 +547,21 @@ namespace {
 			return usage.resource == RenderResourceId::SceneDepth && usage.requiredState == RenderResourceState::DepthWrite;
 		});
 		Expect(result, !declaresSceneDepth, "RenderGraphTest_LinePassMissingSceneDepth_DetectedByUsageCheck");
+	}
+
+	void RenderGraphTest_HudLinePassMissingSceneDepth(TestResult &result) {
+		RenderGraph graph;
+		AddDefaultStates(graph);
+		std::vector<RenderPassEntry> passes;
+		passes.push_back(MakePass(RenderPassId::HudLine, RenderPhase::PostOverlay, 200, {
+				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
+			}));
+		const RenderGraphValidationResult validation = graph.ValidateForTesting(passes);
+		Expect(result, validation.isValid, "RenderGraphTest_HudLinePassMissingSceneDepth_GraphAllowsColorOnly");
+		const bool declaresSceneDepth = std::any_of(passes[0].resourceUsages.begin(), passes[0].resourceUsages.end(), [](const RenderPassResourceUsage &usage) {
+			return usage.resource == RenderResourceId::SceneDepth;
+		});
+		Expect(result, !declaresSceneDepth, "RenderGraphTest_HudLinePassMissingSceneDepth_DetectedByUsageCheck");
 	}
 
 	void RenderTransitionExecutorTest_BoundaryExecution(TestResult &result) {
@@ -732,12 +759,37 @@ namespace {
 		Expect(result, items[0].submissionOrder == 0 && items[1].submissionOrder == 1, "SpriteRenderModeTest_SubmissionOrder");
 	}
 
+	void LineRenderModeTest_RenderWorldKeepsClassification(TestResult &result) {
+		RenderWorld renderWorld;
+		LineRenderItem worldItem{};
+		worldItem.renderMode = LineRenderMode::World;
+		renderWorld.AddLine(worldItem);
+
+		LineRenderItem hudItem{};
+		hudItem.renderMode = LineRenderMode::Hud;
+		renderWorld.AddLine(hudItem);
+
+		const std::vector<LineRenderItem> &items = renderWorld.GetLineItems();
+		Expect(result, items.size() == 2, "LineRenderModeTest_Count");
+		Expect(result, items[0].renderMode == LineRenderMode::World, "LineRenderModeTest_WorldMode");
+		Expect(result, items[1].renderMode == LineRenderMode::Hud, "LineRenderModeTest_HudMode");
+		Expect(result, items[0].submissionOrder == 0 && items[1].submissionOrder == 1, "LineRenderModeTest_SubmissionOrder");
+	}
+
 	void PipelineRecipeTest_LineDepthWrite(TestResult &result) {
 		const PipelineRecipe recipe = MakeLineRecipeForTesting();
 		Expect(result, recipe.Validate().isValid, "PipelineRecipeTest_LineDepthWrite_Valid");
 		Expect(result, recipe.depthStencilState.DepthEnable == TRUE, "PipelineRecipeTest_LineDepthWrite_Enable");
 		Expect(result, recipe.depthStencilState.DepthWriteMask == D3D12_DEPTH_WRITE_MASK_ALL, "PipelineRecipeTest_LineDepthWrite_WriteAll");
 		Expect(result, recipe.primitiveTopologyType == D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, "PipelineRecipeTest_LineDepthWrite_Topology");
+	}
+
+	void PipelineRecipeTest_HudLineDepthNoWrite(TestResult &result) {
+		const PipelineRecipe recipe = MakeHudLineRecipeForTesting();
+		Expect(result, recipe.Validate().isValid, "PipelineRecipeTest_HudLineDepthNoWrite_Valid");
+		Expect(result, recipe.depthStencilState.DepthEnable == FALSE, "PipelineRecipeTest_HudLineDepthNoWrite_Disable");
+		Expect(result, recipe.depthStencilState.DepthWriteMask == D3D12_DEPTH_WRITE_MASK_ZERO, "PipelineRecipeTest_HudLineDepthNoWrite_WriteZero");
+		Expect(result, recipe.primitiveTopologyType == D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, "PipelineRecipeTest_HudLineDepthNoWrite_Topology");
 	}
 
 	void PipelineRecipeTest_ParticleBlendAndDepth(TestResult &result) {
@@ -1141,6 +1193,7 @@ int main() {
 	RenderGraphTest_LinePassResourceUsage(result);
 	RenderGraphTest_LinePassMissingSceneColor(result);
 	RenderGraphTest_LinePassMissingSceneDepth(result);
+	RenderGraphTest_HudLinePassMissingSceneDepth(result);
 	RenderTransitionExecutorTest_BoundaryExecution(result);
 	RenderTransitionExecutorTest_ResolveFailed(result);
 	RenderTransitionExecutorTest_MissingPlan(result);
@@ -1153,7 +1206,9 @@ int main() {
 	SpriteBindingContractTest_DrawBinding(result);
 	PipelineRecipeTest_SpriteUiWorldDepth(result);
 	SpriteRenderModeTest_RenderWorldKeepsClassification(result);
+	LineRenderModeTest_RenderWorldKeepsClassification(result);
 	PipelineRecipeTest_LineDepthWrite(result);
+	PipelineRecipeTest_HudLineDepthNoWrite(result);
 	PipelineRecipeTest_ParticleBlendAndDepth(result);
 	PipelineRecipeTest_Object3dDefaults(result);
 	PipelineRecipeTest_SkyboxDefaults(result);

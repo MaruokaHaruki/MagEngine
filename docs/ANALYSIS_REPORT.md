@@ -2078,3 +2078,102 @@ Render Validation Tests:
 git diff --check:
   Success
 ```
+
+## 27. Line HUD / LockOnHUD 復旧
+
+### 27.1 消えた原因
+
+Line描画が`LineRenderPass`へ移行した後、HUD / LockOnHUD / Debug Lineの描画が`RenderWorld`に正しく再登録されず、さらにHUD系Lineの描画順がSceneColorの再利用境界より後ろへ回ると、描画バッファが空のまま消える。
+
+今回の症状は、`SceneColor`を`PixelShaderResource`へ戻す境界と、HUD / LockOnHUDがLineを積む順序が噛み合っていなかったことが原因である。
+
+### 27.2 復旧した描画経路
+
+```text
+Line生成
+↓
+LineManagerへ蓄積
+↓
+RenderWorldへLineRenderItem登録
+↓
+LineRenderPass::Execute()
+↓
+LineManager::Draw()
+↓
+画面表示
+```
+
+`MagFramework::OpaqueRender()`でWorld / HUD両方の`LineRenderItem`を登録し、`LineRenderPass`は`LineRenderMode`に応じて描画対象を切り替える。
+
+### 27.3 World / HUD LineのDepth方針
+
+```text
+World Line:
+- 既存Depth設定を維持
+- 既存のワールド表示を壊さない
+
+HUD Line:
+- DepthEnable = false
+- DepthWriteMask = ZERO
+- HUD / LockOnHUDを画面前面で安定表示する
+```
+
+### 27.4 LockOn HUD構成
+
+LockOnHUDはLineだけで構成し、四隅ブラケット、中心へ向かう短いガイド線、上下の補助線でターゲットを追従表示する。
+
+ターゲットなしでは何も登録しない。ターゲット破棄時は安全に解除し、画面外では無効座標を描画しない。
+
+### 27.5 RenderGraph / Barrier扱い
+
+HUD Lineが`SceneColor`を使った後で`PixelShaderResource`へ戻すため、`RenderTexturePostDraw`の境界を`175`へ揃えた。
+
+これに合わせて、`RenderGraph`、`RenderBarrierRecorder`、CPUテストの期待値を同じ値へ更新した。
+
+### 27.6 CPUテスト
+
+`RenderValidationTests.cpp`へ以下を追加した。
+
+```text
+- HUD LineがDepth Writeしないこと
+- World Lineが既存Depth方針を維持すること
+- LockOn対象ありで必要Line群が生成されること
+- LockOn対象なしでLine群が生成されないこと
+- 画面外座標で不正Lineを生成しないこと
+- Scene遷移相当のClear後にLineが残らないこと
+```
+
+結果は以下である。
+
+```text
+Render validation tests: 285/285 passed
+```
+
+### 27.7 ビルド結果
+
+Debug x64ビルドは成功した。
+
+```text
+Configuration: Debug
+Platform: x64
+Result: Success
+Warnings: 0
+Errors: 0
+```
+
+### 27.8 GPU確認状況
+
+実GPU上の確認は未実施である。
+
+```text
+- HUD Lineが表示されること
+- LockOnブラケットがターゲットへ追従すること
+- Scene遷移後に古いHUD Lineが残らないこと
+- HUD LineがSkybox / Cloudに隠れないこと
+- D3D12 ERROR / CORRUPTIONが0件であること
+- Device Removedが発生しないこと
+```
+
+### 27.9 次の改修候補
+
+次は、LockOnHUDに画面外端インジケータを追加すると、ロックオン状態の視認性をもう一段上げられる。

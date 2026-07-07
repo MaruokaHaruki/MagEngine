@@ -8,6 +8,8 @@
  *********************************************************************/
 #include "LineManager.h"
 #include "ImguiSetup.h"
+#include "Logger.h"
+#include <format>
 //========================================
 // 数学関数のインクルード
 #define _USE_MATH_DEFINES
@@ -30,27 +32,34 @@ namespace MagEngine {
 		// ラインセットアップの初期化
 		lineSetup_->Initialize(dxCore_, nullptr);
 		//========================================
-		// ラインの初期化
-		line_ = std::make_unique<Line>();
-		// ラインの初期化
-		line_->Initialize(lineSetup_.get());
+		// ラインの初期化（World/HUDを分けて保持する）
+		worldLine_ = std::make_unique<Line>();
+		hudLine_ = std::make_unique<Line>();
+		worldLine_->Initialize(lineSetup_.get());
+		hudLine_->Initialize(lineSetup_.get());
+		renderMode_ = LineRenderMode::World;
 	}
 
 	///=============================================================================
 	///						終了処理
 	void LineManager::Finalize() {
-		line_.reset();
+		worldLine_.reset();
+		hudLine_.reset();
 		lineSetup_.reset();
 		dxCore_ = nullptr;
 		srvSetup_ = nullptr;
+		renderMode_ = LineRenderMode::World;
 	}
 
 	///=============================================================================
 	///						更新処理
 	void LineManager::Update() {
-		if (!line_) {
+		if (!worldLine_ && !hudLine_) {
 			return;
 		}
+		diagnostics_ = Diagnostics{};
+		// NOTE: 更新時に既定バッチをWorldへ戻し、HUD描画の状態遺漏を避ける。
+		renderMode_ = LineRenderMode::World;
 		// グリッドアニメーション
 		if (isGridAnimationEnabled_) {
 			// アニメーション時間を更新
@@ -75,24 +84,53 @@ namespace MagEngine {
 			DrawGrid(gridSize_, gridDivisions_, gridColor_);
 		}
 		// ラインの更新
-		line_->Update();
+		if (worldLine_) {
+			worldLine_->Update();
+		}
+		if (hudLine_) {
+			hudLine_->Update();
+		}
 	}
 
 	///=============================================================================
 	///						ラインの描画
-	void LineManager::Draw() {
-		if (!line_ || !lineSetup_) {
+	void LineManager::Draw(LineRenderMode renderMode) {
+		if (!lineSetup_) {
 			return;
+		}
+		Line *line = GetLine(renderMode);
+		if (!line) {
+			return;
+		}
+		line->Update();
+		if (renderMode == LineRenderMode::Hud) {
+			diagnostics_.hudVertexCountBeforeDraw = line->GetVertexCount();
+			diagnostics_.hudVertexBufferSizeInBytes = line->GetVertexBufferSizeInBytes();
+			diagnostics_.hudCommandListValid = dxCore_ && dxCore_->GetCommandList();
+		} else {
+			diagnostics_.worldVertexCountBeforeDraw = line->GetVertexCount();
 		}
 		//========================================
 		// 共通描画設定
-		lineSetup_->CommonDrawSetup();
+		lineSetup_->CommonDrawSetup(renderMode);
+		if (renderMode == LineRenderMode::Hud) {
+			diagnostics_.hudPsoBound = true;
+		}
 		// ラインの描画
-		line_->Draw();
+		line->Draw();
+		if (renderMode == LineRenderMode::Hud) {
+			++diagnostics_.hudDrawCallCount;
+		} else {
+			++diagnostics_.worldDrawCallCount;
+		}
 
 		//========================================
 		// ラインのクリア
-		line_->ClearLines();
+		line->ClearLines();
+	}
+
+	void LineManager::Draw() {
+		Draw(renderMode_);
 	}
 
 	///=============================================================================
@@ -121,27 +159,77 @@ namespace MagEngine {
 		//========================================
 		// Sphereの描画
 		ImGui::Checkbox("Sphere", &isDrawSphere_);
+#ifdef _DEBUG
+		if(ImGui::Button("Report HUD Line Diagnostics")) {
+			ReportDiagnostics();
+		}
+#endif
 		ImGui::End();
+	}
+
+	void LineManager::ReportDiagnostics() const {
+		Logger::Log("HUD Line Diagnostics:", Logger::LogLevel::Info);
+		Logger::Log(std::format("- HUD::Update called: {}", diagnostics_.hudUpdateCalled), Logger::LogLevel::Info);
+		Logger::Log(std::format("- LockOnHUD::Update called: {}", diagnostics_.lockOnHudUpdateCalled), Logger::LogLevel::Info);
+		Logger::Log(std::format("- HUD Line AddLine count: {}", diagnostics_.hudLineAddCount), Logger::LogLevel::Info);
+		Logger::Log(std::format("- LockOnHUD Line AddLine count: {}", diagnostics_.lockOnHudLineAddCount), Logger::LogLevel::Info);
+		Logger::Log(std::format("- LineManager World vertex count: {}", diagnostics_.worldVertexCountBeforeDraw), Logger::LogLevel::Info);
+		Logger::Log(std::format("- LineManager HUD vertex count: {}", diagnostics_.hudVertexCountBeforeDraw), Logger::LogLevel::Info);
+		Logger::Log(std::format("- RenderWorld LineRenderItem count: {}", diagnostics_.renderWorldLineItemCount), Logger::LogLevel::Info);
+		Logger::Log(std::format("- LineRenderPass executed: {}", diagnostics_.lineRenderPassExecuteCount), Logger::LogLevel::Info);
+		Logger::Log(std::format("- World batch Draw call count: {}", diagnostics_.worldDrawCallCount), Logger::LogLevel::Info);
+		Logger::Log(std::format("- HUD batch Draw call count: {}", diagnostics_.hudDrawCallCount), Logger::LogLevel::Info);
+		Logger::Log(std::format("- HUD PSO bound: {}", diagnostics_.hudPsoBound), Logger::LogLevel::Info);
+		Logger::Log("- HUD primitive topology: LINELIST", Logger::LogLevel::Info);
+		Logger::Log(std::format("- HUD vertex buffer size: {}", diagnostics_.hudVertexBufferSizeInBytes), Logger::LogLevel::Info);
+		Logger::Log("- Current render target name: SceneColor", Logger::LogLevel::Info);
+		Logger::Log(std::format("- Current command list valid: {}", diagnostics_.hudCommandListValid), Logger::LogLevel::Info);
 	}
 
 	///=============================================================================
 	///						ラインのクリア
 	void LineManager::ClearLines() {
-		if (!line_) {
-			return;
-		}
 		// ラインのクリア
-		line_->ClearLines();
+		if (worldLine_) {
+			worldLine_->ClearLines();
+		}
+		if (hudLine_) {
+			hudLine_->ClearLines();
+		}
 	}
 
 	///=============================================================================
 	///						ラインの追加
 	void LineManager::DrawLine(const MagMath::Vector3 &start, const MagMath::Vector3 &end, const MagMath::Vector4 &color, float thickness) {
-		if (!isDrawLine_ || !line_) {
+		if (!isDrawLine_) {
 			return;
 		}
 		// ラインの追加（太さを指定）
-		line_->DrawLine(start, end, color, thickness);
+		Line *line = GetLine(renderMode_);
+		if (!line) {
+			return;
+		}
+		line->DrawLine(start, end, color, thickness);
+		if (renderMode_ == LineRenderMode::Hud) {
+			if (activeHudLineSourceIsLockOn_) {
+				++diagnostics_.lockOnHudLineAddCount;
+			} else {
+				++diagnostics_.hudLineAddCount;
+			}
+		}
+	}
+
+	Line *LineManager::GetLine(LineRenderMode renderMode) const {
+		return renderMode == LineRenderMode::Hud ? hudLine_.get() : worldLine_.get();
+	}
+
+	size_t LineManager::GetVertexCount(LineRenderMode renderMode) const {
+		const Line *line = GetLine(renderMode);
+		return line ? line->GetVertexCount() : 0;
+	}
+
+	size_t LineManager::GetHudVertexBufferSizeInBytes() const {
+		return hudLine_ ? hudLine_->GetVertexBufferSizeInBytes() : 0;
 	}
 
 	///=============================================================================

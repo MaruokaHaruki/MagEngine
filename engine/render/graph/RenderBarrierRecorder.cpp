@@ -127,7 +127,7 @@ namespace MagEngine {
 		case RenderBarrierPoint::RenderTexturePreDraw:
 			return 10;
 		case RenderBarrierPoint::RenderTexturePostDraw:
-			return 165;
+			return 175;
 		case RenderBarrierPoint::BeginPresentRenderTarget:
 			return 166;
 		case RenderBarrierPoint::BeforePresent:

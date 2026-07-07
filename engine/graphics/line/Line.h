@@ -46,6 +46,16 @@ namespace MagEngine {
 		/// \brief 描画
 		void Draw();
 
+		/// @brief 現在蓄積している頂点数を取得
+		size_t GetVertexCount() const {
+			return vertices_.size();
+		}
+
+		/// @brief 確保済み頂点バッファのバイト数を取得
+		UINT GetVertexBufferSizeInBytes() const {
+			return vertexBufferView_.SizeInBytes;
+		}
+
 		/**----------------------------------------------------------------------------
 		 * \brief  ClearLines
 		 */

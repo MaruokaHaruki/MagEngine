@@ -252,6 +252,13 @@ namespace MagEngine {
 		cloudSetup_->SetLightManager(lightManager_.get());
 
 		///--------------------------------------------------------------
+		///						 ラインマネージャ
+		lineManager_ = std::make_unique<LineManager>();
+		lineManager_->Initialize(dxCore_.get(), srvSetup_.get());
+		// NOTE: RendererはLineRenderPass内でLineManager参照を保持するため、Pass生成前に実体を用意する。
+		lineManager_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
+
+		///--------------------------------------------------------------
 		///						 トレイルエフェクト共通部
 		trailEffectSetup_ = std::make_unique<TrailEffectSetup>();
 		// トレイルエフェクトセットアップの初期化
@@ -270,13 +277,6 @@ namespace MagEngine {
 		trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
 		// テスト用インスタンスを作成
 		trailEffectManager_->CreateFromPreset("test_trail", "test_trail");
-
-		///--------------------------------------------------------------
-		///						 ラインマネージャ
-		lineManager_ = std::make_unique<LineManager>();
-		lineManager_->Initialize(dxCore_.get(), srvSetup_.get());
-		// Lineのカメラ設定
-		lineManager_->SetDefaultCamera(cameraManager_->GetCurrentCamera());
 
 		///--------------------------------------------------------------
 		///						 オーディオの初期化
@@ -568,8 +568,10 @@ namespace MagEngine {
 	void MagFramework::OpaqueRender() {
 		renderWorld_.Clear();
 		sceneManager_->RegisterRenderables(renderWorld_);
-		// NOTE: HUD/LockOnHUD/Debug LineはLineManagerに集約されるため、描画実行はLineRenderPassへ委譲する。
-		renderWorld_.AddLine(LineRenderItem{lineManager_.get()});
+		// NOTE: World/HUDで描画順と深度方針を分けるため、同じLineManager参照をモード付きで登録する。
+		renderWorld_.AddLine(LineRenderItem{lineManager_.get(), 0, true, LineRenderMode::World});
+		renderWorld_.AddLine(LineRenderItem{lineManager_.get(), 1, true, LineRenderMode::Hud});
+		lineManager_->SetRenderWorldLineItemCount(static_cast<uint32_t>(renderWorld_.GetLineItems().size()));
 
 		auto commandList = dxCore_->GetCommandList();
 		assert(commandList);
@@ -629,6 +631,9 @@ namespace MagEngine {
 		if(ImGui::Button("Report Render Diagnostics")) {
 			renderer_.ReportSmokeTestDiagnostics();
 			ReportPostEffectInternalDiagnostics(*postEffectManager_);
+			if(lineManager_) {
+				lineManager_->ReportDiagnostics();
+			}
 			if(dxCore_) {
 				dxCore_->ReportDebugMessages();
 			}

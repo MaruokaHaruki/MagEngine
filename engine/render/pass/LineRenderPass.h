@@ -5,18 +5,20 @@
 #pragma once
 
 #include "IRenderPass.h"
+#include "engine/graphics/line/LineRenderMode.h"
 
 namespace MagEngine {
 	class LineManager;
 
 	class LineRenderPass final : public IRenderPass {
 	public:
-		explicit LineRenderPass(LineManager &lineManager);
+		explicit LineRenderPass(LineManager &lineManager, LineRenderMode renderMode);
 
 		void Execute(RenderContext &renderContext, const RenderWorld &renderWorld) override;
 
 	private:
 		// NOTE: LineManagerの所有権はMagFrameworkに残し、Passは描画実行だけを担当する。
 		LineManager &lineManager_;
+		LineRenderMode renderMode_;
 	};
 }

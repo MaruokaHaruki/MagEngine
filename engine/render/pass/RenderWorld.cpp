@@ -34,7 +34,7 @@ namespace MagEngine {
 
 	void RenderWorld::AddLine(const LineRenderItem &item) {
 		LineRenderItem registeredItem = item;
-		// NOTE: LineManagerは一括描画型のため、コマンド分解せずManager参照だけを描画フレームへ渡す。
+		// NOTE: LineManagerは一括描画型だが、World/HUDで深度方針を分けるためモード情報を保持する。
 		registeredItem.submissionOrder = nextLineSubmissionOrder_++;
 		lineItems_.push_back(registeredItem);
 	}

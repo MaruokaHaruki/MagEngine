@@ -85,8 +85,8 @@ namespace MagEngine {
 			switch(boundary) {
 			case RenderTransitionBoundary::RenderTexturePreDraw:
 				return 10u;
-			case RenderTransitionBoundary::RenderTexturePostDraw:
-				return 165u;
+		case RenderTransitionBoundary::RenderTexturePostDraw:
+			return 175u;
 			case RenderTransitionBoundary::BeginPresentRenderTarget:
 				return 166u;
 			case RenderTransitionBoundary::BeforePresent:

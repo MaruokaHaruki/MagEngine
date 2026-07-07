@@ -8,6 +8,7 @@
 #include <optional>
 #include <vector>
 
+#include "engine/graphics/line/LineRenderMode.h"
 #include "engine/graphics/sprite/SpriteRenderMode.h"
 
 namespace MagEngine {
@@ -55,6 +56,7 @@ namespace MagEngine {
 		LineManager *lineManager = nullptr;
 		uint32_t submissionOrder = 0;
 		bool visible = true;
+		LineRenderMode renderMode = LineRenderMode::World;
 	};
 
 	class RenderWorld {

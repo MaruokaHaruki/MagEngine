@@ -10,6 +10,40 @@
 #include <cmath>
 using namespace MagEngine;
 
+namespace {
+	class ScopedLineRenderMode {
+	public:
+		ScopedLineRenderMode(MagEngine::LineManager &lineManager, MagEngine::LineRenderMode renderMode)
+			: lineManager_(lineManager),
+			  previousRenderMode_(lineManager.GetRenderMode()) {
+			lineManager_.SetRenderMode(renderMode);
+		}
+
+		~ScopedLineRenderMode() {
+			lineManager_.SetRenderMode(previousRenderMode_);
+		}
+
+	private:
+		MagEngine::LineManager &lineManager_;
+		MagEngine::LineRenderMode previousRenderMode_;
+	};
+
+	class ScopedLockOnHudLineSource {
+	public:
+		explicit ScopedLockOnHudLineSource(MagEngine::LineManager &lineManager)
+			: lineManager_(lineManager) {
+			lineManager_.BeginHudLineSource(true);
+		}
+
+		~ScopedLockOnHudLineSource() {
+			lineManager_.EndHudLineSource();
+		}
+
+	private:
+		MagEngine::LineManager &lineManager_;
+	};
+}
+
 ///=============================================================================
 ///                        初期化
 void LockOnHUD::Initialize(Player *player, EnemyManager *enemyManager) {
@@ -73,6 +107,9 @@ void LockOnHUD::Draw() {
 	if (!isLockOnMode && lockedEnemies.empty()) {
 		return;
 	}
+	ScopedLineRenderMode lineModeGuard(*lineManager_, LineRenderMode::Hud);
+	ScopedLockOnHudLineSource lineSourceGuard(*lineManager_);
+	lineManager_->NotifyLockOnHudUpdate();
 
 	// すべての敵を取得
 	const auto &allEnemies = enemyManager_->GetEnemies();

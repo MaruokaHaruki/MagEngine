@@ -25,7 +25,8 @@ namespace MagEngine {
 		constexpr int32_t kSceneOpaqueOrder = 200;
 		constexpr int32_t kSceneCloudOrder = 300;
 		constexpr int32_t kSceneTrailOrder = 400;
-		constexpr int32_t kSceneLineOrder = 50;
+		constexpr int32_t kSceneLineOrder = 450;
+		constexpr int32_t kPostOverlayHudLineOrder = 50;
 		constexpr int32_t kOverlaySpriteOrder = 100;
 		constexpr int32_t kPostOverlayParticleOrder = 100;
 		constexpr int32_t kPostProcessPostEffectOrder = 100;
@@ -76,6 +77,8 @@ namespace MagEngine {
 			return "Particle";
 		case RenderPassId::Line:
 			return "Line";
+		case RenderPassId::HudLine:
+			return "HudLine";
 		case RenderPassId::PostEffect:
 			return "PostEffect";
 		}
@@ -180,7 +183,16 @@ namespace MagEngine {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
 				{RenderResourceId::SceneDepth, RenderResourceAccess::ReadWrite, RenderResourceState::DepthWrite},
 			},
-			std::make_unique<LineRenderPass>(lineManager)});
+			std::make_unique<LineRenderPass>(lineManager, LineRenderMode::World)});
+		AddPass(RenderPassEntry{
+			RenderPassId::HudLine,
+			RenderPhase::PostOverlay,
+			kPostOverlayHudLineOrder,
+			true,
+			{
+				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
+			},
+			std::make_unique<LineRenderPass>(lineManager, LineRenderMode::Hud)});
 		AddPass(RenderPassEntry{
 			RenderPassId::PostEffect,
 			RenderPhase::PostProcess,

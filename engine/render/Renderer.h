@@ -36,6 +36,7 @@ namespace MagEngine {
 		Sprite,
 		Particle,
 		Line,
+		HudLine,
 		PostEffect,
 	};
 
