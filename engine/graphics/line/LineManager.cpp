@@ -135,9 +135,9 @@ namespace MagEngine {
 	///=============================================================================
 	///						Imguiの描画
 	void LineManager::DrawImGui() {
+		// EditorUiSystemがPanelの所有Windowを生成するため、ここではライン設定の内容だけを描画する。
 		//========================================
 		// 描画設定
-		ImGui::Begin("LineManager");
 		//========================================
 		// Lineを描画するか
 		ImGui::Checkbox("Line", &isDrawLine_);
@@ -163,7 +163,6 @@ namespace MagEngine {
 			ReportDiagnostics();
 		}
 #endif
-		ImGui::End();
 	}
 
 	void LineManager::ReportDiagnostics() const {

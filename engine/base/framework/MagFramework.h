@@ -77,10 +77,6 @@ namespace MagEngine {
 	private:
 		/// @brief EngineContextへ既存サービスの非所有参照を設定
 		void InitializeEngineContext();
-#if ENABLE_IMGUI
-		/// @brief 常駐Debug UIをEditorUiSystemへ登録
-		void RegisterEngineEditorPanels();
-#endif
 
 		///--------------------------------------------------------------
 		///						 静的メンバ関数

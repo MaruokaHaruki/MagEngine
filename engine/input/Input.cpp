@@ -329,8 +329,6 @@ namespace MagEngine {
 	///=============================================================================
 	///						ImGui描画
 	void Input::ImGuiDraw() {
-		ImGui::Begin("Input");
-
 		// キーボードの状態
 		ImGui::Text("Keyboard:");
 		for(int i = 0; i < 256; ++i) {
@@ -365,6 +363,5 @@ namespace MagEngine {
 		ImGui::Text("Wheel: %f", GetMouseWheel());
 		ImGui::Text("Buttons: Left=%d, Right=%d, Middle=%d", mouseButtons_[0], mouseButtons_[1], mouseButtons_[2]);
 
-		ImGui::End();
 	}
 }

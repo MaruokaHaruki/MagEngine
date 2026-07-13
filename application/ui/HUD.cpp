@@ -1073,7 +1073,6 @@ void HUD::DrawBoostBarrel(float progress) {
 ///                        ImGui描画（簡略版）
 void HUD::DrawImGui() {
 #ifdef _DEBUG
-	ImGui::Begin("HUD Settings");
 
 	ImGui::Text("HUD Display Control");
 	ImGui::Checkbox("Show Boresight", &showBoresight_);
@@ -1105,7 +1104,6 @@ void HUD::DrawImGui() {
 	ImGui::Text("Boost: %.1f / %.1f", currentBoostGauge_, maxBoostGauge_);
 	ImGui::Text("Barrel Rolling: %s", isBarrelRolling_ ? "Yes" : "No");
 
-	ImGui::End();
 #endif // _DEBUG
 }
 

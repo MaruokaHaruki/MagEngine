@@ -217,13 +217,11 @@ void EnemyBase::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 void EnemyBase::DrawImGui() {
 	if (!obj_)
 		return;
-	ImGui::Begin("Enemy Debug");
 	ImGui::Text("Position: (%.2f, %.2f, %.2f)", transform_.translate.x, transform_.translate.y, transform_.translate.z);
 	ImGui::Text("Is Alive: %s", isAlive_ ? "Yes" : "No");
 	ImGui::Text("HP: %d / %d", currentHP_, maxHP_);
 	ImGui::SliderFloat("Speed", &speed_, 5.0f, 30.0f);
 	ImGui::SliderInt("Max HP", &maxHP_, 1, 10);
-	ImGui::End();
 }
 
 ///=============================================================================

@@ -292,11 +292,8 @@ namespace MagEngine {
 	}
 
 	void ImguiSetup::ShowPerformanceMonitor() {
-		// ウィンドウ表示フラグ
-		static bool show = true;
-
-		// ImGuiウィンドウを作成（ドッキング可能）
-		if (ImGui::Begin("Performance Monitor", &show)) {
+		// Windowの表示状態とBegin/EndはEditorUiSystemが管理する。
+		{
 			// FPSの表示
 			ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
@@ -345,7 +342,6 @@ namespace MagEngine {
 				prevUserTime = userTime;
 			}
 		}
-		ImGui::End();
 	}
 }
 

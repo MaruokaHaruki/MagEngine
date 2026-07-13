@@ -589,7 +589,6 @@ void PlayerMissile::DrawImGui() {
 	if (!obj_)
 		return;
 
-	ImGui::Begin("Missile Debug");
 
 	//========================================
 	// 視覚化制御
@@ -756,7 +755,6 @@ void PlayerMissile::DrawImGui() {
 		Explode();
 	}
 
-	ImGui::End();
 }
 
 //=============================================================================

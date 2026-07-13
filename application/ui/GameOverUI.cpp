@@ -451,7 +451,6 @@ float GameOverUI::EaseOutBounce(float t) const {
 // ImGui描画（デバッグ）
 void GameOverUI::DrawImGui() {
 #ifdef _DEBUG
-	ImGui::Begin("Game Over UI");
 
 	const char *stateNames[] = {"Idle", "Appearing", "Displaying", "Fading", "Done"};
 	ImGui::Text("State: %s", stateNames[static_cast<int>(state_)]);
@@ -480,6 +479,5 @@ void GameOverUI::DrawImGui() {
 		Stop();
 	}
 
-	ImGui::End();
 #endif
 }

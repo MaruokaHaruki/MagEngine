@@ -73,7 +73,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						ImGui描画
 	void TrailEffectManager::DrawImGui() {
-		ImGui::Begin("TrailEffectManager");
+		// EditorUiSystemがPanelの所有Windowを生成するため、ここではトレイル設定の内容だけを描画する。
 
 		//========================================
 		// 統計情報
@@ -345,7 +345,6 @@ namespace MagEngine {
 			ImGui::TreePop();
 		}
 
-		ImGui::End();
 	}
 
 	///=============================================================================

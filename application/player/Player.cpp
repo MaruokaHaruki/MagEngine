@@ -313,7 +313,6 @@ void Player::DrawImGui() {
 	}
 	MagMath::Transform *objTransform = obj_->GetTransform();
 	if (objTransform) {
-		ImGui::Begin("Player Debug");
 
 		// === HP表示 ===
 		ImGui::Text("=== HP Status ===");
@@ -594,7 +593,6 @@ void Player::DrawImGui() {
 			defeatComponent_.StartDefeatAnimation();
 		}
 
-		ImGui::End();
 	}
 }
 

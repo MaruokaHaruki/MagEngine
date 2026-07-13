@@ -453,7 +453,6 @@ namespace MagEngine {
 #if ENABLE_IMGUI
 #ifdef _DEBUG
 	void Cloud::DrawImGui() {
-		ImGui::Begin("Cloud Settings");
 
 		//========================================
 		// 基本設定
@@ -578,7 +577,6 @@ namespace MagEngine {
 			ImGui::Text("Far Plane: %.2f", cameraData_->farPlane);
 		}
 
-		ImGui::End();
 	}
 #endif // _DEBUG
 #endif // ENABLE_IMGUI

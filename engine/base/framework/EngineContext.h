@@ -13,6 +13,7 @@
 namespace MagEngine {
 	class Input;
 	class CameraManager;
+	class LightManager;
 	class TextureManager;
 	class ModelManager;
 	class MAudioG;
@@ -34,6 +35,7 @@ namespace MagEngine {
 	struct EngineContext {
 		Input *input = nullptr;
 		CameraManager *cameraManager = nullptr;
+		LightManager *lightManager = nullptr;
 		TextureManager *textureManager = nullptr;
 		ModelManager *modelManager = nullptr;
 		MAudioG *audio = nullptr;
@@ -55,6 +57,7 @@ namespace MagEngine {
 			// 理由：旧Singletonフォールバックを残さず、初期化順の誤りをDebug時に明確化するため
 			assert(input);
 			assert(cameraManager);
+			assert(lightManager);
 			assert(textureManager);
 			assert(modelManager);
 			assert(audio);

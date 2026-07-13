@@ -623,7 +623,6 @@ float SceneTransition::EaseOut(float t) {
 ///                        ImGui描画
 void SceneTransition::DrawImGui() {
 #ifdef _DEBUG
-	ImGui::Begin("Scene Transition");
 
 	// 状態表示
 	const char *stateNames[] = {"Idle", "Opening", "Closing", "Completed"};
@@ -698,6 +697,5 @@ void SceneTransition::DrawImGui() {
 		Cancel();
 	}
 
-	ImGui::End();
 #endif
 }

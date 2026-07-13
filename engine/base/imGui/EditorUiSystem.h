@@ -13,6 +13,7 @@
 #include <vector>
 
 namespace MagEngine {
+	struct EngineContext;
 
 	enum class EditorUiCategory {
 		Engine,
@@ -31,7 +32,9 @@ namespace MagEngine {
 	struct EditorUiPanelDesc {
 		std::string name;
 		EditorUiCategory category = EditorUiCategory::Tools;
+		bool defaultOpen = false;
 		bool isOpen = false;
+		// Panel本体のBegin/EndはEditorUiSystemが所有し、登録側は内容だけを描画する。
 		std::function<void()> drawFunc;
 	};
 
@@ -39,6 +42,14 @@ namespace MagEngine {
 	public:
 		void Initialize();
 		void Finalize();
+		/// @brief Engine常駐Panelを登録
+		/// @param engineContext Engineサービスの非所有参照
+		/// @param renderingPanel Framework固有のRendering UI本体
+		/// @param performancePanel Framework固有の性能UI本体
+		/// @note Managerの寿命はFrameworkが所有し、Panel登録はその後に行う
+		void RegisterEnginePanels(const EngineContext &engineContext,
+			std::function<void()> renderingPanel,
+			std::function<void()> performancePanel);
 
 		void RegisterPanel(const std::string &name, EditorUiCategory category, bool defaultOpen, std::function<void()> drawFunc);
 		void UnregisterPanel(const std::string &name);

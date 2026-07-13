@@ -6,6 +6,13 @@
  * \date   July 2026
  *********************************************************************/
 #include "EditorUiSystem.h"
+#include "EngineContext.h"
+#include "CameraManager.h"
+#include "DebugTextManager.h"
+#include "Input.h"
+#include "LightManager.h"
+#include "LineManager.h"
+#include "TrailEffectManager.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -34,13 +41,42 @@ namespace MagEngine {
 	}
 
 	void EditorUiSystem::Initialize() {
-		// NOTE: Docking は EditorUiSystem が唯一の入口として有効化し、旧 Layout 側へ責務を残さない。
+		// Docking設定とPanel一覧をここで初期化し、旧Layoutや前回の実行状態を持ち越さない。
 		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		panels_.clear();
 	}
 
 	void EditorUiSystem::Finalize() {
 		// NOTE: std::function のキャプチャが破棄済み Scene を参照しないよう、終了時に登録を全て破棄する。
 		panels_.clear();
+	}
+
+	void EditorUiSystem::RegisterEnginePanels(const EngineContext &engineContext,
+		std::function<void()> renderingPanel,
+		std::function<void()> performancePanel) {
+		// EngineサービスはFrameworkが所有するため、UIシステムは非所有参照だけをキャプチャする。
+		engineContext.Validate();
+		const EngineContext *context = &engineContext;
+		RegisterPanel("Input", EditorUiCategory::Engine, false, [context]() {
+			context->input->ImGuiDraw();
+		});
+		RegisterPanel("Camera Manager", EditorUiCategory::Engine, true, [context]() {
+			context->cameraManager->DrawImGui();
+		});
+		RegisterPanel("Light Manager", EditorUiCategory::Engine, true, [context]() {
+			context->lightManager->DrawImGui();
+		});
+		RegisterPanel("Line Manager", EditorUiCategory::Engine, false, [context]() {
+			context->lineManager->DrawImGui();
+		});
+		RegisterPanel("Trail Effect Manager", EditorUiCategory::Engine, false, [context]() {
+			context->trailEffectManager->DrawImGui();
+		});
+		RegisterPanel("Debug Text Manager", EditorUiCategory::Engine, false, [context]() {
+			context->debugTextManager->DrawImGui();
+		});
+		RegisterPanel("Post Effects", EditorUiCategory::Rendering, true, std::move(renderingPanel));
+		RegisterPanel("Performance", EditorUiCategory::Application, false, std::move(performancePanel));
 	}
 
 	void EditorUiSystem::RegisterPanel(const std::string &name, EditorUiCategory category, bool defaultOpen, std::function<void()> drawFunc) {
@@ -49,17 +85,16 @@ namespace MagEngine {
 			return;
 		}
 
-		if (EditorUiPanelDesc *panel = FindPanel(name)) {
-			// NOTE: 同名 Panel は一意キーとして扱い、Scene 再生成時の重複登録を上書きで防ぐ。
-			panel->category = category;
-			panel->isOpen = defaultOpen;
-			panel->drawFunc = std::move(drawFunc);
+		if (FindPanel(name)) {
+			// 同名登録はPanelの所有者を曖昧にするため、登録側のライフサイクル不備として扱う。
+			assert(false && "EditorUiPanel name must be unique.");
 			return;
 		}
 
 		EditorUiPanelDesc panel{};
 		panel.name = name;
 		panel.category = category;
+		panel.defaultOpen = defaultOpen;
 		panel.isOpen = defaultOpen;
 		panel.drawFunc = std::move(drawFunc);
 		panels_.push_back(std::move(panel));
@@ -145,6 +180,7 @@ namespace MagEngine {
 		}
 
 		if (ImGui::BeginMenu("Editor")) {
+			ImGui::MenuItem("Enable Editor UI", nullptr, &editorState_.isEditorEnabled);
 			ImGui::MenuItem("Enable DockSpace", nullptr, &editorState_.isDockSpaceEnabled);
 			ImGui::MenuItem("Show Menu Bar", nullptr, &editorState_.isMenuBarEnabled);
 			ImGui::EndMenu();
@@ -159,6 +195,7 @@ namespace MagEngine {
 				continue;
 			}
 
+			// isOpenはImGuiの閉じる操作を反映するための一時値であり、Panel記述子が状態を所有する。
 			bool isOpen = panel.isOpen;
 			if (ImGui::Begin(panel.name.c_str(), &isOpen)) {
 				panel.drawFunc();

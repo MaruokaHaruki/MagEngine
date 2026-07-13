@@ -290,8 +290,12 @@ namespace MagEngine {
 
 #if ENABLE_IMGUI
 		///--------------------------------------------------------------
-		///						 常駐Debug UI登録
-		RegisterEngineEditorPanels();
+		///						 Engine UI登録
+		// UIの具体的なPanel構成はEditorUiSystemへ委譲し、Frameworkは所有中の処理だけを渡す。
+		editorUiSystem_->RegisterEnginePanels(
+			engineContext_,
+			[this]() { DrawPostEffectImGui(); },
+			[this]() { imguiSetup_->ShowPerformanceMonitor(); });
 #endif
 
 		///--------------------------------------------------------------
@@ -317,6 +321,7 @@ namespace MagEngine {
 		// 理由：所有権を変更せず、Scene側のSingleton直接参照を段階的に減らすため
 		engineContext_.input = Input::GetInstance();
 		engineContext_.cameraManager = cameraManager_.get();
+		engineContext_.lightManager = lightManager_.get();
 		engineContext_.textureManager = textureManager_.get();
 		engineContext_.modelManager = ModelManager::GetInstance();
 		engineContext_.audio = MAudioG::GetInstance();
@@ -335,38 +340,6 @@ namespace MagEngine {
 #endif
 		engineContext_.Validate();
 	}
-
-#if ENABLE_IMGUI
-	///=============================================================================
-	///						常駐Debug UI登録
-	void MagFramework::RegisterEngineEditorPanels() {
-		// NOTE: Framework は登録だけを担当し、毎フレームの個別呼び出しは EditorUiSystem に集約する。
-		editorUiSystem_->RegisterPanel("Input", EditorUiCategory::Engine, false, []() {
-			Input::GetInstance()->ImGuiDraw();
-		});
-		editorUiSystem_->RegisterPanel("Camera Manager", EditorUiCategory::Engine, true, [this]() {
-			cameraManager_->DrawImGui();
-		});
-		editorUiSystem_->RegisterPanel("Light Manager", EditorUiCategory::Engine, true, [this]() {
-			lightManager_->DrawImGui();
-		});
-		editorUiSystem_->RegisterPanel("Line Manager", EditorUiCategory::Engine, false, [this]() {
-			lineManager_->DrawImGui();
-		});
-		editorUiSystem_->RegisterPanel("Trail Effect Manager", EditorUiCategory::Engine, false, [this]() {
-			trailEffectManager_->DrawImGui();
-		});
-		editorUiSystem_->RegisterPanel("Debug Text Manager", EditorUiCategory::Engine, false, []() {
-			DebugTextManager::GetInstance()->DrawImGui();
-		});
-		editorUiSystem_->RegisterPanel("Post Effects", EditorUiCategory::Rendering, true, [this]() {
-			DrawPostEffectImGui();
-		});
-		editorUiSystem_->RegisterPanel("Performance", EditorUiCategory::Application, false, [this]() {
-			imguiSetup_->ShowPerformanceMonitor();
-		});
-	}
-#endif
 
 	///=============================================================================
 	///						更新
@@ -596,8 +569,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						ポストエフェクトのImGui描画
 	void MagFramework::DrawPostEffectImGui() {
-		ImGui::Begin("Post Effects");
-
+		// Windowの所有と表示状態はEditorUiSystemへ委譲し、ここではRendering設定だけを描画する。
 		ImGui::Text("Multiple effects can be applied in order");
 		ImGui::Separator();
 
@@ -645,6 +617,5 @@ namespace MagEngine {
 		}
 #endif
 
-		ImGui::End();
 	}
 }

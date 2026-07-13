@@ -291,7 +291,6 @@ void FollowCamera::SetTarget(Player *target) {
 ///=============================================================================
 ///						ImGui描画
 void FollowCamera::DrawImGui() {
-	ImGui::Begin("Follow Camera");
 
 	ImGui::Text("Camera: %s", cameraName_.c_str());
 	ImGui::Text("Target: %s", target_ ? "Player" : "None");
@@ -361,5 +360,4 @@ void FollowCamera::DrawImGui() {
 		ImGui::Text("Distance to Player: %.2f", distance);
 	}
 
-	ImGui::End();
 }

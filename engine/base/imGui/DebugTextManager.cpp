@@ -163,18 +163,6 @@ namespace MagEngine {
 			}
 		}
 
-		// デバッグテキスト管理ウィンドウの表示ボタン // このブロックは上に移動しました
-		// if (ImGui::Begin("DebugTools")) {
-		// 	if (ImGui::Button("デバッグテキスト管理")) {
-		// 		showDebugTextManager_ = true;
-		// 	}
-		// 	ImGui::End();
-		// }
-
-		// デバッグテキスト管理ウィンドウ表示 // このブロックは上に移動しました
-		// if (showDebugTextManager_) {
-		// 	DrawDebugTextManagerImGui();
-		// }
 	}
 
 	MagMath::Vector2 DebugTextManager::WorldToScreen(const MagMath::Vector3 &worldPosition) const {
@@ -336,8 +324,7 @@ namespace MagEngine {
 	}
 
 	void DebugTextManager::DrawDebugTextManagerImGui() {
-		// デバッグテキスト管理ウィンドウを常に表示
-		ImGui::Begin("デバッグテキスト管理");
+		// PanelのWindowはEditorUiSystemが所有し、この関数は管理内容だけを描画する。
 
 		// テキスト表示の切り替えボタン
 		if (ImGui::Button(isDebugTextEnabled_ ? "テキスト表示オフ" : "テキスト表示オン")) {
@@ -460,6 +447,5 @@ namespace MagEngine {
 			ImGui::EndTable();
 		}
 
-		ImGui::End();
 	}
 }

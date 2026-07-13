@@ -306,8 +306,8 @@ namespace MagEngine {
 	///=============================================================================
 	///						Imgui描画
 	void CameraManager::DrawImGui() {
+		// EditorUiSystemがPanelの所有Windowを生成するため、ここでは内容だけを描画する。
 		// カメラの情報を表示
-		ImGui::Begin("Camera Manager");
 		ImGui::Text("Current Camera: %s", currentCameraName_.c_str());
 		if(ImGui::Button("Switch Main/Debug Camera")) {
 			ChangeDebugCamera();
@@ -374,7 +374,6 @@ namespace MagEngine {
 				ImGui::Separator();
 			}
 		}
-		ImGui::End();
 	}
 
 	///=============================================================================

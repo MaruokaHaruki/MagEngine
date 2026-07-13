@@ -72,7 +72,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						ImGuiの描画
 	void LightManager::DrawImGui() {
-		ImGui::Begin("Light Manager");
+		// EditorUiSystemがPanelの所有Windowを生成するため、ここではライト設定の内容だけを描画する。
 
 		// デバッグ表示設定
 		if (ImGui::CollapsingHeader("Debug Visualization", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -181,7 +181,6 @@ namespace MagEngine {
 			}
 		}
 
-		ImGui::End();
 	}
 
 	///=============================================================================

@@ -321,7 +321,7 @@ float LockOnHUD::GetPulseValue() const {
 ///                        ImGui描画
 void LockOnHUD::DrawImGui() {
 #ifdef _DEBUG
-	if (ImGui::Begin("LockOnHUD Settings")) {
+	{
 		ImGui::Checkbox("Visible##LockOnHUD", &isVisible_);
 		ImGui::Checkbox("Show All Markers", &debugSettings_.showAllMarkers);
 		ImGui::Checkbox("Show LockOn Lines", &debugSettings_.showLockOnLines);
@@ -349,7 +349,6 @@ void LockOnHUD::DrawImGui() {
 			ImGui::Text("LockOn Targets: %zu", player_->GetLockOnTargetCount());
 		}
 
-		ImGui::End();
 	}
 #endif
 }
