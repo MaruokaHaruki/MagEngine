@@ -309,23 +309,3 @@ void TitleScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	}
 }
 
-///=============================================================================
-///						ImGui描画
-void TitleScene::ImGuiDraw() {
-#ifdef _DEBUG
-	// TitleSceneのImGui描画
-	ImGui::Begin("TitleScene");
-	ImGui::Text("Hello, TitleScene!");
-	ImGui::End();
-
-	if (titleCamera_) {
-		titleCamera_->DrawImGui();
-	}
-
-	//========================================
-	// シーン遷移
-	if (sceneTransition_) {
-		sceneTransition_->DrawImGui();
-	}
-#endif
-}

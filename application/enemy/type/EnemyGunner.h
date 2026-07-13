@@ -42,6 +42,7 @@ public:
 
 	/// \brief 更新
 	void Update() override;
+	void Update(float deltaTime) override;
 
 	/// \brief 3D不透明描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
@@ -66,17 +67,17 @@ public:
 
 	/// \brief 編隊内の目標位置を設定
 	void SetFormationTargetPosition(const Vector3 &targetPos) {
-		formationTargetPosition_ = targetPos;
+		SetFormationTarget(targetPos);
 	}
 
 	/// \brief 編隊フォロー状態に切り替え
 	void SetFormationFollowing(bool following) {
-		isFollowingFormation_ = following;
+		SetFormationFollowEnabled(following);
 	}
 
 	/// \brief 編隊フォロー中かどうか
 	bool IsFollowingFormation() const {
-		return isFollowingFormation_;
+		return IsFormationFollowEnabled();
 	}
 
 	/// \brief TrailEffectManager設定
@@ -87,11 +88,15 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	void UpdateBullets(float deltaTime);
+	void TryShootAtPlayer();
+
+	///--------------------------------------------------------------
+	///							メンバ変数
+private:
 	//========================================
 	// グループ編隊関連
 	int groupId_; // 属するグループのID（-1=単独）
-	bool isFollowingFormation_;       // 編隊フォロー中フラグ
-	Vector3 formationTargetPosition_; // 編隊内の目標位置
 
 	//========================================
 	// 行動ステート関連

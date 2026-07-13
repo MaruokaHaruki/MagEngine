@@ -43,7 +43,7 @@
     "rotationAngleRadians": 6.283185307
   },
   "lockOn": {
-    "range": 50.0,
+    "range": 200.0,
     "fovDegrees": 180.0,
     "acquisitionInterval": 0.35,
     "maxTargets": 3,

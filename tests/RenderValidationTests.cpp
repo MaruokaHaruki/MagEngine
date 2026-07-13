@@ -9,6 +9,7 @@
 #include "engine/render/post_effect/PostEffectManager.h"
 #include "engine/graphics/sprite/SpriteSetup.h"
 #include "engine/graphics/cloud/CloudHoleTypes.h"
+#include "application/enemy/manager/EnemyGroup.h"
 #include "engine/render/pass/RenderWorld.h"
 
 #include <algorithm>
@@ -128,6 +129,76 @@ namespace {
 		Expect(result, ring.shapeParams0.x >= 0.0f && ring.shapeParams0.x <= 1.0f, "CloudHoleTypes_RingThicknessSafe");
 		CloudHoleData star = MakeCloudHolePreset(CloudHoleShape::RegularStar);
 		Expect(result, star.shapeParams0.x >= 3.0f && star.shapeParams0.x <= 8.0f, "CloudHoleTypes_StarPointCountSafe");
+	}
+
+	void EnemyGroupFormationTest_SlotOffsets(TestResult &result) {
+		EnemyGroup group;
+
+		const Vector3 lineLeft = group.CalculateSlotOffsetForTest(EnemyFormationPattern::HorizontalLine, 0, 3, 0.0f);
+		const Vector3 lineCenter = group.CalculateSlotOffsetForTest(EnemyFormationPattern::HorizontalLine, 1, 3, 0.0f);
+		const Vector3 lineRight = group.CalculateSlotOffsetForTest(EnemyFormationPattern::HorizontalLine, 2, 3, 0.0f);
+		Expect(result, lineLeft.x < lineCenter.x && lineCenter.x < lineRight.x, "EnemyGroupFormation_HorizontalLineSeparated");
+
+		const Vector3 vLeader = group.CalculateSlotOffsetForTest(EnemyFormationPattern::VShape, 0, 5, 0.0f);
+		const Vector3 vLeft = group.CalculateSlotOffsetForTest(EnemyFormationPattern::VShape, 1, 5, 0.0f);
+		const Vector3 vRight = group.CalculateSlotOffsetForTest(EnemyFormationPattern::VShape, 2, 5, 0.0f);
+		Expect(result, vLeader.x == 0.0f && vLeader.y == 0.0f && vLeader.z == 0.0f, "EnemyGroupFormation_VLeaderAhead");
+		Expect(result, vLeft.x < 0.0f && vRight.x > 0.0f && vLeft.z < vLeader.z && vRight.z < vLeader.z, "EnemyGroupFormation_VWingsBack");
+
+		const Vector3 circle0 = group.CalculateSlotOffsetForTest(EnemyFormationPattern::Circle, 0, 4, 0.0f);
+		const Vector3 circle1 = group.CalculateSlotOffsetForTest(EnemyFormationPattern::Circle, 1, 4, 0.0f);
+		Expect(result, std::abs(circle0.x - circle1.x) > 0.01f || std::abs(circle0.y - circle1.y) > 0.01f, "EnemyGroupFormation_CirclePhaseDiffers");
+
+		const Vector3 eight0 = group.CalculateSlotOffsetForTest(EnemyFormationPattern::FigureEight, 0, 4, 0.0f);
+		const Vector3 eight1 = group.CalculateSlotOffsetForTest(EnemyFormationPattern::FigureEight, 0, 4, 1.0f);
+		Expect(result, std::abs(eight0.x - eight1.x) > 0.01f || std::abs(eight0.y - eight1.y) > 0.01f, "EnemyGroupFormation_FigureEightMovesOverTime");
+
+		const Vector3 column0 = group.CalculateSlotOffsetForTest(EnemyFormationPattern::Column, 0, 4, 0.0f);
+		const Vector3 column3 = group.CalculateSlotOffsetForTest(EnemyFormationPattern::Column, 3, 4, 0.0f);
+		Expect(result, column3.z < column0.z, "EnemyGroupFormation_ColumnDepthSeparated");
+	}
+
+	void EnemyGroupFormationTest_AttackAndEmptyUpdate(TestResult &result) {
+		EnemyGroup group;
+		group.Update(0.0f, {0.0f, 0.0f, 0.0f});
+		Expect(result, group.GetState() == EnemyGroupState::Finished, "EnemyGroupFormation_EmptyUpdateFinished");
+
+		const bool slot0 = group.ShouldSlotAttackForTest(0, 3, 0.05f);
+		const bool slot1Early = group.ShouldSlotAttackForTest(1, 3, 0.05f);
+		const bool slot1Delayed = group.ShouldSlotAttackForTest(1, 3, EnemyFormationConstants::kAttackSlotDelay + 0.05f);
+		Expect(result, slot0, "EnemyGroupFormation_StaggeredLeaderWindow");
+		Expect(result, !slot1Early && slot1Delayed, "EnemyGroupFormation_StaggeredSlotDelay");
+
+		const Vector3 invalidPattern = group.CalculateSlotOffsetForTest(static_cast<EnemyFormationPattern>(999), 2, 3, 0.0f);
+		Expect(result, std::isfinite(invalidPattern.x) && std::isfinite(invalidPattern.y) && std::isfinite(invalidPattern.z), "EnemyGroupFormation_InvalidPatternSafe");
+	}
+
+	void EnemyGroupFormationTest_RuntimeMovementBounds(TestResult &result) {
+		EnemyGroup group;
+
+		const Vector3 current{0.0f, 0.0f, 0.0f};
+		const Vector3 target{10.0f, 0.0f, 0.0f};
+		const Vector3 zeroDelta = group.CalculateSmoothedPositionForTest(current, target, 4.0f, 0.0f);
+		const Vector3 smallDelta = group.CalculateSmoothedPositionForTest(current, target, 4.0f, 1.0f / 120.0f);
+		const Vector3 largeDelta = group.CalculateSmoothedPositionForTest(current, target, 4.0f, 1.0f / 30.0f);
+		Expect(result, zeroDelta.x == current.x && zeroDelta.y == current.y && zeroDelta.z == current.z, "EnemyGroupFormation_SmoothZeroDeltaStable");
+		Expect(result, smallDelta.x > current.x && smallDelta.x < target.x, "EnemyGroupFormation_SmoothSmallDeltaMovesTowardTarget");
+		Expect(result, largeDelta.x > smallDelta.x && largeDelta.x < target.x, "EnemyGroupFormation_SmoothDeltaTimeStable");
+
+		const Vector3 playerPosition{5.0f, -3.0f, 20.0f};
+		const Vector3 clamped = group.ClampToCombatAreaForTest({100.0f, -100.0f, 0.0f}, playerPosition);
+		const float safeHalfWidth = EnemyFormationConstants::kCombatAreaHalfWidth - 4.0f;
+		const float safeHalfHeight = EnemyFormationConstants::kCombatAreaHalfHeight - 4.0f;
+		Expect(result, clamped.x <= playerPosition.x + safeHalfWidth && clamped.x >= playerPosition.x - safeHalfWidth, "EnemyGroupFormation_CombatAreaClampX");
+		Expect(result, clamped.y <= playerPosition.y + safeHalfHeight && clamped.y >= playerPosition.y - safeHalfHeight, "EnemyGroupFormation_CombatAreaClampY");
+		Expect(result, clamped.z == playerPosition.z + EnemyFormationConstants::kCombatForwardDistance, "EnemyGroupFormation_CombatDistanceMaintained");
+
+		for (uint32_t slotIndex = 0; slotIndex < 5; ++slotIndex) {
+			const Vector3 circle = group.CalculateSlotOffsetForTest(EnemyFormationPattern::Circle, slotIndex, 5, 0.25f);
+			const Vector3 figureEight = group.CalculateSlotOffsetForTest(EnemyFormationPattern::FigureEight, slotIndex, 5, 0.25f);
+			Expect(result, std::abs(circle.x) <= safeHalfWidth && std::abs(circle.y) <= safeHalfHeight, "EnemyGroupFormation_CircleInsideCombatArea");
+			Expect(result, std::abs(figureEight.x) <= safeHalfWidth && std::abs(figureEight.y) <= safeHalfHeight, "EnemyGroupFormation_FigureEightInsideCombatArea");
+		}
 	}
 
 	RenderPassEntry MakePass(RenderPassId id, RenderPhase phase, int32_t order, std::vector<RenderPassResourceUsage> usages) {
@@ -1396,6 +1467,9 @@ int main() {
 	PipelineRecipeTest_CloudDefaults(result);
 	CloudHoleTypesTest_CategoriesAndPresets(result);
 	CloudHoleTypesTest_Sanitize(result);
+	EnemyGroupFormationTest_SlotOffsets(result);
+	EnemyGroupFormationTest_AttackAndEmptyUpdate(result);
+	EnemyGroupFormationTest_RuntimeMovementBounds(result);
 	PipelineRecipeTest_TrailDefaults(result);
 	PipelineRecipeTest_PostEffectDefaults(result);
 	PipelineRecipeTest_ValidationErrors(result);

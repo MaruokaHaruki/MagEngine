@@ -26,6 +26,7 @@ namespace MagEngine {
 	class TrailEffectManager;
 	class DebugTextManager;
 	class LineManager;
+	class EditorUiSystem;
 
 	///=============================================================================
 	///                         エンジンコンテキスト
@@ -46,6 +47,7 @@ namespace MagEngine {
 		TrailEffectManager *trailEffectManager = nullptr;
 		DebugTextManager *debugTextManager = nullptr;
 		LineManager *lineManager = nullptr;
+		EditorUiSystem *editorUiSystem = nullptr;
 
 		/// \brief 必須サービスが設定済みか検証する
 		void Validate() const {
@@ -66,6 +68,7 @@ namespace MagEngine {
 			assert(trailEffectManager);
 			assert(debugTextManager);
 			assert(lineManager);
+			assert(editorUiSystem);
 		}
 	};
 }

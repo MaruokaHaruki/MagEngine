@@ -45,9 +45,6 @@ public:
 	/// \brief 描画対象の登録
 	virtual void RegisterRenderables(MagEngine::RenderWorld &renderWorld) = 0;
 
-	/// \brief ImGui描画
-	virtual void ImGuiDraw() = 0;
-
 	/**----------------------------------------------------------------------------
 	 * \brief  ~BaseScene 抽象クラスのデストラクタ
 	 * NOTE: 仮想デストラクタを用意することで、継承先のクラスのデストラクタが呼ばれるようにする。

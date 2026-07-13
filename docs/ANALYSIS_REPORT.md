@@ -2494,3 +2494,489 @@ Release x64ビルド:
 - D3D12 ERROR: 0
 - D3D12 CORRUPTION: 0
 - Device Removedなし
+
+## 30. Enemy Group Formation 改修
+
+### 30.1 目的
+
+敵個体ごとのランダム性が高い移動を、EnemyGroup主導の「進入 / 戦闘軌道 / 離脱」へ寄せた。
+
+理由:
+- 3Dシューティングでは、敵が単独でばらばらに動くより、編隊単位の軌道のほうがプレイヤーが動きを読める
+- 新しい敵種別を増やす前に、既存Enemy / EnemyGunnerが共通の編隊目標へ追従できる土台が必要
+- EnemyGroupがEnemy / EnemyGunnerへ`dynamic_cast`して個別APIを呼ぶ構造は、敵追加時の分岐増加につながる
+
+### 30.2 EnemyBase共通Formation API
+
+`EnemyBase`へ以下の共通APIを追加した。
+
+- `SetFormationTarget`
+- `ClearFormationTarget`
+- `SetFormationFollowEnabled`
+- `IsFormationFollowEnabled`
+- `SetFormationSlotIndex`
+- `GetFormationSlotIndex`
+- `SetFormationFollowSpeed`
+- `SetFormationAttackEnabled`
+- `IsFormationAttackEnabled`
+- `UpdateFormationFollow`
+
+EnemyGroupは敵を所有しないため、`EnemyBase*`は非所有参照として扱い、寿命管理や削除はEnemyManager側の`unique_ptr`に残している。
+
+### 30.3 EnemyGroupState
+
+追加した状態:
+- `Enter`: 視界外または視界端から戦闘中心へ進入
+- `Combat`: 編隊パターンに応じた軌道を維持
+- `Exit`: 戦闘中心から視界外または奥方向へ離脱
+- `Finished`: Group制御終了
+
+### 30.4 EnemyFormationPattern
+
+追加したパターン:
+- `HorizontalLine`: X方向の横一列
+- `VShape`: slot 0を先頭に左右後方へ展開
+- `Circle`: Group中心を基準に楕円円運動
+- `FigureEight`: sin / sin(2t) による八の字
+- `Column`: Z方向に時間差を持つ縦列
+
+既存`FormationType`は設定互換のため残し、EnemyGroup内部で新Patternへ変換する。
+
+### 30.5 軌道式
+
+主な式:
+- HorizontalLine: `center + (slotOffsetX, 0, 0)`
+- VShape: `center + (side * spacing * pairIndex, -spacing * 0.35 * pairIndex, -spacing * 0.8 * pairIndex)`
+- Circle: `x = cos(angle) * orbitRadiusX`, `y = sin(angle) * orbitRadiusY`
+- FigureEight: `x = sin(angle) * orbitRadiusX`, `y = sin(angle * 2) * orbitRadiusY`
+- Column: `center + (0, verticalOffset, -slotIndex * spacing)`
+
+三角関数の式はEnemyGroupへ集約し、Enemy / EnemyGunnerへ重複させていない。
+
+### 30.6 進入 / 戦闘 / 離脱
+
+EnemyGroupが`EnemyGroupMotion`を持ち、以下を管理する。
+
+- `entryPosition`
+- `combatCenter`
+- `exitPosition`
+- `elapsedTime`
+- `phaseTime`
+- `orbitRadiusX`
+- `orbitRadiusY`
+- `orbitAngularSpeed`
+
+Enter / Exitは線形補間でGroup中心を移動し、Combat中はPatternごとのslot offsetをGroup中心に加算する。
+
+### 30.7 攻撃パターン
+
+`EnemyGroupAttackPattern`を追加した。
+
+- `None`
+- `Staggered`
+- `LeaderThenWing`
+- `Alternating`
+
+今回の既定値は`Staggered`。Groupはslotごとの攻撃許可タイミングだけを設定し、実際に撃てるかどうかはEnemyGunner側の射撃間隔で判断する。
+
+### 30.8 dynamic_cast削減
+
+EnemyGroup内の`Enemy` / `EnemyGunner`向け`dynamic_cast`を削除した。
+
+Groupから派生型固有APIを呼ばず、`EnemyBase`のFormation APIだけで以下を制御する。
+- slot index
+- formation target
+- follow enabled
+- follow speed
+- attack enabled
+
+### 30.9 設定値
+
+新しい数値は`EnemyGroup.h`内の`EnemyFormationConstants`へ集約した。
+
+- `kEntryDuration`
+- `kCombatDuration`
+- `kExitDuration`
+- `kFormationFollowSpeed`
+- `kOrbitRadiusX`
+- `kOrbitRadiusY`
+- `kOrbitAngularSpeed`
+- `kFormationSpacing`
+- `kAttackInterval`
+- `kAttackSlotDelay`
+- `kAttackWindow`
+- `kMaxFormationJitter`
+- `kCombatForwardDistance`
+
+今後JSON側のFormation設定が十分整理できた段階で、既存`FormationConfig` / `WaveParamConfig`へ移す余地を残している。
+
+### 30.10 CPUテスト
+
+`tests/RenderValidationTests.cpp`へGPU不要のFormation計算テストを追加した。
+
+検証内容:
+- HorizontalLineでslotが左右に分かれる
+- VShapeでslot 0が先頭、左右が後方へ展開する
+- Circleでslotごとの位相が分かれる
+- FigureEightで時間経過により座標が変化する
+- ColumnでZ方向に分かれる
+- 空Group更新が安全にFinishedへ落ちる
+- Staggeredでslotごとの攻撃タイミングがずれる
+- 不正Pattern値でも有限値を返す
+
+### 30.11 ビルド結果
+
+Debug x64:
+- 成功
+- 警告0
+- エラー0
+
+Release x64:
+- 成功
+- 警告0
+- エラー0
+
+### 30.12 GPU確認
+
+今回の作業内では実GPU確認は未実施。
+
+実機で確認すべき項目:
+- 横一列、V字、円、八の字が視界内で識別できる
+- EnterからCombatへ自然に進入する
+- Combat後にExitへ自然に離脱する
+- Gunnerが編隊中でも攻撃する
+- 敵全員が同一フレームで射撃しない
+- 敵死亡時にGroupが安全に縮退する
+- Scene遷移後に古いGroup参照が残らない
+- D3D12 ERROR: 0
+- D3D12 CORRUPTION: 0
+- Device Removedなし
+
+## 31. EnemyGroup編隊スポーン / 移動調整
+
+### 31.1 目的
+
+ゲームシーン上で発生する編隊について、出現数、進入距離、Combat中の狙いやすさ、移動の滑らかさを改善した。
+
+既存の`EnemyGroup` / Formation API / 敵弾 / 衝突 / 死亡処理は作り直さず、Group中心とEnemy個体追従、スポーンスケジューラ、診断表示だけを調整した。
+
+### 31.2 カクカク移動の原因と改善方式
+
+原因:
+- Enter / Exitの目標位置が線形補間で切り替わり、Group中心が急に別の目標へ向かっていた
+- Enemy個体のFormation追従が固定係数寄りで、FPS差や目標更新時の見え方が安定しにくかった
+
+改善:
+- `EnemyGroup::SmoothPosition`で指数補間を追加した
+- `EnemyBase::UpdateFormationFollow`で追従速度を保持し、`deltaTime`に依存する指数補間で速度を馴染ませるようにした
+
+理由:
+- 固定割合補間はフレームレートで見え方が変わるため、`1 - exp(-sharpness * deltaTime)`で追従量を時間基準へ正規化する
+
+### 31.3 プレイヤー基準Combat Anchor
+
+Combat中の中心を固定ワールド座標ではなく、プレイヤー現在位置から以下の基準で作るようにした。
+
+```text
+Combat Anchor
+= Player Position
++ Z正面方向のCombat Distance
++ Patternごとの小さなXY Bias
+```
+
+このAnchorをさらに指数補間で追従することで、プレイヤーがXY移動しても敵が画面中央に取り残されにくく、かつプレイヤーへ完全追従して単調になりすぎないようにした。
+
+### 31.4 Combat Area
+
+`EnemyCombatArea`を追加し、Combat中のGroup中心をプレイヤー基準の射撃可能領域内へClampするようにした。
+
+既定値:
+- halfWidth: 30.0
+- halfHeight: 14.0
+- combatDistance: 72.0
+- edgePadding: 4.0
+
+円軌道 / 八の字軌道の半径もCombat Area内へ収まるようにClampしている。
+
+### 31.5 視界外Spawn Margin / Entry Distance制約
+
+`EnemyFormationSpawnBounds`と`EnemyManager::CalculateFormationEntryPosition`を追加し、編隊のentryPositionをプレイヤー基準の左右 / 上下視界外へ広げた。
+
+既定値:
+- offscreenMarginX: 90.0
+- offscreenMarginY: 28.0
+- entryLeadDistance: 18.0
+- minimumSpawnDistance: 120.0
+
+entryPositionとcombatCenter相当位置の距離が短すぎる場合は、Combat側から外方向へ伸ばして最低距離を維持する。
+
+### 31.6 複数Group Spawn Scheduler
+
+`EnemyManager`に最小限のSpawn Schedulerを追加した。
+
+既定値:
+- 最大同時Group: 4
+- 最大Formation敵数: 22
+- Spawn間隔: 3.8秒
+- Pattern順: HorizontalLine -> VShape -> Circle -> FigureEight
+- Circle / FigureEightは3機、それ以外は5機
+
+毎フレーム生成は行わず、Group数と敵数の上限に達している場合は追加生成しない。
+
+### 31.7 Patternごとの範囲制約
+
+HorizontalLine:
+- Combat Area幅からspacingをClamp
+
+VShape:
+- wingの横幅をCombat Area幅内に収める
+
+Circle:
+- radiusX / radiusYをCombat Area内へClamp
+
+FigureEight:
+- radiusX / radiusYをCombat Area内へClamp
+
+Column:
+- XYは中央寄り、Z方向の時間差表現を維持
+
+### 31.8 CPUテスト
+
+`tests/RenderValidationTests.cpp`へGPU不要の計算テストを追加した。
+
+追加検証:
+- `deltaTime == 0`で指数補間が動かない
+- 小さい`deltaTime`と大きい`deltaTime`で目標へ安定して近づく
+- Combat Area外の座標がプレイヤー基準範囲へClampされる
+- Combat Distanceが維持される
+- Circle / FigureEightのslot offsetがCombat Area内に収まる
+
+実行結果:
+- 今回の作業内では未実行
+- 理由: `RenderValidationTests.cpp`はVisual Studio上で`None`管理の独立mainであり、本体`MagEngine.vcxproj`のビルド対象外であるため
+
+### 31.9 ビルド結果
+
+Debug x64:
+- 成功
+- 警告0
+- エラー0
+
+Release x64:
+- 成功
+- 警告0
+- エラー0
+- 初回は生成物`tlog`への書き込み権限で失敗したが、権限付き再実行で成功
+
+`git diff --check`:
+- 成功
+- 空白エラーなし
+- LF/CRLF警告のみ
+
+### 31.10 GPU確認
+
+Debug x64を30秒起動した。
+
+結果:
+- 30秒間プロセス継続
+- 起動中のDevice Removedは確認されず
+- こちらで終了
+
+未確認:
+- Hidden起動のため、複数Groupの見た目、進入距離、射撃可能領域への追従、円 / 八の字の収まりは目視未確認
+- D3D12 ERROR / CORRUPTIONは標準出力上では確認できず
+
+## 32. Enemy / Wave / GameClear 新進行システム移行
+
+### 32.1 旧敵進行構造の問題
+
+旧構造では`EnemyManager`が敵所有、旧Wave進行、固定Formation Spawn Scheduler、クリア判定を同時に持っていた。
+
+問題:
+- `EnemyManager`内の旧Wave完了条件は敵数だけを見ており、EnemyGroupのExit完了と統合されていなかった
+- GamePlayScene側に初期編隊SpawnとDebug Spawnが残り、WaveController相当の責務と競合していた
+- `resources/config/enemy/waves.json`、`WaveParamConfig`、`EnemyManager`内の固定Spawn値で設定が分散していた
+
+### 32.2 新しいStage / Wave / Group / Enemy責務
+
+追加:
+- `StageDefinition`
+- `WaveDefinition`
+- `SpawnGroupDefinition`
+- `EnemySpawnDefinition`
+- `EnemyFormationMotionDefinition`
+- `WaveController`
+- `GameFlowController`
+- `EnemyFactory`
+
+責務:
+- `GamePlayScene`: `GameFlowController`を初期化 / 更新し、UI演出へ接続する
+- `GameFlowController`: Stage完了、ClearPending、Cleared、GameOverを管理する
+- `WaveController`: SpawnGroupのSpawn、Wave完了、次Wave開始を管理する
+- `EnemyManager`: Enemyの生成、所有、更新、削除、Active数提供だけを担当する
+- `EnemyGroup`: 編隊位置、Enter / Combat / Exit、終了理由を管理する
+
+### 32.3 GameClear不能の原因
+
+旧クリア判定は`EnemyManager::IsGameClear()`に依存していた。
+
+直接原因:
+- Wave完了が旧Waveのスポーン / 撃破数に依存していた
+- EnemyGroupがExit完了しても、Wave完了条件へ明示的に反映されなかった
+- EnemyManager側の固定Spawn SchedulerがWave完了後も新しい敵を発生させ得た
+
+### 32.4 新しいClear条件
+
+`GameFlowController`だけがGameClearを判断する。
+
+条件:
+- StageDefinition内の全WaveがCompleted
+- `EnemyManager::GetActiveEnemyCount() == 0`
+- `WaveController::GetActiveGroupCount() == 0`
+- `clearDelaySeconds`経過
+
+この条件を満たすと`GameFlowState::Cleared`へ遷移し、GamePlaySceneが既存のGameClear演出を開始する。
+
+### 32.5 設定値集約方針
+
+新しいStage設定:
+- `resources/config/stage/stage_01.json`
+
+集約した値:
+- Wave順序
+- SpawnGroup定義
+- Enemy Archetype / count
+- FormationPattern
+- AttackPattern
+- entry / combat / exit duration
+- combatDistance
+- combatAreaHalfWidth / combatAreaHalfHeight
+- formationSpacing
+- orbitRadiusX / orbitRadiusY
+- orbitAngularSpeed
+- attackInterval / attackSlotDelay
+- offscreenMargin
+- minimumSpawnDistance
+
+`EnemyFormationConstants`は新Stage設定の既定値として残し、実行時の主要設定はStage JSONから渡す。
+
+### 32.6 EnemyFactory導入
+
+`EnemyFactory::Create`を追加した。
+
+生成経路:
+```text
+WaveController
+  -> EnemyManager::CreateEnemy
+  -> EnemyFactory::Create
+  -> Enemy / EnemyGunner
+  -> EnemyManagerがunique_ptrで所有
+```
+
+旧`SpawnEnemy()`、`SpawnGunner()`、`SpawnFormationForGameplay()`は削除した。
+
+### 32.7 EnemyGroup終了理由
+
+追加:
+- `EnemyGroupFinishReason::None`
+- `EnemyGroupFinishReason::AllMembersDestroyed`
+- `EnemyGroupFinishReason::AllMembersExited`
+- `EnemyGroupFinishReason::MixedDestroyedAndExited`
+- `EnemyGroupFinishReason::Cancelled`
+
+Exit完了時は生存メンバーを`EnemyBase::MarkExited()`で非アクティブ化し、EnemyManagerのActive Enemy数から除外する。
+
+### 32.8 所有権と削除順
+
+所有権:
+- EnemyManagerが`std::unique_ptr<EnemyBase>`でEnemyを唯一所有する
+- WaveControllerが`std::unique_ptr<EnemyGroup>`でGroupを所有する
+- EnemyGroup内の`EnemyBase*`は非所有参照
+
+Scene終了時:
+```text
+GameFlowController::Clear()
+EnemyManager::Clear()
+```
+
+この順序により、Group側の非所有参照を先に破棄してからEnemy所有を解放する。
+
+### 32.9 旧経路削除内容
+
+削除 / 切断:
+- `EnemyManager`内の旧Wave進行
+- `EnemyManager`内の固定Formation Spawn Scheduler
+- `EnemyManager::SpawnEnemy`
+- `EnemyManager::SpawnGunner`
+- `EnemyManager::SpawnFormationForGameplay`
+- `EnemyManager::IsGameClear`
+- GamePlaySceneの`UpdateFormationSpawnDebug`
+- DebugキーによるF9-F12直接編隊Spawn
+- Debugキー`C`による直接GameClear
+- `WaveParamConfig.*`
+- `resources/config/enemy/waves.json`
+
+旧経路検索:
+- `SpawnEnemy(`
+- `SpawnGunner(`
+- `SpawnFormationForGameplay`
+- `formationSpawnInterval`
+- `maxFormationEnemyCount`
+- `IsGameClear(`
+- `UpdateWave(`
+- `WaveConfig`
+- `WavePhase`
+- `GenerateSpawnPosition`
+- `UpdateFormationSpawnDebug`
+
+結果:
+- 実行経路上の該当なし
+
+### 32.10 CPUテスト結果
+
+独立CPUチェック:
+- `resources/config/stage/stage_01.json`を`ConvertFrom-Json`で読み込み
+- Wave数
+- Wave順序
+- SpawnGroup存在
+- Member存在
+- combatDistance正値
+- minimumSpawnDistanceの下限
+
+結果:
+- `stage_01.json OK`
+- `EnemyStage CPU JSON tests passed`
+
+未実施:
+- Window / GPU不要のC++実行テスト
+
+### 32.11 ビルド結果
+
+Debug x64:
+- 成功
+- 警告0
+- エラー0
+
+Release x64:
+- 成功
+- 警告0
+- エラー0
+
+`git diff --check`:
+- 成功
+- 空白エラーなし
+- LF / CRLF警告のみ
+
+### 32.12 GPU確認結果
+
+Debug x64を30秒起動した。
+
+結果:
+- 30秒間プロセス継続
+- こちらで終了
+- 起動時クラッシュなし
+- Device Removedは確認されず
+
+未確認:
+- Hidden起動のため、Wave 1出現、敵撃破によるGroup更新、最終Wave後のGameClear遷移は目視未確認
+- D3D12 ERROR / CORRUPTIONは標準出力上では確認できず

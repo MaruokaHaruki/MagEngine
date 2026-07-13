@@ -8,6 +8,7 @@
 #pragma once
 #include "MagMath.h"
 using namespace MagMath;
+#include <cstdint>
 #include <vector>
 #include <memory>
 
@@ -23,6 +24,96 @@ enum class FormationType {
 	CircleFormation,  // 円形編隊
 	DiamondFormation, // 菱形編隊
 	DynamicFormation  // 動的編隊（プレイヤー位置に応じて変更）
+};
+
+enum class EnemyFormationPattern {
+	HorizontalLine,
+	VShape,
+	Circle,
+	FigureEight,
+	Column,
+	Count,
+};
+
+enum class EnemyGroupState {
+	Enter,
+	Combat,
+	Exit,
+	Finished,
+};
+
+enum class EnemyGroupAttackPattern {
+	None,
+	Staggered,
+	LeaderThenWing,
+	Alternating,
+};
+
+enum class EnemyGroupFinishReason {
+	None,
+	AllMembersDestroyed,
+	AllMembersExited,
+	MixedDestroyedAndExited,
+	Cancelled,
+};
+
+namespace EnemyFormationConstants {
+	constexpr float kEntryDuration = 3.2f;
+	constexpr float kCombatDuration = 9.0f;
+	constexpr float kExitDuration = 3.0f;
+	constexpr float kFormationFollowSpeed = 30.0f;
+	constexpr float kFormationFollowSharpness = 7.5f;
+	constexpr float kGroupCenterSharpness = 4.5f;
+	constexpr float kCombatAnchorSharpness = 2.0f;
+	constexpr float kOrbitRadiusX = 18.0f;
+	constexpr float kOrbitRadiusY = 7.0f;
+	constexpr float kOrbitAngularSpeed = 1.2f;
+	constexpr float kFormationSpacing = 12.0f;
+	constexpr float kAttackInterval = 1.6f;
+	constexpr float kAttackSlotDelay = 0.22f;
+	constexpr float kAttackWindow = 0.35f;
+	constexpr float kMaxFormationJitter = 1.5f;
+	constexpr float kCombatForwardDistance = 72.0f;
+	constexpr float kCombatAreaHalfWidth = 30.0f;
+	constexpr float kCombatAreaHalfHeight = 14.0f;
+	constexpr float kOffscreenMarginX = 90.0f;
+	constexpr float kOffscreenMarginY = 28.0f;
+	constexpr float kEntryLeadDistance = 18.0f;
+	constexpr float kMinimumSpawnDistance = 120.0f;
+}
+
+struct EnemyCombatArea {
+	float halfWidth = EnemyFormationConstants::kCombatAreaHalfWidth;
+	float halfHeight = EnemyFormationConstants::kCombatAreaHalfHeight;
+	float combatDistance = EnemyFormationConstants::kCombatForwardDistance;
+	float edgePadding = 4.0f;
+};
+
+struct EnemyFormationSpawnBounds {
+	float offscreenMarginX = EnemyFormationConstants::kOffscreenMarginX;
+	float offscreenMarginY = EnemyFormationConstants::kOffscreenMarginY;
+	float entryLeadDistance = EnemyFormationConstants::kEntryLeadDistance;
+	float minimumSpawnDistance = EnemyFormationConstants::kMinimumSpawnDistance;
+};
+
+struct EnemyGroupMotion {
+	Vector3 entryPosition{};
+	Vector3 combatCenter{};
+	Vector3 exitPosition{};
+	Vector3 smoothedCombatAnchor{};
+	Vector3 groupCenterVelocity{};
+
+	float elapsedTime = 0.0f;
+	float phaseTime = 0.0f;
+
+	float moveSpeed = 8.0f;
+	float entryDuration = EnemyFormationConstants::kEntryDuration;
+	float combatDuration = EnemyFormationConstants::kCombatDuration;
+	float exitDuration = EnemyFormationConstants::kExitDuration;
+	float orbitRadiusX = EnemyFormationConstants::kOrbitRadiusX;
+	float orbitRadiusY = EnemyFormationConstants::kOrbitRadiusY;
+	float orbitAngularSpeed = EnemyFormationConstants::kOrbitAngularSpeed;
+	float formationSpacing = EnemyFormationConstants::kFormationSpacing;
 };
 
 ///=============================================================================
@@ -60,18 +151,35 @@ public:
 
 	/// \brief グループ初期化
 	void Initialize(EnemyBase *leaderEnemy, FormationType formationType);
+	void Initialize(EnemyBase *leaderEnemy, EnemyFormationPattern pattern, EnemyGroupAttackPattern attackPattern, const EnemyGroupMotion &motion, const EnemyCombatArea &combatArea, const EnemyFormationSpawnBounds &spawnBounds);
 
 	/// \brief グループにメンバを追加
 	void AddMember(EnemyBase *member, int positionIndex);
 
 	/// \brief 更新（編隊制御ロジック）
 	void Update(const Vector3 &playerPosition);
+	void Update(float deltaTime, const Vector3 &playerPosition);
 
 	/// \brief グループ内の敵削除処理
 	void RemoveDeadMembers();
 
 	/// \brief グループの活性状態確認
 	bool IsActive() const;
+	bool IsFinished() const {
+		return groupState_ == EnemyGroupState::Finished;
+	}
+
+	EnemyGroupFinishReason GetFinishReason() const {
+		return finishReason_;
+	}
+
+	uint32_t GetAliveMemberCount() const {
+		return static_cast<uint32_t>(GetAliveCount());
+	}
+
+	uint32_t GetActiveMemberCount() const {
+		return static_cast<uint32_t>(memberEnemies_.size());
+	}
 
 	/// \brief リーダー敵を取得
 	EnemyBase *GetLeader() const {
@@ -85,6 +193,53 @@ public:
 
 	/// \brief グループ内の生存敵数
 	size_t GetAliveCount() const;
+
+	EnemyGroupState GetState() const {
+		return groupState_;
+	}
+
+	EnemyFormationPattern GetFormationPattern() const {
+		return formationPattern_;
+	}
+
+	EnemyGroupAttackPattern GetAttackPattern() const {
+		return attackPattern_;
+	}
+
+	float GetElapsedTime() const {
+		return motion_.elapsedTime;
+	}
+
+	float GetPhaseTime() const {
+		return motion_.phaseTime;
+	}
+
+	const std::vector<Vector3> &GetTargetPositions() const {
+		return memberTargetPositions_;
+	}
+
+	const Vector3 &GetGroupCenter() const {
+		return groupCenter_;
+	}
+
+	const Vector3 &GetEntryPosition() const {
+		return motion_.entryPosition;
+	}
+
+	const Vector3 &GetCombatAnchor() const {
+		return motion_.smoothedCombatAnchor;
+	}
+
+	const EnemyCombatArea &GetCombatArea() const {
+		return combatArea_;
+	}
+
+	float GetEntryDistance() const;
+
+	Vector3 CalculateSlotOffsetForTest(EnemyFormationPattern pattern, uint32_t slotIndex, uint32_t memberCount, float elapsedTime) const;
+	bool ShouldSlotAttackForTest(uint32_t slotIndex, uint32_t memberCount, float phaseTime) const;
+	Vector3 CalculateSmoothedPositionForTest(const Vector3 &current, const Vector3 &target, float sharpness, float deltaTime) const;
+	Vector3 ClampToCombatAreaForTest(const Vector3 &position, const Vector3 &playerPosition) const;
 
 	/// \brief グループIDを設定
 	void SetGroupId(int id) {
@@ -121,7 +276,18 @@ private:
 	void CalculateMemberTargetPositions(const Vector3 &leaderPos, const Vector3 &playerPos);
 
 	/// \brief メンバの相対位置追尾更新
-	void UpdateMemberPositions();
+	void UpdateMemberPositions(float deltaTime);
+
+	EnemyFormationPattern ConvertFormationType(FormationType type) const;
+	void InitializeMotionFromLeader(const Vector3 &playerPosition);
+	void UpdateGroupState(float deltaTime, const Vector3 &playerPosition);
+	Vector3 CalculateGroupCenter() const;
+	Vector3 CalculateCombatAnchor(const Vector3 &playerPosition) const;
+	Vector3 ClampToCombatArea(const Vector3 &position, const Vector3 &playerPosition) const;
+	Vector3 SmoothPosition(const Vector3 &current, const Vector3 &target, float sharpness, float deltaTime) const;
+	Vector3 CalculateSlotOffset(uint32_t slotIndex, uint32_t memberCount) const;
+	bool ShouldSlotAttack(uint32_t slotIndex, uint32_t memberCount) const;
+	float CalculateSlotDelay(uint32_t slotIndex, uint32_t memberCount) const;
 
 	///--------------------------------------------------------------
 	///							群動作ロジック
@@ -150,13 +316,18 @@ private:
 
 	//========================================
 	// グループ状態管理
-	enum class GroupState {
-		Approaching, // 接近中
-		Combat,      // 戦闘中
-		Retreating   // 退却中
-	};
-	GroupState groupState_;
+	EnemyGroupState groupState_;
+	EnemyFormationPattern formationPattern_;
+	EnemyGroupAttackPattern attackPattern_;
+	EnemyGroupMotion motion_;
+	EnemyCombatArea combatArea_;
+	EnemyFormationSpawnBounds spawnBounds_;
+	EnemyGroupFinishReason finishReason_;
+	uint32_t initialMemberCount_;
+	uint32_t destroyedMemberCount_;
+	uint32_t exitedMemberCount_;
 	float stateTimer_;
+	Vector3 groupCenter_;
 
 	//========================================
 	// パラメータ

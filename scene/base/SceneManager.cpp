@@ -9,8 +9,8 @@
  *********************************************************************/
 #include "SceneManager.h"
 #include "DirectXCore.h"
+#include "EditorUiSystem.h"
 #include "EngineContext.h"
-#include "ImguiSetup.h"
 #include "SceneFactory.h"
 #include "SpriteSetup.h"
 // public:
@@ -44,6 +44,27 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 
 	// NOTE: 初期シーンをFactoryで生成
 	nowScene_ = sceneFactory_->CreateScene(SCENE::TITLE, *engineContext_, sceneContext_);
+
+	engineContext_->editorUiSystem->RegisterPanel("Scene Switcher", MagEngine::EditorUiCategory::Tools, true, [this]() {
+		if (!nowScene_) {
+			return;
+		}
+		ImGui::Text("Public Scene");
+		if (ImGui::Button("TitleScene")) {
+			nowScene_->SetSceneNo(TITLE);
+		}
+		if (ImGui::Button("GamePlayScene")) {
+			nowScene_->SetSceneNo(GAMEPLAY);
+		}
+		if (ImGui::Button("ClearScene")) {
+			nowScene_->SetSceneNo(CLEAR);
+		}
+		ImGui::Separator();
+		ImGui::Text("Private Scene");
+		if (ImGui::Button("DebugScene")) {
+			nowScene_->SetSceneNo(DEBUG);
+		}
+	});
 
 	// シーンの初期設定
 	currentSceneNo_ = SCENE::TITLE;
@@ -79,6 +100,7 @@ void SceneManager::Update() {
 			if (engineContext_ && engineContext_->graphics) {
 				engineContext_->graphics->WaitForGpuIdle();
 			}
+			engineContext_->editorUiSystem->ClearScenePanels();
 			// 現在のシーンの終了処理
 			nowScene_->Finalize();
 		}
@@ -101,35 +123,3 @@ void SceneManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	}
 }
 
-///=============================================================================
-/// ImGui描画
-void SceneManager::ImGuiDraw() {
-	//========================================
-
-	if (nowScene_) {
-		nowScene_->ImGuiDraw();
-	}
-	//========================================
-	// NOTE: シーンを切り替えるボタン
-	// publicScene
-	ImGui::Begin("SceneChange");
-	ImGui::Text("publicScene");
-	if (ImGui::Button("TitleScene")) {
-		nowScene_->SetSceneNo(TITLE);
-	}
-	if (ImGui::Button("GamePlayScene")) {
-		nowScene_->SetSceneNo(GAMEPLAY);
-	}
-	if (ImGui::Button("ClearScene")) {
-		nowScene_->SetSceneNo(CLEAR);
-	}
-	//========================================
-	// privateScene
-	ImGui::Separator();
-	ImGui::Text("privateScene");
-	if (ImGui::Button("DebugScene")) {
-		nowScene_->SetSceneNo(DEBUG);
-	}
-
-	ImGui::End();
-}

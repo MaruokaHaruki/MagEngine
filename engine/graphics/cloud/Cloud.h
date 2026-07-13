@@ -7,6 +7,14 @@
  * \note   ボリュメトリック雲のレンダリングを管理
  *********************************************************************/
 #pragma once
+
+#ifndef ENABLE_IMGUI
+#ifdef _DEBUG
+#define ENABLE_IMGUI 1
+#else
+#define ENABLE_IMGUI 0
+#endif
+#endif
 #include "CloudHoleTypes.h"
 #include "MagMath.h"
 #include <cstdint>

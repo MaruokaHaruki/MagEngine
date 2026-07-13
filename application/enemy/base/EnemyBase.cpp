@@ -65,6 +65,13 @@ void EnemyBase::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::s
 
 	// 移動速度
 	currentVelocity_ = {0.0f, 0.0f, 0.0f};
+	formationTargetPosition_ = position;
+	formationFollowVelocity_ = {0.0f, 0.0f, 0.0f};
+	formationFollowEnabled_ = false;
+	formationAttackEnabled_ = false;
+	formationSlotIndex_ = 0;
+	formationFollowSpeed_ = 24.0f;
+	formationFollowSharpness_ = 7.5f;
 
 	// BaseObjectの初期化
 	BaseObject::Initialize(transform_.translate, radius_);
@@ -81,13 +88,19 @@ void EnemyBase::SetParticleSystem(MagEngine::Particle *particle,
 ///=============================================================================
 ///                        更新
 void EnemyBase::Update() {
+	Update(1.0f / 60.0f);
+}
+
+void EnemyBase::Update(float deltaTime) {
+	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
+
 	if (destroyState_ == DestroyState::Dead || !obj_) {
 		return;
 	}
 
 	// 破壊演出の更新
 	if (destroyState_ == DestroyState::Destroying) {
-		if (UpdateDestroy()) {
+		if (UpdateDestroy(safeDeltaTime)) {
 			destroyState_ = DestroyState::Dead;
 			isAlive_ = false;
 		}
@@ -96,11 +109,11 @@ void EnemyBase::Update() {
 
 	// ヒットリアクションの更新
 	if (isHitReacting_) {
-		UpdateHitReaction();
+		UpdateHitReaction(safeDeltaTime);
 	}
 
 	// 生存時間の更新
-	lifeTimer_ += 1.0f / 60.0f;
+	lifeTimer_ += safeDeltaTime;
 	if (lifeTimer_ >= maxLifeTime_) {
 		destroyState_ = DestroyState::Dead;
 		isAlive_ = false;
@@ -121,6 +134,73 @@ void EnemyBase::Update() {
 
 	BaseObject::Update(transform_.translate);
 	obj_->Update();
+}
+
+void EnemyBase::MarkExited() {
+	// 理由：離脱は撃破ではないがWave完了条件からは除外する必要があるため、生存敵として扱わない。
+	isAlive_ = false;
+	destroyState_ = DestroyState::Dead;
+	ClearFormationTarget();
+}
+
+void EnemyBase::SetFormationTarget(const Vector3 &targetPosition) {
+	formationTargetPosition_ = targetPosition;
+}
+
+void EnemyBase::ClearFormationTarget() {
+	formationFollowEnabled_ = false;
+	formationAttackEnabled_ = false;
+	formationTargetPosition_ = transform_.translate;
+	formationFollowVelocity_ = {0.0f, 0.0f, 0.0f};
+}
+
+void EnemyBase::SetFormationFollowEnabled(bool enabled) {
+	formationFollowEnabled_ = enabled;
+	if (!enabled) {
+		formationAttackEnabled_ = false;
+	}
+}
+
+void EnemyBase::UpdateFormationFollow(float deltaTime) {
+	if (!formationFollowEnabled_) {
+		return;
+	}
+
+	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
+	if (safeDeltaTime <= 0.0f) {
+		return;
+	}
+
+	const float followRate = 1.0f - std::exp(-std::max(0.1f, formationFollowSharpness_) * safeDeltaTime);
+	Vector3 toTarget = {
+		formationTargetPosition_.x - transform_.translate.x,
+		formationTargetPosition_.y - transform_.translate.y,
+		formationTargetPosition_.z - transform_.translate.z,
+	};
+	const float targetDistance = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
+	if (targetDistance <= 0.001f) {
+		return;
+	}
+
+	toTarget.x /= targetDistance;
+	toTarget.y /= targetDistance;
+	toTarget.z /= targetDistance;
+
+	const float desiredSpeed = std::min(formationFollowSpeed_ * 2.0f, targetDistance * formationFollowSharpness_);
+	const Vector3 desiredVelocity = {
+		toTarget.x * desiredSpeed,
+		toTarget.y * desiredSpeed,
+		toTarget.z * desiredSpeed,
+	};
+
+	// 理由：固定割合の速度補間はFPS差で見え方が変わるため、指数補間で追従量をdeltaTimeへ正規化する。
+	formationFollowVelocity_.x += (desiredVelocity.x - formationFollowVelocity_.x) * followRate;
+	formationFollowVelocity_.y += (desiredVelocity.y - formationFollowVelocity_.y) * followRate;
+	formationFollowVelocity_.z += (desiredVelocity.z - formationFollowVelocity_.z) * followRate;
+
+	transform_.translate.x += formationFollowVelocity_.x * safeDeltaTime;
+	transform_.translate.y += formationFollowVelocity_.y * safeDeltaTime;
+	transform_.translate.z += formationFollowVelocity_.z * safeDeltaTime;
 }
 
 void EnemyBase::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
@@ -181,8 +261,8 @@ void EnemyBase::StartHitReaction() {
 
 ///=============================================================================
 ///                        ヒットリアクション更新（簡略化）
-void EnemyBase::UpdateHitReaction() {
-	hitReactionTimer_ += 1.0f / 60.0f;
+void EnemyBase::UpdateHitReaction(float deltaTime) {
+	hitReactionTimer_ += deltaTime;
 
 	// ヒットリアクション終了
 	if (hitReactionTimer_ >= hitReactionDuration_) {
@@ -194,8 +274,8 @@ void EnemyBase::UpdateHitReaction() {
 
 ///=============================================================================
 ///                        破壊演出更新
-bool EnemyBase::UpdateDestroy() {
-	destroyTimer_ += 1.0f / 60.0f;
+bool EnemyBase::UpdateDestroy(float deltaTime) {
+	destroyTimer_ += deltaTime;
 	return destroyTimer_ >= destroyDuration_;
 }
 
@@ -299,9 +379,7 @@ void EnemyBase::CreateDestroyParticle() {
 
 ///=============================================================================
 ///                        目標座標へのイージング移動
-void EnemyBase::MoveToward(const Vector3 &target, float speed, float smoothing) {
-	const float deltaTime = 1.0f / 60.0f;
-
+void EnemyBase::MoveToward(const Vector3 &target, float speed, float smoothing, float deltaTime) {
 	Vector3 dir = {
 		target.x - transform_.translate.x,
 		target.y - transform_.translate.y,

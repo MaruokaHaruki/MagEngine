@@ -6,7 +6,9 @@
  * \date   January 2025
  * \note   NOTE: SceneContextを使用してセットアップにアクセス
  *********************************************************************/
+#define NOMINMAX
 #include "GamePlayScene.h"
+#include "EditorUiSystem.h"
 #include "EngineContext.h"
 #include "Input.h"
 #include "Logger.h"
@@ -24,6 +26,7 @@
 #include "Player.h"
 #include "SceneTransition.h"
 #include "Skydome.h"
+#include <algorithm>
 #include <cassert>
 using namespace MagEngine;
 
@@ -149,6 +152,7 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup, trailEffectManager);
 	// プレイヤー参照を設定
 	enemyManager_->SetPlayer(player_.get());
+	gameFlowController_.Initialize(StageDefinitionLoader::LoadOrDefault("resources/config/stage/stage_01.json"));
 
 	// プレイヤーにEnemyManagerを設定（ミサイル用）
 	player_->SetEnemyManager(enemyManager_.get());
@@ -247,6 +251,8 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 
 	// UI展開開始フラグをリセット
 	hasUIDeploymentStarted_ = false;
+
+	RegisterEditorPanels();
 }
 
 ///=============================================================================
@@ -262,6 +268,9 @@ void GamePlayScene::Finalize() {
 		particle_.reset();
 	}
 	if (enemyManager_) {
+		gameFlowController_.Clear();
+		// 理由：EnemyGroupはEnemyを非所有参照するため、Flow側のGroupを先に破棄してからEnemy所有を解放する。
+		enemyManager_->Clear();
 		enemyManager_.reset();
 	}
 	if (player_) {
@@ -369,79 +378,6 @@ void GamePlayScene::Update() {
 	// 雲の更新
 	if (cloud_) {
 		cloud_->Update(*cameraManager->GetCurrentCamera(), effectiveDeltaTime);
-	}
-
-	//========================================
-	// ゲーム終了チェック（用語変更）
-	if (player_ && !isGameOver_ && !isGameClear_) {
-		// プレイヤーの敗北演出が完了したらゲーム終了演出開始
-		if (player_->IsDefeatAnimationComplete()) { // IsCrashComplete から変更
-			isGameOver_ = true;
-			// UIManagerにゲームオーバー状態を通知
-			if (uiManager_) {
-				uiManager_->SetGameOver(true);
-			}
-			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
-				gameOverUI->Play(0.8f, 2.5f, 1.2f);
-			}
-			// HUDを格納
-			if (auto hud = uiManager_->GetHUD()) {
-				if (!hud->IsAnimating()) {
-					hud->StartRetractAnimation(1.0f);
-				}
-			}
-			// 操作ガイドUIを格納
-			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
-				operationGuide->StartRetractAnimation(0.6f);
-			}
-		}
-	}
-
-	//========================================
-	// ゲームクリアチェック
-	if (enemyManager_ && !isGameOver_ && !isGameClear_) {
-		if (enemyManager_->IsGameClear()) {
-			isGameClear_ = true;
-			// UIManagerにゲームクリア状態を通知
-			if (uiManager_) {
-				uiManager_->SetGameClear(true);
-			}
-			// クリア演出を開始
-			if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
-				gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
-			}
-			// HUDを格納
-			if (auto hud = uiManager_->GetHUD()) {
-				if (!hud->IsAnimating()) {
-					hud->StartRetractAnimation(1.0f);
-				}
-			}
-			// 操作ガイドUIを格納
-			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
-				operationGuide->StartRetractAnimation(0.6f);
-			}
-		}
-	}
-
-	// デバック用にキーボードでゲームクリアを強制発動
-	if (input->TriggerKey(DIK_C)) {
-		isGameClear_ = true;
-		// UIManagerにゲームクリア状態を通知
-		if (uiManager_) {
-			uiManager_->SetGameClear(true);
-		}
-		// HUDを格納
-		if (auto hud = uiManager_->GetHUD()) {
-			hud->StartRetractAnimation(1.0f);
-		}
-		// 操作ガイドUIを格納
-		if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
-			operationGuide->StartRetractAnimation(0.6f);
-		}
-		// クリア演出を開始
-		if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
-			gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
-		}
 	}
 
 	//========================================
@@ -557,9 +493,42 @@ void GamePlayScene::Update() {
 	}
 
 	//========================================
-	// 敵の更新
-	if (enemyManager_) {
-		enemyManager_->Update();
+	// 敵進行 / Wave / Clear判定
+	if (enemyManager_ && !isGameOver_ && !isGameClear_) {
+		gameFlowController_.Update(effectiveDeltaTime, *enemyManager_, player_.get());
+		if (gameFlowController_.IsGameOver()) {
+			isGameOver_ = true;
+			if (uiManager_) {
+				uiManager_->SetGameOver(true);
+			}
+			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
+				gameOverUI->Play(0.8f, 2.5f, 1.2f);
+			}
+			if (auto hud = uiManager_->GetHUD()) {
+				if (!hud->IsAnimating()) {
+					hud->StartRetractAnimation(1.0f);
+				}
+			}
+			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+				operationGuide->StartRetractAnimation(0.6f);
+			}
+		} else if (gameFlowController_.IsCleared()) {
+			isGameClear_ = true;
+			if (uiManager_) {
+				uiManager_->SetGameClear(true);
+			}
+			if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
+				gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
+			}
+			if (auto hud = uiManager_->GetHUD()) {
+				if (!hud->IsAnimating()) {
+					hud->StartRetractAnimation(1.0f);
+				}
+			}
+			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+				operationGuide->StartRetractAnimation(0.6f);
+			}
+		}
 	}
 
 	//========================================
@@ -662,119 +631,127 @@ void GamePlayScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 }
 
 ///=============================================================================
-///						ImGui描画
-void GamePlayScene::ImGuiDraw() {
-#ifdef _DEBUG
-	// DebugScene ウィンドウ
-	{
-		ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
-		ImGui::Begin("DebugScene");
-		ImGui::Text("Hello, GamePlayScene!");
+///						Editor Panel登録
+void GamePlayScene::RegisterEditorPanels() {
+	// NOTE: Scene所有オブジェクトを参照するため、Scene切替時は必ずClearScenePanelsで登録を破棄する。
+	engineContext_->editorUiSystem->RegisterPanel("GamePlay", MagEngine::EditorUiCategory::Scene, true, [this]() {
+		DrawDebugUi();
+	});
+}
 
-		// FollowCameraの制御
-		if (followCamera_) {
-			followCamera_->DrawImGui();
-		}
+///=============================================================================
+///						GamePlay Debug UI
+void GamePlayScene::DrawDebugUi() {
+	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen) && followCamera_) {
+		followCamera_->DrawImGui();
+	}
+	if (ImGui::CollapsingHeader("Player", ImGuiTreeNodeFlags_DefaultOpen)) {
+		DrawPlayerDebugUi();
+	}
+	if (ImGui::CollapsingHeader("Enemy", ImGuiTreeNodeFlags_DefaultOpen)) {
+		DrawEnemyDebugUi();
+	}
+	if (ImGui::CollapsingHeader("Cloud")) {
+		DrawCloudDebugUi();
+	}
+	if (ImGui::CollapsingHeader("Collision")) {
+		DrawCollisionDebugUi();
+	}
+	if (ImGui::CollapsingHeader("UI")) {
+		DrawUiDebugUi();
+	}
+	if (ImGui::CollapsingHeader("Transition")) {
+		DrawTransitionDebugUi();
+	}
+}
 
-		ImGui::Separator();
-		ImGui::End();
+void GamePlayScene::DrawPlayerDebugUi() {
+	if (!player_) {
+		ImGui::TextDisabled("Player is not available.");
+		return;
 	}
 
-	//========================================
-	// プレイヤー ウィンドウ
-	{
-		if (player_) {
-			ImGui::SetNextWindowPos(ImVec2(400.0f, 0.0f), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
-			ImGui::Begin("Player Debug");
-			player_->DrawImGui();
-
-			// ミサイルのImGui表示
-			if (ImGui::CollapsingHeader("Missiles")) {
-				const auto &missiles = player_->GetMissiles();
-				for (size_t i = 0; i < missiles.size(); ++i) {
-					if (missiles[i] && missiles[i]->IsAlive()) {
-						missiles[i]->DrawImGui();
-					}
-				}
+	player_->DrawImGui();
+	if (ImGui::TreeNode("Missiles")) {
+		const auto &missiles = player_->GetMissiles();
+		for (size_t i = 0; i < missiles.size(); ++i) {
+			if (missiles[i] && missiles[i]->IsAlive()) {
+				ImGui::PushID(static_cast<int>(i));
+				missiles[i]->DrawImGui();
+				ImGui::PopID();
 			}
-			ImGui::End();
 		}
+		ImGui::TreePop();
+	}
+}
+
+void GamePlayScene::DrawEnemyDebugUi() {
+	if (!enemyManager_) {
+		ImGui::TextDisabled("EnemyManager is not available.");
+		return;
 	}
 
-	//========================================
-	// 敵マネージャー ウィンドウ
-	{
-		if (enemyManager_) {
-			ImGui::SetNextWindowPos(ImVec2(800.0f, 0.0f), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
-			ImGui::Begin("Enemy Manager Debug");
-			enemyManager_->DrawImGui();
-			ImGui::End();
+	const WaveController &waveController = gameFlowController_.GetWaveController();
+	ImGui::Text("Game Flow: %s", ToString(gameFlowController_.GetState()));
+	ImGui::Text("Wave: %zu / %zu", waveController.GetCurrentWaveIndex() + 1, waveController.GetTotalWaveCount());
+	ImGui::Text("Wave ID: %s", waveController.GetCurrentWaveId().c_str());
+	ImGui::Text("Wave State: %s", ToString(waveController.GetState()));
+	ImGui::Text("Active Enemy Count: %zu", enemyManager_->GetActiveEnemyCount());
+	ImGui::Text("Active Group Count: %zu", waveController.GetActiveGroupCount());
+	ImGui::Text("Pending Spawn Groups: %zu", waveController.GetPendingSpawnGroupCount());
+	ImGui::Text("Clear Delay Timer: %.2f", gameFlowController_.GetClearDelayTimer());
+
+	if (ImGui::TreeNode("Enemy Groups")) {
+		for (const auto &group : waveController.GetGroups()) {
+			if (!group) {
+				continue;
+			}
+			ImGui::Text("Group %d Pattern %d State %d Members %u Active %u Finish %s",
+						group->GetGroupId(),
+						static_cast<int>(group->GetFormationPattern()),
+						static_cast<int>(group->GetState()),
+						static_cast<uint32_t>(group->GetMembers().size()),
+						group->GetActiveMemberCount(),
+						ToString(group->GetFinishReason()));
 		}
+		ImGui::TreePop();
 	}
 
-	//========================================
-	// 雲 ウィンドウ
-	{
-		if (cloud_) {
-			ImGui::SetNextWindowPos(ImVec2(0.0f, 300.0f), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
-			ImGui::Begin("Cloud Debug");
-#if ENABLE_IMGUI
-#ifdef _DEBUG
-			cloud_->DrawImGui();
-#endif // _DEBUG
-#endif // ENABLE_IMGUI
+	enemyManager_->DrawImGui();
+}
 
-			// 弾痕テスト用のImGui
-			ImGui::Separator();
-			ImGui::Text("Bullet Hole System Test");
-			ImGui::Text("Press SPACE: Add bullet hole at player");
-			ImGui::Text("Press N: Add random bullet hole");
-			ImGui::Text("Press M: Clear all bullet holes");
-
-			// 現在の弾痕数を表示
-			auto &cloudParams = cloud_->GetMutableParams();
-			ImGui::Text("Active Bullet Holes: %d", cloudParams.bulletHoleCount);
-
-			// 弾痕パラメータの調整
-			ImGui::SliderFloat("Fade Start", &cloudParams.bulletHoleFadeStart, -2.0f, 2.0f);
-			ImGui::SliderFloat("Fade End", &cloudParams.bulletHoleFadeEnd, 0.0f, 5.0f);
-
-			ImGui::End();
-		}
+void GamePlayScene::DrawCloudDebugUi() {
+	if (!cloud_) {
+		ImGui::TextDisabled("Cloud is not available.");
+		return;
 	}
 
-	//========================================
-	// 当たり判定 ウィンドウ
-	{
-		ImGui::SetNextWindowPos(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_FirstUseEver);
-		ImGui::Begin("Collision Manager Debug");
-		ImGui::Text("Collision Manager");
-		// collisionManager_->DrawImGui(); // コメントアウト
-		ImGui::End();
-	}
+	cloud_->DrawImGui();
+	ImGui::Separator();
+	ImGui::Text("Bullet Hole System Test");
+	ImGui::Text("Press SPACE: Add bullet hole at player");
+	ImGui::Text("Press N: Add random bullet hole");
+	ImGui::Text("Press M: Clear all bullet holes");
 
-	//========================================
-	// UI系 - UIManagerが独立したウィンドウを管理するため、
-	// 外側のウィンドウなしで直接呼び出す
+	auto &cloudParams = cloud_->GetMutableParams();
+	ImGui::Text("Active Bullet Holes: %d", cloudParams.bulletHoleCount);
+	ImGui::SliderFloat("Fade Start", &cloudParams.bulletHoleFadeStart, -2.0f, 2.0f);
+	ImGui::SliderFloat("Fade End", &cloudParams.bulletHoleFadeEnd, 0.0f, 5.0f);
+}
+
+void GamePlayScene::DrawCollisionDebugUi() {
+	ImGui::Text("Collision Manager");
+	ImGui::TextDisabled("Detailed collision debug drawing is currently disabled.");
+}
+
+void GamePlayScene::DrawUiDebugUi() {
 	if (uiManager_) {
 		uiManager_->DrawImGui();
 	}
+}
 
-	//========================================
-	// トランジション ウィンドウ
-	{
-		if (sceneTransition_) {
-			ImGui::SetNextWindowPos(ImVec2(800.0f, 600.0f), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSize(ImVec2(400.0f, 200.0f), ImGuiCond_FirstUseEver);
-			ImGui::Begin("Scene Transition Debug");
-			sceneTransition_->DrawImGui();
-			ImGui::End();
-		}
+void GamePlayScene::DrawTransitionDebugUi() {
+	if (sceneTransition_) {
+		sceneTransition_->DrawImGui();
 	}
-#endif // _DEBUG
 }

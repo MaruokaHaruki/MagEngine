@@ -1,0 +1,124 @@
+{
+  "stageId": "stage_01",
+  "clearDelaySeconds": 2.0,
+  "clearWhenAllWavesCompleted": true,
+  "waves": [
+    {
+      "waveId": "wave_01",
+      "startDelaySeconds": 1.5,
+      "nextWaveDelaySeconds": 1.5,
+      "waitForAllGroupsFinished": true,
+      "waitForAllEnemiesRemoved": true,
+      "spawnGroups": [
+        {
+          "groupId": "line_entry_01",
+          "spawnDelaySeconds": 0.0,
+          "formationPattern": "HorizontalLine",
+          "attackPattern": "Staggered",
+          "members": [
+            { "archetype": "Standard", "count": 20 },
+            { "archetype": "Gunner", "count": 100 }
+          ],
+          "motion": {
+            "entryDuration": 3.0,
+            "combatDuration": 6.0,
+            "exitDuration": 3.0,
+            "combatDistance": 72.0,
+            "combatAreaHalfWidth": 22.0,
+            "combatAreaHalfHeight": 11.0,
+            "formationSpacing": 6.0,
+            "orbitRadiusX": 14.0,
+            "orbitRadiusY": 6.0,
+            "orbitAngularSpeed": 1.2,
+            "attackInterval": 1.6,
+            "attackSlotDelay": 0.22,
+            "offscreenMarginX": 120.0,
+            "offscreenMarginY": 34.0,
+            "minimumSpawnDistance": 125.0
+          }
+        },
+        {
+          "groupId": "v_entry_01",
+          "spawnDelaySeconds": 4.0,
+          "formationPattern": "VShape",
+          "attackPattern": "LeaderThenWing",
+          "members": [
+            { "archetype": "Gunner", "count": 5 },
+            { "archetype": "Standard", "count": 20 }
+          ],
+          "motion": {
+            "entryDuration": 3.2,
+            "combatDuration": 7.0,
+            "exitDuration": 3.0,
+            "combatDistance": 74.0,
+            "combatAreaHalfWidth": 26.0,
+            "combatAreaHalfHeight": 12.0,
+            "formationSpacing": 7.0,
+            "offscreenMarginX": 135.0,
+            "offscreenMarginY": 36.0,
+            "minimumSpawnDistance": 135.0
+          }
+        }
+      ]
+    },
+    {
+      "waveId": "wave_02",
+      "startDelaySeconds": 1.5,
+      "nextWaveDelaySeconds": 0.0,
+      "waitForAllGroupsFinished": true,
+      "waitForAllEnemiesRemoved": true,
+      "spawnGroups": [
+        {
+          "groupId": "circle_entry_01",
+          "spawnDelaySeconds": 0.0,
+          "formationPattern": "Circle",
+          "attackPattern": "Staggered",
+          "members": [
+            { "archetype": "Standard", "count": 100 },
+            { "archetype": "Gunner", "count": 5 }
+          ],
+          "motion": {
+            "entryDuration": 3.0,
+            "combatDuration": 7.0,
+            "exitDuration": 3.0,
+            "combatDistance": 76.0,
+            "combatAreaHalfWidth": 28.0,
+            "combatAreaHalfHeight": 13.0,
+            "formationSpacing": 6.0,
+            "orbitRadiusX": 14.0,
+            "orbitRadiusY": 6.0,
+            "orbitAngularSpeed": 1.1,
+            "offscreenMarginX": 130.0,
+            "offscreenMarginY": 34.0,
+            "minimumSpawnDistance": 130.0
+          }
+        },
+        {
+          "groupId": "figure_eight_entry_01",
+          "spawnDelaySeconds": 4.5,
+          "formationPattern": "FigureEight",
+          "attackPattern": "Alternating",
+          "members": [
+            { "archetype": "Standard", "count": 20 },
+            { "archetype": "Gunner", "count": 5 }
+          ],
+          "motion": {
+            "entryDuration": 3.0,
+            "combatDuration": 8.0,
+            "exitDuration": 3.0,
+            "combatDistance": 78.0,
+            "combatAreaHalfWidth": 28.0,
+            "combatAreaHalfHeight": 13.0,
+            "formationSpacing": 6.0,
+            "orbitRadiusX": 16.0,
+            "orbitRadiusY": 6.0,
+            "orbitAngularSpeed": 1.0,
+            "offscreenMarginX": 140.0,
+            "offscreenMarginY": 38.0,
+            "minimumSpawnDistance": 140.0
+          }
+        }
+      ]
+    }
+  ]
+}

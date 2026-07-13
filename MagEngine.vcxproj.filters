@@ -211,6 +211,9 @@
     <ClCompile Include="application\enemy\manager\EnemyGroup.cpp">
       <Filter>application\enemy\manager</Filter>
     </ClCompile>
+    <ClCompile Include="application\enemy\stage\EnemyStageSystem.cpp">
+      <Filter>application\enemy\manager</Filter>
+    </ClCompile>
     <ClCompile Include="application\utils\FollowCamera.cpp">
       <Filter>application\utils</Filter>
     </ClCompile>
@@ -286,22 +289,7 @@
     <ClCompile Include="application\ui\MenuUI.cpp">
       <Filter>application\ui</Filter>
     </ClCompile>
-    <ClCompile Include="engine\base\imGui\EditorLayout.cpp">
-      <Filter>engine\debug\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\base\imGui\ConsolePanel.cpp">
-      <Filter>engine\debug\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\base\imGui\GameViewportPanel.cpp">
-      <Filter>engine\debug\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\base\imGui\HierarchyPanel.cpp">
-      <Filter>engine\debug\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\base\imGui\InspectorPanel.cpp">
-      <Filter>engine\debug\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="engine\base\imGui\ToolsPanel.cpp">
+    <ClCompile Include="engine\base\imGui\EditorUiSystem.cpp">
       <Filter>engine\debug\imgui</Filter>
     </ClCompile>
     <ClCompile Include="application\ui\LockOnHUD.cpp">
@@ -341,9 +329,6 @@
       <Filter>application\enemy\config</Filter>
     </ClCompile>
     <ClCompile Include="application\enemy\config\FormationConfig.cpp">
-      <Filter>application\enemy\config</Filter>
-    </ClCompile>
-    <ClCompile Include="application\enemy\config\WaveParamConfig.cpp">
       <Filter>application\enemy\config</Filter>
     </ClCompile>
     <ClCompile Include="engine\integration\MagVoiceBridge.cpp">
@@ -636,6 +621,9 @@
     <ClInclude Include="application\enemy\manager\EnemyGroup.h">
       <Filter>application\enemy\manager</Filter>
     </ClInclude>
+    <ClInclude Include="application\enemy\stage\EnemyStageSystem.h">
+      <Filter>application\enemy\manager</Filter>
+    </ClInclude>
     <ClInclude Include="application\utils\FollowCamera.h">
       <Filter>application\utils</Filter>
     </ClInclude>
@@ -723,28 +711,7 @@
     <ClInclude Include="application\ui\MenuUI.h">
       <Filter>application\ui</Filter>
     </ClInclude>
-    <ClInclude Include="engine\base\imGui\BasePanel.h">
-      <Filter>engine\debug\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\imGui\EditorLayout.h">
-      <Filter>engine\debug\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\imGui\EditorState.h">
-      <Filter>engine\debug\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\imGui\ToolsPanel.h">
-      <Filter>engine\debug\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\imGui\ConsolePanel.h">
-      <Filter>engine\debug\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\imGui\GameViewportPanel.h">
-      <Filter>engine\debug\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\imGui\HierarchyPanel.h">
-      <Filter>engine\debug\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\base\imGui\InspectorPanel.h">
+    <ClInclude Include="engine\base\imGui\EditorUiSystem.h">
       <Filter>engine\debug\imgui</Filter>
     </ClInclude>
     <ClInclude Include="application\ui\LockOnHUD.h">
@@ -784,9 +751,6 @@
       <Filter>application\enemy\config</Filter>
     </ClInclude>
     <ClInclude Include="application\enemy\config\FormationConfig.h">
-      <Filter>application\enemy\config</Filter>
-    </ClInclude>
-    <ClInclude Include="application\enemy\config\WaveParamConfig.h">
       <Filter>application\enemy\config</Filter>
     </ClInclude>
     <ClInclude Include="engine\integration\MagVoiceBridge.h">
@@ -845,7 +809,7 @@
     <None Include="resources\config\enemy\formations.json">
       <Filter>resources\config</Filter>
     </None>
-    <None Include="resources\config\enemy\waves.json">
+    <None Include="resources\config\stage\stage_01.json">
       <Filter>resources\config</Filter>
     </None>
     <None Include="resources\config\player\player_config.json">

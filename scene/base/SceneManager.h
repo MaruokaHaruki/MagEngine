@@ -38,9 +38,6 @@ public:
 	/// @brief 描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
-	/// @brief ImGui描画
-	void ImGuiDraw();
-
 	/// @brief シーンファクトリーのSetter
 	void SetSceneFactory(AbstractSceneFactory *sceneFactory) {
 		sceneFactory_ = sceneFactory;

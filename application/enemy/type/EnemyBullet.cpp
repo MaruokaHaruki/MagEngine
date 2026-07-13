@@ -1,10 +1,12 @@
 #define _USE_MATH_DEFINES
+#define NOMINMAX
 #include "EnemyBullet.h"
 #include "Object3dSetup.h"
 #include "Particle.h"
 #include "Player.h"
 #include "TrailEffectManager.h"
 #include "engine/render/pass/RenderWorld.h"
+#include <algorithm>
 #include <cmath>
 using namespace MagEngine;
 
@@ -61,19 +63,23 @@ void EnemyBullet::SetParticleSystem(MagEngine::Particle *particle, MagEngine::Pa
 ///=============================================================================
 ///                        更新
 void EnemyBullet::Update() {
+	Update(1.0f / 60.0f);
+}
+
+void EnemyBullet::Update(float deltaTime) {
 	if (!isAlive_)
 		return;
 
-	const float deltaTime = 1.0f / 60.0f;
+	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
 	
 	//! ジャスト判定用：フレーム開始時に前フレームの位置を保存
 	previousPosition_ = transform_.translate;
 	
-	lifeTimer_ += deltaTime;
+	lifeTimer_ += safeDeltaTime;
 
-	transform_.translate.x += velocity_.x * deltaTime;
-	transform_.translate.y += velocity_.y * deltaTime;
-	transform_.translate.z += velocity_.z * deltaTime;
+	transform_.translate.x += velocity_.x * safeDeltaTime;
+	transform_.translate.y += velocity_.y * safeDeltaTime;
+	transform_.translate.z += velocity_.z * safeDeltaTime;
 
 	if (lifeTimer_ >= EnemyBulletConstants::kLifeTime) {
 		isAlive_ = false;
@@ -88,8 +94,7 @@ void EnemyBullet::Update() {
 
 	// トレイルエフェクトの更新
 	if (trailEffect_) {
-		const float frameTime = 1.0f / 60.0f;
-		trailEffect_->Update(frameTime);
+		trailEffect_->Update(safeDeltaTime);
 		// 現在位置で軌跡を発生させる
 		trailEffect_->EmitAt(transform_.translate, velocity_);
 	}

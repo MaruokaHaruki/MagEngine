@@ -18,8 +18,7 @@ void Enemy::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::strin
 
 	// グループ関連初期化
 	groupId_ = -1; // 初期状態は単独
-	isFollowingFormation_ = false;
-	formationTargetPosition_ = position;
+	ClearFormationTarget();
 
 	// 行動ステート初期化
 	behaviorState_ = BehaviorState::Approach;
@@ -35,13 +34,22 @@ void Enemy::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::strin
 ///=============================================================================
 ///                        更新
 void Enemy::Update() {
-	EnemyBase::Update();
+	Update(1.0f / 60.0f);
+}
+
+void Enemy::Update(float deltaTime) {
+	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
+
+	EnemyBase::Update(safeDeltaTime);
 
 	if (destroyState_ != DestroyState::Alive || isHitReacting_) {
 		return;
 	}
 
-	const float deltaTime = 1.0f / 60.0f;
+	if (IsFormationFollowEnabled()) {
+		UpdateFormationFollow(safeDeltaTime);
+		return;
+	}
 
 	switch (behaviorState_) {
 	case BehaviorState::Approach: {
@@ -58,17 +66,17 @@ void Enemy::Update() {
 				combatCenter_ = playerPos;
 				moveTimer_ = 0.0f;
 			} else {
-				MoveToward(targetPosition_, EnemyConstants::kApproachSpeed, EnemyConstants::kMovementSmoothing);
+				MoveToward(targetPosition_, EnemyConstants::kApproachSpeed, EnemyConstants::kMovementSmoothing, safeDeltaTime);
 			}
 		} else {
-			transform_.translate.z += speed_ * deltaTime;
+			transform_.translate.z += speed_ * safeDeltaTime;
 		}
 		break;
 	}
 
 	case BehaviorState::Combat: {
-		combatTimer_ += deltaTime;
-		moveTimer_ += deltaTime;
+		combatTimer_ += safeDeltaTime;
+		moveTimer_ += safeDeltaTime;
 
 		if (combatTimer_ >= combatDuration_) {
 			behaviorState_ = BehaviorState::Retreat;
@@ -93,7 +101,7 @@ void Enemy::Update() {
 			moveTimer_ = 0.0f;
 		}
 
-		MoveToward(targetPosition_, EnemyConstants::kCombatSpeed, EnemyConstants::kMovementSmoothing);
+		MoveToward(targetPosition_, EnemyConstants::kCombatSpeed, EnemyConstants::kMovementSmoothing, safeDeltaTime);
 		break;
 	}
 
@@ -102,21 +110,14 @@ void Enemy::Update() {
 		currentVelocity_.x += (targetVel.x - currentVelocity_.x) * EnemyConstants::kMovementSmoothing;
 		currentVelocity_.y += (targetVel.y - currentVelocity_.y) * EnemyConstants::kMovementSmoothing;
 		currentVelocity_.z += (targetVel.z - currentVelocity_.z) * EnemyConstants::kMovementSmoothing;
-		transform_.translate.x += currentVelocity_.x * deltaTime;
-		transform_.translate.y += currentVelocity_.y * deltaTime;
-		transform_.translate.z += currentVelocity_.z * deltaTime;
+		transform_.translate.x += currentVelocity_.x * safeDeltaTime;
+		transform_.translate.y += currentVelocity_.y * safeDeltaTime;
+		transform_.translate.z += currentVelocity_.z * safeDeltaTime;
 		break;
 	}
 
 	case BehaviorState::FormationFollow: {
-		// 編隊内での相対位置追尾
-		if (isFollowingFormation_) {
-			// 目標位置への移動
-			MoveToward(formationTargetPosition_, EnemyConstants::kCombatSpeed, EnemyConstants::kMovementSmoothing);
-		} else {
-			// フォロー終了時は通常の行動に戻す
-			behaviorState_ = BehaviorState::Combat;
-		}
+		behaviorState_ = BehaviorState::Combat;
 		break;
 	}
 	}
@@ -131,6 +132,6 @@ void Enemy::DrawImGui() {
 	ImGui::Text("State: %s", stateNames[static_cast<int>(behaviorState_)]);
 	ImGui::Text("Combat Timer: %.1f / %.1f", combatTimer_, combatDuration_);
 	ImGui::Text("Group ID: %d", groupId_);
-	ImGui::Text("Following Formation: %s", isFollowingFormation_ ? "Yes" : "No");
+	ImGui::Text("Following Formation: %s", IsFormationFollowEnabled() ? "Yes" : "No");
 #endif
 }

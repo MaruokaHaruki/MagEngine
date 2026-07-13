@@ -22,6 +22,7 @@
 #include "SkyboxSetup.h"
 #include "Sprite.h"
 #include "SpriteSetup.h"
+#include "stage/EnemyStageSystem.h"
 
 //========================================
 // Game
@@ -55,15 +56,22 @@ public:
 	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
 
-	/// \brief ImGui描画
-	void ImGuiDraw() override;
-
 	///--------------------------------------------------------------
 	///							静的メンバ関数
-private:
 	///--------------------------------------------------------------
 	///							入出力関数
 public:
+	void RegisterEditorPanels();
+
+private:
+	void DrawDebugUi();
+	void DrawPlayerDebugUi();
+	void DrawEnemyDebugUi();
+	void DrawCloudDebugUi();
+	void DrawCollisionDebugUi();
+	void DrawUiDebugUi();
+	void DrawTransitionDebugUi();
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
@@ -91,6 +99,7 @@ private:
 	//========================================
 	// 敵
 	std::unique_ptr<EnemyManager> enemyManager_;
+	GameFlowController gameFlowController_;
 
 	//========================================
 	// スプライト
@@ -125,4 +134,5 @@ private:
 	//========================================
 	// タイムスケール（ジャスト回避スロー効果用）
 	float gameTimeScale_ = 1.0f; // デフォルト: 1.0x（通常速度）
+
 };

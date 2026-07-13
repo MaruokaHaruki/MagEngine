@@ -47,13 +47,3 @@ void ClearScene::Update() {
 void ClearScene::RegisterRenderables(MagEngine::RenderWorld &) {
 }
 
-///=============================================================================
-///						ImGui描画
-void ClearScene::ImGuiDraw() {
-#ifdef DEBUG
-	// ClearSceneのImGui描画
-	ImGui::Begin("ClearScene");
-	ImGui::Text("Hello, ClearScene!");
-	ImGui::End();
-#endif // DEBUG
-}

@@ -33,9 +33,6 @@ public:
 	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
 
-	/// \brief ImGui描画
-	void ImGuiDraw() override;
-
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:

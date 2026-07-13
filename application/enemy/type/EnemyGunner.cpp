@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES
+#define NOMINMAX
 #include "EnemyGunner.h"
 #include "ImguiSetup.h"
 #include "Player.h"
@@ -17,8 +18,7 @@ void EnemyGunner::Initialize(MagEngine::Object3dSetup *object3dSetup, const std:
 
 	// グループ関連初期化
 	groupId_ = -1; // 初期状態は単独
-	isFollowingFormation_ = false;
-	formationTargetPosition_ = position;
+	ClearFormationTarget();
 
 	state_ = GunnerState::Approach;
 	shootTimer_ = 0.0f;
@@ -33,44 +33,27 @@ void EnemyGunner::Initialize(MagEngine::Object3dSetup *object3dSetup, const std:
 ///=============================================================================
 ///                        更新
 void EnemyGunner::Update() {
-	EnemyBase::Update();
+	Update(1.0f / 60.0f);
+}
+
+void EnemyGunner::Update(float deltaTime) {
+	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
+
+	EnemyBase::Update(safeDeltaTime);
 
 	if (destroyState_ != DestroyState::Alive || isHitReacting_) {
-		for (auto &bullet : bullets_) {
-			if (bullet)
-				bullet->Update();
-		}
-		bullets_.erase(
-			std::remove_if(bullets_.begin(), bullets_.end(),
-						   [](const std::unique_ptr<EnemyBullet> &b) { return !b || !b->IsAlive(); }),
-			bullets_.end());
+		UpdateBullets(safeDeltaTime);
 		return;
 	}
 
-	const float deltaTime = 1.0f / 60.0f;
-	shootTimer_ += deltaTime;
+	shootTimer_ += safeDeltaTime;
 
-	// フォーメーション中は編隊の目標位置に移動
-	if (isFollowingFormation_) {
-		Vector3 toTarget = formationTargetPosition_ - transform_.translate;
-		float distanceToTarget = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y + toTarget.z * toTarget.z);
-		
-		if (distanceToTarget > 1.0f) {
-			MoveToward(formationTargetPosition_, EnemyGunnerConstants::kDefaultSpeed, 0.8f);
-		} else {
-			transform_.translate = formationTargetPosition_;
+	if (IsFormationFollowEnabled()) {
+		UpdateFormationFollow(safeDeltaTime);
+		if (IsFormationAttackEnabled() && shootTimer_ >= EnemyGunnerConstants::kShootInterval) {
+			TryShootAtPlayer();
 		}
-		
-		// フォーメーション中は射撃しない（または低頻度で射撃）
-		// 弾の更新・削除のみ行う
-		for (auto &bullet : bullets_) {
-			if (bullet)
-				bullet->Update();
-		}
-		bullets_.erase(
-			std::remove_if(bullets_.begin(), bullets_.end(),
-						   [](const std::unique_ptr<EnemyBullet> &b) { return !b || !b->IsAlive(); }),
-			bullets_.end());
+		UpdateBullets(safeDeltaTime);
 		return;
 	}
 
@@ -90,15 +73,15 @@ void EnemyGunner::Update() {
 				combatCenter_ = playerPos;
 				moveTimer_ = 0.0f;
 			} else {
-				MoveToward(targetPosition_, EnemyGunnerConstants::kApproachSpeed, 1.0f);
+				MoveToward(targetPosition_, EnemyGunnerConstants::kApproachSpeed, 1.0f, safeDeltaTime);
 			}
 		}
 		break;
 	}
 
 	case GunnerState::Shooting: {
-		combatTimer_ += deltaTime;
-		moveTimer_ += deltaTime;
+		combatTimer_ += safeDeltaTime;
+		moveTimer_ += safeDeltaTime;
 
 		if (combatTimer_ >= EnemyGunnerConstants::kCombatDuration) {
 			state_ = GunnerState::Retreat;
@@ -126,50 +109,66 @@ void EnemyGunner::Update() {
 		// 目標位置への移動（停止閾値以内なら固定）
 		float distToTarget = GetDistanceTo(targetPosition_);
 		if (distToTarget > 2.0f) {
-			MoveToward(targetPosition_, EnemyGunnerConstants::kDefaultSpeed, 0.8f);
+			MoveToward(targetPosition_, EnemyGunnerConstants::kDefaultSpeed, 0.8f, safeDeltaTime);
 		} else {
 			transform_.translate = targetPosition_;
 		}
 
 		// 射撃処理
 		if (shootTimer_ >= EnemyGunnerConstants::kShootInterval && player_) {
-			Vector3 playerPos = player_->GetPosition();
-			Vector3 shootDir = {
-				playerPos.x - transform_.translate.x,
-				playerPos.y - transform_.translate.y,
-				playerPos.z - transform_.translate.z};
-
-			float dist = std::sqrt(shootDir.x * shootDir.x + shootDir.y * shootDir.y + shootDir.z * shootDir.z);
-			shootDir.x /= dist;
-			shootDir.y /= dist;
-			shootDir.z /= dist;
-
-			auto bullet = std::make_unique<EnemyBullet>();
-			bullet->Initialize(object3dSetup_, trailEffectManager_, "Missile.obj", transform_.translate, shootDir);
-			bullet->SetParticleSystem(particle_, particleSetup_);
-			bullets_.push_back(std::move(bullet));
-
-			shootTimer_ = 0.0f;
+			TryShootAtPlayer();
 		}
 		break;
 	}
 
 	case GunnerState::Retreat: {
-		transform_.translate.y += 8.0f * deltaTime;
-		transform_.translate.z += EnemyGunnerConstants::kRetreatSpeed * deltaTime;
+		transform_.translate.y += 8.0f * safeDeltaTime;
+		transform_.translate.z += EnemyGunnerConstants::kRetreatSpeed * safeDeltaTime;
 		break;
 	}
 	}
 
 	// 弾の更新・削除
+	UpdateBullets(safeDeltaTime);
+}
+
+void EnemyGunner::UpdateBullets(float deltaTime) {
 	for (auto &bullet : bullets_) {
 		if (bullet)
-			bullet->Update();
+			bullet->Update(deltaTime);
 	}
 	bullets_.erase(
 		std::remove_if(bullets_.begin(), bullets_.end(),
 					   [](const std::unique_ptr<EnemyBullet> &b) { return !b || !b->IsAlive(); }),
 		bullets_.end());
+}
+
+void EnemyGunner::TryShootAtPlayer() {
+	if (!player_ || !object3dSetup_) {
+		return;
+	}
+
+	Vector3 playerPos = player_->GetPosition();
+	Vector3 shootDir = {
+		playerPos.x - transform_.translate.x,
+		playerPos.y - transform_.translate.y,
+		playerPos.z - transform_.translate.z};
+
+	float dist = std::sqrt(shootDir.x * shootDir.x + shootDir.y * shootDir.y + shootDir.z * shootDir.z);
+	if (dist <= 0.001f) {
+		return;
+	}
+
+	shootDir.x /= dist;
+	shootDir.y /= dist;
+	shootDir.z /= dist;
+
+	auto bullet = std::make_unique<EnemyBullet>();
+	bullet->Initialize(object3dSetup_, trailEffectManager_, "Missile.obj", transform_.translate, shootDir);
+	bullet->SetParticleSystem(particle_, particleSetup_);
+	bullets_.push_back(std::move(bullet));
+
+	shootTimer_ = 0.0f;
 }
 
 void EnemyGunner::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {

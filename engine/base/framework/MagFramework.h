@@ -21,6 +21,7 @@
 #include "DirectXCore.h"
 #include "EngineContext.h"
 #if ENABLE_IMGUI
+#include "EditorUiSystem.h"
 #include "ImguiSetup.h"
 #endif
 #include "Input.h"
@@ -45,9 +46,6 @@
 #include "SpriteSetup.h"
 #include "TrailEffectManager.h"
 #include "TrailEffectSetup.h"
-// Editor
-#include "EditorLayout.h"
-#include "GameViewportPanel.h"
 #include "engine/render/Renderer.h"
 #include "engine/render/pass/RenderWorld.h"
 
@@ -79,6 +77,10 @@ namespace MagEngine {
 	private:
 		/// @brief EngineContextへ既存サービスの非所有参照を設定
 		void InitializeEngineContext();
+#if ENABLE_IMGUI
+		/// @brief 常駐Debug UIをEditorUiSystemへ登録
+		void RegisterEngineEditorPanels();
+#endif
 
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
@@ -128,6 +130,7 @@ namespace MagEngine {
 		/// COMMENT: リリースビルド（NDEBUG）では ImGui を除外してメモリ節約
 #if ENABLE_IMGUI
 		std::unique_ptr<ImguiSetup> imguiSetup_;
+		std::unique_ptr<EditorUiSystem> editorUiSystem_;
 #endif
 		//========================================
 		// SrvSetup
@@ -176,9 +179,6 @@ namespace MagEngine {
 		// レンダラー
 		Renderer renderer_;
 		RenderWorld renderWorld_;
-		//========================================
-		// エディター
-		std::unique_ptr<EditorLayout> editorLayout_;
 	};
 
 }

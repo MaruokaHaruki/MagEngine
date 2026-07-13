@@ -21,7 +21,6 @@ bool ConfigLoader::LoadAllConfigs(const std::string &configDataPath) {
 	// 各ファイルを読み込む
 	success &= LoadFormationConfigs(configDataPath + "/formations.json");
 	success &= LoadEnemyConfigs(configDataPath + "/enemies.json");
-	success &= LoadWaveConfigs(configDataPath + "/waves.json");
 
 	if (success) {
 		initialized_ = true;
@@ -93,44 +92,6 @@ bool ConfigLoader::LoadEnemyConfigs(const std::string &configPath) {
 
 	} catch (const std::exception &e) {
 		std::cerr << "Error loading enemy configs: " << e.what() << std::endl;
-		return false;
-	}
-}
-
-bool ConfigLoader::LoadWaveConfigs(const std::string &configPath) {
-	try {
-		std::ifstream file(configPath);
-		if (!file.is_open()) {
-			std::cerr << "Failed to open: " << configPath << std::endl;
-			return false;
-		}
-
-		json j;
-		file >> j;
-		file.close();
-
-		std::vector<WaveParamConfig> waveConfigs;
-
-		// waves配列を走査
-		for (const auto &waveJson : j["waves"]) {
-			WaveParamConfig config;
-			config.wave_id = waveJson["wave_id"].get<int>();
-			config.enemy_count = waveJson["enemy_count"].get<int>();
-			config.gunner_count = waveJson["gunner_count"].get<int>();
-			config.spawn_interval = waveJson["spawn_interval"].get<float>();
-			config.formation_ratio = waveJson["formation_ratio"].get<float>();
-			config.max_group_size = waveJson["max_group_size"].get<int>();
-			config.formation_pattern = waveJson["formation_pattern"].get<std::string>();
-
-			waveConfigs.push_back(config);
-		}
-
-		WaveParamManager::Initialize(waveConfigs);
-		std::cout << "Loaded " << waveConfigs.size() << " wave configs" << std::endl;
-		return true;
-
-	} catch (const std::exception &e) {
-		std::cerr << "Error loading wave configs: " << e.what() << std::endl;
 		return false;
 	}
 }

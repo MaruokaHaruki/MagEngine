@@ -163,6 +163,8 @@ namespace MagEngine {
 		imguiSetup_ = std::make_unique<ImguiSetup>();
 		// ImGuiの初期化
 		imguiSetup_->Initialize(win_.get(), dxCore_.get(), Style::EDITOR);
+		editorUiSystem_ = std::make_unique<EditorUiSystem>();
+		editorUiSystem_->Initialize();
 #endif
 
 		///--------------------------------------------------------------
@@ -286,6 +288,12 @@ namespace MagEngine {
 		///						 EngineContextの構築
 		InitializeEngineContext();
 
+#if ENABLE_IMGUI
+		///--------------------------------------------------------------
+		///						 常駐Debug UI登録
+		RegisterEngineEditorPanels();
+#endif
+
 		///--------------------------------------------------------------
 		///						 シーンマネージャ
 		sceneManager_ = std::make_unique<SceneManager>();
@@ -300,26 +308,6 @@ namespace MagEngine {
 		// ライトマネージャへラインマネージャポインタの受け渡し
 		lightManager_->SetLineManager(lineManager_.get());
 
-		///--------------------------------------------------------------
-		///						 エディターレイアウトの初期化
-		editorLayout_ = std::make_unique<EditorLayout>();
-		/// COMMENT: ImGui 除外時はエディターレイアウト初期化をスキップ
-#if ENABLE_IMGUI
-		editorLayout_->Initialize(dxCore_.get(), postEffectManager_.get(), imguiSetup_.get());
-
-		///--------------------------------------------------------------
-		///					 Game Viewport にレンダーテクスチャを設定
-		// レンダーテクスチャリソースを取得
-		auto renderTextureResource = dxCore_->GetRenderTextureResource(dxCore_->GetRenderResourceIndex());
-		if (renderTextureResource.Get()) {
-			// ImGui用のテクスチャハンドルを取得
-			ImTextureID textureHandle = imguiSetup_->RegisterTextureForImGui(renderTextureResource.Get());
-			// GameViewportPanelに設定
-			if (editorLayout_->GetViewportPanel()) {
-				editorLayout_->GetViewportPanel()->SetRenderTextureHandle((void *)textureHandle);
-			}
-		}
-#endif // ENABLE_IMGUI
 	}
 
 	///=============================================================================
@@ -342,8 +330,43 @@ namespace MagEngine {
 		engineContext_.trailEffectManager = trailEffectManager_.get();
 		engineContext_.debugTextManager = DebugTextManager::GetInstance();
 		engineContext_.lineManager = lineManager_.get();
+#if ENABLE_IMGUI
+		engineContext_.editorUiSystem = editorUiSystem_.get();
+#endif
 		engineContext_.Validate();
 	}
+
+#if ENABLE_IMGUI
+	///=============================================================================
+	///						常駐Debug UI登録
+	void MagFramework::RegisterEngineEditorPanels() {
+		// NOTE: Framework は登録だけを担当し、毎フレームの個別呼び出しは EditorUiSystem に集約する。
+		editorUiSystem_->RegisterPanel("Input", EditorUiCategory::Engine, false, []() {
+			Input::GetInstance()->ImGuiDraw();
+		});
+		editorUiSystem_->RegisterPanel("Camera Manager", EditorUiCategory::Engine, true, [this]() {
+			cameraManager_->DrawImGui();
+		});
+		editorUiSystem_->RegisterPanel("Light Manager", EditorUiCategory::Engine, true, [this]() {
+			lightManager_->DrawImGui();
+		});
+		editorUiSystem_->RegisterPanel("Line Manager", EditorUiCategory::Engine, false, [this]() {
+			lineManager_->DrawImGui();
+		});
+		editorUiSystem_->RegisterPanel("Trail Effect Manager", EditorUiCategory::Engine, false, [this]() {
+			trailEffectManager_->DrawImGui();
+		});
+		editorUiSystem_->RegisterPanel("Debug Text Manager", EditorUiCategory::Engine, false, []() {
+			DebugTextManager::GetInstance()->DrawImGui();
+		});
+		editorUiSystem_->RegisterPanel("Post Effects", EditorUiCategory::Rendering, true, [this]() {
+			DrawPostEffectImGui();
+		});
+		editorUiSystem_->RegisterPanel("Performance", EditorUiCategory::Application, false, [this]() {
+			imguiSetup_->ShowPerformanceMonitor();
+		});
+	}
+#endif
 
 	///=============================================================================
 	///						更新
@@ -414,15 +437,12 @@ namespace MagEngine {
 			sceneManager_.reset();
 		}
 		sceneFactory_.reset();
-		//========================================
-		// エディターレイアウトの終了処理
-		if (editorLayout_) {
-			editorLayout_->Finalize();
-			editorLayout_.reset();
-		}
-		//========================================
 		// COMMENT: ImGui 条件付き終了処理
 #if ENABLE_IMGUI
+		if (editorUiSystem_) {
+			editorUiSystem_->Finalize();
+			editorUiSystem_.reset();
+		}
 		// ImGuiの終了処理
 		if (imguiSetup_) {
 			imguiSetup_->Finalize();
@@ -530,29 +550,10 @@ namespace MagEngine {
 #if ENABLE_IMGUI
 		imguiSetup_->Begin();
 #ifdef _DEBUG
-		//========================================
-		// エディターレイアウトの更新と描画
-		if (editorLayout_) {
-			editorLayout_->Update();
-			editorLayout_->Draw();
+		// NOTE: 個別Debug UIはEditorUiSystemへ登録し、Frameworkは実行入口だけを持つ。
+		if (editorUiSystem_) {
+			editorUiSystem_->Draw();
 		}
-
-		// シーンのImgui描画
-		sceneManager_->ImGuiDraw();
-		// InPutのImGui描画
-		Input::GetInstance()->ImGuiDraw();
-		// CameraのImGui描画
-		cameraManager_->DrawImGui();
-		// LightのImGui描画
-		lightManager_->DrawImGui();
-		// LineのImGui描画
-		lineManager_->DrawImGui();
-		// TrailEffectManagerのImGui描画
-		trailEffectManager_->DrawImGui();
-		// ImGuiでデバッグテキストを描画
-		DebugTextManager::GetInstance()->DrawImGui();
-		// ポストエフェクトのImGui描画
-		DrawPostEffectImGui();
 #endif // DEBUG
 #endif // ENABLE_IMGUI
 	}
