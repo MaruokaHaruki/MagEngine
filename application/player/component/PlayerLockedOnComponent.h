@@ -10,7 +10,7 @@
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
-using namespace MagMath;
+using Vector3 = MagMath::Vector3;
 #include "Vector3.h"
 #include <memory>
 #include <vector>

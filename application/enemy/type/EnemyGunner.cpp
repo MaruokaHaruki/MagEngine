@@ -57,6 +57,15 @@ void EnemyGunner::Update(float deltaTime) {
 		return;
 	}
 
+	UpdateGunnerState(safeDeltaTime);
+
+	// 弾の更新・削除
+	UpdateBullets(safeDeltaTime);
+}
+
+void EnemyGunner::UpdateGunnerState(float safeDeltaTime) {
+	// 弾の更新はこの関数では行わず、状態処理後にUpdate()から一度だけ呼び出す。
+	// これにより、射撃で追加された弾も同じフレームの更新対象になる既存順序を維持する。
 	switch (state_) {
 	case GunnerState::Approach: {
 		if (player_) {
@@ -128,8 +137,6 @@ void EnemyGunner::Update(float deltaTime) {
 	}
 	}
 
-	// 弾の更新・削除
-	UpdateBullets(safeDeltaTime);
 }
 
 void EnemyGunner::UpdateBullets(float deltaTime) {

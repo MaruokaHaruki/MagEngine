@@ -10,8 +10,9 @@
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
-using namespace MagMath;
+using Vector3 = MagMath::Vector3;
 #include "Vector3.h"
+#include <random>
 
 ///=============================================================================
 ///                プレイヤー敗北演出管理コンポーネント
@@ -70,9 +71,6 @@ private:
 	/// @brief 敗北演出のアニメーション更新
 	void UpdateAnimation(MagMath::Transform *transform, float deltaTime);
 
-	/// @brief 疑似ランダム値生成（シード値から）
-	float GeneratePseudoRandom(unsigned int seed, int multiplier, int divisor);
-
 	///--------------------------------------------------------------
 	///                        メンバ変数
 	bool isDefeated_;			   // 敗北フラグ
@@ -89,4 +87,7 @@ private:
 
 	// 演出進行度
 	float animationProgress_; // 0.0 ～ 1.0
+	// 敗北開始ごとの揺らぎを保持し、rand()の共有状態による他システムへの副作用を避ける。
+	// 乱数生成器はメンバとして所有し、演出開始のたびに再初期化しない。
+	std::mt19937 randomEngine_{std::random_device{}()};
 };

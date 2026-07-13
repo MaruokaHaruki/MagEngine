@@ -16,6 +16,7 @@
 #include "LineManager.h"
 #include "ModelManager.h"
 #include "Object3d.h"
+using namespace MagMath;
 #include "engine/render/pass/RenderWorld.h"
 #include "Input.h"
 #include <cassert>
@@ -94,36 +95,38 @@ void Player::Update() {
 		effectiveDeltaTime *= speedMultiplier;
 	}
 
-	// === コンポーネント更新（スロー適用） ===
-	healthComponent_.Update(effectiveDeltaTime);
-	combatComponent_.Update(effectiveDeltaTime);
-
-	// === プレイヤー移動関連処理 ===
-	UpdateMovement(effectiveDeltaTime);
-	UpdateBarrelRollAndBoost(effectiveDeltaTime);
-
-	// === 射撃処理 ===
-	ProcessShooting();
-	combatComponent_.UpdateBullets();
-	combatComponent_.UpdateMissiles();
-
-	// === 敗北演出（敗北中のみ） ===
-	if (defeatComponent_.IsDefeated()) {
-		defeatComponent_.Update(objTransform, kFrameDelta);
-	}
-
-	// === ゲームオーバー演出の更新 ===
-	gameOverAnimation_.Update();
-
-	// === 基本的なオブジェクト更新（敗北演出中以外） ===
-	if (!defeatComponent_.IsDefeated()) {
-		BaseObject::Update(objTransform->translate);
-	}
-	obj_->Update();
+	UpdateGameplayComponents(effectiveDeltaTime);
+	UpdateDefeatAndObject(objTransform);
 
 	// === ジャスト回避成功フラグをリセット（毎フレーム末尾） ===
 	// NOTE: このフラグは衝突検出時に設定され、1フレームだけ有効である必要がある
 	justAvoidanceSuccessThisFrame_ = false;
+}
+
+void Player::UpdateGameplayComponents(float deltaTime) {
+	// health/combatを先に更新し、入力から移動、射撃、弾更新へつなぐ順序を維持する。
+	// この順序は、同一フレームに発生した入力とゲージ状態を射撃判定へ反映するために必要。
+	healthComponent_.Update(deltaTime);
+	combatComponent_.Update(deltaTime);
+	UpdateMovement(deltaTime);
+	UpdateBarrelRollAndBoost(deltaTime);
+	ProcessShooting();
+	combatComponent_.UpdateBullets();
+	combatComponent_.UpdateMissiles();
+}
+
+void Player::UpdateDefeatAndObject(MagMath::Transform *transform) {
+	// 敗北演出中は演出側が位置を所有し、通常時だけBaseObjectへ位置更新を渡す。
+	// 二重更新を避けることで、敗北演出の落下・回転が通常移動に上書きされない。
+	if (defeatComponent_.IsDefeated()) {
+		defeatComponent_.Update(transform, kFrameDelta);
+	}
+
+	gameOverAnimation_.Update();
+	if (!defeatComponent_.IsDefeated()) {
+		BaseObject::Update(transform->translate);
+	}
+	obj_->Update();
 }
 
 //=============================================================================
@@ -229,11 +232,15 @@ void Player::UpdateBarrelRollAndBoost(float deltaTime) {
 // 弾の発射処理
 void Player::ProcessShooting() {
 	assert(input_);
-	Input *input = input_;
-
 	const Vector3 playerPos = obj_->GetPosition();
 	// プレイヤーの正面は常にZ軸正方向（カメラから見てプレイヤーの前方）
 	const Vector3 shootDirection = {0.0f, 0.0f, 1.0f};
+	ProcessBulletShooting(playerPos, shootDirection);
+	ProcessMissileShooting(playerPos, shootDirection);
+}
+
+void Player::ProcessBulletShooting(const Vector3 &playerPos, const Vector3 &shootDirection) {
+	Input *input = input_;
 
 	// トリガー入力閾値
 	constexpr float kTriggerThreshold = 0.3f;
@@ -243,6 +250,12 @@ void Player::ProcessShooting() {
 	if (shootBullet && combatComponent_.CanShootBullet()) {
 		combatComponent_.ShootBullet(playerPos, shootDirection);
 	}
+
+}
+
+void Player::ProcessMissileShooting(const Vector3 &playerPos, const Vector3 &shootDirection) {
+	Input *input = input_;
+	constexpr float kTriggerThreshold = 0.3f;
 
 	// ===== ミサイル長押しロジック（新仕様） =====
 	// ミサイルボタン入力判定（キーボード：M または コントローラー：Lトリガー/Bボタン）

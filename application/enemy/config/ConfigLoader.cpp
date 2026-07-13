@@ -33,7 +33,7 @@ bool ConfigLoader::LoadEnemyConfigs(const std::string &configPath) {
 	try {
 		std::ifstream file(configPath);
 		if (!file.is_open()) {
-			std::cerr << "Failed to open: " << configPath << std::endl;
+			std::cerr << "Failed to open: " << configPath << '\n';
 			return false;
 		}
 
@@ -87,11 +87,11 @@ bool ConfigLoader::LoadEnemyConfigs(const std::string &configPath) {
 		}
 
 		EnemyParamManager::Initialize(enemyConfigs);
-		std::cout << "Loaded " << enemyConfigs.size() << " enemy configs" << std::endl;
+		std::cout << "Loaded " << enemyConfigs.size() << " enemy configs" << '\n';
 		return true;
 
 	} catch (const std::exception &e) {
-		std::cerr << "Error loading enemy configs: " << e.what() << std::endl;
+		std::cerr << "Error loading enemy configs: " << e.what() << '\n';
 		return false;
 	}
 }
@@ -100,7 +100,7 @@ bool ConfigLoader::LoadFormationConfigs(const std::string &configPath) {
 	try {
 		std::ifstream file(configPath);
 		if (!file.is_open()) {
-			std::cerr << "Failed to open: " << configPath << std::endl;
+			std::cerr << "Failed to open: " << configPath << '\n';
 			return false;
 		}
 
@@ -140,11 +140,11 @@ bool ConfigLoader::LoadFormationConfigs(const std::string &configPath) {
 		}
 
 		FormationConfigManager::Initialize(formations);
-		std::cout << "Loaded " << formations.size() << " formation configs" << std::endl;
+		std::cout << "Loaded " << formations.size() << " formation configs" << '\n';
 		return true;
 
 	} catch (const std::exception &e) {
-		std::cerr << "Error loading formation configs: " << e.what() << std::endl;
+		std::cerr << "Error loading formation configs: " << e.what() << '\n';
 		return false;
 	}
 }

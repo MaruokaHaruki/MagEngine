@@ -10,6 +10,7 @@
  // 以下はstd::maxを使用する場合に必要
 #define NOMINMAX
 #include "DebugScene.h"
+using namespace MagMath;
 #include "CameraManager.h"
 #include "DebugTextManager.h"
 #include "EditorUiSystem.h"

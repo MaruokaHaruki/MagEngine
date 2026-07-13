@@ -51,6 +51,12 @@ void Enemy::Update(float deltaTime) {
 		return;
 	}
 
+	UpdateBehaviorState(safeDeltaTime);
+}
+
+void Enemy::UpdateBehaviorState(float safeDeltaTime) {
+	// 共通の生存・編隊判定はUpdate()で済ませ、ここでは通常行動ステートだけを扱う。
+	// FormationFollowは早期復帰で処理されるため、通常ステートとの二重更新を避けられる。
 	switch (behaviorState_) {
 	case BehaviorState::Approach: {
 		if (player_) {

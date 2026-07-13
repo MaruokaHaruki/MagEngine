@@ -1,7 +1,6 @@
 #pragma once
-
 #include "MagMath.h"
-using namespace MagMath;
+using Vector3 = MagMath::Vector3;
 
 #include <algorithm>
 #include <cmath>

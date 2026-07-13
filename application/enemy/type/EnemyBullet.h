@@ -1,6 +1,7 @@
 #pragma once
 #include "MagMath.h"
-using namespace MagMath;
+using Vector3 = MagMath::Vector3;
+using Transform = MagMath::Transform;
 #include "BaseObject.h"
 #include "Object3d.h"
 #include "Object3dSetup.h"

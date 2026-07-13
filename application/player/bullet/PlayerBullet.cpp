@@ -3,6 +3,7 @@
 #include "TrailEffectManager.h"
 #include "engine/render/pass/RenderWorld.h"
 using namespace MagEngine;
+using namespace MagMath;
 
 void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
 							  MagEngine::TrailEffectManager *trailEffectManager,

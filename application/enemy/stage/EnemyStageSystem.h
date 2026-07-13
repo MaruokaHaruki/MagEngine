@@ -1,6 +1,7 @@
 #pragma once
 #include "EnemyGroup.h"
 #include "MagMath.h"
+using Vector3 = MagMath::Vector3;
 #include "externals/json.hpp"
 #include <algorithm>
 #include <cstdint>
@@ -9,7 +10,6 @@
 #include <string>
 #include <vector>
 
-using namespace MagMath;
 
 class EnemyBase;
 class EnemyManager;

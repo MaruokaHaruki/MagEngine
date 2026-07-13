@@ -1,6 +1,5 @@
 #pragma once
 #include "MagMath.h"
-using namespace MagMath;
 #include "Object3d.h"
 #include <memory>
 

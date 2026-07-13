@@ -7,7 +7,7 @@
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
-using namespace MagMath;
+using Vector3 = MagMath::Vector3;
 #include "EnemyBase.h"
 
 // 定数定義（Enemy固有の行動パラメータ）
@@ -78,6 +78,10 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	/// @brief 現在の行動ステートだけを更新
+	/// @param deltaTime 上限値で保護済みのフレーム経過時間
+	/// @note Update()の共通前処理と状態固有処理を分離し、状態遷移条件をこの関数へ集約する
+	void UpdateBehaviorState(float deltaTime);
 	//========================================
 	// グループ編隊関連
 	int groupId_;                     // 属するグループのID（-1=単独）

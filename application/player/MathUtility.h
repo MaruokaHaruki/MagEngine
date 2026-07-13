@@ -16,7 +16,6 @@
 #include "Vector3.h"
 #include "MathConstants.h"
 
-using namespace MagMath;
 
 ///=============================================================================
 ///						数学ユーティリティ名前空間

@@ -1,6 +1,6 @@
 #pragma once
 #include "MagMath.h"
-using namespace MagMath;
+using Vector3 = MagMath::Vector3;
 #include "EnemyBase.h"
 #include "EnemyBullet.h"
 #include <memory>
@@ -88,6 +88,10 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
+	/// @brief ガンナーの接近・射撃・退却ステートを更新
+	/// @param deltaTime 上限値で保護済みのフレーム経過時間
+	/// @note 弾の更新は所有する弾の寿命管理と順序を分けるためUpdate()側で行う
+	void UpdateGunnerState(float deltaTime);
 	void UpdateBullets(float deltaTime);
 	void TryShootAtPlayer();
 

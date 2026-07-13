@@ -8,6 +8,7 @@
 #include "Player.h"
 #include <cassert>
 #include <cmath>
+using namespace MagMath;
 using namespace MagEngine;
 
 namespace {

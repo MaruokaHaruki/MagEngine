@@ -12,6 +12,7 @@
 // 以下はstd::maxを使用する場合に必要
 #define NOMINMAX
 #include "PlayerMissile.h"
+using namespace MagMath;
 #include "EnemyManager.h"
 #include "ImguiSetup.h"
 #include "LineManager.h"

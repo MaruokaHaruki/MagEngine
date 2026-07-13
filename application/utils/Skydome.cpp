@@ -1,6 +1,7 @@
 #include "Skydome.h"
 #include "ImguiSetup.h"
 using namespace MagEngine;
+using namespace MagMath;
 
 void Skydome::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelName) {
 	object3d_ = std::make_unique<Object3d>();

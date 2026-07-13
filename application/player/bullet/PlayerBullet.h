@@ -2,6 +2,7 @@
 #include "BaseObject.h" // BaseObjectを継承
 #include "Object3d.h"
 #include "TrailEffect.h"
+using Transform = MagMath::Transform;
 #include "Transform.h"
 #include "Vector3.h"
 #include <memory>

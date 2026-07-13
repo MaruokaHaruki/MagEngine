@@ -11,6 +11,9 @@ using namespace MagEngine;
 
 // 定数定義
 namespace {
+	// Update()の既定値と外部deltaTimeの上限を共通化し、異常に大きい時間差で挙動が飛ぶことを防ぐ。
+	constexpr float kDefaultDeltaTime = 1.0f / 60.0f;
+	constexpr float kMaximumDeltaTime = 0.1f;
 	constexpr float kDefaultSpeed = 10.0f;
 	constexpr float kDefaultRadius = 1.0f;
 	constexpr float kDefaultLifeTime = 60.0f;
@@ -88,11 +91,11 @@ void EnemyBase::SetParticleSystem(MagEngine::Particle *particle,
 ///=============================================================================
 ///                        更新
 void EnemyBase::Update() {
-	Update(1.0f / 60.0f);
+	Update(kDefaultDeltaTime);
 }
 
 void EnemyBase::Update(float deltaTime) {
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
+	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, kMaximumDeltaTime));
 
 	if (destroyState_ == DestroyState::Dead || !obj_) {
 		return;

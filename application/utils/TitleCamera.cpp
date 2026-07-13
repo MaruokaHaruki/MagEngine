@@ -7,6 +7,7 @@
 #include "Player.h"
 #include <cmath>
 using namespace MagEngine;
+using namespace MagMath;
 
 ///=============================================================================
 ///                        初期化

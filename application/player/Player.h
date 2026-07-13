@@ -20,6 +20,8 @@
 #pragma once
 #include "BaseObject.h"
 #include "MagMath.h"
+using Vector3 = MagMath::Vector3;
+using Transform = MagMath::Transform;
 #include "Object3d.h"
 #include "ParticleEmitter.h"
 #include "PlayerConstants.h"
@@ -841,11 +843,29 @@ private:
 	/// @details 回避ロールとブースト機能の状態遷移と値の更新
 	/// @note ブースト中は移動速度が上昇し、ゲージが消費される
 	void UpdateBarrelRollAndBoost(float deltaTime);
+	/// @brief スロー倍率を反映したゲームプレイ用コンポーネントを更新
+	/// @details 移動、射撃、弾の更新を既存の依存順序で実行する
+	/// @note 入力結果を同じフレームの射撃へ反映するため、呼び出し順序を変更しない
+	void UpdateGameplayComponents(float deltaTime);
+	/// @brief 敗北演出と3Dオブジェクトの状態を更新
+	/// @details 敗北中は敗北演出、それ以外はBaseObjectの通常更新に位置更新を委譲する
+	/// @note transformはUpdate()内でnull確認済みのobj_から取得した一時的な参照である
+	void UpdateDefeatAndObject(MagMath::Transform *transform);
 	
 	/// @brief 射撃処理
 	/// @details ボタン入力に応じて弾またはミサイルを発射
 	/// @note ロックオンモード中はミサイル発射のみ可能
 	void ProcessShooting();
+	/// @brief 通常弾の入力判定と発射を処理
+	/// @param playerPosition 発射位置
+	/// @param shootDirection 発射方向
+	/// @note ミサイルのロックオン状態に影響させないため、通常弾処理を分離する
+	void ProcessBulletShooting(const MagMath::Vector3 &playerPosition, const MagMath::Vector3 &shootDirection);
+	/// @brief ミサイルの押下、ロックオン、解放時の発射を処理
+	/// @param playerPosition ロックオン判定の基準位置
+	/// @param shootDirection ロックオン判定の基準方向
+	/// @note prevMissileButtonPressed_を更新する唯一の処理として、毎フレーム一度だけ呼び出す
+	void ProcessMissileShooting(const MagMath::Vector3 &playerPosition, const MagMath::Vector3 &shootDirection);
 	
 	/// @brief Transform 安全取得
 	/// @return obj_ が存在すれば Transform へのポインタ、無ければ nullptr

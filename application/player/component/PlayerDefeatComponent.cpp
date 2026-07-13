@@ -11,6 +11,7 @@
 #include "Transform.h"
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 //=============================================================================
 // 初期化
@@ -45,9 +46,10 @@ void PlayerDefeatComponent::StartDefeatAnimation() {
 	// ローカル回転をリセット
 	localRotation_ = {0.0f, 0.0f, 0.0f};
 
-	// 初期速度：小さい横移動（ランダム）
-	float randomX = (rand() % 100 - 50) * 0.01f; // -0.5 ~ 0.5
-	float randomZ = (rand() % 100 - 50) * 0.01f;
+	// 初期横速度だけに揺らぎを与える。uniform_real_distributionにより、旧来の剰余変換による偏りを避ける。
+	std::uniform_real_distribution<float> randomOffset(-0.5f, 0.5f);
+	const float randomX = randomOffset(randomEngine_);
+	const float randomZ = randomOffset(randomEngine_);
 
 	defeatVelocity_ = {
 		randomX * 5.0f,  // 小さい横方向速度
@@ -141,13 +143,3 @@ void PlayerDefeatComponent::UpdateAnimation(MagMath::Transform *transform, float
 	}
 }
 
-//=============================================================================
-// 疑似ランダム値生成
-float PlayerDefeatComponent::GeneratePseudoRandom(
-	unsigned int seed,
-	int multiplier,
-	int divisor) {
-
-	unsigned int value = (seed * multiplier) % 100;
-	return static_cast<float>(value) / static_cast<float>(divisor);
-}

@@ -2,10 +2,10 @@
 #include "EnemyBase.h"
 #include "stage/EnemyStageSystem.h"
 #include "MagMath.h"
+using Vector3 = MagMath::Vector3;
 #include <memory>
 #include <vector>
 
-using namespace MagMath;
 
 class CollisionManager;
 class EnemyBullet;

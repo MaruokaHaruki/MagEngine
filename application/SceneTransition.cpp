@@ -5,6 +5,7 @@
 #include "engine/render/pass/RenderWorld.h"
 #include <algorithm>
 #include <cmath>
+using namespace MagMath;
 
 ///=============================================================================
 ///                        初期化

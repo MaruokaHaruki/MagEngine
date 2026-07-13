@@ -1,6 +1,7 @@
 #pragma once
 #include "MagMath.h"
-using namespace MagMath;
+using Vector2 = MagMath::Vector2;
+using Vector4 = MagMath::Vector4;
 #include "Sprite.h"
 #include "SpriteSetup.h"
 #include <functional>

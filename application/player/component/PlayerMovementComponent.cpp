@@ -3,6 +3,17 @@
 #include "PlayerConstants.h"
 #include "Transform.h"
 #include <cmath>
+using namespace MagMath;
+
+namespace {
+using Vector3 = MagMath::Vector3;
+// バレルロールの演出仕様に関わる値。調整時に進行度・角度・速度の単位を判別できるよう分離する。
+constexpr float kBarrelRollCompleteProgress = 1.0f;
+constexpr float kEaseOutMidpoint = 0.5f;
+constexpr float kAdaptiveEaseThreshold = 0.7f;
+constexpr float kBarrelRollAccelerationScale = 1.5f;
+constexpr float kMinimumHorizontalSpeed = 0.001f;
+}
 
 //=============================================================================
 // 初期化
@@ -173,7 +184,7 @@ void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, fl
 	barrelRollTime_ += deltaTime;
 	float progress = barrelRollTime_ / barrelRollDuration_;
 
-	if (progress >= 1.0f) {
+	if (progress >= kBarrelRollCompleteProgress) {
 		// バレルロール終了
 		isBarrelRolling_ = false;
 		barrelRollTime_ = 0.0f;
@@ -185,15 +196,15 @@ void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, fl
 	// イージング（EaseOutQuad + オーバーシュート気味）- より滑らかでリズミカルな加速
 	float easedProgress = 1.0f - (1.0f - progress) * (1.0f - progress); // EaseOutQuad
 	// さらにオーバーシュート要素を追加（最初は控えめ、中盤で加速）
-	if (progress < 0.7f) {
-		easedProgress = progress < 0.5f
+	if (progress < kAdaptiveEaseThreshold) {
+		easedProgress = progress < kEaseOutMidpoint
 							? 2.0f * progress * progress
 							: 1.0f - (-2.0f * progress + 2.0f) * (-2.0f * progress + 2.0f) / 2.0f;
 	}
 
 	// ロール回転（360度 = 1回転）- 元の姿勢に戻る
 	float rollDirection = barrelRollDirection_ ? -1.0f : 1.0f;	 // 右=負の回転、左=正の回転
-	float rollAngle = easedProgress * 2.0f * PI * rollDirection; // 2π（360度）
+	float rollAngle = easedProgress * MagMath::TWO_PI * rollDirection; // 2π（360度）
 	transform->rotate.z = barrelRollStartRotation_.z + rollAngle;
 
 	// 進行方向への加速処理 - より指数的でダイナミック
@@ -202,7 +213,7 @@ void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, fl
 		barrelRollStartVelocity_.x * barrelRollStartVelocity_.x +
 		barrelRollStartVelocity_.z * barrelRollStartVelocity_.z);
 
-	if (speedMagnitude > 0.001f) {
+	if (speedMagnitude > kMinimumHorizontalSpeed) {
 		// 進行方向の正規化
 		Vector3 direction = {
 			barrelRollStartVelocity_.x / speedMagnitude,
@@ -210,7 +221,7 @@ void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, fl
 			barrelRollStartVelocity_.z / speedMagnitude};
 
 		// より強い加速（最大で3倍速）- ダイナミックな加速感
-		float speedBoost = 1.0f + (barrelRollAcceleration_ - 1.0f) * easedProgress * easedProgress * 1.5f;
+		float speedBoost = 1.0f + (barrelRollAcceleration_ - 1.0f) * easedProgress * easedProgress * kBarrelRollAccelerationScale;
 		float acceleratedSpeed = speedMagnitude * speedBoost;
 		currentVelocity_ = {
 			direction.x * acceleratedSpeed,
@@ -218,7 +229,7 @@ void PlayerMovementComponent::UpdateBarrelRoll(MagMath::Transform *transform, fl
 			direction.z * acceleratedSpeed};
 	} else {
 		// 速度がない場合は前方へ加速
-		float speedBoost = 1.0f + (barrelRollAcceleration_ - 1.0f) * easedProgress * easedProgress * 1.5f;
+		float speedBoost = 1.0f + (barrelRollAcceleration_ - 1.0f) * easedProgress * easedProgress * kBarrelRollAccelerationScale;
 		float acceleratedSpeed = moveSpeed_ * speedBoost;
 		currentVelocity_ = {0.0f, 0.0f, acceleratedSpeed};
 	}

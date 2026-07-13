@@ -8,6 +8,7 @@
 #include "ImguiSetup.h"
 #include "LineManager.h"
 #include <algorithm>
+using namespace MagMath;
 #include <cassert>
 #include <cmath>
 using namespace MagEngine;
