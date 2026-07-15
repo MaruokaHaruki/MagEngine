@@ -133,6 +133,10 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	// 環境光：雲の明るさ（明るく映える）
 	// NOTE : 0.75→0.82 雲全体を明るく、量増加時の見映え向上
 	cloudParams.ambient = 0.82f;
+
+#ifdef _DEBUG
+	debugController_.Initialize(engineContext_->input, player_.get(), cloud_.get());
+#endif
 	// 太陽光強度：太陽光による照明の強さ（影がはっきり）
 	cloudParams.sunIntensity = 1.6f;
 	// ベースノイズスケール：大きな雲の形状（自然なサイズ）
@@ -168,8 +172,11 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	collisionManager_->Initialize(*engineContext_->lineManager, 32.0f, 256); // セルサイズ32.0f、最大256オブジェクト
 
 	//========================================
-	// 敵の位置にデバッグテキストを配置（固定位置）
+#ifdef _DEBUG
+	// デバッグ表示はReleaseビルドへ持ち込まず、シーン終了時に名前で解除できるようにする。
 	engineContext_->debugTextManager->AddText3D("Enemy", {5.0f, 1.0f, 5.0f}, {1.0f, 0.0f, 0.0f, 1.0f});
+	engineContext_->debugTextManager->AddText3D("Player", player_->GetPosition(), {0.0f, 1.0f, 0.0f, 1.0f});
+#endif
 
 	//========================================
 	// UI管理の初期化
@@ -252,16 +259,26 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	// UI展開開始フラグをリセット
 	hasUIDeploymentStarted_ = false;
 
+#ifdef _DEBUG
 	RegisterEditorPanels();
+#endif
 }
 
 ///=============================================================================
 ///							終了処理
 void GamePlayScene::Finalize() {
+	#ifdef _DEBUG
+	if (engineContext_ && engineContext_->debugTextManager) {
+		engineContext_->debugTextManager->RemoveText3D("Enemy");
+		engineContext_->debugTextManager->RemoveText3D("Player");
+	}
+	debugController_.Finalize();
+	#endif
 	// リソースの適切なクリーンアップ
 	// unique_ptrは自動的に破棄されますが、明示的な終了処理が
 	// 必要なコンポーネントがあれば追加します
 	if (collisionManager_) {
+		collisionManager_->ClearAll();
 		collisionManager_.reset();
 	}
 	if (particle_) {
@@ -298,9 +315,8 @@ void GamePlayScene::Finalize() {
 
 ///=============================================================================
 ///							更新
-void GamePlayScene::Update() {
+void GamePlayScene::Update(float deltaTime) {
 	assert(engineContext_);
-	Input *input = engineContext_->input;
 	CameraManager *cameraManager = engineContext_->cameraManager;
 
 	//========================================
@@ -308,6 +324,11 @@ void GamePlayScene::Update() {
 	if (uiManager_) {
 		uiManager_->Update(player_.get());
 	}
+
+#ifdef _DEBUG
+	// デバッグ入力はポーズ判定より前に処理し、F10でいつでも有効状態を切り替えられるようにする。
+	debugController_.Update();
+#endif
 
 	//========================================
 	// スタートアニメーション終了後の各種UI展開
@@ -343,8 +364,12 @@ void GamePlayScene::Update() {
 				// ゲームに戻る
 				menuUI->Close();
 			} else if (selectedButton == MenuButton::OperationGuide) {
-				// 操作説明を表示（将来実装）
-				// TODO: 操作説明を表示する処理を実装
+				// 操作説明を選択した場合はメニューを閉じ、既存の説明UIへ表示を委譲する。
+				menuUI->Close();
+				if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+					operationGuide->SetVisible(true);
+					operationGuide->StartDeployAnimation(1.0f);
+				}
 			} else if (selectedButton == MenuButton::ReturnToTitle) {
 				// メニューを閉じてからタイトルへ戻る
 				menuUI->Close();
@@ -371,69 +396,13 @@ void GamePlayScene::Update() {
 	if (player_) {
 		gameTimeScale_ = player_->GetJustAvoidanceComponent()->GetGameTimeScale();
 	}
-	const float baseDeltaTime = 1.0f / 60.0f;
-	const float effectiveDeltaTime = baseDeltaTime * gameTimeScale_;
+	const float clampedDeltaTime = std::clamp(deltaTime, 0.0f, 0.1f);
+	const float effectiveDeltaTime = clampedDeltaTime * gameTimeScale_;
 
 	//========================================
 	// 雲の更新
 	if (cloud_) {
 		cloud_->Update(*cameraManager->GetCurrentCamera(), effectiveDeltaTime);
-	}
-
-	//========================================
-	// 弾痕テスト用のデバッグコード
-	// SPACEキーで雲に弾痕を追加
-	if (input->TriggerKey(DIK_SPACE) || input->GetRightTrigger()) {
-		if (player_) {
-			// プレイヤーの位置から前方向に弾痕を作成
-			Vector3 origin = player_->GetPosition();
-
-			// プレイヤーのRotationから前方ベクトルを計算
-			// Y軸回転（ヨー）から前方向を計算
-			float yaw = player_->GetTransform()->rotate.y;
-			Vector3 forward = {
-				std::sin(yaw),
-				0.0f,
-				std::cos(yaw)};
-			forward = MagMath::Normalize(forward);
-
-			// 弾痕を追加（原点、方向、半径、残存時間）
-			cloud_->AddBulletHole(origin - Vector3(0, 0, 100.0f), forward, 16.0f, 8.0f, 700.0f, 2.0f);
-
-			// ログ出力
-			Logger::Log("BulletHole added at player position", Logger::LogLevel::Info);
-		}
-	}
-
-	// Nキーでランダムな位置に弾痕を追加
-	if (input->TriggerKey(DIK_N) && cloud_) {
-		// 雲の中心付近にランダムな弾痕を作成
-		Vector3 cloudCenter = cloud_->GetTransform().translate;
-		Vector3 randomOffset = {
-			static_cast<float>((rand() % 200) - 100), // -100 ~ 100
-			static_cast<float>((rand() % 40) - 20),	  // -20 ~ 20
-			static_cast<float>((rand() % 200) - 100)  // -100 ~ 100
-		};
-
-		Vector3 origin = cloudCenter + randomOffset;
-
-		// ランダムな方向
-		Vector3 direction = {
-			static_cast<float>((rand() % 200) - 100) / 100.0f, // -1.0 ~ 1.0
-			static_cast<float>((rand() % 200) - 100) / 100.0f,
-			static_cast<float>((rand() % 200) - 100) / 100.0f};
-		direction = MagMath::Normalize(direction);
-
-		// 弾痕を追加
-		cloud_->AddBulletHole(origin, direction, 2.0f, 0.2f, 300.0f, 20.0f);
-
-		Logger::Log("Random BulletHole added", Logger::LogLevel::Info);
-	}
-
-	// Mキーで全ての弾痕をクリア
-	if (input->TriggerKey(DIK_M) && cloud_) {
-		cloud_->ClearBulletHoles();
-		Logger::Log("All bullet holes cleared", Logger::LogLevel::Info);
 	}
 
 	//========================================
@@ -451,12 +420,17 @@ void GamePlayScene::Update() {
 	//========================================
 	// プレイヤー
 	if (player_) {
-		player_->Update();
+		// プレイヤー側でジャスト回避のスロー倍率と強化倍率を適用するため、
+		// ここでは減速前のdeltaTimeを渡す。既にeffectiveDeltaTimeを渡すと、
+		// Player::Update()内でも倍率が適用されて移動時間が二重に短縮される。
+		player_->Update(clampedDeltaTime);
 
-		// プレイヤーの位置にデバッグテキストを配置
+		// デバッグテキストは追加せず、初期化時に登録した項目だけを更新する。
+#ifdef _DEBUG
 		Vector3 playerPos = player_->GetPosition();
 		playerPos.y += 2.0f; // プレイヤーの少し上に表示
-		engineContext_->debugTextManager->AddText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
+		engineContext_->debugTextManager->UpdateText3D("Player", playerPos, {0.0f, 1.0f, 0.0f, 1.0f});
+#endif
 
 		// ジャスト回避成功時のカメラズーム演出を開始
 		if (player_->IsJustAvoidanceSuccessThisFrame() && followCamera_) {
@@ -550,9 +524,8 @@ void GamePlayScene::Update() {
 	}
 
 	//=========================================
-	//  当たり判定（最適化済み）
-	//  リセットではなく登録解除/登録で管理
-	collisionManager_->Reset(); // 一旦リセット（簡単のため）
+	// 当該フレームの登録対象だけを再構築し、衝突状態はCollisionManagerに維持させる。
+	collisionManager_->BeginFrame();
 	//  プレイヤーの当たり判定を登録
 	if (player_) {
 		collisionManager_->RegisterObject(player_.get());
@@ -579,8 +552,8 @@ void GamePlayScene::Update() {
 	}
 	//  敵の弾の当たり判定を登録
 	if (enemyManager_) {
-		auto enemyBullets = enemyManager_->GetAllEnemyBullets();
-		for (auto *bullet : enemyBullets) {
+		enemyManager_->CollectEnemyBullets(enemyBulletBuffer_);
+		for (auto *bullet : enemyBulletBuffer_) {
 			if (bullet) {
 				collisionManager_->RegisterObject(bullet);
 			}
@@ -590,6 +563,7 @@ void GamePlayScene::Update() {
 	collisionManager_->Update();
 
 #ifdef _DEBUG
+	Input *input = engineContext_->input;
 	//========================================
 	// タイトルへのシーン遷移（デバッグ用）
 	if (input->TriggerKey(DIK_RETURN)) {
@@ -630,6 +604,7 @@ void GamePlayScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	}
 }
 
+#ifdef _DEBUG
 ///=============================================================================
 ///						Editor Panel登録
 void GamePlayScene::RegisterEditorPanels() {
@@ -729,9 +704,10 @@ void GamePlayScene::DrawCloudDebugUi() {
 	cloud_->DrawImGui();
 	ImGui::Separator();
 	ImGui::Text("Bullet Hole System Test");
-	ImGui::Text("Press SPACE: Add bullet hole at player");
-	ImGui::Text("Press N: Add random bullet hole");
-	ImGui::Text("Press M: Clear all bullet holes");
+	ImGui::Text("F10: Toggle debug input");
+	ImGui::Text("J: Add bullet hole at player");
+	ImGui::Text("K: Add random bullet hole");
+	ImGui::Text("L: Clear all bullet holes");
 
 	auto &cloudParams = cloud_->GetMutableParams();
 	ImGui::Text("Active Bullet Holes: %d", cloudParams.bulletHoleCount);
@@ -755,3 +731,4 @@ void GamePlayScene::DrawTransitionDebugUi() {
 		sceneTransition_->DrawImGui();
 	}
 }
+#endif

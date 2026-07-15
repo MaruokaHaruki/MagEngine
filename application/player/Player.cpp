@@ -24,10 +24,6 @@ using namespace MagMath;
 #include <cmath> // std::abs, std::min, std::max のため
 using namespace MagEngine;
 
-namespace { // 無名名前空間でファイルスコープの定数を定義
-	constexpr float kFrameDelta = 1.0f / 60.0f;
-} // namespace
-
 MagMath::Transform *Player::GetTransformSafe() const {
 	return obj_ ? obj_->GetTransform() : nullptr;
 }
@@ -73,18 +69,18 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 
 //=============================================================================
 // 毎フレーム更新
-void Player::Update() {
+void Player::Update(float deltaTime) {
 	MagMath::Transform *objTransform = GetTransformSafe();
 	if (!objTransform) {
 		return;
 	}
 
 	// === ジャスト回避コンポーネントは常に実時間で更新（タイマーカウント用） ===
-	justAvoidanceComponent_.Update(kFrameDelta);
+	justAvoidanceComponent_.Update(deltaTime);
 
 	// === スロー倍率を計算し、他のコンポーネントに適用 ===
 	float slowMultiplier = justAvoidanceComponent_.GetGameTimeScale();
-	float effectiveDeltaTime = kFrameDelta * slowMultiplier;
+	float effectiveDeltaTime = deltaTime * slowMultiplier;
 
 	// === 強化バフを適用 ===
 	// 移動速度倍率をMovementコンポーネントに反映
@@ -96,7 +92,7 @@ void Player::Update() {
 	}
 
 	UpdateGameplayComponents(effectiveDeltaTime);
-	UpdateDefeatAndObject(objTransform);
+	UpdateDefeatAndObject(objTransform, deltaTime);
 
 	// === ジャスト回避成功フラグをリセット（毎フレーム末尾） ===
 	// NOTE: このフラグは衝突検出時に設定され、1フレームだけ有効である必要がある
@@ -110,16 +106,16 @@ void Player::UpdateGameplayComponents(float deltaTime) {
 	combatComponent_.Update(deltaTime);
 	UpdateMovement(deltaTime);
 	UpdateBarrelRollAndBoost(deltaTime);
-	ProcessShooting();
-	combatComponent_.UpdateBullets();
-	combatComponent_.UpdateMissiles();
+	ProcessShooting(deltaTime);
+	combatComponent_.UpdateBullets(deltaTime);
+	combatComponent_.UpdateMissiles(deltaTime);
 }
 
-void Player::UpdateDefeatAndObject(MagMath::Transform *transform) {
+void Player::UpdateDefeatAndObject(MagMath::Transform *transform, float deltaTime) {
 	// 敗北演出中は演出側が位置を所有し、通常時だけBaseObjectへ位置更新を渡す。
 	// 二重更新を避けることで、敗北演出の落下・回転が通常移動に上書きされない。
 	if (defeatComponent_.IsDefeated()) {
-		defeatComponent_.Update(transform, kFrameDelta);
+		defeatComponent_.Update(transform, deltaTime);
 	}
 
 	gameOverAnimation_.Update();
@@ -230,13 +226,13 @@ void Player::UpdateBarrelRollAndBoost(float deltaTime) {
 
 //=============================================================================
 // 弾の発射処理
-void Player::ProcessShooting() {
+void Player::ProcessShooting(float deltaTime) {
 	assert(input_);
 	const Vector3 playerPos = obj_->GetPosition();
 	// プレイヤーの正面は常にZ軸正方向（カメラから見てプレイヤーの前方）
 	const Vector3 shootDirection = {0.0f, 0.0f, 1.0f};
 	ProcessBulletShooting(playerPos, shootDirection);
-	ProcessMissileShooting(playerPos, shootDirection);
+	ProcessMissileShooting(playerPos, shootDirection, deltaTime);
 }
 
 void Player::ProcessBulletShooting(const Vector3 &playerPos, const Vector3 &shootDirection) {
@@ -253,7 +249,7 @@ void Player::ProcessBulletShooting(const Vector3 &playerPos, const Vector3 &shoo
 
 }
 
-void Player::ProcessMissileShooting(const Vector3 &playerPos, const Vector3 &shootDirection) {
+void Player::ProcessMissileShooting(const Vector3 &playerPos, const Vector3 &shootDirection, float deltaTime) {
 	Input *input = input_;
 	constexpr float kTriggerThreshold = 0.3f;
 
@@ -275,8 +271,8 @@ void Player::ProcessMissileShooting(const Vector3 &playerPos, const Vector3 &sho
 
 	// ボタン長押し中
 	if (missileButtonPressed && isInLockOnMode_) {
-		missileButtonHeldTime_ += kFrameDelta;
-		lockedOnComponent_.UpdateLockOn(playerPos, shootDirection, kFrameDelta);
+		missileButtonHeldTime_ += deltaTime;
+		lockedOnComponent_.UpdateLockOn(playerPos, shootDirection, deltaTime);
 	}
 	// ボタン離した（リリース）
 	if (missileButtonReleased) {

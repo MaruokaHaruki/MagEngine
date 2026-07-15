@@ -46,7 +46,7 @@ public:
 					const Vector3 &startPos, const Vector3 &initialDirection,
 					EnemyBase *target = nullptr); // Enemy* から EnemyBase* に変更
 	/// @brief Update 更新
-	void Update();
+	void Update(float deltaTime);
 	/// @brief 3D不透明描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 	/// @brief DrawDebugInfo デバッグ情報描画
@@ -212,4 +212,5 @@ private:
 	bool showTargetLine_;					// ターゲットライン表示フラグ
 	bool showVelocityVector_;				// 速度ベクトル表示フラグ
 	bool showForwardVector_;				// 前方向ベクトル表示フラグ
+	float deltaTime_ = 1.0f / 60.0f;
 };

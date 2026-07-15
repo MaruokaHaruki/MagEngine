@@ -239,6 +239,27 @@ namespace MagEngine {
 		debugTexts_.push_back(newText);
 	}
 
+	bool DebugTextManager::UpdateText3D(const std::string &text, const MagMath::Vector3 &position,
+		const MagMath::Vector4 &color) {
+		for (DebugText &debugText : debugTexts_) {
+			if (debugText.text == text && !debugText.useScreenPosition) {
+				debugText.worldPosition = position;
+				debugText.color = color;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void DebugTextManager::RemoveText3D(const std::string &text) {
+		debugTexts_.erase(
+			std::remove_if(debugTexts_.begin(), debugTexts_.end(),
+				[&text](const DebugText &debugText) {
+					return debugText.text == text && !debugText.useScreenPosition;
+				}),
+			debugTexts_.end());
+	}
+
 	void DebugTextManager::AddTextScreen(const std::string &text, const MagMath::Vector2 &position,
 										 const MagMath::Vector4 &color, float duration, float scale, const std::string &fontName,
 										 bool isPersistent) {

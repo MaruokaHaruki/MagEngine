@@ -40,7 +40,7 @@ public:
 	virtual void Finalize() = 0;
 
 	/// \brief 更新
-	virtual void Update() = 0;
+	virtual void Update(float deltaTime) = 0;
 
 	/// \brief 描画対象の登録
 	virtual void RegisterRenderables(MagEngine::RenderWorld &renderWorld) = 0;

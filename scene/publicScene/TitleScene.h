@@ -43,7 +43,7 @@ public:
 	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 	void Finalize() override;
 
-	void Update() override;
+	void Update(float deltaTime) override;
 
 	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;

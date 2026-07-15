@@ -55,10 +55,6 @@ void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 	enemies_.clear();
 }
 
-void EnemyManager::Update() {
-	Update(1.0f / 60.0f);
-}
-
 void EnemyManager::Update(float deltaTime) {
 	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
 	gameTime_ += safeDeltaTime;
@@ -135,20 +131,20 @@ size_t EnemyManager::GetActiveEnemyCount() const {
 						 });
 }
 
-std::vector<EnemyBullet *> EnemyManager::GetAllEnemyBullets() {
-	std::vector<EnemyBullet *> allBullets;
+void EnemyManager::CollectEnemyBullets(std::vector<EnemyBullet *> &result) const {
+	// 呼び出し元のバッファを再利用し、衝突登録のたびにvectorを確保しない。
+	result.clear();
 	for (auto &enemy : enemies_) {
 		if (enemy && enemy->IsAlive()) {
 			if (EnemyGunner *gunner = dynamic_cast<EnemyGunner *>(enemy.get())) {
 				for (auto &bullet : gunner->GetBullets()) {
-					if (bullet && bullet->IsAlive()) {
-						allBullets.push_back(bullet.get());
+				if (bullet && bullet->IsAlive()) {
+					result.push_back(bullet.get());
 					}
 				}
 			}
 		}
 	}
-	return allBullets;
 }
 
 void EnemyManager::RemoveInactiveEnemies() {

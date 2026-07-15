@@ -21,6 +21,7 @@ void CollisionManager::Initialize(MagEngine::LineManager &lineManager, float cel
 	objectPool_.reserve(maxObjects);
 	grid_.reserve(maxObjects / 8);			  // より小さい初期容量
 	collisionStates_.reserve(maxObjects * 2); // 衝突ペア予約
+	currentCollisionPairs_.reserve(maxObjects * 2);
 
 	// グループ衝突マトリクスを初期化（デフォルトはすべて衝突可能）
 	ResetGroupCollisions();
@@ -39,6 +40,42 @@ void CollisionManager::Update() {
 
 	AssignObjectsToGrid();
 	CheckAllCollisions();
+
+	//========================================
+	// 破棄済みオブジェクトを含む衝突状態の除去
+	// 前フレームの衝突状態には、今フレームの登録処理より前に破棄された
+	// オブジェクトの生ポインタが残る場合がある。破棄済みポインタへ
+	// OnCollisionExit()を呼ぶとアクセス違反になるため、コールバックを
+	// 発行せずに状態だけを破棄する。
+	for (auto it = collisionStates_.begin(); it != collisionStates_.end();) {
+		const CollisionPair pair = it->first;
+		const bool isObjAActive = std::find(activeObjects_.begin(), activeObjects_.end(), pair.objA) != activeObjects_.end();
+		const bool isObjBActive = std::find(activeObjects_.begin(), activeObjects_.end(), pair.objB) != activeObjects_.end();
+
+		if (!isObjAActive || !isObjBActive) {
+			// 生存している側だけは、相手への参照を取り除く。
+			if (isObjAActive) {
+				pair.objA->GetCollidingObjects().erase(pair.objB);
+			}
+			if (isObjBActive) {
+				pair.objB->GetCollidingObjects().erase(pair.objA);
+			}
+
+			it = collisionStates_.erase(it);
+		} else {
+			++it;
+		}
+	}
+
+	// 処理内容：前フレームから継続しているが、今フレームに検出されなかった衝突を終了する
+	// 理由：Enter、Stay、Exitを正しく判定するため
+	for (auto it = collisionStates_.begin(); it != collisionStates_.end();) {
+		const CollisionPair pair = it->first;
+		++it;
+		if (currentCollisionPairs_.find(pair) == currentCollisionPairs_.end()) {
+			ProcessCollision(pair.objA, pair.objB, false);
+		}
+	}
 
 	//========================================
 	// デバッグ描画
@@ -149,13 +186,34 @@ void CollisionManager::DrawImGui() {
 }
 
 ///=============================================================================
-///						リセット
-void CollisionManager::Reset() {
+///						フレーム開始
+void CollisionManager::BeginFrame() {
 	activeObjects_.clear();
 	for (auto &pair : grid_) {
 		pair.second.Clear();
 	}
+	currentCollisionPairs_.clear();
+}
+
+///=============================================================================
+///						完全初期化
+void CollisionManager::ClearAll() {
+	// 処理内容：管理中の衝突対象と衝突状態をすべて破棄する
+	// 理由：シーン終了時に前シーンのオブジェクト参照を残さないため
+	activeObjects_.clear();
+	for (auto &pair : grid_) {
+		pair.second.Clear();
+	}
+	for (const auto &state : collisionStates_) {
+		if (state.first.objA) {
+			state.first.objA->GetCollidingObjects().erase(state.first.objB);
+		}
+		if (state.first.objB) {
+			state.first.objB->GetCollidingObjects().erase(state.first.objA);
+		}
+	}
 	collisionStates_.clear();
+	currentCollisionPairs_.clear();
 }
 
 ///=============================================================================
@@ -169,26 +227,41 @@ void CollisionManager::RegisterObject(BaseObject *obj) {
 ///=============================================================================
 ///						オブジェクト登録解除
 void CollisionManager::UnregisterObject(BaseObject *obj) {
-	auto it = std::find(activeObjects_.begin(), activeObjects_.end(), obj);
-	if (it != activeObjects_.end()) {
-		activeObjects_.erase(it);
+	if (!obj) {
+		return;
+	}
 
-		// 衝突イベントを全て終了させる
-		auto collidingCopy = obj->GetCollidingObjects();
-		for (BaseObject *collidingObj : collidingCopy) {
-			ProcessCollision(obj, collidingObj, false);
-		}
+	activeObjects_.erase(
+		std::remove(activeObjects_.begin(), activeObjects_.end(), obj),
+		activeObjects_.end());
 
-		// 関連する衝突状態も削除
-		auto stateIt = collisionStates_.begin();
-		while (stateIt != collisionStates_.end()) {
-			if (stateIt->first.objA == obj || stateIt->first.objB == obj) {
-				stateIt = collisionStates_.erase(stateIt);
-			} else {
-				++stateIt;
+	//========================================
+	// 関連する衝突状態の除去
+	// objは破棄直前に渡されるため、コールバックを発行して相手へ再入
+	// すると、削除処理と衝突処理の順序次第で生ポインタが無効になる。
+	// ここでは状態と相互参照だけを先に除去する。
+	for (auto stateIt = collisionStates_.begin(); stateIt != collisionStates_.end();) {
+		const CollisionPair pair = stateIt->first;
+		if (pair.objA == obj || pair.objB == obj) {
+			BaseObject *other = pair.objA == obj ? pair.objB : pair.objA;
+			if (other && std::find(activeObjects_.begin(), activeObjects_.end(), other) != activeObjects_.end()) {
+				other->GetCollidingObjects().erase(obj);
 			}
+			stateIt = collisionStates_.erase(stateIt);
+		} else {
+			++stateIt;
 		}
 	}
+
+	for (auto pairIt = currentCollisionPairs_.begin(); pairIt != currentCollisionPairs_.end();) {
+		if (pairIt->objA == obj || pairIt->objB == obj) {
+			pairIt = currentCollisionPairs_.erase(pairIt);
+		} else {
+			++pairIt;
+		}
+	}
+
+	obj->GetCollidingObjects().clear();
 }
 
 ///=============================================================================
@@ -231,12 +304,12 @@ void CollisionManager::CheckAdjacentCellCollisions(const GridCoord &coord, const
 	if (cell.IsEmpty())
 		return;
 
-	// 隣接セルを逐一生成（3x3x3グリッド、自分除外）
+	// 隣接セルを正方向だけ生成し、同じセルペアを一度だけ判定する。
 	for (int dx = -1; dx <= 1; ++dx) {
 		for (int dy = -1; dy <= 1; ++dy) {
 			for (int dz = -1; dz <= 1; ++dz) {
-				if (dx == 0 && dy == 0 && dz == 0)
-					continue; // 自分自身をスキップ
+				if (dx < 0 || (dx == 0 && dy < 0) || (dx == 0 && dy == 0 && dz <= 0))
+					continue;
 
 				GridCoord adjCoord(coord.x + dx, coord.y + dy, coord.z + dz);
 				auto adjIt = grid_.find(adjCoord);
@@ -269,10 +342,6 @@ void CollisionManager::CheckAllCollisions() {
 	}
 
 	// 隣接セル間衝突判定（座標ベース）
-	// NOTE: 重複チェック回避のため、各セルは一度だけ処理
-	std::vector<GridCoord> processedCoords;
-	processedCoords.reserve(grid_.size());
-
 	for (const auto &pair : grid_) {
 		const GridCoord &coord = pair.first;
 		const GridCell &cell = pair.second;
@@ -330,6 +399,9 @@ void CollisionManager::AssignObjectsToGrid() {
 ///						衝突処理実行（改良版）
 void CollisionManager::ProcessCollision(BaseObject *objA, BaseObject *objB, bool isColliding) {
 	CollisionPair pair(objA, objB);
+	if (isColliding && !currentCollisionPairs_.insert(pair).second) {
+		return;
+	}
 	auto it = collisionStates_.find(pair);
 	bool wasColliding = (it != collisionStates_.end()) ? it->second : false;
 

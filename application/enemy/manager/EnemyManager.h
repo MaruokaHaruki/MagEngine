@@ -44,7 +44,6 @@ public:
 		player_ = player;
 	}
 
-	void Update();
 	void Update(float deltaTime);
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 	void DrawImGui();
@@ -66,7 +65,7 @@ public:
 		return enemies_;
 	}
 
-	std::vector<EnemyBullet *> GetAllEnemyBullets();
+	void CollectEnemyBullets(std::vector<EnemyBullet *> &result) const;
 
 private:
 	void RemoveInactiveEnemies();

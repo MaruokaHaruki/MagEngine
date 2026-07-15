@@ -76,9 +76,7 @@ void PlayerDefeatComponent::Update(MagMath::Transform *transform, float deltaTim
 //=============================================================================
 // 敗北演出アニメーション更新
 void PlayerDefeatComponent::UpdateAnimation(MagMath::Transform *transform, float deltaTime) {
-	const float kFrameDelta = 1.0f / 60.0f; // 固定フレームタイム
-
-	defeatAnimationTime_ += kFrameDelta;
+	defeatAnimationTime_ += deltaTime;
 	animationProgress_ = std::min(defeatAnimationTime_ / animationDuration_, 1.0f);
 
 	// ===================================================================
@@ -92,12 +90,12 @@ void PlayerDefeatComponent::UpdateAnimation(MagMath::Transform *transform, float
 		float phase1Progress = animationProgress_ / 0.6f; // 0.0 ~ 1.0
 		
 		// 重力による加速
-		defeatVelocity_.y -= gravity_ * kFrameDelta;
+	defeatVelocity_.y -= gravity_ * deltaTime;
 
 		// 位置更新（移動）
-		transform->translate.x += defeatVelocity_.x * kFrameDelta;
-		transform->translate.y += defeatVelocity_.y * kFrameDelta;
-		transform->translate.z += defeatVelocity_.z * kFrameDelta;
+	transform->translate.x += defeatVelocity_.x * deltaTime;
+	transform->translate.y += defeatVelocity_.y * deltaTime;
+	transform->translate.z += defeatVelocity_.z * deltaTime;
 
 		// 回転：機首を下に向ける（スムーズに）
 		float targetPitchAngle = -1.57f; // -90度（ラジアン）
@@ -114,12 +112,12 @@ void PlayerDefeatComponent::UpdateAnimation(MagMath::Transform *transform, float
 		float phase2Progress = (animationProgress_ - 0.6f) / 0.4f; // 0.0 ~ 1.0
 		
 		// 重力による加速を継続
-		defeatVelocity_.y -= gravity_ * kFrameDelta;
+	defeatVelocity_.y -= gravity_ * deltaTime;
 
 		// 位置更新（移動）
-		transform->translate.x += defeatVelocity_.x * kFrameDelta * 0.8f; // 落下が速くなるので横移動は抑える
-		transform->translate.y += defeatVelocity_.y * kFrameDelta;
-		transform->translate.z += defeatVelocity_.z * kFrameDelta * 0.8f;
+	transform->translate.x += defeatVelocity_.x * deltaTime * 0.8f; // 落下が速くなるので横移動は抑える
+	transform->translate.y += defeatVelocity_.y * deltaTime;
+	transform->translate.z += defeatVelocity_.z * deltaTime * 0.8f;
 
 		// 回転：機体がくるくる回転する
 		float targetPitchAngle = -1.57f; // 機首下を保持

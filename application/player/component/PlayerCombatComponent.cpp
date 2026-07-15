@@ -10,10 +10,10 @@
 
 namespace {
 	template <class T>
-	void UpdateProjectileList(std::vector<std::unique_ptr<T>> &items) {
+	void UpdateProjectileList(std::vector<std::unique_ptr<T>> &items, float deltaTime) {
 		for (auto &item : items) {
 			if (item) {
-				item->Update();
+				item->Update(deltaTime);
 			}
 		}
 		items.erase(
@@ -152,12 +152,12 @@ void PlayerCombatComponent::ShootMissile(const Vector3 &position, const Vector3 
 
 //=============================================================================
 // 弾の更新
-void PlayerCombatComponent::UpdateBullets() {
-	UpdateProjectileList(bullets_);
+void PlayerCombatComponent::UpdateBullets(float deltaTime) {
+	UpdateProjectileList(bullets_, deltaTime);
 }
 
-void PlayerCombatComponent::UpdateMissiles() {
-	UpdateProjectileList(missiles_);
+void PlayerCombatComponent::UpdateMissiles(float deltaTime) {
+	UpdateProjectileList(missiles_, deltaTime);
 }
 
 void PlayerCombatComponent::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {

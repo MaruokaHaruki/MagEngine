@@ -75,6 +75,13 @@ namespace MagEngine {
 			bool isFixedToScreen = false,
 			bool isPersistent = false);
 
+		/// @brief 既存の3Dデバッグテキストの位置と色を更新
+		bool UpdateText3D(const std::string &text, const MagMath::Vector3 &position,
+			const MagMath::Vector4 &color);
+
+		/// @brief 指定名の3Dデバッグテキストを削除
+		void RemoveText3D(const std::string &text);
+
 		// 3D空間上に軸名やポイント名などのデバッグ用のテキストを追加する簡易関数
 		// これらは自動的に永続的なテキストになります
 		void AddAxisLabels();

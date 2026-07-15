@@ -27,7 +27,8 @@ void ClearScene::Finalize() {
 
 ///=============================================================================
 ///						更新
-void ClearScene::Update() {
+void ClearScene::Update(float deltaTime) {
+	(void)deltaTime;
 	assert(engineContext_);
 	MagEngine::Input *input = engineContext_->input;
 

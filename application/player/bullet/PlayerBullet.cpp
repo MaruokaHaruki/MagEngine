@@ -45,7 +45,7 @@ void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
 	}
 }
 
-void PlayerBullet::Update() {
+void PlayerBullet::Update(float deltaTime) {
 	if (!isAlive_ || !obj_) {
 		return;
 	}
@@ -56,13 +56,12 @@ void PlayerBullet::Update() {
 	}
 
 	// 移動処理
-	const float frameTime = 1.0f / 60.0f;
-	transform->translate.x += velocity_.x * frameTime;
-	transform->translate.y += velocity_.y * frameTime;
-	transform->translate.z += velocity_.z * frameTime;
+	transform->translate.x += velocity_.x * deltaTime;
+	transform->translate.y += velocity_.y * deltaTime;
+	transform->translate.z += velocity_.z * deltaTime;
 
 	// 生存時間の更新
-	lifeTime_ += frameTime;
+	lifeTime_ += deltaTime;
 	if (lifeTime_ >= maxLifeTime_) {
 		isAlive_ = false;
 	}
@@ -72,7 +71,7 @@ void PlayerBullet::Update() {
 
 	// トレイルエフェクトの更新
 	if (trailEffect_) {
-		trailEffect_->Update(frameTime);
+		trailEffect_->Update(deltaTime);
 		// 現在位置で軌跡を発生させる
 		trailEffect_->EmitAt(transform->translate, velocity_);
 	}

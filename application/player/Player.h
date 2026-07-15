@@ -144,7 +144,7 @@ public:
 	/// @brief 毎フレーム更新
 	/// @details 移動、射撃、各種コンポーネントの状態を更新
 	/// @note Update() は必ず毎フレーム呼び出す必要がある
-	void Update();
+	void Update(float deltaTime);
 	
 	/// @brief ImGui用デバッグパネル描画
 	/// @details HPゲージ、ブーストゲージ、移動情報、ロックオン情報などを表示
@@ -850,12 +850,12 @@ private:
 	/// @brief 敗北演出と3Dオブジェクトの状態を更新
 	/// @details 敗北中は敗北演出、それ以外はBaseObjectの通常更新に位置更新を委譲する
 	/// @note transformはUpdate()内でnull確認済みのobj_から取得した一時的な参照である
-	void UpdateDefeatAndObject(MagMath::Transform *transform);
+	void UpdateDefeatAndObject(MagMath::Transform *transform, float deltaTime);
 	
 	/// @brief 射撃処理
 	/// @details ボタン入力に応じて弾またはミサイルを発射
 	/// @note ロックオンモード中はミサイル発射のみ可能
-	void ProcessShooting();
+	void ProcessShooting(float deltaTime);
 	/// @brief 通常弾の入力判定と発射を処理
 	/// @param playerPosition 発射位置
 	/// @param shootDirection 発射方向
@@ -865,7 +865,7 @@ private:
 	/// @param playerPosition ロックオン判定の基準位置
 	/// @param shootDirection ロックオン判定の基準方向
 	/// @note prevMissileButtonPressed_を更新する唯一の処理として、毎フレーム一度だけ呼び出す
-	void ProcessMissileShooting(const MagMath::Vector3 &playerPosition, const MagMath::Vector3 &shootDirection);
+	void ProcessMissileShooting(const MagMath::Vector3 &playerPosition, const MagMath::Vector3 &shootDirection, float deltaTime);
 	
 	/// @brief Transform 安全取得
 	/// @return obj_ が存在すれば Transform へのポインタ、無ければ nullptr

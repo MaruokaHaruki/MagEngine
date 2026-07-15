@@ -16,6 +16,9 @@
     <ClCompile Include="application\collision\CollisionManager.cpp">
       <Filter>application\collision</Filter>
     </ClCompile>
+	<ClCompile Include="application\gameplay\GamePlayDebugController.cpp">
+	  <Filter>application</Filter>
+	</ClCompile>
     <ClCompile Include="scene\base\BaseScene.cpp">
       <Filter>scene\base</Filter>
     </ClCompile>
@@ -474,6 +477,9 @@
     <ClInclude Include="scene\publicScene\TitleScene.h">
       <Filter>scene\publicScene</Filter>
     </ClInclude>
+	<ClInclude Include="application\gameplay\GamePlayDebugController.h">
+	  <Filter>application</Filter>
+	</ClInclude>
     <ClInclude Include="engine\math\operations\RenderingMatrices.h">
       <Filter>engine\math\operations</Filter>
     </ClInclude>

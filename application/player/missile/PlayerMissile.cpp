@@ -129,11 +129,11 @@ void PlayerMissile::Initialize(
 
 //=============================================================================
 // 更新
-void PlayerMissile::Update() {
+void PlayerMissile::Update(float deltaTime) {
 	if (!isAlive_ || !obj_)
 		return;
 
-	const float deltaTime = 1.0f / 60.0f;
+	deltaTime_ = deltaTime;
 	lifetime_ += deltaTime;
 
 	//========================================
@@ -169,8 +169,7 @@ void PlayerMissile::Update() {
 
 		// トレイルエフェクトの更新
 		if (trailEffect_) {
-			const float frameTime = 1.0f / 60.0f;
-			trailEffect_->Update(frameTime);
+			trailEffect_->Update(deltaTime);
 			// 現在位置で軌跡を発生させる
 			trailEffect_->EmitAt(objTransform->translate, velocity_);
 		}
@@ -181,7 +180,6 @@ void PlayerMissile::UpdateMovement() {
 	if (!obj_)
 		return;
 
-	const float deltaTime = 1.0f / 60.0f;
 	Transform *objTransform = obj_->GetTransform();
 	if (!objTransform)
 		return;
@@ -189,7 +187,7 @@ void PlayerMissile::UpdateMovement() {
 	//========================================
 	// 発射初速オフセットを徐々に減衰
 	if (launchVelocityElapsed_ < launchVelocityDuration_) {
-		launchVelocityElapsed_ += deltaTime;
+		launchVelocityElapsed_ += deltaTime_;
 	}
 
 	//========================================
@@ -207,14 +205,12 @@ void PlayerMissile::UpdateMovement() {
 
 	//========================================
 	// 位置更新
-	objTransform->translate.x += velocity_.x * deltaTime;
-	objTransform->translate.y += velocity_.y * deltaTime;
-	objTransform->translate.z += velocity_.z * deltaTime;
+	objTransform->translate.x += velocity_.x * deltaTime_;
+	objTransform->translate.y += velocity_.y * deltaTime_;
+	objTransform->translate.z += velocity_.z * deltaTime_;
 }
 
 void PlayerMissile::UpdateTracking() {
-	const float deltaTime = 1.0f / 60.0f;
-
 	//========================================
 	// ロックオン時は即座にターゲット設定
 	if (isLockedOn_ && lockedTarget_ && lockedTarget_->IsAlive()) {
@@ -265,7 +261,7 @@ void PlayerMissile::UpdateTracking() {
 				float angleToTarget = std::acos(dotProduct) * 180.0f / MagMath::PI;
 
 				// 最大旋回速度による制限
-				float maxAngleChange = maxTurnRate_ * deltaTime;
+				float maxAngleChange = maxTurnRate_ * deltaTime_;
 				float turnRatio = 1.0f;
 				if (angleToTarget > maxAngleChange && angleToTarget > 0.001f) {
 					turnRatio = maxAngleChange / angleToTarget;
@@ -330,8 +326,7 @@ void PlayerMissile::UpdateRotation() {
 
 	//========================================
 	// 滑らかな回転
-	const float deltaTime = 1.0f / 60.0f;
-	float lerpFactor = std::min(rotationSpeed_ * deltaTime, 0.9f);
+	float lerpFactor = std::min(rotationSpeed_ * deltaTime_, 0.9f);
 
 	currentRotation_.x = MagMath::Lerp(currentRotation_.x, targetRotation_.x, lerpFactor);
 	currentRotation_.y = MagMath::Lerp(currentRotation_.y, targetRotation_.y, lerpFactor);

@@ -23,7 +23,7 @@ public:
 					const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
 
 	/// \brief 更新
-	void Update();
+	void Update(float deltaTime);
 
 	/// \brief 3D不透明描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);

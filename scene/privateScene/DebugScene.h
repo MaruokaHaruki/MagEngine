@@ -38,7 +38,7 @@ public:
 	void Finalize() override;
 
 	/// \brief 更新
-	void Update() override;
+	void Update(float deltaTime) override;
 
 	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;

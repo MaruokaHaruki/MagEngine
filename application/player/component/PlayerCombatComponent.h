@@ -40,8 +40,8 @@ public:
 	void ShootMultipleMissiles(const Vector3 &position, const Vector3 &direction,
 							   const std::vector<EnemyBase *> &targets);
 
-	void UpdateBullets();
-	void UpdateMissiles();
+	void UpdateBullets(float deltaTime);
+	void UpdateMissiles(float deltaTime);
 
 	///--------------------------------------------------------------
 	///                        描画

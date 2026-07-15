@@ -221,7 +221,8 @@ void DebugScene::Finalize() {
 
 ///=============================================================================
 ///						更新
-void DebugScene::Update() {
+void DebugScene::Update(float deltaTime) {
+	(void)deltaTime;
 	///--------------------------------------------------------------
 	///						更新処理
 

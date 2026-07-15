@@ -111,6 +111,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\Collider.cpp" />
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
+	<ClCompile Include="application\gameplay\GamePlayDebugController.cpp" />
     <ClCompile Include="application\enemy\config\ConfigLoader.cpp" />
     <ClCompile Include="application\enemy\config\EnemyParamConfig.cpp" />
     <ClCompile Include="application\enemy\config\FormationConfig.cpp" />
@@ -348,6 +349,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="scene\base\SceneManager.h" />
     <ClInclude Include="scene\base\BaseScene.h" />
     <ClInclude Include="scene\publicScene\GamePlayScene.h" />
+	<ClInclude Include="application\gameplay\GamePlayDebugController.h" />
     <ClInclude Include="scene\publicScene\TitleScene.h" />
     <ClInclude Include="application\utils\Skydome.h" />
     <ClInclude Include="engine\graphics\skybox\Skybox.h" />

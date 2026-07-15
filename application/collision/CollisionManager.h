@@ -13,6 +13,7 @@ using Vector3 = MagMath::Vector3;
 #include "Collider.h"
 #include <bitset>
 #include <memory>
+#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 
@@ -115,8 +116,11 @@ public:
 	/// @brief ImGuiの描画
 	void DrawImGui();
 
-	/// \brief リセット
-	void Reset();
+	/// \brief 当該フレームの登録対象だけを初期化
+	void BeginFrame();
+
+	/// \brief 管理中の状態を完全に初期化
+	void ClearAll();
 
 	/// \brief オブジェクト登録
 	/// COMMENT: 衝突判定対象に追加。内部的にはアクティブリストと検索キャッシュを更新
@@ -204,6 +208,8 @@ private:
 	//========================================
 	// 衝突状態管理（軽量化）
 	std::unordered_map<CollisionPair, bool, CollisionPairHash> collisionStates_;
+	// 同一フレーム内の重複判定を防ぐため、処理済みの衝突ペアを記録する。
+	std::unordered_set<CollisionPair, CollisionPairHash> currentCollisionPairs_;
 
 	//========================================
 	// グループ間の衝突フラグマトリクス（16x16 = 256フラグ）

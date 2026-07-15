@@ -169,7 +169,8 @@ void TitleScene::Finalize() {
 
 ///=============================================================================
 ///						更新
-void TitleScene::Update() {
+void TitleScene::Update(float deltaTime) {
+	(void)deltaTime;
 	assert(engineContext_);
 	Input *input = engineContext_->input;
 	CameraManager *cameraManager = engineContext_->cameraManager;

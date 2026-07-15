@@ -33,7 +33,7 @@ public:
 	void Finalize();
 
 	/// @brief 更新処理
-	void Update();
+	void Update(float deltaTime);
 
 	/// @brief 描画対象の登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);

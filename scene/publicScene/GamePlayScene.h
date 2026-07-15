@@ -23,6 +23,9 @@
 #include "Sprite.h"
 #include "SpriteSetup.h"
 #include "stage/EnemyStageSystem.h"
+#ifdef _DEBUG
+#include "gameplay/GamePlayDebugController.h"
+#endif
 
 //========================================
 // Game
@@ -35,6 +38,7 @@ class FollowCamera;
 class Skydome;
 class Player;
 class EnemyManager;
+class EnemyBullet;
 class SceneTransition;
 class SceneContext;
 namespace MagEngine {
@@ -51,7 +55,7 @@ public:
 	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 	void Finalize() override;
 
-	void Update() override;
+	void Update(float deltaTime) override;
 
 	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
@@ -99,6 +103,7 @@ private:
 	//========================================
 	// 敵
 	std::unique_ptr<EnemyManager> enemyManager_;
+	std::vector<EnemyBullet *> enemyBulletBuffer_;
 	GameFlowController gameFlowController_;
 
 	//========================================
@@ -124,6 +129,10 @@ private:
 	//========================================
 	// UI管理
 	std::unique_ptr<UIManager> uiManager_;
+
+#ifdef _DEBUG
+	GamePlayDebugController debugController_;
+#endif
 
 	//========================================
 	// ゲーム状態

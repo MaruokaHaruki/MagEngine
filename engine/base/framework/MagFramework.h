@@ -7,6 +7,7 @@
  * \note   ゲームループと初期化・終了処理を統合管理
  *********************************************************************/
 #pragma once
+#include <chrono>
 //========================================
 // COMMENT: リリースビルド時に ImGui を完全に除外する
 #ifdef _DEBUG
@@ -175,6 +176,8 @@ namespace MagEngine {
 		// レンダラー
 		Renderer renderer_;
 		RenderWorld renderWorld_;
+		std::chrono::steady_clock::time_point previousFrameTime_{};
+		bool hasPreviousFrameTime_ = false;
 	};
 
 }

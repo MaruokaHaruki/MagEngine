@@ -86,7 +86,7 @@ void SceneManager::Finalize() {
 ///=============================================================================
 /// NOTE: シーン番号はnowScene_->nextSceneNo_から取得
 /// NOTE: nextSceneNo_ == -1の場合はシーン遷移なし
-void SceneManager::Update() {
+void SceneManager::Update(float deltaTime) {
 	//========================================
 	// NOTE: 前のシーン番号を保存
 	prevSceneNo_ = currentSceneNo_;
@@ -111,7 +111,7 @@ void SceneManager::Update() {
 	//========================================
 	// シーンの更新
 	if (nowScene_) {
-		nowScene_->Update();
+		nowScene_->Update(deltaTime);
 	}
 }
 
