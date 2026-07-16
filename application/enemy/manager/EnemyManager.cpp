@@ -1,6 +1,5 @@
 #define NOMINMAX
 #include "EnemyManager.h"
-#include "CollisionManager.h"
 #include "Enemy.h"
 #include "EnemyBullet.h"
 #include "EnemyGunner.h"
@@ -23,13 +22,14 @@ std::unique_ptr<EnemyBase> EnemyFactory::Create(const EnemySpawnDefinition &defi
 		enemy = std::move(gunner);
 		break;
 	}
-	case EnemyArchetype::Standard:
-	default: {
+	case EnemyArchetype::Standard: {
 		auto standard = std::make_unique<Enemy>();
 		standard->Initialize(context.object3dSetup, context.modelName, context.position);
 		enemy = std::move(standard);
 		break;
 	}
+	default:
+		return nullptr;
 	}
 
 	if (!enemy) {
@@ -38,6 +38,10 @@ std::unique_ptr<EnemyBase> EnemyFactory::Create(const EnemySpawnDefinition &defi
 
 	enemy->SetParticleSystem(context.particle, context.particleSetup);
 	enemy->SetPlayer(context.player);
+	enemy->ApplySpawnModifiers(definition.healthMultiplier, definition.speedMultiplier);
+	if (EnemyGunner *gunner = dynamic_cast<EnemyGunner *>(enemy.get())) {
+		gunner->SetShootInterval(EnemyGunnerConstants::kShootInterval + definition.shotDelayOffset);
+	}
 	return enemy;
 }
 
@@ -52,16 +56,16 @@ void EnemyManager::Initialize(MagEngine::Object3dSetup *object3dSetup,
 	player_ = nullptr;
 	gameTime_ = 0.0f;
 	defeatedCount_ = 0;
+	enemyLookup_.clear();
 	enemies_.clear();
 }
 
 void EnemyManager::Update(float deltaTime) {
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
-	gameTime_ += safeDeltaTime;
+	gameTime_ += deltaTime;
 
 	for (auto &enemy : enemies_) {
 		if (enemy) {
-			enemy->Update(safeDeltaTime);
+			enemy->Update(deltaTime);
 		}
 	}
 
@@ -87,15 +91,10 @@ void EnemyManager::DrawImGui() {
 #endif
 }
 
-void EnemyManager::RegisterCollisions(CollisionManager *collisionManager) {
-	for (auto &enemy : enemies_) {
-		if (enemy && enemy->IsAlive() && !enemy->IsInHitReaction()) {
-			collisionManager->RegisterObject(enemy.get());
-		}
-	}
-}
-
 void EnemyManager::Clear() {
+	// 処理内容：Enemy の実体を破棄する前に Handle の解決登録を解除する。
+	// 理由：外部に残った Handle から解放済みメモリへ到達できないようにするため。
+	enemyLookup_.clear();
 	enemies_.clear();
 	defeatedCount_ = 0;
 	gameTime_ = 0.0f;
@@ -115,13 +114,39 @@ EnemyBase *EnemyManager::CreateEnemy(const EnemySpawnDefinition &definition, con
 	if (!enemy) {
 		return nullptr;
 	}
+	if (nextEnemyHandleValue_ == 0) {
+		return nullptr;
+	}
+
+	const EnemyHandle handle{nextEnemyHandleValue_++};
+	enemy->SetHandle(handle);
 
 	EnemyBase *rawEnemy = enemy.get();
 	rawEnemy->SetDefeatCallback([this]() {
 		++defeatedCount_;
 	});
 	enemies_.push_back(std::move(enemy));
+	enemyLookup_.emplace(handle.value, rawEnemy);
 	return rawEnemy;
+}
+
+EnemyBase *EnemyManager::ResolveEnemy(EnemyHandle handle) {
+	const auto it = enemyLookup_.find(handle.value);
+	return it != enemyLookup_.end() ? it->second : nullptr;
+}
+
+const EnemyBase *EnemyManager::ResolveEnemy(EnemyHandle handle) const {
+	const auto it = enemyLookup_.find(handle.value);
+	return it != enemyLookup_.end() ? it->second : nullptr;
+}
+
+bool EnemyManager::IsEnemyValid(EnemyHandle handle) const {
+	return ResolveEnemy(handle) != nullptr;
+}
+
+bool EnemyManager::IsEnemyTargetable(EnemyHandle handle) const {
+	const EnemyBase *enemy = ResolveEnemy(handle);
+	return enemy && enemy->IsAlive() && enemy->IsCollisionEnabled();
 }
 
 size_t EnemyManager::GetActiveEnemyCount() const {
@@ -148,10 +173,15 @@ void EnemyManager::CollectEnemyBullets(std::vector<EnemyBullet *> &result) const
 }
 
 void EnemyManager::RemoveInactiveEnemies() {
-	enemies_.erase(
-		std::remove_if(enemies_.begin(), enemies_.end(),
-					   [](const std::unique_ptr<EnemyBase> &enemy) {
-						   return !enemy || !enemy->IsAlive();
-					   }),
-		enemies_.end());
+	for (auto it = enemies_.begin(); it != enemies_.end();) {
+		if (!*it || !(*it)->IsAlive()) {
+			if (*it) {
+				// Handle の無効化を実体破棄より先に行う。
+				enemyLookup_.erase((*it)->GetHandle().value);
+			}
+			it = enemies_.erase(it);
+			continue;
+		}
+		++it;
+	}
 }

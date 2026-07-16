@@ -56,7 +56,8 @@ public:
 	void Finalize();
 
 	/// \brief 更新
-	void Update();
+	/// \param unscaledDeltaTime フレーム時間のクランプ済み非スケール時間
+	void Update(float unscaledDeltaTime);
 
 	/// \brief 描画
 	void Draw();

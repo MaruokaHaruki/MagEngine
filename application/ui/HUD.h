@@ -1,4 +1,5 @@
 #pragma once
+#include "EnemyHandle.h"
 #include "MagMath.h"
 using Vector3 = MagMath::Vector3;
 using Vector4 = MagMath::Vector4;
@@ -15,7 +16,7 @@ namespace MagEngine {
 class HUD {
 public:
 	void Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineManager &lineManager);
-	void Update(const Player *player);
+	void Update(const Player *player, float unscaledDeltaTime);
 	void Draw();
 	void DrawImGui();
 
@@ -109,7 +110,7 @@ private:
 	bool showEnemyIndicators_;
 
 	// ロックオン情報
-	EnemyBase *lockOnTarget_;
+	EnemyHandle lockOnTargetHandle_{};
 	float lockOnRange_;
 	float lockOnFOV_;
 	int lockedEnemyCount_;
@@ -131,7 +132,7 @@ private:
 	float boostBarrelDeployStart_;
 
 	// アニメーション関連の内部処理
-	void UpdateAnimation();
+	void UpdateAnimation(float unscaledDeltaTime);
 	float GetDeployProgress() const;
 	float EaseOutCubic(float t) const;
 

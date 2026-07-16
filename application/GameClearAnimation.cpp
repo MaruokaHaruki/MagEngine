@@ -50,13 +50,12 @@ void GameClearAnimation::Finalize() {
 
 ///=============================================================================
 ///                        更新
-void GameClearAnimation::Update() {
+void GameClearAnimation::Update(float unscaledDeltaTime) {
 	if (state_ == GameClearAnimationState::Idle || state_ == GameClearAnimationState::Done) {
 		return;
 	}
 
-	const float deltaTime = 1.0f / 60.0f;
-	elapsedTime_ += deltaTime;
+	elapsedTime_ += unscaledDeltaTime;
 
 	switch (state_) {
 	case GameClearAnimationState::Opening:

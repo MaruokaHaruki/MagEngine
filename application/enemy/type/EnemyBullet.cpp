@@ -70,16 +70,14 @@ void EnemyBullet::Update(float deltaTime) {
 	if (!isAlive_)
 		return;
 
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
-	
 	//! ジャスト判定用：フレーム開始時に前フレームの位置を保存
 	previousPosition_ = transform_.translate;
 	
-	lifeTimer_ += safeDeltaTime;
+	lifeTimer_ += deltaTime;
 
-	transform_.translate.x += velocity_.x * safeDeltaTime;
-	transform_.translate.y += velocity_.y * safeDeltaTime;
-	transform_.translate.z += velocity_.z * safeDeltaTime;
+	transform_.translate.x += velocity_.x * deltaTime;
+	transform_.translate.y += velocity_.y * deltaTime;
+	transform_.translate.z += velocity_.z * deltaTime;
 
 	if (lifeTimer_ >= EnemyBulletConstants::kLifeTime) {
 		isAlive_ = false;
@@ -94,7 +92,7 @@ void EnemyBullet::Update(float deltaTime) {
 
 	// トレイルエフェクトの更新
 	if (trailEffect_) {
-		trailEffect_->Update(safeDeltaTime);
+		trailEffect_->Update(deltaTime);
 		// 現在位置で軌跡を発生させる
 		trailEffect_->EmitAt(transform_.translate, velocity_);
 	}

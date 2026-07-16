@@ -48,13 +48,12 @@ void StartAnimation::Finalize() {
 
 ///=============================================================================
 ///                        更新
-void StartAnimation::Update() {
+void StartAnimation::Update(float unscaledDeltaTime) {
 	if (state_ == StartAnimationState::Idle || state_ == StartAnimationState::Done) {
 		return;
 	}
 
-	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
-	elapsedTime_ += deltaTime;
+	elapsedTime_ += unscaledDeltaTime;
 
 	switch (state_) {
 	case StartAnimationState::Opening:

@@ -43,7 +43,8 @@ public:
 	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 	void Finalize() override;
 
-	void Update(float deltaTime) override;
+	void Update(const FrameTime &frameTime) override;
+	void OnSceneChangeFailed(int requestedSceneNo, std::string_view errorMessage) override;
 
 	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;

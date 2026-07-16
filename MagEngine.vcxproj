@@ -112,6 +112,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />
 	<ClCompile Include="application\gameplay\GamePlayDebugController.cpp" />
+	<ClCompile Include="application\gameplay\GamePlayCollisionCoordinator.cpp" />
     <ClCompile Include="application\enemy\config\ConfigLoader.cpp" />
     <ClCompile Include="application\enemy\config\EnemyParamConfig.cpp" />
     <ClCompile Include="application\enemy\config\FormationConfig.cpp" />
@@ -228,6 +229,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="application\enemy\config\EnemyParamConfig.h" />
     <ClInclude Include="application\enemy\config\FormationConfig.h" />
     <ClInclude Include="application\enemy\manager\EnemyManager.h" />
+	<ClInclude Include="application\enemy\manager\EnemyHandle.h" />
     <ClInclude Include="application\enemy\base\EnemyBase.h" />
     <ClInclude Include="application\enemy\type\Enemy.h" />
     <ClInclude Include="application\enemy\type\EnemyBullet.h" />
@@ -270,6 +272,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\render\post_effect\PostEffectManager.h" />
     <ClInclude Include="engine\render\post_effect\fullscreenPass\FullscreenPassRendere.h" />
     <ClInclude Include="application\ui\HUD.h" />
+    <ClInclude Include="engine\base\time\FrameTime.h" />
     <ClInclude Include="application\SceneTransition.h" />
     <ClInclude Include="application\ui\GameOverUI.h" />
     <ClInclude Include="application\GameClearAnimation.h" />
@@ -350,6 +353,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="scene\base\BaseScene.h" />
     <ClInclude Include="scene\publicScene\GamePlayScene.h" />
 	<ClInclude Include="application\gameplay\GamePlayDebugController.h" />
+	<ClInclude Include="application\gameplay\GamePlayCollisionCoordinator.h" />
     <ClInclude Include="scene\publicScene\TitleScene.h" />
     <ClInclude Include="application\utils\Skydome.h" />
     <ClInclude Include="engine\graphics\skybox\Skybox.h" />

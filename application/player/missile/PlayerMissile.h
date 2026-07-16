@@ -12,6 +12,7 @@ using Vector3 = MagMath::Vector3;
 #include "BaseObject.h"
 #include "Object3d.h"
 #include "TrailEffect.h"
+#include "EnemyHandle.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -73,7 +74,7 @@ public:
 	}
 	/// \brief HasTarget ターゲット有無取得
 	bool HasTarget() const {
-		return target_ != nullptr;
+		return targetHandle_.IsValid();
 	}
 
 	//========================================
@@ -99,9 +100,7 @@ public:
 		return isLockedOn_;
 	}
 	/// \brief GetLockedTarget ロックオンターゲット取得
-	EnemyBase *GetLockedTarget() const {
-		return lockedTarget_;
-	}
+	EnemyHandle GetLockedTargetHandle() const { return lockedTargetHandle_; }
 
 	//========================================
 	// 発射オプション設定（マルチロックオン対応）
@@ -146,7 +145,7 @@ private:
 	/// @brief Explode 爆発処理
 	void Explode();
 	/// @brief FindNearestTarget 最寄りのターゲット探索
-	EnemyBase *FindNearestTarget(); // Enemy* から EnemyBase* に変更
+	EnemyHandle FindNearestTarget();
 
 	//========================================
 	// コア
@@ -168,8 +167,8 @@ private:
 
 	//========================================
 	// 追尾関連
-	EnemyBase *target_;		  // 現在のターゲット（EnemyBase*に変更）
-	EnemyBase *lockedTarget_; // ロックオンしたターゲット（EnemyBase*に変更）
+	EnemyHandle targetHandle_{};
+	EnemyHandle lockedTargetHandle_{};
 	float trackingStrength_;
 	float lockOnRange_;
 	float lockOnFOV_; // ロックオン視野角（度数法）

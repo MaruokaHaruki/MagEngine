@@ -1,13 +1,14 @@
 #pragma once
 #include "EnemyBase.h"
+#include "EnemyHandle.h"
 #include "stage/EnemyStageSystem.h"
 #include "MagMath.h"
 using Vector3 = MagMath::Vector3;
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 
-class CollisionManager;
 class EnemyBullet;
 class Player;
 namespace MagEngine {
@@ -47,10 +48,13 @@ public:
 	void Update(float deltaTime);
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 	void DrawImGui();
-	void RegisterCollisions(CollisionManager *collisionManager);
 	void Clear();
 
 	EnemyBase *CreateEnemy(const EnemySpawnDefinition &definition, const Vector3 &position, const std::string &modelName = "jet.obj");
+	[[nodiscard]] EnemyBase *ResolveEnemy(EnemyHandle handle);
+	[[nodiscard]] const EnemyBase *ResolveEnemy(EnemyHandle handle) const;
+	[[nodiscard]] bool IsEnemyValid(EnemyHandle handle) const;
+	[[nodiscard]] bool IsEnemyTargetable(EnemyHandle handle) const;
 
 	size_t GetActiveEnemyCount() const;
 	size_t GetAliveEnemyCount() const {
@@ -71,6 +75,8 @@ private:
 	void RemoveInactiveEnemies();
 
 	std::vector<std::unique_ptr<EnemyBase>> enemies_;
+	std::unordered_map<std::uint64_t, EnemyBase *> enemyLookup_;
+	std::uint64_t nextEnemyHandleValue_ = 1;
 	EnemyFactory enemyFactory_;
 	int defeatedCount_ = 0;
 	float gameTime_ = 0.0f;

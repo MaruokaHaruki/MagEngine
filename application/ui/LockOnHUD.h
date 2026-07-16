@@ -39,7 +39,7 @@ public:
 	void Finalize();
 
 	/// @brief 更新処理
-	void Update(MagEngine::Camera *camera);
+	void Update(MagEngine::Camera *camera, float unscaledDeltaTime);
 
 	/// @brief 描画処理
 	void Draw();

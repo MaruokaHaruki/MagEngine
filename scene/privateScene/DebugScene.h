@@ -38,7 +38,7 @@ public:
 	void Finalize() override;
 
 	/// \brief 更新
-	void Update(float deltaTime) override;
+	void Update(const FrameTime &frameTime) override;
 
 	/// \brief 描画対象登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld) override;
@@ -46,7 +46,11 @@ public:
 	///--------------------------------------------------------------
 	///							静的メンバ関数
 private:
+#ifdef _DEBUG
+	void RegisterEditorPanels() override;
+#else
 	void RegisterEditorPanels();
+#endif
 	void DrawDebugUi();
 	void AddCloudHoleFromDebugCamera();
 	void AddRandomCloudHole();

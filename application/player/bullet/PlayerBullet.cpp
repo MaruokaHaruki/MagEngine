@@ -63,7 +63,7 @@ void PlayerBullet::Update(float deltaTime) {
 	// 生存時間の更新
 	lifeTime_ += deltaTime;
 	if (lifeTime_ >= maxLifeTime_) {
-		isAlive_ = false;
+		SetDead();
 	}
 
 	// BaseObjectのコライダー位置を更新
@@ -94,6 +94,13 @@ Vector3 PlayerBullet::GetPosition() const {
 		return obj_->GetPosition();
 	}
 	return {0.0f, 0.0f, 0.0f};
+}
+
+void PlayerBullet::SetDead() {
+	// 処理内容：通常弾の論理生存状態と衝突状態を同時に無効化する。
+	// 理由：最初の命中後、同一フレームの後続Pairへ参加させないため。
+	isAlive_ = false;
+	SetCollisionEnabled(false);
 }
 
 void PlayerBullet::OnCollisionEnter(BaseObject *other) {

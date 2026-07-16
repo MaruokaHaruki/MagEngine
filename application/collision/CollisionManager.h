@@ -185,6 +185,9 @@ private:
 	/// \brief 高速衝突判定（AABB事前チェック付き）
 	bool FastIntersects(BaseObject *objA, BaseObject *objB) const;
 
+	/// \brief 新しい衝突Pairを開始できるか確認
+	bool CanStartCollisionPair(BaseObject *objA, BaseObject *objB) const;
+
 	/// \brief デバッグ描画（最適化版）
 	void DrawDebugColliders();
 

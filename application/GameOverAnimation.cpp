@@ -81,12 +81,12 @@ void GameOverAnimation::Finalize() {
 
 //=============================================================================
 // Update
-void GameOverAnimation::Update() {
+void GameOverAnimation::Update(float unscaledDeltaTime) {
 	if (state_ == GameOverAnimationState::Idle || state_ == GameOverAnimationState::Done) {
 		return;
 	}
 
-	elapsedTime_ += 1.0f / 60.0f; // 60FPS fixed
+	elapsedTime_ += unscaledDeltaTime;
 
 	switch (state_) {
 	case GameOverAnimationState::Appearing:
@@ -102,7 +102,7 @@ void GameOverAnimation::Update() {
 		break;
 	}
 
-	UpdateParticles();
+	UpdateParticles(unscaledDeltaTime);
 
 	// Update sprites
 	if (textSprite_) {
@@ -383,8 +383,8 @@ void GameOverAnimation::Reset() {
 
 //=============================================================================
 // Update particles
-void GameOverAnimation::UpdateParticles() {
-	const float deltaTime = 1.0f / 60.0f;
+void GameOverAnimation::UpdateParticles(float unscaledDeltaTime) {
+	const float deltaTime = unscaledDeltaTime;
 	for (auto &p : particles_) {
 		if (p.active) {
 			p.lifetime -= deltaTime;

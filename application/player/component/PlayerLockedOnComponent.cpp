@@ -19,9 +19,9 @@
 // 初期化
 void PlayerLockedOnComponent::Initialize(EnemyManager *enemyManager) {
 	enemyManager_ = enemyManager;
-	lockOnTargets_.clear();
-	primaryLockOnTarget_ = nullptr;
-	aimingTarget_ = nullptr;
+	lockOnTargetHandles_.clear();
+	primaryLockOnTargetHandle_ = {};
+	aimingTargetHandle_ = {};
 
 	// デフォルト設定
 	lockOnRange_ = 50.0f;   // 50メートル範囲
@@ -37,9 +37,9 @@ void PlayerLockedOnComponent::Initialize(EnemyManager *enemyManager) {
 void PlayerLockedOnComponent::BeginLockOn() {
 	lockOnMode_ = true;
 	lockOnAcquireTimer_ = 0.0f;
-	aimingTarget_ = nullptr;
-	lockOnTargets_.clear();
-	primaryLockOnTarget_ = nullptr;
+	aimingTargetHandle_ = {};
+	lockOnTargetHandles_.clear();
+	primaryLockOnTargetHandle_ = {};
 }
 
 //=============================================================================
@@ -50,9 +50,10 @@ void PlayerLockedOnComponent::UpdateLockOn(const Vector3 &playerPos, const Vecto
 	}
 
 	// 無効になったターゲットを除去
-	lockOnTargets_.erase(
-		std::remove_if(lockOnTargets_.begin(), lockOnTargets_.end(),
-					   [&](EnemyBase *target) {
+	lockOnTargetHandles_.erase(
+		std::remove_if(lockOnTargetHandles_.begin(), lockOnTargetHandles_.end(),
+					   [&](EnemyHandle handle) {
+						   EnemyBase *target = enemyManager_->ResolveEnemy(handle);
 						   if (!target || !target->IsAlive() || !target->IsCollisionEnabled()) {
 							   return true;
 						   }
@@ -64,18 +65,18 @@ void PlayerLockedOnComponent::UpdateLockOn(const Vector3 &playerPos, const Vecto
 						   const float distance = std::sqrt(toEnemy.x * toEnemy.x + toEnemy.y * toEnemy.y + toEnemy.z * toEnemy.z);
 						   return (distance > lockOnRange_) || !IsEnemyInFOV(playerPos, playerForward, targetPos);
 					   }),
-		lockOnTargets_.end());
+		lockOnTargetHandles_.end());
 
-	primaryLockOnTarget_ = lockOnTargets_.empty() ? nullptr : lockOnTargets_.front();
+	primaryLockOnTargetHandle_ = lockOnTargetHandles_.empty() ? EnemyHandle{} : lockOnTargetHandles_.front();
 
 	// 照準中心にある候補を毎フレーム更新
-	aimingTarget_ = FindBestTargetInReticle(playerPos, playerForward);
+	aimingTargetHandle_ = FindBestTargetInReticle(playerPos, playerForward);
 
-	if (static_cast<int>(lockOnTargets_.size()) >= maxLockOnTargets_) {
+	if (static_cast<int>(lockOnTargetHandles_.size()) >= maxLockOnTargets_) {
 		return;
 	}
 
-	if (!aimingTarget_) {
+	if (!aimingTargetHandle_.IsValid()) {
 		return;
 	}
 
@@ -84,10 +85,10 @@ void PlayerLockedOnComponent::UpdateLockOn(const Vector3 &playerPos, const Vecto
 		return;
 	}
 
-	if (!IsAlreadyLocked(aimingTarget_)) {
-		lockOnTargets_.push_back(aimingTarget_);
-		if (!primaryLockOnTarget_) {
-			primaryLockOnTarget_ = aimingTarget_;
+	if (!IsAlreadyLocked(aimingTargetHandle_)) {
+		lockOnTargetHandles_.push_back(aimingTargetHandle_);
+		if (!primaryLockOnTargetHandle_.IsValid()) {
+			primaryLockOnTargetHandle_ = aimingTargetHandle_;
 		}
 	}
 	lockOnAcquireTimer_ = 0.0f;
@@ -97,16 +98,16 @@ void PlayerLockedOnComponent::UpdateLockOn(const Vector3 &playerPos, const Vecto
 // ロックオン終了
 void PlayerLockedOnComponent::EndLockOn() {
 	lockOnMode_ = false;
-	aimingTarget_ = nullptr;
+	aimingTargetHandle_ = {};
 }
 
 //=============================================================================
 // 範囲内の敵を取得
-std::vector<EnemyBase *> PlayerLockedOnComponent::GetEnemiesInRange(
+std::vector<EnemyHandle> PlayerLockedOnComponent::GetEnemiesInRange(
 	const Vector3 &playerPos,
 	const Vector3 &playerForward) {
 
-	std::vector<EnemyBase *> enemiesInRange;
+	std::vector<EnemyHandle> enemiesInRange;
 
 	const auto &enemies = enemyManager_->GetEnemies();
 	for (const auto &enemy : enemies) {
@@ -135,14 +136,14 @@ std::vector<EnemyBase *> PlayerLockedOnComponent::GetEnemiesInRange(
 
 		// 重複チェック
 		bool alreadyInList = false;
-		for (const auto *target : enemiesInRange) {
-			if (target == enemy.get()) {
+		for (EnemyHandle targetHandle : enemiesInRange) {
+			if (targetHandle == enemy->GetHandle()) {
 				alreadyInList = true;
 				break;
 			}
 		}
 		if (!alreadyInList) {
-			enemiesInRange.push_back(enemy.get());
+			enemiesInRange.push_back(enemy->GetHandle());
 		}
 	}
 
@@ -187,11 +188,11 @@ bool PlayerLockedOnComponent::IsEnemyInFOV(
 
 //=============================================================================
 // 最寄りの敵を取得
-EnemyBase *PlayerLockedOnComponent::GetNearestEnemy(
+EnemyHandle PlayerLockedOnComponent::GetNearestEnemy(
 	const Vector3 &playerPos,
 	const Vector3 &playerForward) {
 
-	EnemyBase *nearestEnemy = nullptr;
+	EnemyHandle nearestEnemyHandle{};
 	float bestScore = -1.0f;
 
 	const auto &enemies = enemyManager_->GetEnemies();
@@ -231,19 +232,19 @@ EnemyBase *PlayerLockedOnComponent::GetNearestEnemy(
 
 		if (score > bestScore) {
 			bestScore = score;
-			nearestEnemy = enemy.get();
+			nearestEnemyHandle = enemy->GetHandle();
 		}
 	}
 
-	return nearestEnemy;
+	return nearestEnemyHandle;
 }
 
 //=============================================================================
 // 照準中心に最も近い候補を取得（未ロック対象のみ）
-EnemyBase *PlayerLockedOnComponent::FindBestTargetInReticle(
+EnemyHandle PlayerLockedOnComponent::FindBestTargetInReticle(
 	const Vector3 &playerPos,
 	const Vector3 &playerForward) {
-	EnemyBase *bestTarget = nullptr;
+	EnemyHandle bestTargetHandle{};
 	float bestScore = -10000.0f;
 
 	const auto &enemies = enemyManager_->GetEnemies();
@@ -253,7 +254,7 @@ EnemyBase *PlayerLockedOnComponent::FindBestTargetInReticle(
 		}
 
 		EnemyBase *candidate = enemy.get();
-		if (IsAlreadyLocked(candidate)) {
+		if (IsAlreadyLocked(candidate->GetHandle())) {
 			continue;
 		}
 
@@ -282,20 +283,24 @@ EnemyBase *PlayerLockedOnComponent::FindBestTargetInReticle(
 		const float score = dot * 10.0f - distance * 0.02f;
 		if (score > bestScore) {
 			bestScore = score;
-			bestTarget = candidate;
+			bestTargetHandle = candidate->GetHandle();
 		}
 	}
 
-	return bestTarget;
+	return bestTargetHandle;
 }
 
 //=============================================================================
 // 既にロック済みか判定
-bool PlayerLockedOnComponent::IsAlreadyLocked(EnemyBase *target) const {
-	if (!target) {
+bool PlayerLockedOnComponent::IsAlreadyLocked(EnemyHandle targetHandle) const {
+	if (!targetHandle.IsValid()) {
 		return false;
 	}
-	return std::find(lockOnTargets_.begin(), lockOnTargets_.end(), target) != lockOnTargets_.end();
+	return std::find(lockOnTargetHandles_.begin(), lockOnTargetHandles_.end(), targetHandle) != lockOnTargetHandles_.end();
+}
+
+bool PlayerLockedOnComponent::HasLockOnTarget() const {
+	return enemyManager_ && enemyManager_->IsEnemyTargetable(primaryLockOnTargetHandle_);
 }
 
 //=============================================================================

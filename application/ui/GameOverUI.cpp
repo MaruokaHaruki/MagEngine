@@ -88,12 +88,12 @@ void GameOverUI::Finalize() {
 
 ///=============================================================================
 // 毎フレーム更新
-void GameOverUI::Update() {
+void GameOverUI::Update(float unscaledDeltaTime) {
 	if (state_ == GameOverState::Idle || state_ == GameOverState::Done) {
 		return;
 	}
 
-	elapsedTime_ += 1.0f / 60.0f; // 60FPS固定
+	elapsedTime_ += unscaledDeltaTime;
 
 	// 状態に応じた更新処理
 	switch (state_) {
@@ -110,7 +110,7 @@ void GameOverUI::Update() {
 		break;
 	}
 
-	UpdateParticles();
+	UpdateParticles(unscaledDeltaTime);
 
 	// スプライトの更新
 	if (textSprite_) {
@@ -343,8 +343,8 @@ void GameOverUI::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 
 ///=============================================================================
 // パーティクル更新
-void GameOverUI::UpdateParticles() {
-	const float deltaTime = 1.0f / 60.0f;
+void GameOverUI::UpdateParticles(float unscaledDeltaTime) {
+	const float deltaTime = unscaledDeltaTime;
 	for (auto &p : particles_) {
 		if (p.active) {
 			p.lifetime -= deltaTime;

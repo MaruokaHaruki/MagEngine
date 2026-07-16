@@ -33,7 +33,7 @@ public:
 	void Finalize();
 
 	/// \brief 更新
-	void Update(const class Player *player);
+	void Update(const class Player *player, float unscaledDeltaTime);
 
 	/// \brief Sprite描画対象を登録
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);

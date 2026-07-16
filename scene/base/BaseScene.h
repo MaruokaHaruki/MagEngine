@@ -8,6 +8,9 @@
  *********************************************************************/
 #pragma once
 
+#include "engine/base/time/FrameTime.h"
+#include <string_view>
+
 class SceneContext;
 namespace MagEngine {
 	struct EngineContext;
@@ -40,10 +43,23 @@ public:
 	virtual void Finalize() = 0;
 
 	/// \brief 更新
-	virtual void Update(float deltaTime) = 0;
+	virtual void Update(const FrameTime &frameTime) = 0;
 
 	/// \brief 描画対象の登録
 	virtual void RegisterRenderables(MagEngine::RenderWorld &renderWorld) = 0;
+
+	/// \brief Scene切替失敗時の復帰通知
+	/// \note 遷移元Sceneだけが、自身の演出や入力状態を安全な状態へ戻すために使用する。
+	virtual void OnSceneChangeFailed(int requestedSceneNo, std::string_view errorMessage) {
+		(void)requestedSceneNo;
+		(void)errorMessage;
+	}
+
+#ifdef _DEBUG
+	/// \brief Scene固有Editor Panelの再登録
+	/// \note Scene切替の確定後にのみ登録し、候補Sceneの破棄後へラムダを残さない。
+	virtual void RegisterEditorPanels() {}
+#endif
 
 	/**----------------------------------------------------------------------------
 	 * \brief  ~BaseScene 抽象クラスのデストラクタ

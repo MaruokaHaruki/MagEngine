@@ -45,7 +45,7 @@ public:
 	void Finalize();
 
 	/// \brief 更新
-	void Update();
+	void Update(float unscaledDeltaTime);
 
 	/// \brief 描画
 	void Draw();
@@ -121,7 +121,7 @@ private:
 	void UpdateDisplaying();
 	void UpdateFading();
 
-	void UpdateParticles();
+	void UpdateParticles(float unscaledDeltaTime);
 	void GenerateParticles();
 
 	float EaseInOut(float t);

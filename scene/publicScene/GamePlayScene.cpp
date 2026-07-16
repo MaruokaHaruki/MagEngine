@@ -18,7 +18,6 @@
 #include "CameraManager.h"
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
-#include "EnemyBullet.h"
 #include "EnemyManager.h"
 #include "FollowCamera.h"
 #include "MenuUI.h"
@@ -28,7 +27,29 @@
 #include "Skydome.h"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <stdexcept>
 using namespace MagEngine;
+
+namespace {
+	constexpr const char *kDefaultStagePath = "resources/config/stage/stage_01.json";
+
+	const char *GetGamePlayPhaseName(GamePlayPhase phase) {
+		switch (phase) {
+		case GamePlayPhase::Starting:
+			return "Starting";
+		case GamePlayPhase::Playing:
+			return "Playing";
+		case GamePlayPhase::GameClearPresentation:
+			return "GameClearPresentation";
+		case GamePlayPhase::GameOverPresentation:
+			return "GameOverPresentation";
+		case GamePlayPhase::TransitionOut:
+			return "TransitionOut";
+		}
+		return "Unknown";
+	}
+}
 
 ///=============================================================================
 /// 初期化
@@ -156,7 +177,13 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	enemyManager_->Initialize(object3dSetup, particle_.get(), particleSetup, trailEffectManager);
 	// プレイヤー参照を設定
 	enemyManager_->SetPlayer(player_.get());
-	gameFlowController_.Initialize(StageDefinitionLoader::LoadOrDefault("resources/config/stage/stage_01.json"));
+	const StageLoadResult stageLoadResult = LoadDefaultStageDefinition();
+	stageConfigurationPath_ = stageLoadResult.sourcePath;
+	stageValidationError_ = stageLoadResult.errorMessage;
+	if (!stageLoadResult.IsSuccess()) {
+		throw std::runtime_error("GamePlayScene stage configuration error: " + stageValidationError_);
+	}
+	gameFlowController_.Initialize(stageLoadResult.stageDefinition);
 
 	// プレイヤーにEnemyManagerを設定（ミサイル用）
 	player_->SetEnemyManager(enemyManager_.get());
@@ -170,6 +197,7 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	// 当たり判定（軽量システムで初期化）
 	collisionManager_ = std::make_unique<CollisionManager>();
 	collisionManager_->Initialize(*engineContext_->lineManager, 32.0f, 256); // セルサイズ32.0f、最大256オブジェクト
+	collisionCoordinator_ = std::make_unique<GamePlayCollisionCoordinator>(*collisionManager_);
 
 	//========================================
 #ifdef _DEBUG
@@ -195,12 +223,7 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 		gameOverUI->SetTextColor({1.0f, 0.2f, 0.2f, 1.0f}); // 鮮やかな赤
 		gameOverUI->SetFadeBackgroundColor({0.0f, 0.0f, 0.0f, 0.7f}); // 濃い黒
 		gameOverUI->SetOnComplete([this]() {
-			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-				sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
-				sceneTransition_->SetOnCompleteCallback([this]() {
-					SetSceneNo(SCENE::TITLE);
-				});
-			}
+			BeginTransitionOut(1.0f);
 		});
 	}
 	isGameOver_ = false;
@@ -216,15 +239,12 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 		gameClearAnim->SetCameraUpParameters(20.0f, -30.0f);
 		gameClearAnim->SetFlightParameters(18.0f, 2.5f, 10.0f);
 		gameClearAnim->SetOnCompleteCallback([this]() {
-			if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-				sceneTransition_->StartClosing(TransitionType::Fade, 1.5f);
-				sceneTransition_->SetOnCompleteCallback([this]() {
-					SetSceneNo(SCENE::TITLE);
-				});
-			}
+			BeginTransitionOut(1.5f);
 		});
 	}
 	isGameClear_ = false;
+	phase_ = GamePlayPhase::Starting;
+	hasSceneChangeRequested_ = false;
 
 	//========================================
 	// トランジションの初期化
@@ -277,6 +297,9 @@ void GamePlayScene::Finalize() {
 	// リソースの適切なクリーンアップ
 	// unique_ptrは自動的に破棄されますが、明示的な終了処理が
 	// 必要なコンポーネントがあれば追加します
+	if (collisionCoordinator_) {
+		collisionCoordinator_.reset();
+	}
 	if (collisionManager_) {
 		collisionManager_->ClearAll();
 		collisionManager_.reset();
@@ -315,14 +338,15 @@ void GamePlayScene::Finalize() {
 
 ///=============================================================================
 ///							更新
-void GamePlayScene::Update(float deltaTime) {
+void GamePlayScene::Update(const FrameTime &frameTime) {
 	assert(engineContext_);
 	CameraManager *cameraManager = engineContext_->cameraManager;
+	const float unscaledDeltaTime = frameTime.unscaledDeltaTime;
 
 	//========================================
 	// UI系の更新（メニュー状態確認用）
 	if (uiManager_) {
-		uiManager_->Update(player_.get());
+		uiManager_->Update(player_.get(), unscaledDeltaTime);
 	}
 
 #ifdef _DEBUG
@@ -330,86 +354,51 @@ void GamePlayScene::Update(float deltaTime) {
 	debugController_.Update();
 #endif
 
-	//========================================
-	// スタートアニメーション終了後の各種UI展開
-	if (!hasUIDeploymentStarted_ && uiManager_ && uiManager_->GetStartAnimation()) {
-		StartAnimation *startAnim = uiManager_->GetStartAnimation();
-		if (startAnim->IsDone()) {
-			hasUIDeploymentStarted_ = true;
+	UpdateStartPhase();
 
-			// HUDの展開を開始
-			if (auto hud = uiManager_->GetHUD()) {
-				hud->StartDeployAnimation(1.5f);
-			}
-
-			// OperationGuideUIの展開を開始
-			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
-				operationGuide->SetVisible(true);
-				operationGuide->StartDeployAnimation(1.0f);
-			}
-		}
-	}
-
-	//========================================
-	// メニュー処理（ゲーム停止中でも処理）
-	// メニューが開いている時だけボタン処理を行う
-	if (uiManager_ && uiManager_->GetMenuUI() && uiManager_->GetMenuUI()->IsOpen()) {
-		MenuUI *menuUI = uiManager_->GetMenuUI();
-		if (menuUI->IsButtonPressed()) {
-			MenuButton selectedButton = menuUI->GetSelectedButton();
-			menuUI->ResetButtonPressedFlag();
-
-			// ボタンに応じた処理
-			if (selectedButton == MenuButton::ResumeGame) {
-				// ゲームに戻る
-				menuUI->Close();
-			} else if (selectedButton == MenuButton::OperationGuide) {
-				// 操作説明を選択した場合はメニューを閉じ、既存の説明UIへ表示を委譲する。
-				menuUI->Close();
-				if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
-					operationGuide->SetVisible(true);
-					operationGuide->StartDeployAnimation(1.0f);
-				}
-			} else if (selectedButton == MenuButton::ReturnToTitle) {
-				// メニューを閉じてからタイトルへ戻る
-				menuUI->Close();
-				// タイトルに戻る
-				if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-					sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
-					sceneTransition_->SetOnCompleteCallback([this]() {
-						SetSceneNo(SCENE::TITLE);
-					});
-				}
-			}
-		}
-	}
+	ProcessMenuInput();
 
 	//========================================
 	// メニュー中はゲーム更新をスキップ
-	if (uiManager_ && uiManager_->GetMenuUI() && uiManager_->GetMenuUI()->IsOpen()) {
+	if (IsPaused()) {
+		return;
+	}
+
+	if (phase_ == GamePlayPhase::GameClearPresentation || phase_ == GamePlayPhase::GameOverPresentation) {
+		UpdateSceneTransition(unscaledDeltaTime);
+		UpdateTerminalPresentation();
+		return;
+	}
+	if (phase_ == GamePlayPhase::TransitionOut) {
+		UpdateSceneTransition(unscaledDeltaTime);
+		UpdateTransitionOut();
 		return;
 	}
 
 	//========================================
 	// タイムスケール計算（ジャスト回避スロー効果）
+	// NOTE: 衝突で成立したジャスト回避はPlayer更新後に確定するため、
+	//       このフレームで取得する倍率は次フレームのゲーム進行へ反映される。
 	gameTimeScale_ = 1.0f; // デフォルト: 通常速度
 	if (player_) {
 		gameTimeScale_ = player_->GetJustAvoidanceComponent()->GetGameTimeScale();
 	}
-	const float clampedDeltaTime = std::clamp(deltaTime, 0.0f, 0.1f);
-	const float effectiveDeltaTime = clampedDeltaTime * gameTimeScale_;
+	// NOTE: TimeScaleはGamePlayだけの概念のため、Engine共通FrameTimeではなくここで一度だけ適用する。
+	const float timeScale = std::isfinite(gameTimeScale_) ? (std::max)(0.0f, gameTimeScale_) : 0.0f;
+	const float gameplayDeltaTime = frameTime.unscaledDeltaTime * timeScale;
+	currentFrameTime_ = {
+		frameTime.rawDeltaTime,
+		frameTime.unscaledDeltaTime,
+		gameplayDeltaTime,
+	};
 
 	//========================================
 	// 雲の更新
 	if (cloud_) {
-		cloud_->Update(*cameraManager->GetCurrentCamera(), effectiveDeltaTime);
+		cloud_->Update(*cameraManager->GetCurrentCamera(), gameplayDeltaTime);
 	}
 
-	//========================================
-	// トランジションの更新
-	if (sceneTransition_) {
-		sceneTransition_->Update();
-	}
+	UpdateSceneTransition(unscaledDeltaTime);
 
 	//========================================
 	// FollowCameraの更新
@@ -420,10 +409,7 @@ void GamePlayScene::Update(float deltaTime) {
 	//========================================
 	// プレイヤー
 	if (player_) {
-		// プレイヤー側でジャスト回避のスロー倍率と強化倍率を適用するため、
-		// ここでは減速前のdeltaTimeを渡す。既にeffectiveDeltaTimeを渡すと、
-		// Player::Update()内でも倍率が適用されて移動時間が二重に短縮される。
-		player_->Update(clampedDeltaTime);
+		player_->Update(unscaledDeltaTime, gameplayDeltaTime);
 
 		// デバッグテキストは追加せず、初期化時に登録した項目だけを更新する。
 #ifdef _DEBUG
@@ -453,56 +439,22 @@ void GamePlayScene::Update(float deltaTime) {
 		}
 	}
 
-	// ゲームオーバーまたはクリア中は以降の更新をスキップ
-	if (isGameOver_ || isGameClear_) {
-		//========================================
-		// パーティクルの更新（墜落エフェクト用）
+	//========================================
+	// 敵進行 / Wave / Clear判定
+	if (enemyManager_) {
+		gameFlowController_.Update(gameplayDeltaTime, *enemyManager_, player_.get());
+		if (gameFlowController_.IsGameOver()) {
+			RequestGameOver();
+		} else if (gameFlowController_.IsCleared()) {
+			RequestGameClear();
+		}
+	}
+
+	if (!IsSimulationEnabled()) {
 		if (particle_) {
 			particle_->Update();
 		}
-
-		//========================================
-		// ゲームオーバー/クリア中の処理スキップ
 		return;
-	}
-
-	//========================================
-	// 敵進行 / Wave / Clear判定
-	if (enemyManager_ && !isGameOver_ && !isGameClear_) {
-		gameFlowController_.Update(effectiveDeltaTime, *enemyManager_, player_.get());
-		if (gameFlowController_.IsGameOver()) {
-			isGameOver_ = true;
-			if (uiManager_) {
-				uiManager_->SetGameOver(true);
-			}
-			if (auto gameOverUI = uiManager_->GetGameOverUI()) {
-				gameOverUI->Play(0.8f, 2.5f, 1.2f);
-			}
-			if (auto hud = uiManager_->GetHUD()) {
-				if (!hud->IsAnimating()) {
-					hud->StartRetractAnimation(1.0f);
-				}
-			}
-			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
-				operationGuide->StartRetractAnimation(0.6f);
-			}
-		} else if (gameFlowController_.IsCleared()) {
-			isGameClear_ = true;
-			if (uiManager_) {
-				uiManager_->SetGameClear(true);
-			}
-			if (auto gameClearAnim = uiManager_->GetGameClearAnimation()) {
-				gameClearAnim->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
-			}
-			if (auto hud = uiManager_->GetHUD()) {
-				if (!hud->IsAnimating()) {
-					hud->StartRetractAnimation(1.0f);
-				}
-			}
-			if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
-				operationGuide->StartRetractAnimation(0.6f);
-			}
-		}
 	}
 
 	//========================================
@@ -523,59 +475,166 @@ void GamePlayScene::Update(float deltaTime) {
 		skybox_->Update();
 	}
 
-	//=========================================
-	// 当該フレームの登録対象だけを再構築し、衝突状態はCollisionManagerに維持させる。
-	collisionManager_->BeginFrame();
-	//  プレイヤーの当たり判定を登録
-	if (player_) {
-		collisionManager_->RegisterObject(player_.get());
+	// 当たり判定の実行位置は維持し、型別の登録だけをCoordinatorへ集約する。
+	if (collisionCoordinator_) {
+		collisionCoordinator_->Execute(player_.get(), enemyManager_.get());
 	}
-	//  敵の当たり判定を登録
-	if (enemyManager_) {
-		enemyManager_->RegisterCollisions(collisionManager_.get());
-	}
-	//  プレイヤーの弾とミサイルの当たり判定を登録
-	if (player_) {
-		const auto &bullets = player_->GetBullets();
-		for (const auto &bullet : bullets) {
-			if (bullet->IsAlive()) {
-				collisionManager_->RegisterObject(bullet.get());
-			}
-		}
-
-		const auto &missiles = player_->GetMissiles();
-		for (const auto &missile : missiles) {
-			if (missile->IsAlive()) {
-				collisionManager_->RegisterObject(missile.get());
-			}
-		}
-	}
-	//  敵の弾の当たり判定を登録
-	if (enemyManager_) {
-		enemyManager_->CollectEnemyBullets(enemyBulletBuffer_);
-		for (auto *bullet : enemyBulletBuffer_) {
-			if (bullet) {
-				collisionManager_->RegisterObject(bullet);
-			}
-		}
-	}
-	//  当たり判定の更新
-	collisionManager_->Update();
 
 #ifdef _DEBUG
 	Input *input = engineContext_->input;
 	//========================================
 	// タイトルへのシーン遷移（デバッグ用）
-	if (input->TriggerKey(DIK_RETURN)) {
-		// トランジション開始
-		if (sceneTransition_ && !sceneTransition_->IsTransitioning()) {
-			sceneTransition_->StartClosing(TransitionType::Fade, 1.0f);
-			sceneTransition_->SetOnCompleteCallback([this]() {
-				SetSceneNo(SCENE::TITLE);
-			});
-		}
+	if (IsSimulationEnabled() && input->TriggerKey(DIK_RETURN)) {
+		BeginTransitionOut(1.0f);
 	}
 #endif
+}
+
+///=============================================================================
+/// NOTE: SceneManagerのPreflightと初期化で同一のStage Loaderを通し、
+///       不正な設定を既定値へ置換せずに拒否する。
+StageLoadResult GamePlayScene::LoadDefaultStageDefinition() {
+	return StageDefinitionLoader::Load(kDefaultStagePath);
+}
+
+void GamePlayScene::UpdateStartPhase() {
+	if (phase_ != GamePlayPhase::Starting || hasUIDeploymentStarted_ || !uiManager_) {
+		return;
+	}
+
+	StartAnimation *startAnimation = uiManager_->GetStartAnimation();
+	if (!startAnimation || !startAnimation->IsDone()) {
+		return;
+	}
+
+	hasUIDeploymentStarted_ = true;
+	phase_ = GamePlayPhase::Playing;
+	if (auto hud = uiManager_->GetHUD()) {
+		hud->StartDeployAnimation(1.5f);
+	}
+	if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+		operationGuide->SetVisible(true);
+		operationGuide->StartDeployAnimation(1.0f);
+	}
+}
+
+void GamePlayScene::ProcessMenuInput() {
+	if (!uiManager_ || !uiManager_->GetMenuUI() || !uiManager_->GetMenuUI()->IsOpen()) {
+		return;
+	}
+
+	MenuUI *menuUI = uiManager_->GetMenuUI();
+	if (!menuUI->IsButtonPressed()) {
+		return;
+	}
+
+	const MenuButton selectedButton = menuUI->GetSelectedButton();
+	menuUI->ResetButtonPressedFlag();
+	if (selectedButton == MenuButton::ResumeGame) {
+		menuUI->Close();
+	} else if (selectedButton == MenuButton::OperationGuide) {
+		menuUI->Close();
+		if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+			operationGuide->SetVisible(true);
+			operationGuide->StartDeployAnimation(1.0f);
+		}
+	} else if (selectedButton == MenuButton::ReturnToTitle) {
+		menuUI->Close();
+		BeginTransitionOut(1.0f);
+	}
+}
+
+void GamePlayScene::UpdateTerminalPresentation() {
+	if (followCamera_) {
+		followCamera_->Update();
+	}
+	if (particle_) {
+		particle_->Update();
+	}
+}
+
+void GamePlayScene::UpdateTransitionOut() {
+	UpdateTerminalPresentation();
+}
+
+void GamePlayScene::UpdateSceneTransition(float unscaledDeltaTime) {
+	if (sceneTransition_) {
+		sceneTransition_->Update(unscaledDeltaTime);
+	}
+}
+
+bool GamePlayScene::IsPaused() const {
+	return uiManager_ && uiManager_->GetMenuUI() && uiManager_->GetMenuUI()->IsOpen();
+}
+
+bool GamePlayScene::IsSimulationEnabled() const {
+	return phase_ == GamePlayPhase::Starting || phase_ == GamePlayPhase::Playing;
+}
+
+void GamePlayScene::RequestGameClear() {
+	if (!IsSimulationEnabled()) {
+		return;
+	}
+
+	phase_ = GamePlayPhase::GameClearPresentation;
+	isGameClear_ = true;
+	if (!uiManager_) {
+		return;
+	}
+
+	uiManager_->SetGameClear(true);
+	if (auto gameClearAnimation = uiManager_->GetGameClearAnimation()) {
+		gameClearAnimation->StartClearAnimation(1.0f, 2.0f, 3.0f, 1.0f);
+	}
+	if (auto hud = uiManager_->GetHUD()) {
+		if (!hud->IsAnimating()) {
+			hud->StartRetractAnimation(1.0f);
+		}
+	}
+	if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+		operationGuide->StartRetractAnimation(0.6f);
+	}
+}
+
+void GamePlayScene::RequestGameOver() {
+	if (!IsSimulationEnabled()) {
+		return;
+	}
+
+	phase_ = GamePlayPhase::GameOverPresentation;
+	isGameOver_ = true;
+	if (!uiManager_) {
+		return;
+	}
+
+	uiManager_->SetGameOver(true);
+	if (auto gameOverUI = uiManager_->GetGameOverUI()) {
+		gameOverUI->Play(0.8f, 2.5f, 1.2f);
+	}
+	if (auto hud = uiManager_->GetHUD()) {
+		if (!hud->IsAnimating()) {
+			hud->StartRetractAnimation(1.0f);
+		}
+	}
+	if (auto operationGuide = uiManager_->GetOperationGuideUI()) {
+		operationGuide->StartRetractAnimation(0.6f);
+	}
+}
+
+void GamePlayScene::BeginTransitionOut(float transitionDuration) {
+	if (phase_ == GamePlayPhase::TransitionOut || !sceneTransition_ || sceneTransition_->IsTransitioning()) {
+		return;
+	}
+
+	phase_ = GamePlayPhase::TransitionOut;
+	sceneTransition_->StartClosing(TransitionType::Fade, transitionDuration);
+	sceneTransition_->SetOnCompleteCallback([this]() {
+		// SceneTransitionは完了状態を保持するため、Scene変更要求も一度だけに制限する。
+		if (!hasSceneChangeRequested_) {
+			hasSceneChangeRequested_ = true;
+			SetSceneNo(SCENE::TITLE);
+		}
+	});
 }
 
 ///=============================================================================
@@ -617,6 +676,18 @@ void GamePlayScene::RegisterEditorPanels() {
 ///=============================================================================
 ///						GamePlay Debug UI
 void GamePlayScene::DrawDebugUi() {
+	ImGui::Text("Raw Delta Time: %.4f", currentFrameTime_.rawDeltaTime);
+	ImGui::Text("Unscaled Delta Time: %.4f", currentFrameTime_.unscaledDeltaTime);
+	ImGui::Text("Gameplay Delta Time: %.4f", currentFrameTime_.gameplayDeltaTime);
+	ImGui::Text("Time Scale: %.2f", gameTimeScale_);
+	ImGui::Text("Phase: %s", GetGamePlayPhaseName(phase_));
+	ImGui::Text("Paused: %s", IsPaused() ? "true" : "false");
+	ImGui::Text("Simulation: %s", IsSimulationEnabled() && !IsPaused() ? "enabled" : "disabled");
+	ImGui::Text("Collision: %s", IsSimulationEnabled() && !IsPaused() ? "enabled" : "disabled");
+	ImGui::Text("Stage: %s", stageConfigurationPath_.c_str());
+	ImGui::Text("Stage Validation: %s", stageValidationError_.empty() ? "Valid" : stageValidationError_.c_str());
+	ImGui::Separator();
+
 	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen) && followCamera_) {
 		followCamera_->DrawImGui();
 	}
@@ -675,6 +746,22 @@ void GamePlayScene::DrawEnemyDebugUi() {
 	ImGui::Text("Active Group Count: %zu", waveController.GetActiveGroupCount());
 	ImGui::Text("Pending Spawn Groups: %zu", waveController.GetPendingSpawnGroupCount());
 	ImGui::Text("Clear Delay Timer: %.2f", gameFlowController_.GetClearDelayTimer());
+	const StageDefinition &stageDefinition = gameFlowController_.GetStageDefinition();
+	ImGui::Text("Clear When All Waves Completed: %s", stageDefinition.clearWhenAllWavesCompleted ? "true" : "false");
+	if (waveController.GetCurrentWaveIndex() < stageDefinition.waves.size()) {
+		const WaveDefinition &waveDefinition = stageDefinition.waves[waveController.GetCurrentWaveIndex()];
+		ImGui::Text("Wait For All Groups Finished: %s", waveDefinition.waitForAllGroupsFinished ? "true" : "false");
+		ImGui::Text("Wait For All Enemies Removed: %s", waveDefinition.waitForAllEnemiesRemoved ? "true" : "false");
+		for (const SpawnGroupDefinition &groupDefinition : waveDefinition.spawnGroups) {
+			for (const EnemySpawnDefinition &enemyDefinition : groupDefinition.members) {
+				ImGui::Text("%s: HP x%.2f / Speed x%.2f / Shot Offset %.2f",
+						groupDefinition.groupId.c_str(),
+						enemyDefinition.healthMultiplier,
+						enemyDefinition.speedMultiplier,
+						enemyDefinition.shotDelayOffset);
+			}
+		}
+	}
 
 	if (ImGui::TreeNode("Enemy Groups")) {
 		for (const auto &group : waveController.GetGroups()) {

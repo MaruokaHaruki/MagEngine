@@ -6,6 +6,7 @@
 #define NOMINMAX
 #include "EnemyGroup.h"
 #include "EnemyBase.h"
+#include "EnemyManager.h"
 #include <algorithm>
 #include <cmath>
 
@@ -34,7 +35,7 @@ namespace {
 /// コンストラクタ
 EnemyGroup::EnemyGroup()
 	: groupId_(-1),
-	  leaderEnemy_(nullptr),
+	  leaderEnemyHandle_({}),
 	  groupState_(EnemyGroupState::Finished),
 	  formationPattern_(EnemyFormationPattern::VShape),
 	  attackPattern_(EnemyGroupAttackPattern::Staggered),
@@ -50,77 +51,82 @@ EnemyGroup::EnemyGroup()
 
 ///=============================================================================
 /// グループ初期化
-void EnemyGroup::Initialize(EnemyBase *leaderEnemy, FormationType formationType) {
-	leaderEnemy_ = leaderEnemy;
-	memberEnemies_.clear();
+void EnemyGroup::Initialize(EnemyManager *enemyManager, EnemyHandle leaderHandle, FormationType formationType) {
+	enemyManager_ = enemyManager;
+	leaderEnemyHandle_ = leaderHandle;
+	memberEnemyHandles_.clear();
 	memberTargetPositions_.clear();
 
-	if (leaderEnemy_) {
-		memberEnemies_.push_back(leaderEnemy_);
-		leaderEnemy_->SetFormationSlotIndex(0);
-		leaderEnemy_->SetFormationFollowSpeed(EnemyFormationConstants::kFormationFollowSpeed);
-		leaderEnemy_->SetFormationFollowSharpness(EnemyFormationConstants::kFormationFollowSharpness);
-		leaderEnemy_->SetFormationFollowEnabled(true);
+	if (EnemyBase *leaderEnemy = enemyManager_ ? enemyManager_->ResolveEnemy(leaderEnemyHandle_) : nullptr) {
+		memberEnemyHandles_.push_back(leaderEnemyHandle_);
+		leaderEnemy->SetFormationSlotIndex(0);
+		leaderEnemy->SetFormationFollowSpeed(EnemyFormationConstants::kFormationFollowSpeed * leaderEnemy->GetSpawnSpeedMultiplier());
+		leaderEnemy->SetFormationFollowSharpness(EnemyFormationConstants::kFormationFollowSharpness);
+		leaderEnemy->SetFormationFollowEnabled(true);
 	}
 
 	currentFormation_ = CreateFormationConfig(formationType);
 	memberTargetPositions_.resize(currentFormation_.maxMemberCount);
 	formationPattern_ = ConvertFormationType(formationType);
 	attackPattern_ = EnemyGroupAttackPattern::Staggered;
-	groupState_ = leaderEnemy_ ? EnemyGroupState::Enter : EnemyGroupState::Finished;
-	finishReason_ = leaderEnemy_ ? EnemyGroupFinishReason::None : EnemyGroupFinishReason::Cancelled;
-	initialMemberCount_ = leaderEnemy_ ? 1u : 0u;
+	groupState_ = leaderEnemyHandle_.IsValid() ? EnemyGroupState::Enter : EnemyGroupState::Finished;
+	finishReason_ = leaderEnemyHandle_.IsValid() ? EnemyGroupFinishReason::None : EnemyGroupFinishReason::Cancelled;
+	initialMemberCount_ = leaderEnemyHandle_.IsValid() ? 1u : 0u;
 	destroyedMemberCount_ = 0;
 	exitedMemberCount_ = 0;
 	stateTimer_ = 0.0f;
 	motion_ = EnemyGroupMotion{};
-	if (leaderEnemy_) {
-		motion_.entryPosition = leaderEnemy_->GetPosition();
-		motion_.combatCenter = leaderEnemy_->GetPosition();
-		motion_.exitPosition = leaderEnemy_->GetPosition();
-		motion_.smoothedCombatAnchor = leaderEnemy_->GetPosition();
+	if (EnemyBase *leaderEnemy = enemyManager_ ? enemyManager_->ResolveEnemy(leaderEnemyHandle_) : nullptr) {
+		motion_.entryPosition = leaderEnemy->GetPosition();
+		motion_.combatCenter = leaderEnemy->GetPosition();
+		motion_.exitPosition = leaderEnemy->GetPosition();
+		motion_.smoothedCombatAnchor = leaderEnemy->GetPosition();
 		motion_.groupCenterVelocity = {0.0f, 0.0f, 0.0f};
-		groupCenter_ = leaderEnemy_->GetPosition();
+		groupCenter_ = leaderEnemy->GetPosition();
 	}
 }
 
-void EnemyGroup::Initialize(EnemyBase *leaderEnemy, EnemyFormationPattern pattern, EnemyGroupAttackPattern attackPattern, const EnemyGroupMotion &motion, const EnemyCombatArea &combatArea, const EnemyFormationSpawnBounds &spawnBounds) {
-	leaderEnemy_ = leaderEnemy;
-	memberEnemies_.clear();
+void EnemyGroup::Initialize(EnemyManager *enemyManager, EnemyHandle leaderHandle, EnemyFormationPattern pattern, EnemyGroupAttackPattern attackPattern, const EnemyGroupMotion &motion, const EnemyCombatArea &combatArea, const EnemyFormationSpawnBounds &spawnBounds) {
+	enemyManager_ = enemyManager;
+	leaderEnemyHandle_ = leaderHandle;
+	memberEnemyHandles_.clear();
 	memberTargetPositions_.clear();
 	formationPattern_ = pattern;
 	attackPattern_ = attackPattern;
 	currentFormation_ = CreateVFormation();
 	motion_ = motion;
+	attackInterval_ = motion.attackInterval;
+	attackSlotDelay_ = motion.attackSlotDelay;
 	combatArea_ = combatArea;
 	spawnBounds_ = spawnBounds;
 	groupCenter_ = motion_.entryPosition;
-	groupState_ = leaderEnemy_ ? EnemyGroupState::Enter : EnemyGroupState::Finished;
-	finishReason_ = leaderEnemy_ ? EnemyGroupFinishReason::None : EnemyGroupFinishReason::Cancelled;
+	groupState_ = leaderEnemyHandle_.IsValid() ? EnemyGroupState::Enter : EnemyGroupState::Finished;
+	finishReason_ = leaderEnemyHandle_.IsValid() ? EnemyGroupFinishReason::None : EnemyGroupFinishReason::Cancelled;
 	stateTimer_ = 0.0f;
 	initialMemberCount_ = 0;
 	destroyedMemberCount_ = 0;
 	exitedMemberCount_ = 0;
 
-	if (leaderEnemy_) {
-		AddMember(leaderEnemy_, 0);
-		leaderEnemy_->SetFormationTarget(motion_.entryPosition);
+	if (EnemyBase *leaderEnemy = enemyManager_ ? enemyManager_->ResolveEnemy(leaderEnemyHandle_) : nullptr) {
+		AddMember(leaderEnemyHandle_, 0);
+		leaderEnemy->SetFormationTarget(motion_.entryPosition);
 	}
 }
 
 ///=============================================================================
 /// グループにメンバを追加
-void EnemyGroup::AddMember(EnemyBase *member, int positionIndex) {
+void EnemyGroup::AddMember(EnemyHandle memberHandle, int positionIndex) {
+	EnemyBase *member = enemyManager_ ? enemyManager_->ResolveEnemy(memberHandle) : nullptr;
 	if (!member || positionIndex < 0 || positionIndex >= currentFormation_.maxMemberCount) {
 		return;
 	}
 
 	member->SetFormationSlotIndex(static_cast<uint32_t>(positionIndex));
-	member->SetFormationFollowSpeed(EnemyFormationConstants::kFormationFollowSpeed);
+	member->SetFormationFollowSpeed(EnemyFormationConstants::kFormationFollowSpeed * member->GetSpawnSpeedMultiplier());
 	member->SetFormationFollowSharpness(EnemyFormationConstants::kFormationFollowSharpness);
 	member->SetFormationFollowEnabled(true);
-	memberEnemies_.push_back(member);
-	initialMemberCount_ = std::max(initialMemberCount_, static_cast<uint32_t>(memberEnemies_.size()));
+	memberEnemyHandles_.push_back(memberHandle);
+	initialMemberCount_ = std::max(initialMemberCount_, static_cast<uint32_t>(memberEnemyHandles_.size()));
 }
 
 ///=============================================================================
@@ -130,9 +136,13 @@ void EnemyGroup::Update(const Vector3 &playerPosition) {
 }
 
 void EnemyGroup::Update(float deltaTime, const Vector3 &playerPosition) {
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
+	if (!enemyManager_) {
+		groupState_ = EnemyGroupState::Finished;
+		finishReason_ = EnemyGroupFinishReason::Cancelled;
+		return;
+	}
 	RemoveDeadMembers();
-	if (memberEnemies_.empty()) {
+	if (memberEnemyHandles_.empty()) {
 		groupState_ = EnemyGroupState::Finished;
 		if (finishReason_ == EnemyGroupFinishReason::None) {
 			finishReason_ = exitedMemberCount_ > 0 ? EnemyGroupFinishReason::MixedDestroyedAndExited : EnemyGroupFinishReason::AllMembersDestroyed;
@@ -140,57 +150,60 @@ void EnemyGroup::Update(float deltaTime, const Vector3 &playerPosition) {
 		return;
 	}
 
-	if (!leaderEnemy_ || !leaderEnemy_->IsAlive()) {
-		leaderEnemy_ = memberEnemies_.front();
+	if (!enemyManager_->ResolveEnemy(leaderEnemyHandle_) || !enemyManager_->ResolveEnemy(leaderEnemyHandle_)->IsAlive()) {
+		leaderEnemyHandle_ = memberEnemyHandles_.front();
 	}
 
 	if (groupState_ == EnemyGroupState::Finished) {
-		for (EnemyBase *member : memberEnemies_) {
-			if (member) {
+		for (EnemyHandle memberHandle : memberEnemyHandles_) {
+			if (EnemyBase *member = enemyManager_->ResolveEnemy(memberHandle)) {
 				member->ClearFormationTarget();
 			}
 		}
-		memberEnemies_.clear();
-		leaderEnemy_ = nullptr;
+		memberEnemyHandles_.clear();
+		leaderEnemyHandle_ = {};
 		return;
 	}
 
-	UpdateGroupState(safeDeltaTime, playerPosition);
-	groupCenter_ = SmoothPosition(groupCenter_, CalculateGroupCenter(), EnemyFormationConstants::kGroupCenterSharpness, safeDeltaTime);
-	UpdateMemberPositions(safeDeltaTime);
+	UpdateGroupState(deltaTime, playerPosition);
+	groupCenter_ = SmoothPosition(groupCenter_, CalculateGroupCenter(), EnemyFormationConstants::kGroupCenterSharpness, deltaTime);
+	UpdateMemberPositions(deltaTime);
 }
 
 ///=============================================================================
 /// グループ内の敵削除処理
 void EnemyGroup::RemoveDeadMembers() {
-	memberEnemies_.erase(
-		std::remove_if(memberEnemies_.begin(), memberEnemies_.end(),
-					   [this](EnemyBase *enemy) {
+	memberEnemyHandles_.erase(
+		std::remove_if(memberEnemyHandles_.begin(), memberEnemyHandles_.end(),
+					   [this](EnemyHandle handle) {
+						   EnemyBase *enemy = enemyManager_ ? enemyManager_->ResolveEnemy(handle) : nullptr;
 						   const bool shouldRemove = !enemy || !enemy->IsAlive();
 						   if (shouldRemove) {
 							   ++destroyedMemberCount_;
 						   }
 						   return shouldRemove;
 					   }),
-		memberEnemies_.end());
+		memberEnemyHandles_.end());
 
-	for (uint32_t i = 0; i < static_cast<uint32_t>(memberEnemies_.size()); ++i) {
-		memberEnemies_[i]->SetFormationSlotIndex(i);
+	for (uint32_t i = 0; i < static_cast<uint32_t>(memberEnemyHandles_.size()); ++i) {
+		if (EnemyBase *member = enemyManager_->ResolveEnemy(memberEnemyHandles_[i])) {
+			member->SetFormationSlotIndex(i);
+		}
 	}
 }
 
 ///=============================================================================
 /// グループの活性状態確認
 bool EnemyGroup::IsActive() const {
-	return !IsFinished() && !memberEnemies_.empty();
+	return !IsFinished() && !memberEnemyHandles_.empty();
 }
 
 ///=============================================================================
 /// グループ内の生存敵数
 size_t EnemyGroup::GetAliveCount() const {
 	size_t count = 0;
-	for (auto *member : memberEnemies_) {
-		if (member && member->IsAlive()) {
+	for (EnemyHandle memberHandle : memberEnemyHandles_) {
+		if (const EnemyBase *member = enemyManager_ ? enemyManager_->ResolveEnemy(memberHandle) : nullptr; member && member->IsAlive()) {
 			count++;
 		}
 	}
@@ -277,22 +290,22 @@ FormationConfig EnemyGroup::CalculateDynamicFormation(const Vector3 &playerPosit
 void EnemyGroup::CalculateMemberTargetPositions(const Vector3 &leaderPos, const Vector3 &playerPos) {
 	leaderPos;
 	playerPos;
-	memberTargetPositions_.resize(memberEnemies_.size());
-	for (uint32_t i = 0; i < static_cast<uint32_t>(memberEnemies_.size()); ++i) {
-		memberTargetPositions_[i] = groupCenter_ + CalculateSlotOffset(i, static_cast<uint32_t>(memberEnemies_.size()));
+	memberTargetPositions_.resize(memberEnemyHandles_.size());
+	for (uint32_t i = 0; i < static_cast<uint32_t>(memberEnemyHandles_.size()); ++i) {
+		memberTargetPositions_[i] = groupCenter_ + CalculateSlotOffset(i, static_cast<uint32_t>(memberEnemyHandles_.size()));
 	}
 }
 
 void EnemyGroup::UpdateMemberPositions(float deltaTime) {
 	deltaTime;
-	const uint32_t memberCount = static_cast<uint32_t>(memberEnemies_.size());
+	const uint32_t memberCount = static_cast<uint32_t>(memberEnemyHandles_.size());
 	if (memberCount == 0) {
 		return;
 	}
 
 	memberTargetPositions_.resize(memberCount);
 	for (uint32_t i = 0; i < memberCount; ++i) {
-		EnemyBase *member = memberEnemies_[i];
+		EnemyBase *member = enemyManager_->ResolveEnemy(memberEnemyHandles_[i]);
 		if (!member || !member->IsAlive()) {
 			continue;
 		}
@@ -301,7 +314,7 @@ void EnemyGroup::UpdateMemberPositions(float deltaTime) {
 		memberTargetPositions_[i] = targetPosition;
 		member->SetFormationSlotIndex(i);
 		member->SetFormationTarget(targetPosition);
-		member->SetFormationFollowSpeed(EnemyFormationConstants::kFormationFollowSpeed);
+		member->SetFormationFollowSpeed(EnemyFormationConstants::kFormationFollowSpeed * member->GetSpawnSpeedMultiplier());
 		member->SetFormationFollowSharpness(EnemyFormationConstants::kFormationFollowSharpness);
 		member->SetFormationFollowEnabled(groupState_ != EnemyGroupState::Finished);
 		member->SetFormationAttackEnabled(groupState_ == EnemyGroupState::Combat && ShouldSlotAttack(i, memberCount));
@@ -348,11 +361,12 @@ EnemyFormationPattern EnemyGroup::ConvertFormationType(FormationType type) const
 }
 
 void EnemyGroup::InitializeMotionFromLeader(const Vector3 &playerPosition) {
-	if (!leaderEnemy_) {
+	EnemyBase *leaderEnemy = enemyManager_ ? enemyManager_->ResolveEnemy(leaderEnemyHandle_) : nullptr;
+	if (!leaderEnemy) {
 		return;
 	}
 
-	const Vector3 leaderPosition = leaderEnemy_->GetPosition();
+	const Vector3 leaderPosition = leaderEnemy->GetPosition();
 	motion_.entryPosition = leaderPosition;
 	motion_.combatCenter = CalculateCombatAnchor(playerPosition);
 	motion_.smoothedCombatAnchor = motion_.combatCenter;
@@ -397,16 +411,16 @@ void EnemyGroup::UpdateGroupState(float deltaTime, const Vector3 &playerPosition
 	case EnemyGroupState::Exit:
 		if (stateTimer_ >= std::max(0.01f, motion_.exitDuration)) {
 			groupState_ = EnemyGroupState::Finished;
-			for (EnemyBase *member : memberEnemies_) {
-				if (member) {
+			for (EnemyHandle memberHandle : memberEnemyHandles_) {
+				if (EnemyBase *member = enemyManager_->ResolveEnemy(memberHandle)) {
 					member->MarkExited();
 					member->ClearFormationTarget();
 					++exitedMemberCount_;
 				}
 			}
 			finishReason_ = destroyedMemberCount_ > 0 ? EnemyGroupFinishReason::MixedDestroyedAndExited : EnemyGroupFinishReason::AllMembersExited;
-			memberEnemies_.clear();
-			leaderEnemy_ = nullptr;
+			memberEnemyHandles_.clear();
+			leaderEnemyHandle_ = {};
 		}
 		break;
 	case EnemyGroupState::Finished:
@@ -455,7 +469,7 @@ Vector3 EnemyGroup::SmoothPosition(const Vector3 &current, const Vector3 &target
 		return current;
 	}
 
-	const float rate = 1.0f - std::exp(-std::max(0.1f, sharpness) * std::min(deltaTime, 0.1f));
+	const float rate = 1.0f - std::exp(-std::max(0.1f, sharpness) * deltaTime);
 	return {
 		current.x + (target.x - current.x) * rate,
 		current.y + (target.y - current.y) * rate,
@@ -530,7 +544,7 @@ bool EnemyGroup::ShouldSlotAttackForTest(uint32_t slotIndex, uint32_t memberCoun
 		return false;
 	}
 
-	const float cycleTime = std::fmod(std::max(0.0f, phaseTime), EnemyFormationConstants::kAttackInterval);
+	const float cycleTime = std::fmod(std::max(0.0f, phaseTime), attackInterval_);
 	const float slotDelay = CalculateSlotDelay(slotIndex, memberCount);
 	return cycleTime >= slotDelay && cycleTime < slotDelay + EnemyFormationConstants::kAttackWindow;
 }
@@ -538,14 +552,14 @@ bool EnemyGroup::ShouldSlotAttackForTest(uint32_t slotIndex, uint32_t memberCoun
 float EnemyGroup::CalculateSlotDelay(uint32_t slotIndex, uint32_t memberCount) const {
 	switch (attackPattern_) {
 	case EnemyGroupAttackPattern::Staggered:
-		return static_cast<float>(slotIndex) * EnemyFormationConstants::kAttackSlotDelay;
+		return static_cast<float>(slotIndex) * attackSlotDelay_;
 	case EnemyGroupAttackPattern::LeaderThenWing:
-		return slotIndex == 0 ? 0.0f : EnemyFormationConstants::kAttackSlotDelay * static_cast<float>((slotIndex + 1u) / 2u);
+		return slotIndex == 0 ? 0.0f : attackSlotDelay_ * static_cast<float>((slotIndex + 1u) / 2u);
 	case EnemyGroupAttackPattern::Alternating:
-		return (slotIndex % 2u == 0u) ? 0.0f : EnemyFormationConstants::kAttackInterval * 0.5f;
+		return (slotIndex % 2u == 0u) ? 0.0f : attackInterval_ * 0.5f;
 	case EnemyGroupAttackPattern::None:
 	default:
 		memberCount;
-		return EnemyFormationConstants::kAttackInterval;
+		return attackInterval_;
 	}
 }

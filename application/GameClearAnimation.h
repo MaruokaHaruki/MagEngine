@@ -41,7 +41,7 @@ public:
 	void Finalize();
 
 	/// \brief 更新
-	void Update();
+	void Update(float unscaledDeltaTime);
 
 	/// \brief 描画
 	void Draw();

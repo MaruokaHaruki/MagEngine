@@ -221,8 +221,8 @@ void DebugScene::Finalize() {
 
 ///=============================================================================
 ///						更新
-void DebugScene::Update(float deltaTime) {
-	(void)deltaTime;
+void DebugScene::Update(const FrameTime &frameTime) {
+	const float deltaTime = frameTime.unscaledDeltaTime;
 	///--------------------------------------------------------------
 	///						更新処理
 

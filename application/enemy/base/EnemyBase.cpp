@@ -11,9 +11,8 @@ using namespace MagEngine;
 
 // 定数定義
 namespace {
-	// Update()の既定値と外部deltaTimeの上限を共通化し、異常に大きい時間差で挙動が飛ぶことを防ぐ。
+	// Update()を単独で呼び出す場合だけ、既定のフレーム時間を使用する。
 	constexpr float kDefaultDeltaTime = 1.0f / 60.0f;
-	constexpr float kMaximumDeltaTime = 0.1f;
 	constexpr float kDefaultSpeed = 10.0f;
 	constexpr float kDefaultRadius = 1.0f;
 	constexpr float kDefaultLifeTime = 60.0f;
@@ -95,15 +94,13 @@ void EnemyBase::Update() {
 }
 
 void EnemyBase::Update(float deltaTime) {
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, kMaximumDeltaTime));
-
 	if (destroyState_ == DestroyState::Dead || !obj_) {
 		return;
 	}
 
 	// 破壊演出の更新
 	if (destroyState_ == DestroyState::Destroying) {
-		if (UpdateDestroy(safeDeltaTime)) {
+		if (UpdateDestroy(deltaTime)) {
 			destroyState_ = DestroyState::Dead;
 			isAlive_ = false;
 		}
@@ -112,11 +109,11 @@ void EnemyBase::Update(float deltaTime) {
 
 	// ヒットリアクションの更新
 	if (isHitReacting_) {
-		UpdateHitReaction(safeDeltaTime);
+		UpdateHitReaction(deltaTime);
 	}
 
 	// 生存時間の更新
-	lifeTimer_ += safeDeltaTime;
+	lifeTimer_ += deltaTime;
 	if (lifeTimer_ >= maxLifeTime_) {
 		destroyState_ = DestroyState::Dead;
 		isAlive_ = false;
@@ -150,6 +147,14 @@ void EnemyBase::SetFormationTarget(const Vector3 &targetPosition) {
 	formationTargetPosition_ = targetPosition;
 }
 
+void EnemyBase::ApplySpawnModifiers(float healthMultiplier, float speedMultiplier) {
+	// NOTE: StageDefinitionは再利用される不変設定なので、倍率は生成直後の実体だけへ一度適用する。
+	const float scaledMaxHp = static_cast<float>(maxHP_) * healthMultiplier;
+	maxHP_ = std::max(1, static_cast<int>(std::ceil(scaledMaxHp)));
+	currentHP_ = maxHP_;
+	spawnSpeedMultiplier_ = speedMultiplier;
+}
+
 void EnemyBase::ClearFormationTarget() {
 	formationFollowEnabled_ = false;
 	formationAttackEnabled_ = false;
@@ -169,12 +174,11 @@ void EnemyBase::UpdateFormationFollow(float deltaTime) {
 		return;
 	}
 
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
-	if (safeDeltaTime <= 0.0f) {
+	if (deltaTime <= 0.0f) {
 		return;
 	}
 
-	const float followRate = 1.0f - std::exp(-std::max(0.1f, formationFollowSharpness_) * safeDeltaTime);
+	const float followRate = 1.0f - std::exp(-std::max(0.1f, formationFollowSharpness_) * deltaTime);
 	Vector3 toTarget = {
 		formationTargetPosition_.x - transform_.translate.x,
 		formationTargetPosition_.y - transform_.translate.y,
@@ -201,9 +205,9 @@ void EnemyBase::UpdateFormationFollow(float deltaTime) {
 	formationFollowVelocity_.y += (desiredVelocity.y - formationFollowVelocity_.y) * followRate;
 	formationFollowVelocity_.z += (desiredVelocity.z - formationFollowVelocity_.z) * followRate;
 
-	transform_.translate.x += formationFollowVelocity_.x * safeDeltaTime;
-	transform_.translate.y += formationFollowVelocity_.y * safeDeltaTime;
-	transform_.translate.z += formationFollowVelocity_.z * safeDeltaTime;
+	transform_.translate.x += formationFollowVelocity_.x * deltaTime;
+	transform_.translate.y += formationFollowVelocity_.y * deltaTime;
+	transform_.translate.z += formationFollowVelocity_.z * deltaTime;
 }
 
 void EnemyBase::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {

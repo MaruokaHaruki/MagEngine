@@ -13,6 +13,7 @@
 #include "EngineContext.h"
 #include "SceneFactory.h"
 #include "SpriteSetup.h"
+#include "Logger.h"
 // public:
 #include "ClearScene.h"
 #include "GamePlayScene.h"
@@ -20,6 +21,8 @@
 // private:
 #include "DebugScene.h"
 #include <cassert>
+#include <exception>
+#include <stdexcept>
 
 ///=============================================================================
 /// NOTE: SceneContextにセットアップを設定して一元管理
@@ -42,8 +45,12 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 		sceneFactory_ = &defaultFactory;
 	}
 
-	// NOTE: 初期シーンをFactoryで生成
-	nowScene_ = sceneFactory_->CreateScene(SCENE::TITLE, *engineContext_, sceneContext_);
+	// NOTE: 初期Sceneには遷移元が存在しないため、失敗理由を記録して初期化失敗を上位へ通知する。
+	std::string initialSceneError;
+	if (!CreateAndInitializeCandidateScene(SCENE::TITLE, nowScene_, initialSceneError)) {
+		DiscardCandidateScene(nowScene_);
+		throw std::runtime_error(initialSceneError);
+	}
 
 	engineContext_->editorUiSystem->RegisterPanel("Scene Switcher", MagEngine::EditorUiCategory::Tools, true, [this]() {
 		if (!nowScene_) {
@@ -63,6 +70,10 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 		ImGui::Text("Private Scene");
 		if (ImGui::Button("DebugScene")) {
 			nowScene_->SetSceneNo(DEBUG);
+		}
+		if (!lastSceneInitializationError_.empty()) {
+			ImGui::Separator();
+			ImGui::TextWrapped("Last scene initialization error: %s", lastSceneInitializationError_.c_str());
 		}
 	});
 
@@ -86,32 +97,41 @@ void SceneManager::Finalize() {
 ///=============================================================================
 /// NOTE: シーン番号はnowScene_->nextSceneNo_から取得
 /// NOTE: nextSceneNo_ == -1の場合はシーン遷移なし
-void SceneManager::Update(float deltaTime) {
-	//========================================
-	// NOTE: 前のシーン番号を保存
-	prevSceneNo_ = currentSceneNo_;
-	// NOTE: 次のシーン番号をシーンから取得
-	currentSceneNo_ = nowScene_->GetSceneNo();
+void SceneManager::Update(const FrameTime &frameTime) {
+	if (!nowScene_) {
+		return;
+	}
 
-	//========================================
-	// NOTE: シーン遷移判定（-1の場合は遷移しない）
-	if (prevSceneNo_ != currentSceneNo_ && currentSceneNo_ != -1) {
-		if (nowScene_) {
-			if (engineContext_ && engineContext_->graphics) {
-				engineContext_->graphics->WaitForGpuIdle();
-			}
-			engineContext_->editorUiSystem->ClearScenePanels();
-			// 現在のシーンの終了処理
-			nowScene_->Finalize();
+	const int requestedSceneNo = nowScene_->GetSceneNo();
+	if (requestedSceneNo != -1 && requestedSceneNo != currentSceneNo_) {
+		if (engineContext_ && engineContext_->graphics) {
+			engineContext_->graphics->WaitForGpuIdle();
 		}
-		// NOTE: ファクトリーでシーンをSceneContextと共に生成
-		nowScene_ = sceneFactory_->CreateScene(currentSceneNo_, *engineContext_, sceneContext_);
+
+		std::unique_ptr<BaseScene> candidateScene;
+		std::string errorMessage;
+		if (!CreateAndInitializeCandidateScene(requestedSceneNo, candidateScene, errorMessage)) {
+			DiscardCandidateScene(candidateScene);
+			HandleSceneChangeFailure(requestedSceneNo, errorMessage);
+		} else {
+#ifdef _DEBUG
+			engineContext_->editorUiSystem->ClearScenePanels();
+#endif
+			nowScene_->Finalize();
+			nowScene_ = std::move(candidateScene);
+			currentSceneNo_ = requestedSceneNo;
+			prevSceneNo_ = currentSceneNo_;
+			lastSceneInitializationError_.clear();
+#ifdef _DEBUG
+			nowScene_->RegisterEditorPanels();
+#endif
+		}
 	}
 
 	//========================================
 	// シーンの更新
 	if (nowScene_) {
-		nowScene_->Update(deltaTime);
+		nowScene_->Update(frameTime);
 	}
 }
 
@@ -120,6 +140,82 @@ void SceneManager::Update(float deltaTime) {
 void SceneManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if (nowScene_) {
 		nowScene_->RegisterRenderables(renderWorld);
+	}
+}
+
+///=============================================================================
+bool SceneManager::CreateAndInitializeCandidateScene(int sceneNo, std::unique_ptr<BaseScene> &candidateScene, std::string &errorMessage) {
+	try {
+		if (sceneNo == SCENE::GAMEPLAY) {
+			const StageLoadResult stageLoadResult = GamePlayScene::LoadDefaultStageDefinition();
+			if (!stageLoadResult.IsSuccess()) {
+				errorMessage = "Stage preflight failed: " + stageLoadResult.errorMessage;
+				return false;
+			}
+		}
+
+		candidateScene = sceneFactory_->CreateScene(sceneNo);
+		if (!candidateScene) {
+			errorMessage = "SceneFactory returned null for " + std::string(GetSceneName(sceneNo)) + ".";
+			return false;
+		}
+
+		candidateScene->Initialize(*engineContext_, sceneContext_);
+		return true;
+	} catch (const std::exception &exception) {
+		errorMessage = exception.what();
+	} catch (...) {
+		errorMessage = "Unknown scene initialization failure.";
+	}
+	return false;
+}
+
+///=============================================================================
+void SceneManager::DiscardCandidateScene(std::unique_ptr<BaseScene> &candidateScene) {
+	if (!candidateScene) {
+		return;
+	}
+
+#ifdef _DEBUG
+	engineContext_->editorUiSystem->ClearScenePanels();
+#endif
+	try {
+		// 理由：部分初期化済みのSceneが登録したColliderやコールバックを、実体破棄前に解除するため。
+		candidateScene->Finalize();
+	} catch (const std::exception &exception) {
+		Logger::Log("Candidate scene finalization failed: " + std::string(exception.what()), Logger::LogLevel::Error);
+	} catch (...) {
+		Logger::Log("Candidate scene finalization failed with an unknown exception.", Logger::LogLevel::Error);
+	}
+	candidateScene.reset();
+}
+
+///=============================================================================
+void SceneManager::HandleSceneChangeFailure(int requestedSceneNo, const std::string &errorMessage) {
+	lastSceneInitializationError_ = "Scene transition " + std::string(GetSceneName(currentSceneNo_)) + " -> " + GetSceneName(requestedSceneNo) + " failed: " + errorMessage;
+	Logger::Log(lastSceneInitializationError_, Logger::LogLevel::Error);
+
+	// 理由：失敗した要求を残すと毎フレーム同じ候補Sceneを生成してしまうため。
+	nowScene_->SetSceneNo(-1);
+	nowScene_->OnSceneChangeFailed(requestedSceneNo, lastSceneInitializationError_);
+#ifdef _DEBUG
+	nowScene_->RegisterEditorPanels();
+#endif
+}
+
+///=============================================================================
+const char *SceneManager::GetSceneName(int sceneNo) {
+	switch (sceneNo) {
+	case SCENE::DEBUG:
+		return "Debug";
+	case SCENE::TITLE:
+		return "Title";
+	case SCENE::GAMEPLAY:
+		return "GamePlay";
+	case SCENE::CLEAR:
+		return "Clear";
+	default:
+		return "Unknown";
 	}
 }
 

@@ -85,6 +85,10 @@ public:
 		trailEffectManager_ = trailEffectManager;
 	}
 
+	void SetShootInterval(float shootInterval) {
+		shootInterval_ = shootInterval;
+	}
+
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
@@ -112,6 +116,7 @@ private:
 
 	GunnerState state_;
 	float shootTimer_;
+	float shootInterval_ = EnemyGunnerConstants::kShootInterval;
 	float combatTimer_;
 	float moveTimer_;
 	Vector3 targetPosition_;

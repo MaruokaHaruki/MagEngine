@@ -10,6 +10,7 @@
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
+#include "EnemyHandle.h"
 using Vector3 = MagMath::Vector3;
 #include "Vector3.h"
 #include <memory>
@@ -44,28 +45,22 @@ public:
 	///--------------------------------------------------------------
 	///                        ロックオン状態取得
 	/// @brief ロックオン状態確認
-	bool HasLockOnTarget() const {
-		return !lockOnTargets_.empty() && primaryLockOnTarget_ != nullptr;
-	}
+	bool HasLockOnTarget() const;
 
 	/// @brief メインロックオン対象を取得
-	EnemyBase *GetPrimaryTarget() const {
-		return primaryLockOnTarget_;
-	}
+	EnemyHandle GetPrimaryTargetHandle() const { return primaryLockOnTargetHandle_; }
 
 	/// @brief 全ロックオン対象を取得
-	const std::vector<EnemyBase *> &GetAllTargets() const {
-		return lockOnTargets_;
+	const std::vector<EnemyHandle> &GetAllTargetHandles() const {
+		return lockOnTargetHandles_;
 	}
 
 	/// @brief 現在照準内にいる候補ターゲットを取得
-	EnemyBase *GetAimingTarget() const {
-		return aimingTarget_;
-	}
+	EnemyHandle GetAimingTargetHandle() const { return aimingTargetHandle_; }
 
 	/// @brief ロックオン対象数を取得
 	size_t GetTargetCount() const {
-		return lockOnTargets_.size();
+		return lockOnTargetHandles_.size();
 	}
 
 	///--------------------------------------------------------------
@@ -102,9 +97,9 @@ public:
 
 	/// @brief ロックオン状態をリセット
 	void ClearLockOn() {
-		lockOnTargets_.clear();
-		primaryLockOnTarget_ = nullptr;
-		aimingTarget_ = nullptr;
+		lockOnTargetHandles_.clear();
+		primaryLockOnTargetHandle_ = {};
+		aimingTargetHandle_ = {};
 		lockOnAcquireTimer_ = 0.0f;
 	}
 
@@ -132,25 +127,25 @@ private:
 	///--------------------------------------------------------------
 	///                        内部処理
 	/// @brief 範囲内の敵を取得
-	std::vector<EnemyBase *> GetEnemiesInRange(const Vector3 &playerPos, const Vector3 &playerForward);
+	std::vector<EnemyHandle> GetEnemiesInRange(const Vector3 &playerPos, const Vector3 &playerForward);
 
 	/// @brief 視野角チェック（敵が視野内か判定）
 	bool IsEnemyInFOV(const Vector3 &playerPos, const Vector3 &playerForward, const Vector3 &enemyPos);
 
 	/// @brief 最寄りの敵を取得
-	EnemyBase *GetNearestEnemy(const Vector3 &playerPos, const Vector3 &playerForward);
+	EnemyHandle GetNearestEnemy(const Vector3 &playerPos, const Vector3 &playerForward);
 
 	/// @brief 照準中心に最も近い候補を取得（未ロック対象のみ）
-	EnemyBase *FindBestTargetInReticle(const Vector3 &playerPos, const Vector3 &playerForward);
+	EnemyHandle FindBestTargetInReticle(const Vector3 &playerPos, const Vector3 &playerForward);
 
 	/// @brief 既にロック済みか判定
-	bool IsAlreadyLocked(EnemyBase *target) const;
+	bool IsAlreadyLocked(EnemyHandle targetHandle) const;
 
 	///--------------------------------------------------------------
 	///                        メンバ変数
 	EnemyManager *enemyManager_;			 // 敵管理マネージャーへの参照
-	std::vector<EnemyBase *> lockOnTargets_; // ロックオン対象敵のリスト
-	EnemyBase *primaryLockOnTarget_;		 // メインのロックオン対象
+	std::vector<EnemyHandle> lockOnTargetHandles_;
+	EnemyHandle primaryLockOnTargetHandle_{};
 
 	float lockOnRange_;			  // ロックオン探索範囲（メートル）
 	float lockOnFOV_;			  // ロックオン視野角（度数法）
@@ -158,5 +153,5 @@ private:
 	bool lockOnMode_;			  // ロックオン中フラグ
 	float lockOnAcquireTimer_;	  // 次のロック取得までの経過時間
 	float lockOnAcquireInterval_; // 1体ずつロックする間隔（秒）
-	EnemyBase *aimingTarget_;	  // 現在照準中心にいる候補ターゲット
+	EnemyHandle aimingTargetHandle_{};
 };

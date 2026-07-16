@@ -67,29 +67,29 @@ void UIManager::Finalize() {
 
 ///=============================================================================
 ///                        更新
-void UIManager::Update(const Player *player) {
+void UIManager::Update(const Player *player, float unscaledDeltaTime) {
 	if (gameOverUI_) {
-		gameOverUI_->Update();
+		gameOverUI_->Update(unscaledDeltaTime);
 	}
 	if (gameClearAnimation_) {
-		gameClearAnimation_->Update();
+		gameClearAnimation_->Update(unscaledDeltaTime);
 	}
 	if (operationGuideUI_) {
-		operationGuideUI_->Update();
+		operationGuideUI_->Update(unscaledDeltaTime);
 	}
 	if (startAnimation_) {
-		startAnimation_->Update();
+		startAnimation_->Update(unscaledDeltaTime);
 	}
 	if (hud_ && player) {
-		hud_->Update(player);
+		hud_->Update(player, unscaledDeltaTime);
 	}
 	if (menuUI_) {
-		menuUI_->Update();
+		menuUI_->Update(unscaledDeltaTime);
 	}
 	if (lockOnHUD_ && player) {
 		MagEngine::Camera *camera = cameraManager_ ? cameraManager_->GetCamera("FollowCamera") : nullptr;
 		if (camera) {
-			lockOnHUD_->Update(camera);
+			lockOnHUD_->Update(camera, unscaledDeltaTime);
 		}
 	}
 }

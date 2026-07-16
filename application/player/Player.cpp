@@ -69,18 +69,14 @@ void Player::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::stri
 
 //=============================================================================
 // 毎フレーム更新
-void Player::Update(float deltaTime) {
+void Player::Update(float unscaledDeltaTime, float gameplayDeltaTime) {
 	MagMath::Transform *objTransform = GetTransformSafe();
 	if (!objTransform) {
 		return;
 	}
 
 	// === ジャスト回避コンポーネントは常に実時間で更新（タイマーカウント用） ===
-	justAvoidanceComponent_.Update(deltaTime);
-
-	// === スロー倍率を計算し、他のコンポーネントに適用 ===
-	float slowMultiplier = justAvoidanceComponent_.GetGameTimeScale();
-	float effectiveDeltaTime = deltaTime * slowMultiplier;
+	justAvoidanceComponent_.Update(unscaledDeltaTime);
 
 	// === 強化バフを適用 ===
 	// 移動速度倍率をMovementコンポーネントに反映
@@ -88,11 +84,11 @@ void Player::Update(float deltaTime) {
 	float speedMultiplier = justAvoidanceComponent_.GetSpeedMultiplier();
 	if (speedMultiplier > 1.0f) {
 		// 速度倍率がある場合、deltaTimeを調整して速度を上げる
-		effectiveDeltaTime *= speedMultiplier;
+		gameplayDeltaTime *= speedMultiplier;
 	}
 
-	UpdateGameplayComponents(effectiveDeltaTime);
-	UpdateDefeatAndObject(objTransform, deltaTime);
+	UpdateGameplayComponents(gameplayDeltaTime);
+	UpdateDefeatAndObject(objTransform, unscaledDeltaTime);
 
 	// === ジャスト回避成功フラグをリセット（毎フレーム末尾） ===
 	// NOTE: このフラグは衝突検出時に設定され、1フレームだけ有効である必要がある
@@ -118,7 +114,7 @@ void Player::UpdateDefeatAndObject(MagMath::Transform *transform, float deltaTim
 		defeatComponent_.Update(transform, deltaTime);
 	}
 
-	gameOverAnimation_.Update();
+	gameOverAnimation_.Update(deltaTime);
 	if (!defeatComponent_.IsDefeated()) {
 		BaseObject::Update(transform->translate);
 	}
@@ -277,8 +273,18 @@ void Player::ProcessMissileShooting(const Vector3 &playerPos, const Vector3 &sho
 	// ボタン離した（リリース）
 	if (missileButtonReleased) {
 		// ロックオン中の敵にミサイル発射
-		const auto &lockOnTargets = lockedOnComponent_.GetAllTargets();
-		if (isInLockOnMode_ && !lockOnTargets.empty()) {
+		const auto &lockOnTargetHandles = lockedOnComponent_.GetAllTargetHandles();
+		if (isInLockOnMode_ && !lockOnTargetHandles.empty()) {
+			std::vector<EnemyBase *> lockOnTargets;
+			lockOnTargets.reserve(lockOnTargetHandles.size());
+			for (EnemyHandle handle : lockOnTargetHandles) {
+				if (EnemyBase *target = enemyManager_ ? enemyManager_->ResolveEnemy(handle) : nullptr) {
+					if (target->IsAlive() && target->IsCollisionEnabled()) {
+						lockOnTargets.push_back(target);
+					}
+				}
+			}
+
 			// 複数ロック敵に同時発射
 			combatComponent_.ShootMultipleMissiles(playerPos, shootDirection, lockOnTargets);
 		}
@@ -458,7 +464,7 @@ void Player::DrawImGui() {
 			lockedOnComponent_.SetLockOnFOV(lockOnFOV);
 		}
 
-		EnemyBase *primaryTarget = lockedOnComponent_.GetPrimaryTarget();
+		EnemyBase *primaryTarget = enemyManager_ ? enemyManager_->ResolveEnemy(lockedOnComponent_.GetPrimaryTargetHandle()) : nullptr;
 		if (primaryTarget && primaryTarget->IsAlive()) {
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Target Locked!");
 			Vector3 targetPos = primaryTarget->GetPosition();
@@ -523,15 +529,15 @@ void Player::DrawImGui() {
 		ImGui::Text("Locked Enemies: %zu / %d", lockedOnComponent_.GetTargetCount(), lockedOnComponent_.GetMaxLockOnTargets());
 
 		// ロック敵の詳細情報
-		const auto &allTargets = lockedOnComponent_.GetAllTargets();
-		if (!allTargets.empty()) {
+		const auto &allTargetHandles = lockedOnComponent_.GetAllTargetHandles();
+		if (!allTargetHandles.empty()) {
 			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Locked Targets:");
 			Vector3 playerPos = GetPosition();
-			for (size_t i = 0; i < allTargets.size(); ++i) {
-				if (allTargets[i]) {
-					Vector3 targetPos = allTargets[i]->GetPosition();
+			for (size_t i = 0; i < allTargetHandles.size(); ++i) {
+				if (EnemyBase *target = enemyManager_ ? enemyManager_->ResolveEnemy(allTargetHandles[i]) : nullptr) {
+					Vector3 targetPos = target->GetPosition();
 					float dist = Distance(playerPos, targetPos);
-					ImGui::Text("  [%zu] Addr: %p, Dist: %.2f", i, (void *)allTargets[i], dist);
+					ImGui::Text("  [%zu] Handle: %llu, Dist: %.2f", i, static_cast<unsigned long long>(allTargetHandles[i].value), dist);
 				}
 			}
 		}
@@ -546,12 +552,14 @@ void Player::DrawImGui() {
 			ImGui::Text("Distance: %.2f", distance);
 
 			// ロック敵一覧
-			if (allTargets.size() > 1) {
+			if (allTargetHandles.size() > 1) {
 				ImGui::Text("Other Locked Targets:");
-				for (size_t i = 1; i < allTargets.size(); ++i) {
-					Vector3 pos = allTargets[i]->GetPosition();
-					float dist = Distance(playerPos, pos);
-					ImGui::Text("  Enemy %zu: Dist=%.2f", i, dist);
+				for (size_t i = 1; i < allTargetHandles.size(); ++i) {
+					if (EnemyBase *target = enemyManager_ ? enemyManager_->ResolveEnemy(allTargetHandles[i]) : nullptr) {
+						Vector3 pos = target->GetPosition();
+						float dist = Distance(playerPos, pos);
+						ImGui::Text("  Enemy %zu: Dist=%.2f", i, dist);
+					}
 				}
 			}
 		} else {
@@ -564,12 +572,12 @@ void Player::DrawImGui() {
 		const auto &missiles = combatComponent_.GetMissiles();
 		for (size_t i = 0; i < missiles.size(); ++i) {
 			if (missiles[i] && missiles[i]->IsAlive()) {
-				EnemyBase *targetEnemy = missiles[i]->GetLockedTarget();
-				ImGui::Text("Missile %zu: Locked=%s, Target=%s, TargetAddr=%p",
+				const EnemyHandle targetHandle = missiles[i]->GetLockedTargetHandle();
+				ImGui::Text("Missile %zu: Locked=%s, Target=%s, TargetHandle=%llu",
 							i,
 							missiles[i]->IsLockedOn() ? "Yes" : "No",
 							missiles[i]->HasTarget() ? "Yes" : "No",
-							(void *)targetEnemy);
+							static_cast<unsigned long long>(targetHandle.value));
 			}
 		}
 

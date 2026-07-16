@@ -1,4 +1,5 @@
 #pragma once
+#include "EnemyHandle.h"
 #include "MagMath.h"
 using Vector3 = MagMath::Vector3;
 using Transform = MagMath::Transform;
@@ -62,6 +63,10 @@ public:
 		return isAlive_;
 	}
 
+	[[nodiscard]] EnemyHandle GetHandle() const {
+		return handle_;
+	}
+
 	/// \brief Wave進行上の離脱として非アクティブ化
 	void MarkExited();
 
@@ -83,6 +88,12 @@ public:
 	/// \brief 最大HPを取得
 	int GetMaxHP() const {
 		return maxHP_;
+	}
+
+	void ApplySpawnModifiers(float healthMultiplier, float speedMultiplier);
+
+	float GetSpawnSpeedMultiplier() const {
+		return spawnSpeedMultiplier_;
 	}
 
 	/// \brief ダメージを受ける
@@ -155,6 +166,13 @@ public:
 	void OnCollisionStay(BaseObject *other) override;
 	void OnCollisionExit(BaseObject *other) override;
 
+private:
+	// EnemyManager だけが Handle を割り当てる。
+	friend class EnemyManager;
+	void SetHandle(EnemyHandle handle) {
+		handle_ = handle;
+	}
+
 protected:
 	/// \brief ヒットリアクションの開始
 	void StartHitReaction();
@@ -206,6 +224,7 @@ protected:
 	//========================================
 	// 基本パラメータ
 	float speed_;
+	float spawnSpeedMultiplier_ = 1.0f;
 	float radius_;
 	int currentHP_;
 	int maxHP_;
@@ -215,6 +234,7 @@ protected:
 	float lifeTimer_;
 	float maxLifeTime_;
 	bool isAlive_;
+	EnemyHandle handle_{};
 
 	//========================================
 	// パーティクル関連

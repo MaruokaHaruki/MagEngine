@@ -4,13 +4,11 @@
  *
  * \author Harukichimaru
  * \date   January 2025
- * \note   NOTE: 各シーンの生成と初期化を行う
- *         NOTE: SceneContextでセットアップ類をまとめて渡している
+ * \note   NOTE: 各シーンの生成を行う
+ *         NOTE: 初期化はSceneManagerが候補Sceneを保持したまま実行する
  *********************************************************************/
 #include "SceneFactory.h"
-#include "EngineContext.h"
 #include "Logger.h"
-#include "SceneContext.h"
 #include <memory>
 using namespace Logger;
 //========================================
@@ -23,9 +21,8 @@ using namespace Logger;
 #include "TitleScene.h"
 
 ///=============================================================================
-/// NOTE: SceneContextを使用してシーンを生成
-///       これにより7個の引数を1つに削減
-std::unique_ptr<BaseScene> SceneFactory::CreateScene(int sceneNo, const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) {
+/// NOTE: 生成と初期化を分離することで、初期化失敗時も遷移元Sceneを維持できる。
+std::unique_ptr<BaseScene> SceneFactory::CreateScene(int sceneNo) {
 	//========================================
 	// 次のシーンの生成
 	std::unique_ptr<BaseScene> nextScene = nullptr;
@@ -44,14 +41,6 @@ std::unique_ptr<BaseScene> SceneFactory::CreateScene(int sceneNo, const MagEngin
 		Log("シーン名が不正です", LogLevel::Error);
 		return nextScene;
 	}
-
-	//========================================
-	// NOTE: 旧APIフォールバックを残さないため、生成時に必須Contextを検証する
-	engineContext.Validate();
-
-	//========================================
-	// シーンの初期化 - NOTE: EngineContextとSceneContextを分離して渡す
-	nextScene->Initialize(engineContext, sceneContext);
 
 	//========================================
 	// シーンを返す

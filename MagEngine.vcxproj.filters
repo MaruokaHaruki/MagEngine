@@ -19,6 +19,9 @@
 	<ClCompile Include="application\gameplay\GamePlayDebugController.cpp">
 	  <Filter>application</Filter>
 	</ClCompile>
+	<ClCompile Include="application\gameplay\GamePlayCollisionCoordinator.cpp">
+	  <Filter>application</Filter>
+	</ClCompile>
     <ClCompile Include="scene\base\BaseScene.cpp">
       <Filter>scene\base</Filter>
     </ClCompile>
@@ -480,6 +483,9 @@
 	<ClInclude Include="application\gameplay\GamePlayDebugController.h">
 	  <Filter>application</Filter>
 	</ClInclude>
+	<ClInclude Include="application\gameplay\GamePlayCollisionCoordinator.h">
+	  <Filter>application</Filter>
+	</ClInclude>
     <ClInclude Include="engine\math\operations\RenderingMatrices.h">
       <Filter>engine\math\operations</Filter>
     </ClInclude>
@@ -624,6 +630,9 @@
     <ClInclude Include="application\enemy\manager\EnemyManager.h">
       <Filter>application\enemy\manager</Filter>
     </ClInclude>
+	<ClInclude Include="application\enemy\manager\EnemyHandle.h">
+	  <Filter>application\enemy\manager</Filter>
+	</ClInclude>
     <ClInclude Include="application\enemy\manager\EnemyGroup.h">
       <Filter>application\enemy\manager</Filter>
     </ClInclude>
@@ -659,6 +668,9 @@
     </ClInclude>
     <ClInclude Include="application\SceneTransition.h">
       <Filter>application</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\base\time\FrameTime.h">
+      <Filter>engine\base\time</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\structure\GraphicsStructures.h">
       <Filter>engine\math\structure</Filter>
@@ -948,6 +960,9 @@
     </Filter>
     <Filter Include="engine\base\framework">
       <UniqueIdentifier>{64699853-59a6-4871-bde7-2a77e17f3228}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\base\time">
+      <UniqueIdentifier>{51E70E25-5B42-4C61-AB96-09C7291E9D8A}</UniqueIdentifier>
     </Filter>
     <Filter Include="externals\json">
       <UniqueIdentifier>{2bddd302-3468-4675-974a-adfbd5d55164}</UniqueIdentifier>

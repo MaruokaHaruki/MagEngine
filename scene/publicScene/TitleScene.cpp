@@ -8,6 +8,7 @@
  *********************************************************************/
 #include "TitleScene.h"
 #include "CameraManager.h"
+#include "DebugTextManager.h"
 #include "EngineContext.h"
 #include "Input.h"
 #include "ModelManager.h"
@@ -168,16 +169,37 @@ void TitleScene::Finalize() {
 }
 
 ///=============================================================================
+/// NOTE: GamePlay候補の初期化失敗後もTitleを継続するため、完了済みの閉じ演出を解除する。
+void TitleScene::OnSceneChangeFailed(int requestedSceneNo, std::string_view errorMessage) {
+	(void)requestedSceneNo;
+	(void)errorMessage;
+	SetSceneNo(-1);
+
+	if (sceneTransition_) {
+		sceneTransition_->SetOnCompleteCallback({});
+		sceneTransition_->Cancel();
+	}
+
+	if (engineContext_ && engineContext_->cameraManager) {
+		CameraManager *cameraManager = engineContext_->cameraManager;
+		cameraManager->SetCurrentCamera("TitleCamera");
+		if (engineContext_->debugTextManager) {
+			engineContext_->debugTextManager->SetCamera(cameraManager->GetCamera("TitleCamera"));
+		}
+	}
+}
+
+///=============================================================================
 ///						更新
-void TitleScene::Update(float deltaTime) {
-	(void)deltaTime;
+void TitleScene::Update(const FrameTime &frameTime) {
+	const float unscaledDeltaTime = frameTime.unscaledDeltaTime;
 	assert(engineContext_);
 	Input *input = engineContext_->input;
 	CameraManager *cameraManager = engineContext_->cameraManager;
 
 	//========================================
 	// 経過時間の更新
-	totalElapsedTime_ += 1.0f / 60.0f;
+	totalElapsedTime_ += unscaledDeltaTime;
 
 	//========================================
 	// Object3D
@@ -189,7 +211,7 @@ void TitleScene::Update(float deltaTime) {
 	}
 
 	// Press Enterの点滅処理
-	blinkTimer_ += 1.0f / 60.0f; // 1フレーム進める
+	blinkTimer_ += unscaledDeltaTime;
 
 	// フェード速度（1秒でフェードイン/アウト）
 	float fadeSpeed = 1.0f;
@@ -233,7 +255,7 @@ void TitleScene::Update(float deltaTime) {
 	//=========================================
 	// 雲の更新
 	if (cloud_) {
-		cloud_->Update(*cameraManager->GetCurrentCamera(), 1.0f / 60.0f);
+		cloud_->Update(*cameraManager->GetCurrentCamera(), unscaledDeltaTime);
 	}
 
 	//========================================
@@ -252,7 +274,7 @@ void TitleScene::Update(float deltaTime) {
 	//========================================
 	// トランジション更新
 	if (sceneTransition_) {
-		sceneTransition_->Update();
+		sceneTransition_->Update(unscaledDeltaTime);
 	}
 
 	//========================================

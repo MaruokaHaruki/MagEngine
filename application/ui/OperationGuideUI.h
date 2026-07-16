@@ -71,7 +71,7 @@ public:
 	void Finalize();
 
 	/// \brief 更新
-	void Update();
+	void Update(float unscaledDeltaTime);
 
 	/// \brief 描画
 	void Draw();
@@ -121,7 +121,7 @@ private:
 	void InitializeButtons();
 	void UpdateButtonStates();
 	void UpdateButtonAnimations(float deltaTime);
-	void UpdateDeployAnimation();
+	void UpdateDeployAnimation(float unscaledDeltaTime);
 	float EaseOutElastic(float t);
 	float EaseInOutQuad(float t);
 

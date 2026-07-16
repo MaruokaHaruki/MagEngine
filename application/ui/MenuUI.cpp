@@ -157,8 +157,7 @@ void MenuUI::Finalize() {
 
 ///=============================================================================
 ///                        更新
-void MenuUI::Update() {
-	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
+void MenuUI::Update(float unscaledDeltaTime) {
 
 	assert(input_);
 	Input *input = input_;
@@ -179,7 +178,7 @@ void MenuUI::Update() {
 		targetFadeAlpha_ = 0.0f;
 	}
 
-	fadeAlpha_ += (targetFadeAlpha_ - fadeAlpha_) * fadeSpeed_ * deltaTime;
+	fadeAlpha_ += (targetFadeAlpha_ - fadeAlpha_) * fadeSpeed_ * unscaledDeltaTime;
 
 	// メニューが閉じている場合は更新をスキップ
 	if (fadeAlpha_ < 0.01f) {
@@ -187,10 +186,10 @@ void MenuUI::Update() {
 	}
 
 	// ボタン選択の更新
-	UpdateButtonSelection();
+	UpdateButtonSelection(unscaledDeltaTime);
 
 	// アニメーションの更新
-	UpdateButtonAnimations(deltaTime);
+	UpdateButtonAnimations(unscaledDeltaTime);
 
 	// スプライト更新
 	if (backgroundSprite_) {
@@ -215,7 +214,7 @@ void MenuUI::Update() {
 
 ///=============================================================================
 ///                        ボタン選択の更新
-void MenuUI::UpdateButtonSelection() {
+void MenuUI::UpdateButtonSelection(float unscaledDeltaTime) {
 	if (fadeAlpha_ < 0.5f) {
 		return;
 	}
@@ -225,7 +224,7 @@ void MenuUI::UpdateButtonSelection() {
 
 	// 上下キーでボタン選択
 	static float inputCooldown = 0.0f;
-	inputCooldown -= 1.0f / 60.0f;
+	inputCooldown -= unscaledDeltaTime;
 
 	float stickY = input->GetLeftStickY();
 	bool moveUp = (stickY > 0.5f);

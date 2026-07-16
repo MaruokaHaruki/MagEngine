@@ -37,7 +37,7 @@ void SceneTransition::Finalize() {
 
 ///=============================================================================
 ///                        更新
-void SceneTransition::Update() {
+void SceneTransition::Update(float unscaledDeltaTime) {
 	if (state_ == TransitionState::Idle) {
 		// Idle状態では完全に透明に
 		if (transitionSprite_) {
@@ -58,9 +58,9 @@ void SceneTransition::Update() {
 		return;
 	}
 
-	// 経過時間の更新
-	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
-	elapsedTime_ += deltaTime;
+	// NOTE: SceneTransitionはゲームスローやポーズ中のゲームロジックから独立した演出のため、
+	//       Frameworkで一度だけクランプされた非スケール時間を使用する。
+	elapsedTime_ += std::max(0.0f, unscaledDeltaTime);
 
 	// 進行度の計算
 	float rawProgress = elapsedTime_ / duration_;

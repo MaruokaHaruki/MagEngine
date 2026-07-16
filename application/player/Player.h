@@ -144,7 +144,7 @@ public:
 	/// @brief 毎フレーム更新
 	/// @details 移動、射撃、各種コンポーネントの状態を更新
 	/// @note Update() は必ず毎フレーム呼び出す必要がある
-	void Update(float deltaTime);
+	void Update(float unscaledDeltaTime, float gameplayDeltaTime);
 	
 	/// @brief ImGui用デバッグパネル描画
 	/// @details HPゲージ、ブーストゲージ、移動情報、ロックオン情報などを表示
@@ -195,16 +195,16 @@ public:
 	/// @brief プライマリロックオン対象を取得
 	/// @return メインロックオン対象の敵。ロック中でなければ nullptr
 	/// @details 最初にロックされた敵（優先度が最も高い）を返す
-	EnemyBase *GetLockOnTarget() const {
-		return lockedOnComponent_.GetPrimaryTarget();
+	EnemyHandle GetLockOnTargetHandle() const {
+		return lockedOnComponent_.GetPrimaryTargetHandle();
 	}
 	
 	/// @brief 全ロックオン対象を取得
 	/// @return ロック中のすべての敵のポインタのベクトル
 	/// @details マルチロック機能で同時に複数敵をロック可能
 	/// @note 最大数は PlayerLockedOnComponent で定義される
-	const std::vector<EnemyBase *> &GetAllLockOnTargets() const {
-		return lockedOnComponent_.GetAllTargets();
+	const std::vector<EnemyHandle> &GetAllLockOnTargetHandles() const {
+		return lockedOnComponent_.GetAllTargetHandles();
 	}
 	
 	/// @brief ロックオン対象の数を取得
@@ -225,8 +225,8 @@ public:
 	/// @brief 現在照準内にいるロック候補を取得
 	/// @return 照準円内で最も近い敵。候補がなければ nullptr
 	/// @details 照準カーソル近くの敵を取得（ロック判定の前段階）
-	EnemyBase *GetAimingLockOnTarget() const {
-		return lockedOnComponent_.GetAimingTarget();
+	EnemyHandle GetAimingLockOnTargetHandle() const {
+		return lockedOnComponent_.GetAimingTargetHandle();
 	}
 	
 	/// @brief ロックオン範囲をセット

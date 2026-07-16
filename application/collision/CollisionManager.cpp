@@ -353,19 +353,12 @@ void CollisionManager::CheckAllCollisions() {
 ///=============================================================================
 ///						高速衝突判定
 bool CollisionManager::FastIntersects(BaseObject *objA, BaseObject *objB) const {
+	if (!CanStartCollisionPair(objA, objB)) {
+		return false;
+	}
+
 	auto colliderA = objA->GetCollider();
 	auto colliderB = objB->GetCollider();
-
-	if (!colliderA || !colliderB)
-		return false;
-
-	// 有効/無効チェック
-	if (!objA->IsCollisionEnabled() || !objB->IsCollisionEnabled())
-		return false;
-
-	// グループ・レイヤーマスク経由の衝突可否判定
-	if (!CanCollideByGroupAndMask(objA, objB))
-		return false;
 
 	// 早期リターン：ざっくりした距離チェック
 	Vector3 diff = colliderA->GetPosition() - colliderB->GetPosition();
@@ -384,6 +377,22 @@ bool CollisionManager::FastIntersects(BaseObject *objA, BaseObject *objB) const 
 	return distanceSquared <= (radiusSum * radiusSum);
 }
 
+bool CollisionManager::CanStartCollisionPair(BaseObject *objA, BaseObject *objB) const {
+	if (!objA || !objB || objA == objB) {
+		return false;
+	}
+
+	if (!objA->IsCollisionEnabled() || !objB->IsCollisionEnabled()) {
+		return false;
+	}
+
+	if (!objA->GetCollider() || !objB->GetCollider()) {
+		return false;
+	}
+
+	return CanCollideByGroupAndMask(objA, objB);
+}
+
 ///=============================================================================
 ///						オブジェクトをグリッドに配置
 void CollisionManager::AssignObjectsToGrid() {
@@ -398,6 +407,12 @@ void CollisionManager::AssignObjectsToGrid() {
 ///=============================================================================
 ///						衝突処理実行（改良版）
 void CollisionManager::ProcessCollision(BaseObject *objA, BaseObject *objB, bool isColliding) {
+	// 処理内容：Pair開始直前の有効性を再確認する。
+	// 理由：先行Pairのコールバックで無効化された対象を、後続Pairへ参加させないため。
+	if (isColliding && !CanStartCollisionPair(objA, objB)) {
+		return;
+	}
+
 	CollisionPair pair(objA, objB);
 	if (isColliding && !currentCollisionPairs_.insert(pair).second) {
 		return;

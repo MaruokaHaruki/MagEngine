@@ -70,7 +70,7 @@ void LockOnHUD::Finalize() {
 
 ///=============================================================================
 ///                        更新処理
-void LockOnHUD::Update(MagEngine::Camera *camera) {
+void LockOnHUD::Update(MagEngine::Camera *camera, float unscaledDeltaTime) {
 	if (!isVisible_ || !player_ || !enemyManager_) {
 		return;
 	}
@@ -78,7 +78,7 @@ void LockOnHUD::Update(MagEngine::Camera *camera) {
 
 	// アニメーション更新
 	if (debugSettings_.enableAnimation) {
-		pulseTime_ += 1.0f / 60.0f; // 60FPS想定
+		pulseTime_ += unscaledDeltaTime;
 		if (pulseTime_ > 2.0f * M_PI / pulseSpeed_) {
 			pulseTime_ = 0.0f;
 		}
@@ -99,12 +99,12 @@ void LockOnHUD::Draw() {
 	}
 
 	// ロックオン情報を取得
-	const auto &lockedEnemies = player_->GetAllLockOnTargets();
+	const auto &lockedEnemyHandles = player_->GetAllLockOnTargetHandles();
 	const bool isLockOnMode = player_->IsMissileLockOnMode();
-	EnemyBase *aimingTarget = player_->GetAimingLockOnTarget();
+	EnemyBase *aimingTarget = enemyManager_->ResolveEnemy(player_->GetAimingLockOnTargetHandle());
 
 	// ロックオンモード外でロック済みもない場合は描画しない
-	if (!isLockOnMode && lockedEnemies.empty()) {
+	if (!isLockOnMode && lockedEnemyHandles.empty()) {
 		return;
 	}
 	ScopedLineRenderMode lineModeGuard(*lineManager_, LineRenderMode::Hud);
@@ -123,14 +123,15 @@ void LockOnHUD::Draw() {
 			}
 
 			// ロック対象かチェック
-			bool isLocked = std::find(lockedEnemies.begin(), lockedEnemies.end(), enemy) != lockedEnemies.end();
+			bool isLocked = std::find(lockedEnemyHandles.begin(), lockedEnemyHandles.end(), enemy->GetHandle()) != lockedEnemyHandles.end();
 
 			DrawEnemyMarker(enemy, camera, isLocked);
 		}
 	}
 
 	// ロック済みターゲットは常に描画
-	for (EnemyBase *enemy : lockedEnemies) {
+	for (EnemyHandle handle : lockedEnemyHandles) {
+		EnemyBase *enemy = enemyManager_->ResolveEnemy(handle);
 		if (!enemy || !enemy->IsAlive()) {
 			continue;
 		}
@@ -139,12 +140,12 @@ void LockOnHUD::Draw() {
 
 	// 長押し中の照準候補（未ロック）を描画
 	if (isLockOnMode && aimingTarget &&
-		std::find(lockedEnemies.begin(), lockedEnemies.end(), aimingTarget) == lockedEnemies.end()) {
+		std::find(lockedEnemyHandles.begin(), lockedEnemyHandles.end(), aimingTarget->GetHandle()) == lockedEnemyHandles.end()) {
 		DrawEnemyMarker(aimingTarget, camera, false);
 	}
 
 	// ロックオンラインを描画
-	if (debugSettings_.showLockOnLines && !lockedEnemies.empty()) {
+	if (debugSettings_.showLockOnLines && !lockedEnemyHandles.empty()) {
 		DrawLockOnLines();
 	}
 }
@@ -279,10 +280,11 @@ void LockOnHUD::DrawLockOnLines() {
 	}
 
 	Vector3 playerPos = player_->GetPosition();
-	const auto &lockedEnemies = player_->GetAllLockOnTargets();
+	const auto &lockedEnemyHandles = player_->GetAllLockOnTargetHandles();
 
 	// プレイヤーからすべてのロック敵へのラインを描画
-	for (EnemyBase *enemy : lockedEnemies) {
+	for (EnemyHandle handle : lockedEnemyHandles) {
+		EnemyBase *enemy = enemyManager_ ? enemyManager_->ResolveEnemy(handle) : nullptr;
 		if (!enemy || !enemy->IsAlive()) {
 			continue;
 		}

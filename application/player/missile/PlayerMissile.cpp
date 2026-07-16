@@ -58,8 +58,8 @@ void PlayerMissile::Initialize(
 
 	//========================================
 	// 追尾パラメータ初期化（段階的な追尾）
-	target_ = nullptr;
-	lockedTarget_ = nullptr;
+	targetHandle_ = {};
+	lockedTargetHandle_ = {};
 	trackingStrength_ = 0.0f;	// 初期は追尾なし
 	lockOnRange_ = 50.0f;		// ロックオン範囲を広げる
 	lockOnFOV_ = 180.0f;		// 視野角180度（前方ほぼ全周でロック可能）
@@ -211,17 +211,22 @@ void PlayerMissile::UpdateMovement() {
 }
 
 void PlayerMissile::UpdateTracking() {
+	if (!enemyManager_) {
+		return;
+	}
 	//========================================
 	// ロックオン時は即座にターゲット設定
-	if (isLockedOn_ && lockedTarget_ && lockedTarget_->IsAlive()) {
-		target_ = lockedTarget_;
+	if (isLockedOn_ && enemyManager_->IsEnemyTargetable(lockedTargetHandle_)) {
+		targetHandle_ = lockedTargetHandle_;
 		// ロックオン時は追尾強度を即座に最大にする
 		trackingStrength_ = 1.0f;
 	}
 
 	//========================================
 	// ターゲット選択（ロックオンがない場合）
-	if (!target_ || !target_->IsAlive()) {
+	EnemyBase *target = enemyManager_ ? enemyManager_->ResolveEnemy(targetHandle_) : nullptr;
+	if (!target || !target->IsAlive()) {
+		targetHandle_ = {};
 		// 時間経過で追尾強度を上げる
 		if (lifetime_ >= trackingStartTime_) {
 			float timeSinceStart = lifetime_ - trackingStartTime_;
@@ -229,14 +234,15 @@ void PlayerMissile::UpdateTracking() {
 		}
 
 		// ターゲット探索
-		target_ = FindNearestTarget();
+		targetHandle_ = FindNearestTarget();
+		target = enemyManager_ ? enemyManager_->ResolveEnemy(targetHandle_) : nullptr;
 	}
 
 	//========================================
 	// ターゲット追尾処理
-	if (target_ && target_->IsAlive() && trackingStrength_ > 0.01f) {
+	if (target && target->IsAlive() && trackingStrength_ > 0.01f) {
 		Vector3 missilePos = obj_->GetPosition();
-		Vector3 targetPos = target_->GetPosition();
+		Vector3 targetPos = target->GetPosition();
 
 		// ターゲットへの方向
 		Vector3 toTarget = {
@@ -282,8 +288,8 @@ void PlayerMissile::StartLockOn() {
 		return;
 
 	// SetTarget()で既にターゲットが設定されている場合は、それを尊重する
-	if (target_) {
-		lockedTarget_ = target_;
+	if (EnemyBase *target = enemyManager_->ResolveEnemy(targetHandle_)) {
+		lockedTargetHandle_ = target->GetHandle();
 		isLockedOn_ = true;
 		lockOnTime_ = 0.0f;
 		trackingStrength_ = 1.0f;
@@ -292,10 +298,10 @@ void PlayerMissile::StartLockOn() {
 	}
 
 	// ターゲットが設定されていない場合は、最寄りの敵を探す
-	EnemyBase *nearestEnemy = FindNearestTarget();
-	if (nearestEnemy) {
-		lockedTarget_ = nearestEnemy;
-		target_ = nearestEnemy; // 直ちにターゲット設定
+	const EnemyHandle nearestEnemyHandle = FindNearestTarget();
+	if (nearestEnemyHandle.IsValid()) {
+		lockedTargetHandle_ = nearestEnemyHandle;
+		targetHandle_ = lockedTargetHandle_; // 直ちにターゲット設定
 		isLockedOn_ = true;
 		lockOnTime_ = 0.0f;
 		trackingStrength_ = 1.0f;
@@ -342,13 +348,13 @@ void PlayerMissile::UpdateLifetime() {
 	}
 }
 
-EnemyBase *PlayerMissile::FindNearestTarget() { // Enemy* から EnemyBase* に変更
+EnemyHandle PlayerMissile::FindNearestTarget() {
 	if (!enemyManager_) {
-		return nullptr;
+		return {};
 	}
 
 	Vector3 missilePos = obj_->GetPosition();
-	EnemyBase *nearestEnemy = nullptr; // Enemy* から EnemyBase* に変更
+	EnemyHandle nearestEnemyHandle{};
 	float bestScore = -1.0f;
 
 	// EnemyManagerから敵リストを取得
@@ -389,11 +395,11 @@ EnemyBase *PlayerMissile::FindNearestTarget() { // Enemy* から EnemyBase* に�
 
 		if (score > bestScore) {
 			bestScore = score;
-			nearestEnemy = enemy.get();
+			nearestEnemyHandle = enemy->GetHandle();
 		}
 	}
 
-	return nearestEnemy;
+	return nearestEnemyHandle;
 }
 
 void PlayerMissile::Explode() {
@@ -502,8 +508,8 @@ void PlayerMissile::DrawDebugInfo() {
 			// 検知範囲内の敵の場合
 			if (distance <= lockOnRange_) {
 				// ロックオン状態に応じてマーカーを描画
-				bool isCurrentTarget = (target_ == enemy.get());
-				bool isLockedTarget = (lockedTarget_ == enemy.get());
+				bool isCurrentTarget = (targetHandle_ == enemy->GetHandle());
+				bool isLockedTarget = (lockedTargetHandle_ == enemy->GetHandle());
 
 				Vector4 markerColor;
 				float markerSize;
@@ -540,8 +546,8 @@ void PlayerMissile::DrawDebugInfo() {
 
 	//========================================
 	// ターゲットラインの描画（メインターゲットのみ）
-	if (showTargetLine_ && target_ && target_->IsAlive()) {
-		Vector3 targetPos = target_->GetPosition();
+	if (EnemyBase *target = enemyManager_ ? enemyManager_->ResolveEnemy(targetHandle_) : nullptr; showTargetLine_ && target && target->IsAlive()) {
+		Vector3 targetPos = target->GetPosition();
 		Vector4 lineColor = isLockedOn_ ? Vector4{1.0f, 0.0f, 0.0f, 1.0f} : // ロックオン時は赤
 								Vector4{1.0f, 1.0f, 0.0f, 1.0f};			// 通常追尾時は黄色
 
@@ -652,7 +658,7 @@ void PlayerMissile::DrawImGui() {
 			float dotProduct = MagMath::Dot(forward_, MagMath::Normalize(toEnemy));
 				float score = distance - dotProduct * 10.0f;
 
-				bool isTarget = (target_ == enemy.get());
+				bool isTarget = (targetHandle_ == enemy->GetHandle());
 				ImGui::TextColored(
 					isTarget ? ImVec4(1.0f, 1.0f, 0.0f, 1.0f) : ImVec4(0.7f, 0.7f, 0.7f, 1.0f),
 					"%s - Dist: %.1f, Score: %.1f, DotProd: %.2f",
@@ -684,8 +690,8 @@ void PlayerMissile::DrawImGui() {
 	ImGui::Text("Tracking Strength: %.1f%%", trackingStrength_ * 100.0f);
 	ImGui::ProgressBar(trackingStrength_, ImVec2(200, 20), "Tracking Strength");
 
-	if (HasTarget()) {
-		Vector3 targetPos = target_->GetPosition();
+	if (EnemyBase *target = enemyManager_ ? enemyManager_->ResolveEnemy(targetHandle_) : nullptr) {
+		Vector3 targetPos = target->GetPosition();
 		Vector3 missilePos = GetPosition();
 		Vector3 toTarget = {
 			targetPos.x - missilePos.x,
@@ -739,7 +745,7 @@ void PlayerMissile::DrawImGui() {
 	ImGui::SameLine();
 	if (ImGui::Button("Clear Lock-On")) {
 		isLockedOn_ = false;
-		lockedTarget_ = nullptr;
+		lockedTargetHandle_ = {};
 		lockOnTime_ = 0.0f;
 	}
 	if (ImGui::Button("Clear Trajectory")) {
@@ -759,7 +765,7 @@ Vector3 PlayerMissile::GetPosition() const {
 }
 
 void PlayerMissile::SetTarget(EnemyBase *target) {
-	target_ = target;
+	targetHandle_ = target ? target->GetHandle() : EnemyHandle{};
 	if (target) {
 		// ターゲットが設定されたら即座に追尾を強化
 		trackingStrength_ = 1.0f;

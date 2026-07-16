@@ -34,9 +34,7 @@ public:
 	}
 
 	/// \brief 削除フラグの設定
-	void SetDead() {
-		isAlive_ = false;
-	}
+	void SetDead();
 
 	/// \brief 位置の取得
 	Vector3 GetPosition() const;

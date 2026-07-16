@@ -219,23 +219,21 @@ void OperationGuideUI::Finalize() {
 
 ///=============================================================================
 ///                        更新
-void OperationGuideUI::Update() {
+void OperationGuideUI::Update(float unscaledDeltaTime) {
 	if (!isVisible_) {
 		return;
 	}
 
-	const float deltaTime = 1.0f / 60.0f; // 60FPS想定
-
 	// 展開アニメーションの更新
 	if (isAnimating_) {
-		UpdateDeployAnimation();
+		UpdateDeployAnimation(unscaledDeltaTime);
 	}
 
 	// ボタン状態の更新
 	UpdateButtonStates();
 
 	// アニメーションの更新
-	UpdateButtonAnimations(deltaTime);
+	UpdateButtonAnimations(unscaledDeltaTime);
 
 	// スプライト更新
 	if (backgroundSprite_) {
@@ -509,8 +507,8 @@ void OperationGuideUI::StartRetractAnimation(float duration) {
 
 ///=============================================================================
 ///                        展開アニメーション更新
-void OperationGuideUI::UpdateDeployAnimation() {
-	deployAnimationTime_ += 1.0f / 60.0f; // 60FPS想定
+void OperationGuideUI::UpdateDeployAnimation(float unscaledDeltaTime) {
+	deployAnimationTime_ += unscaledDeltaTime;
 
 	if (deployAnimationTime_ >= deployAnimationDuration_) {
 		// アニメーション終了

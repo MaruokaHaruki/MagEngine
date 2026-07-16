@@ -83,7 +83,7 @@ void HUD::Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineMan
 	showEnemyIndicators_ = true;
 
 	// ロックオン情報
-	lockOnTarget_ = nullptr;
+	lockOnTargetHandle_ = {};
 	lockOnRange_ = 30.0f;
 	lockOnFOV_ = 60.0f;
 	lockedEnemyCount_ = 0;
@@ -137,12 +137,12 @@ void HUD::StartRetractAnimation(float duration) {
 
 ///=============================================================================
 ///                        アニメーション更新
-void HUD::UpdateAnimation() {
+void HUD::UpdateAnimation(float unscaledDeltaTime) {
 	if (!isAnimating_) {
 		return;
 	}
 
-	animationTime_ += 1.0f / 60.0f;
+	animationTime_ += unscaledDeltaTime;
 	float rawProgress = animationTime_ / animationDuration_;
 	rawProgress = std::min(rawProgress, 1.0f);
 	float easedProgress = EaseOutCubic(rawProgress);
@@ -344,7 +344,7 @@ Vector3 HUD::GetPlayerFrontPositionWithOffset(float screenX, float screenY, cons
 
 ///=============================================================================
 ///                        更新
-void HUD::Update(const Player *player) {
+void HUD::Update(const Player *player, float unscaledDeltaTime) {
 	if (!player)
 		return;
 	// プレイヤー・カメラ参照を保存
@@ -355,7 +355,7 @@ void HUD::Update(const Player *player) {
 		currentCamera_ = cameraManager_->GetCurrentCamera();
 	}
 
-	UpdateAnimation();
+	UpdateAnimation(unscaledDeltaTime);
 
 	playerPosition_ = player->GetPosition();
 
@@ -367,11 +367,12 @@ void HUD::Update(const Player *player) {
 	// 弾発射方向の取得（新規）
 	bulletFireDirection_ = player->GetBulletFireDirection();
 
+	const float sampleDeltaTime = (std::max)(unscaledDeltaTime, 0.0001f);
 	static Vector3 previousPosition = playerPosition_;
 	playerVelocity_ = {
-		(playerPosition_.x - previousPosition.x) * 60.0f,
-		(playerPosition_.y - previousPosition.y) * 60.0f,
-		(playerPosition_.z - previousPosition.z) * 60.0f};
+		(playerPosition_.x - previousPosition.x) / sampleDeltaTime,
+		(playerPosition_.y - previousPosition.y) / sampleDeltaTime,
+		(playerPosition_.z - previousPosition.z) / sampleDeltaTime};
 	previousPosition = playerPosition_;
 
 	currentSpeed_ = sqrtf(playerVelocity_.x * playerVelocity_.x +
@@ -379,7 +380,7 @@ void HUD::Update(const Player *player) {
 						  playerVelocity_.z * playerVelocity_.z);
 
 	static float previousSpeed = currentSpeed_;
-	float acceleration = (currentSpeed_ - previousSpeed) * 60.0f;
+	float acceleration = (currentSpeed_ - previousSpeed) / sampleDeltaTime;
 	currentGForce_ = 1.0f + acceleration / 9.8f;
 	previousSpeed = currentSpeed_;
 
@@ -397,7 +398,7 @@ void HUD::Update(const Player *player) {
 	barrelRollProgress_ = player->GetBarrelRollProgress();
 
 	// ロックオン情報の更新
-	lockOnTarget_ = player->GetLockOnTarget();
+	lockOnTargetHandle_ = player->GetLockOnTargetHandle();
 	lockOnRange_ = player->GetLockOnRange();
 	lockOnFOV_ = player->GetLockOnFOV();
 	isMissileLockOnMode_ = player->IsMissileLockOnMode();
@@ -407,7 +408,7 @@ void HUD::Update(const Player *player) {
 
 	// ジャスト回避演出の更新
 	if (justAvoidanceDisplayActive_) {
-		justAvoidanceNotificationTimer_ += 0.016f; // 約60FPS基準
+		justAvoidanceNotificationTimer_ += unscaledDeltaTime;
 		if (justAvoidanceNotificationTimer_ >= justAvoidanceNotificationDuration_) {
 			justAvoidanceDisplayActive_ = false;
 		}
@@ -494,7 +495,7 @@ void HUD::Draw() {
 	}
 
 	// ロックオン用レティクル（長押しモード中も表示）
-	if (showLockOnReticle_ && (isMissileLockOnMode_ || lockOnTarget_)) {
+	if (showLockOnReticle_ && (isMissileLockOnMode_ || currentPlayer_->HasLockOnTarget())) {
 		DrawLockOnReticle(deployProgress_);
 	}
 
@@ -1110,7 +1111,7 @@ void HUD::DrawImGui() {
 ///=============================================================================
 /// ロックオン用レティクル描画（ワールド空間 4コーナーブラケット）
 void HUD::DrawLockOnReticle(float progress) {
-	if (!lockOnTarget_)
+	if (!currentPlayer_ || !currentPlayer_->HasLockOnTarget())
 		return;
 
 	assert(lineManager_);
@@ -1242,7 +1243,7 @@ void HUD::DrawEnemyIndicators(float progress) {
 		}
 
 		// ロックオン対象かチェック
-		bool isLocked = (lockOnTarget_ == enemy.get());
+		bool isLocked = (lockOnTargetHandle_ == enemy->GetHandle());
 
 		// インジケーターの色
 		Vector4 indicatorColor;

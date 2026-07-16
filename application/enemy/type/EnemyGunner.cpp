@@ -37,30 +37,28 @@ void EnemyGunner::Update() {
 }
 
 void EnemyGunner::Update(float deltaTime) {
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
-
-	EnemyBase::Update(safeDeltaTime);
+	EnemyBase::Update(deltaTime);
 
 	if (destroyState_ != DestroyState::Alive || isHitReacting_) {
-		UpdateBullets(safeDeltaTime);
+		UpdateBullets(deltaTime);
 		return;
 	}
 
-	shootTimer_ += safeDeltaTime;
+	shootTimer_ += deltaTime;
 
 	if (IsFormationFollowEnabled()) {
-		UpdateFormationFollow(safeDeltaTime);
-		if (IsFormationAttackEnabled() && shootTimer_ >= EnemyGunnerConstants::kShootInterval) {
+		UpdateFormationFollow(deltaTime);
+		if (IsFormationAttackEnabled() && shootTimer_ >= shootInterval_) {
 			TryShootAtPlayer();
 		}
-		UpdateBullets(safeDeltaTime);
+		UpdateBullets(deltaTime);
 		return;
 	}
 
-	UpdateGunnerState(safeDeltaTime);
+	UpdateGunnerState(deltaTime);
 
 	// 弾の更新・削除
-	UpdateBullets(safeDeltaTime);
+	UpdateBullets(deltaTime);
 }
 
 void EnemyGunner::UpdateGunnerState(float safeDeltaTime) {
@@ -82,7 +80,7 @@ void EnemyGunner::UpdateGunnerState(float safeDeltaTime) {
 				combatCenter_ = playerPos;
 				moveTimer_ = 0.0f;
 			} else {
-				MoveToward(targetPosition_, EnemyGunnerConstants::kApproachSpeed, 1.0f, safeDeltaTime);
+				MoveToward(targetPosition_, EnemyGunnerConstants::kApproachSpeed * GetSpawnSpeedMultiplier(), 1.0f, safeDeltaTime);
 			}
 		}
 		break;
@@ -118,21 +116,21 @@ void EnemyGunner::UpdateGunnerState(float safeDeltaTime) {
 		// 目標位置への移動（停止閾値以内なら固定）
 		float distToTarget = GetDistanceTo(targetPosition_);
 		if (distToTarget > 2.0f) {
-			MoveToward(targetPosition_, EnemyGunnerConstants::kDefaultSpeed, 0.8f, safeDeltaTime);
+			MoveToward(targetPosition_, EnemyGunnerConstants::kDefaultSpeed * GetSpawnSpeedMultiplier(), 0.8f, safeDeltaTime);
 		} else {
 			transform_.translate = targetPosition_;
 		}
 
 		// 射撃処理
-		if (shootTimer_ >= EnemyGunnerConstants::kShootInterval && player_) {
+		if (shootTimer_ >= shootInterval_ && player_) {
 			TryShootAtPlayer();
 		}
 		break;
 	}
 
 	case GunnerState::Retreat: {
-		transform_.translate.y += 8.0f * safeDeltaTime;
-		transform_.translate.z += EnemyGunnerConstants::kRetreatSpeed * safeDeltaTime;
+		transform_.translate.y += 8.0f * GetSpawnSpeedMultiplier() * safeDeltaTime;
+		transform_.translate.z += EnemyGunnerConstants::kRetreatSpeed * GetSpawnSpeedMultiplier() * safeDeltaTime;
 		break;
 	}
 	}

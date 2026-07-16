@@ -7,6 +7,7 @@
  *********************************************************************/
 #pragma once
 #include "MagMath.h"
+#include "EnemyHandle.h"
 using Vector3 = MagMath::Vector3;
 #include <cstdint>
 #include <vector>
@@ -14,6 +15,7 @@ using Vector3 = MagMath::Vector3;
 
 // 前方宣言
 class EnemyBase;
+class EnemyManager;
 class Player;
 
 ///=============================================================================
@@ -114,6 +116,8 @@ struct EnemyGroupMotion {
 	float orbitRadiusY = EnemyFormationConstants::kOrbitRadiusY;
 	float orbitAngularSpeed = EnemyFormationConstants::kOrbitAngularSpeed;
 	float formationSpacing = EnemyFormationConstants::kFormationSpacing;
+	float attackInterval = EnemyFormationConstants::kAttackInterval;
+	float attackSlotDelay = EnemyFormationConstants::kAttackSlotDelay;
 };
 
 ///=============================================================================
@@ -150,11 +154,11 @@ public:
 	~EnemyGroup() = default;
 
 	/// \brief グループ初期化
-	void Initialize(EnemyBase *leaderEnemy, FormationType formationType);
-	void Initialize(EnemyBase *leaderEnemy, EnemyFormationPattern pattern, EnemyGroupAttackPattern attackPattern, const EnemyGroupMotion &motion, const EnemyCombatArea &combatArea, const EnemyFormationSpawnBounds &spawnBounds);
+	void Initialize(EnemyManager *enemyManager, EnemyHandle leaderHandle, FormationType formationType);
+	void Initialize(EnemyManager *enemyManager, EnemyHandle leaderHandle, EnemyFormationPattern pattern, EnemyGroupAttackPattern attackPattern, const EnemyGroupMotion &motion, const EnemyCombatArea &combatArea, const EnemyFormationSpawnBounds &spawnBounds);
 
 	/// \brief グループにメンバを追加
-	void AddMember(EnemyBase *member, int positionIndex);
+	void AddMember(EnemyHandle memberHandle, int positionIndex);
 
 	/// \brief 更新（編隊制御ロジック）
 	void Update(const Vector3 &playerPosition);
@@ -178,17 +182,15 @@ public:
 	}
 
 	uint32_t GetActiveMemberCount() const {
-		return static_cast<uint32_t>(memberEnemies_.size());
+		return static_cast<uint32_t>(memberEnemyHandles_.size());
 	}
 
 	/// \brief リーダー敵を取得
-	EnemyBase *GetLeader() const {
-		return leaderEnemy_;
-	}
+	EnemyHandle GetLeaderHandle() const { return leaderEnemyHandle_; }
 
 	/// \brief メンバ敵を取得
-	const std::vector<EnemyBase *> &GetMembers() const {
-		return memberEnemies_;
+	const std::vector<EnemyHandle> &GetMembers() const {
+		return memberEnemyHandles_;
 	}
 
 	/// \brief グループ内の生存敵数
@@ -308,8 +310,9 @@ private:
 	///							メンバ変数
 private:
 	int groupId_;                           // グループID
-	EnemyBase *leaderEnemy_;                // リーダー敵（nullptr=グループ非活性）
-	std::vector<EnemyBase *> memberEnemies_; // フォロワー敵群
+	EnemyManager *enemyManager_ = nullptr; // Group より長く生存する非所有の解決元
+	EnemyHandle leaderEnemyHandle_{};
+	std::vector<EnemyHandle> memberEnemyHandles_;
 
 	FormationConfig currentFormation_;       // 現在のフォーメーション
 	std::vector<Vector3> memberTargetPositions_; // 各メンバの目標位置
@@ -333,4 +336,6 @@ private:
 	// パラメータ
 	float formationUpdateTimer_;  // フォーメーション更新タイマー
 	float minFormationUpdateInterval_; // フォーメーション更新最小間隔（毎フレーム更新を避ける）
+	float attackInterval_ = EnemyFormationConstants::kAttackInterval;
+	float attackSlotDelay_ = EnemyFormationConstants::kAttackSlotDelay;
 };

@@ -71,6 +71,16 @@ struct StageDefinition {
 	bool clearWhenAllWavesCompleted = true;
 };
 
+struct StageLoadResult {
+	StageDefinition stageDefinition{};
+	std::string sourcePath;
+	std::string errorMessage;
+
+	[[nodiscard]] bool IsSuccess() const {
+		return errorMessage.empty();
+	}
+};
+
 enum class WaveState {
 	Waiting,
 	Spawning,
@@ -89,58 +99,11 @@ enum class GameFlowState {
 
 class StageDefinitionLoader {
 public:
-	static StageDefinition LoadOrDefault(const std::string &path) {
-		std::ifstream file(path);
-		if (!file.is_open()) {
-			return MakeDefaultStage();
-		}
-
-		try {
-			nlohmann::json jsonData;
-			file >> jsonData;
-			return Parse(jsonData);
-		} catch (...) {
-			return MakeDefaultStage();
-		}
-	}
-
-	static StageDefinition MakeDefaultStage() {
-		StageDefinition stage{};
-		stage.stageId = "stage_01";
-		stage.clearDelaySeconds = 2.0f;
-
-		WaveDefinition wave1{};
-		wave1.waveId = "wave_01";
-		wave1.startDelaySeconds = 1.5f;
-		wave1.nextWaveDelaySeconds = 1.5f;
-		wave1.spawnGroups.push_back(MakeGroup("line_entry_01", EnemyFormationPattern::HorizontalLine, 0.0f, 2, 1));
-		wave1.spawnGroups.push_back(MakeGroup("v_entry_01", EnemyFormationPattern::VShape, 4.0f, 4, 1));
-
-		WaveDefinition wave2{};
-		wave2.waveId = "wave_02";
-		wave2.startDelaySeconds = 1.5f;
-		wave2.nextWaveDelaySeconds = 0.0f;
-		wave2.spawnGroups.push_back(MakeGroup("circle_entry_01", EnemyFormationPattern::Circle, 0.0f, 2, 1));
-		wave2.spawnGroups.push_back(MakeGroup("eight_entry_01", EnemyFormationPattern::FigureEight, 4.5f, 2, 1));
-
-		stage.waves.push_back(wave1);
-		stage.waves.push_back(wave2);
-		return stage;
-	}
+	static StageLoadResult Load(const std::string &path);
+	static bool Validate(const StageDefinition &stageDefinition, const std::string &sourcePath, std::string &errorMessage);
 
 private:
-	static SpawnGroupDefinition MakeGroup(const std::string &id, EnemyFormationPattern pattern, float delay, uint32_t standardCount, uint32_t gunnerCount) {
-		SpawnGroupDefinition group{};
-		group.groupId = id;
-		group.formationPattern = pattern;
-		group.attackPattern = EnemyGroupAttackPattern::Staggered;
-		group.spawnDelaySeconds = delay;
-		group.members.push_back({EnemyArchetype::Standard, standardCount});
-		group.members.push_back({EnemyArchetype::Gunner, gunnerCount});
-		return group;
-	}
-
-	static StageDefinition Parse(const nlohmann::json &jsonData);
+	static bool Parse(const nlohmann::json &jsonData, StageDefinition &stageDefinition, std::string &errorMessage);
 };
 
 class WaveController {
@@ -150,6 +113,7 @@ public:
 		currentWaveIndex_ = 0;
 		state_ = stageDefinition_.waves.empty() ? WaveState::Completed : WaveState::Waiting;
 		waveTimer_ = 0.0f;
+		requiresEnemyRemovalForStageCompletion_ = true;
 		groups_.clear();
 		spawnedGroupFlags_.clear();
 		ResetSpawnFlags();
@@ -188,6 +152,10 @@ public:
 		return groups_;
 	}
 
+	bool RequiresEnemyRemovalForStageCompletion() const {
+		return requiresEnemyRemovalForStageCompletion_;
+	}
+
 private:
 	void ResetSpawnFlags();
 	void SpawnGroup(const SpawnGroupDefinition &definition, EnemyManager &enemyManager, const Vector3 &playerPosition);
@@ -202,6 +170,7 @@ private:
 	std::vector<bool> spawnedGroupFlags_;
 	std::vector<std::unique_ptr<EnemyGroup>> groups_;
 	int nextGroupId_ = 0;
+	bool requiresEnemyRemovalForStageCompletion_ = true;
 };
 
 class GameFlowController {
@@ -238,6 +207,10 @@ public:
 
 	WaveController &GetWaveController() {
 		return waveController_;
+	}
+
+	const StageDefinition &GetStageDefinition() const {
+		return stageDefinition_;
 	}
 
 private:

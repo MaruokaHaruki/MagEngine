@@ -346,15 +346,13 @@ namespace MagEngine {
 	///						更新
 	void MagFramework::Update() {
 		const auto currentFrameTime = std::chrono::steady_clock::now();
-		float deltaTime = 1.0f / 60.0f;
+		float rawDeltaTime = 1.0f / 60.0f;
 		if (hasPreviousFrameTime_) {
-			deltaTime = std::chrono::duration<float>(currentFrameTime - previousFrameTime_).count();
+			rawDeltaTime = std::chrono::duration<float>(currentFrameTime - previousFrameTime_).count();
 		}
 		previousFrameTime_ = currentFrameTime;
 		hasPreviousFrameTime_ = true;
-		// 処理内容：異常に大きいフレーム時間を上限値で制限する
-		// 理由：ブレークやOS停止後にゲームオブジェクトが一度に移動しないようにする
-		deltaTime = std::clamp(deltaTime, 0.0f, 0.1f);
+		const FrameTime frameTime = FrameTime::Create(rawDeltaTime);
 		//========================================
 		// デバックカメラの呼び出し1,2
 		if (Input::GetInstance()->PushKey(DIK_1)) {
@@ -396,7 +394,7 @@ namespace MagEngine {
 
 		//========================================
 		// トレイルエフェクトマネージャの更新
-		trailEffectManager_->Update(deltaTime);
+		trailEffectManager_->Update(frameTime.unscaledDeltaTime);
 
 		//========================================
 		// インプットの更新
@@ -404,7 +402,7 @@ namespace MagEngine {
 
 		//========================================
 		// シーンマネージャの更新
-		sceneManager_->Update(deltaTime);
+		sceneManager_->Update(frameTime);
 	}
 
 	///=============================================================================

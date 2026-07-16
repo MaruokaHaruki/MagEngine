@@ -38,20 +38,18 @@ void Enemy::Update() {
 }
 
 void Enemy::Update(float deltaTime) {
-	const float safeDeltaTime = std::max(0.0f, std::min(deltaTime, 0.1f));
-
-	EnemyBase::Update(safeDeltaTime);
+	EnemyBase::Update(deltaTime);
 
 	if (destroyState_ != DestroyState::Alive || isHitReacting_) {
 		return;
 	}
 
 	if (IsFormationFollowEnabled()) {
-		UpdateFormationFollow(safeDeltaTime);
+		UpdateFormationFollow(deltaTime);
 		return;
 	}
 
-	UpdateBehaviorState(safeDeltaTime);
+	UpdateBehaviorState(deltaTime);
 }
 
 void Enemy::UpdateBehaviorState(float safeDeltaTime) {
@@ -72,10 +70,10 @@ void Enemy::UpdateBehaviorState(float safeDeltaTime) {
 				combatCenter_ = playerPos;
 				moveTimer_ = 0.0f;
 			} else {
-				MoveToward(targetPosition_, EnemyConstants::kApproachSpeed, EnemyConstants::kMovementSmoothing, safeDeltaTime);
+				MoveToward(targetPosition_, EnemyConstants::kApproachSpeed * GetSpawnSpeedMultiplier(), EnemyConstants::kMovementSmoothing, safeDeltaTime);
 			}
 		} else {
-			transform_.translate.z += speed_ * safeDeltaTime;
+			transform_.translate.z += speed_ * GetSpawnSpeedMultiplier() * safeDeltaTime;
 		}
 		break;
 	}
@@ -107,7 +105,7 @@ void Enemy::UpdateBehaviorState(float safeDeltaTime) {
 			moveTimer_ = 0.0f;
 		}
 
-		MoveToward(targetPosition_, EnemyConstants::kCombatSpeed, EnemyConstants::kMovementSmoothing, safeDeltaTime);
+		MoveToward(targetPosition_, EnemyConstants::kCombatSpeed * GetSpawnSpeedMultiplier(), EnemyConstants::kMovementSmoothing, safeDeltaTime);
 		break;
 	}
 
