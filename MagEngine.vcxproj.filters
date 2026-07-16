@@ -49,6 +49,9 @@
     <ClCompile Include="engine\graphics\sprite\SpriteSetup.cpp">
       <Filter>engine\graphics\sprite</Filter>
     </ClCompile>
+    <ClCompile Include="engine\graphics\text\TextRenderer.cpp">
+      <Filter>engine\graphics\text</Filter>
+    </ClCompile>
     <ClCompile Include="engine\render\resource\texture\TextureManager.cpp">
       <Filter>engine\render\resource\texture</Filter>
     </ClCompile>
@@ -140,6 +143,9 @@
       <Filter>engine\render\pass</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\pass\SpriteRenderPass.cpp">
+      <Filter>engine\render\pass</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\render\pass\TextRenderPass.cpp">
       <Filter>engine\render\pass</Filter>
     </ClCompile>
     <ClCompile Include="engine\render\pass\TrailRenderPass.cpp">
@@ -393,6 +399,9 @@
     <ClInclude Include="engine\graphics\sprite\SpriteRenderMode.h">
       <Filter>engine\graphics\sprite</Filter>
     </ClInclude>
+    <ClInclude Include="engine\graphics\text\TextRenderer.h">
+      <Filter>engine\graphics\text</Filter>
+    </ClInclude>
     <ClInclude Include="engine\render\resource\texture\TextureManager.h">
       <Filter>engine\render\resource\texture</Filter>
     </ClInclude>
@@ -547,6 +556,9 @@
       <Filter>engine\render\pass</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\pass\SpriteRenderPass.h">
+      <Filter>engine\render\pass</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\render\pass\TextRenderPass.h">
       <Filter>engine\render\pass</Filter>
     </ClInclude>
     <ClInclude Include="engine\render\pass\TrailRenderPass.h">
@@ -1077,6 +1089,9 @@
     </Filter>
     <Filter Include="engine\graphics\sprite">
       <UniqueIdentifier>{c2c7c81b-8bf2-4579-a3ae-88f4f2d0253b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine\graphics\text">
+      <UniqueIdentifier>{7d7b7a18-2e80-47da-bb12-9af4570d920c}</UniqueIdentifier>
     </Filter>
     <Filter Include="engine\graphics\particle">
       <UniqueIdentifier>{7bf97507-8f91-43a1-b5b1-84323563a4d2}</UniqueIdentifier>

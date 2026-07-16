@@ -213,6 +213,8 @@ namespace MagEngine {
 		spriteSetup_ = std::make_unique<SpriteSetup>();
 		// スプライト共通部の初期化
 		spriteSetup_->Initialize(dxCore_.get(), *textureManager_);
+		textRenderer_ = std::make_unique<TextRenderer>();
+		textRenderer_->Initialize(*spriteSetup_, "font_atlas.png", "resources/config/ui/font_atlas.json");
 
 		///--------------------------------------------------------------
 		///						 Object3D共通部
@@ -336,6 +338,7 @@ namespace MagEngine {
 		engineContext_.trailEffectManager = trailEffectManager_.get();
 		engineContext_.debugTextManager = DebugTextManager::GetInstance();
 		engineContext_.lineManager = lineManager_.get();
+		engineContext_.textRenderer = textRenderer_.get();
 #if ENABLE_IMGUI
 		engineContext_.editorUiSystem = editorUiSystem_.get();
 #endif
@@ -434,6 +437,7 @@ namespace MagEngine {
 		//========================================
 		// トレイルエフェクトの終了処理
 		trailEffectManager_.reset();
+		if (textRenderer_) { textRenderer_->Finalize(); textRenderer_.reset(); }
 		trailEffectSetup_.reset();
 		//========================================
 		// ライトマネージャの終了処理
@@ -554,6 +558,7 @@ namespace MagEngine {
 	///						Sceneフェーズ描画
 	void MagFramework::OpaqueRender() {
 		renderWorld_.Clear();
+		if (textRenderer_) { textRenderer_->BeginFrame(); }
 		sceneManager_->RegisterRenderables(renderWorld_);
 		// NOTE: World/HUDで描画順と深度方針を分けるため、同じLineManager参照をモード付きで登録する。
 		renderWorld_.AddLine(LineRenderItem{lineManager_.get(), 0, true, LineRenderMode::World});

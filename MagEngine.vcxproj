@@ -186,6 +186,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\render\pass\RenderWorld.cpp" />
     <ClCompile Include="engine\render\pass\SkyboxRenderPass.cpp" />
     <ClCompile Include="engine\render\pass\SpriteRenderPass.cpp" />
+    <ClCompile Include="engine\render\pass\TextRenderPass.cpp" />
     <ClCompile Include="engine\render\pass\TrailRenderPass.cpp" />
     <ClCompile Include="engine\camera\Camera.cpp" />
     <ClCompile Include="engine\base\core\DirectXCore.cpp" />
@@ -200,6 +201,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\base\core\WinApp.cpp" />
     <ClCompile Include="engine\graphics\sprite\SpriteSetup.cpp" />
     <ClCompile Include="engine\graphics\sprite\Sprite.cpp" />
+    <ClCompile Include="engine\graphics\text\TextRenderer.cpp" />
     <ClCompile Include="engine\render\resource\texture\TextureManager.cpp" />
     <ClCompile Include="engine\graphics\object3d\Object3dSetup.cpp" />
     <ClCompile Include="engine\graphics\object3d\Object3d.cpp" />
@@ -314,6 +316,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\render\pass\RenderWorld.h" />
     <ClInclude Include="engine\render\pass\SkyboxRenderPass.h" />
     <ClInclude Include="engine\render\pass\SpriteRenderPass.h" />
+    <ClInclude Include="engine\render\pass\TextRenderPass.h" />
     <ClInclude Include="engine\render\pass\TrailRenderPass.h" />
     <ClInclude Include="engine\camera\Camera.h" />
     <ClInclude Include="engine\base\core\DirectXCore.h" />
@@ -324,6 +327,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\math\structure\graphics\Light.h" />
     <ClInclude Include="engine\math\structure\graphics\Material.h" />
     <ClInclude Include="engine\math\structure\graphics\MaterialData.h" />
+    <ClInclude Include="engine\graphics\text\TextRenderer.h" />
     <ClInclude Include="engine\math\structure\graphics\ModelData.h" />
     <ClInclude Include="engine\math\structure\graphics\TransformationMatrix.h" />
     <ClInclude Include="engine\math\structure\graphics\VertexData.h" />

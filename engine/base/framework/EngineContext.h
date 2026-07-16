@@ -28,6 +28,7 @@ namespace MagEngine {
 	class DebugTextManager;
 	class LineManager;
 	class EditorUiSystem;
+	class TextRenderer;
 
 	///=============================================================================
 	///                         エンジンコンテキスト
@@ -50,6 +51,7 @@ namespace MagEngine {
 		DebugTextManager *debugTextManager = nullptr;
 		LineManager *lineManager = nullptr;
 		EditorUiSystem *editorUiSystem = nullptr;
+		TextRenderer *textRenderer = nullptr;
 
 		/// \brief 必須サービスが設定済みか検証する
 		void Validate() const {

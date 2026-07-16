@@ -11,6 +11,7 @@
 #include "RenderWorld.h"
 #include "SkyboxRenderPass.h"
 #include "SpriteRenderPass.h"
+#include "TextRenderPass.h"
 #include "TrailRenderPass.h"
 #include "Logger.h"
 
@@ -28,6 +29,7 @@ namespace MagEngine {
 		constexpr int32_t kSceneLineOrder = 450;
 		constexpr int32_t kPostOverlayHudLineOrder = 50;
 		constexpr int32_t kOverlaySpriteOrder = 100;
+		constexpr int32_t kOverlayTextOrder = 110;
 		constexpr int32_t kPostOverlayParticleOrder = 100;
 		constexpr int32_t kPostProcessPostEffectOrder = 100;
 
@@ -79,6 +81,8 @@ namespace MagEngine {
 			return "Line";
 		case RenderPassId::HudLine:
 			return "HudLine";
+		case RenderPassId::Text:
+			return "Text";
 		case RenderPassId::PostEffect:
 			return "PostEffect";
 		}
@@ -164,6 +168,13 @@ namespace MagEngine {
 				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
 			},
 			std::make_unique<SpriteRenderPass>(spriteSetup)});
+		AddPass(RenderPassEntry{
+			RenderPassId::Text,
+			RenderPhase::Overlay,
+			kOverlayTextOrder,
+			true,
+			{{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget}},
+			std::make_unique<TextRenderPass>()});
 		AddPass(RenderPassEntry{
 			RenderPassId::Particle,
 			RenderPhase::PostOverlay,

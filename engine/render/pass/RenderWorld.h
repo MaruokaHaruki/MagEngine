@@ -19,6 +19,7 @@ namespace MagEngine {
 	class Skybox;
 	class Sprite;
 	class TrailEffect;
+	class TextRenderer;
 
 	struct OpaqueRenderItem {
 		Object3d *object = nullptr;
@@ -58,6 +59,7 @@ namespace MagEngine {
 		bool visible = true;
 		LineRenderMode renderMode = LineRenderMode::World;
 	};
+	struct TextRenderItem { TextRenderer *renderer = nullptr; bool visible = true; };
 
 	class RenderWorld {
 	public:
@@ -78,6 +80,7 @@ namespace MagEngine {
 
 		/// @brief Line描画対象を登録
 		void AddLine(const LineRenderItem &item);
+		void AddText(TextRenderer *renderer);
 
 		/// @brief フレームで使用するCloudを登録
 		void SetCloud(const CloudRenderItem &item);
@@ -115,6 +118,7 @@ namespace MagEngine {
 		const std::vector<LineRenderItem> &GetLineItems() const {
 			return lineItems_;
 		}
+		const std::vector<TextRenderItem> &GetTextItems() const { return textItems_; }
 
 	private:
 		// NOTE: SceneやGameObjectの所有権は持たない。参照先は描画完了までScene側が保持する。
@@ -124,6 +128,7 @@ namespace MagEngine {
 		std::vector<TrailRenderItem> trailItems_;
 		std::vector<SpriteRenderItem> spriteItems_;
 		std::vector<LineRenderItem> lineItems_;
+		std::vector<TextRenderItem> textItems_;
 		std::vector<ParticleRenderItem> particleItems_;
 		uint32_t nextSpriteSubmissionOrder_ = 0;
 		uint32_t nextLineSubmissionOrder_ = 0;

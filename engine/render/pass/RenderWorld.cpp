@@ -8,6 +8,7 @@ namespace MagEngine {
 		trailItems_.clear();
 		spriteItems_.clear();
 		lineItems_.clear();
+		textItems_.clear();
 		particleItems_.clear();
 		nextSpriteSubmissionOrder_ = 0;
 		nextLineSubmissionOrder_ = 0;
@@ -38,6 +39,8 @@ namespace MagEngine {
 		registeredItem.submissionOrder = nextLineSubmissionOrder_++;
 		lineItems_.push_back(registeredItem);
 	}
+
+	void RenderWorld::AddText(TextRenderer *renderer) { if (renderer) { textItems_.push_back({renderer, true}); } }
 
 	void RenderWorld::SetCloud(const CloudRenderItem &item) {
 		cloudItem_ = item;

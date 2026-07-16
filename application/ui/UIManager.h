@@ -16,6 +16,7 @@ namespace MagEngine {
 	class CameraManager;
 	class LineManager;
 	class RenderWorld;
+	class TextRenderer;
 }
 
 ///=============================================================================
@@ -27,7 +28,8 @@ public:
 					MagEngine::Object3dSetup *object3dSetup,
 					MagEngine::Input &input,
 					MagEngine::CameraManager &cameraManager,
-					MagEngine::LineManager &lineManager);
+					MagEngine::LineManager &lineManager,
+					MagEngine::TextRenderer &textRenderer);
 
 	/// \brief 終了処理
 	void Finalize();
@@ -96,6 +98,7 @@ private:
 	// スプライト設定
 	MagEngine::SpriteSetup *spriteSetup_ = nullptr;
 	MagEngine::CameraManager *cameraManager_ = nullptr;
+	MagEngine::TextRenderer *textRenderer_ = nullptr;
 
 	// UI要素
 	std::unique_ptr<GameOverUI> gameOverUI_;

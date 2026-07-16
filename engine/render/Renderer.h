@@ -37,6 +37,7 @@ namespace MagEngine {
 		Particle,
 		Line,
 		HudLine,
+		Text,
 		PostEffect,
 	};
 

@@ -209,7 +209,7 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	//========================================
 	// UI管理の初期化
 	uiManager_ = std::make_unique<UIManager>();
-	uiManager_->Initialize(spriteSetup, object3dSetup, *engineContext_->input, *engineContext_->cameraManager, *engineContext_->lineManager);
+	uiManager_->Initialize(spriteSetup, object3dSetup, *engineContext_->input, *engineContext_->cameraManager, *engineContext_->lineManager, *engineContext_->textRenderer);
 
 	// HUDにFollowCameraを設定
 	if (followCamera_ && uiManager_->GetHUD()) {

@@ -31,6 +31,7 @@
 // Manager
 #include "CameraManager.h"
 #include "DebugTextManager.h"
+#include "engine/graphics/text/TextRenderer.h"
 #include "LightManager.h"
 #include "LineManager.h"
 #include "MAudioG.h"
@@ -132,6 +133,7 @@ namespace MagEngine {
 		//========================================
 		// SrvSetup
 		std::unique_ptr<SrvSetup> srvSetup_;
+		std::unique_ptr<TextRenderer> textRenderer_;
 		//========================================
 		// 共通部
 		// スプライトセットアップ
