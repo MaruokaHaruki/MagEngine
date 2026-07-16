@@ -292,6 +292,12 @@ public:
 	float GetJustAvoidanceWindowTimeRemaining() const {
 		return justAvoidanceComponent_.GetJustAvoidanceWindowTimeRemaining();
 	}
+
+	/// @brief ジャスト回避ウィンドウの最大時間を取得
+	/// @return 判定ウィンドウの最大時間（秒）
+	float GetJustAvoidanceWindowSize() const {
+		return justAvoidanceComponent_.GetJustAvoidanceWindowSize();
+	}
 	
 	/// @brief 直近のジャスト回避成功率を取得
 	/// @return 0.0～1.0（1.0が完璧なタイミング）
@@ -769,6 +775,12 @@ public:
 	/// @details リアルタイムで更新される値
 	int GetMissileAmmo() const {
 		return combatComponent_.GetMissileAmmo();
+	}
+
+	/// @brief 次のミサイルが補充されるまでの経過時間を取得
+	/// @return 0.0～GetMissileRecoveryTime() の経過時間
+	float GetMissileRecoveryTimer() const {
+		return combatComponent_.GetMissileRecoveryTimer();
 	}
 
 	///--------------------------------------------------------------

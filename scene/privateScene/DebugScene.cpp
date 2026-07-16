@@ -206,7 +206,9 @@ void DebugScene::Initialize(const MagEngine::EngineContext &engineContext, Scene
 	}
 
 	///--------------------------------------------------------------
+#ifdef _DEBUG
 	RegisterEditorPanels();
+#endif
 }
 
 ///=============================================================================
@@ -801,14 +803,16 @@ void DebugScene::DrawVoiceTestImGui() {
 }
 
 
-///=============================================================================
-///						Editor Panel登録
+//=============================================================================
+//						Editor Panel登録
+#ifdef _DEBUG
 void DebugScene::RegisterEditorPanels() {
 	// NOTE: Scene所有リソースを参照するため、Scene切替時にEditorUiSystem側でScene Panelを破棄する。
 	engineContext_->editorUiSystem->RegisterPanel("Debug Scene", MagEngine::EditorUiCategory::Scene, true, [this]() {
 		DrawDebugUi();
 	});
 }
+#endif
 
 ///=============================================================================
 ///						DebugScene Debug UI

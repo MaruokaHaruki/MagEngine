@@ -48,8 +48,6 @@ public:
 private:
 #ifdef _DEBUG
 	void RegisterEditorPanels() override;
-#else
-	void RegisterEditorPanels();
 #endif
 	void DrawDebugUi();
 	void AddCloudHoleFromDebugCamera();

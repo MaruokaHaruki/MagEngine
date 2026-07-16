@@ -95,6 +95,12 @@ void HUD::Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineMan
 	currentBoostGauge_ = maxBoostGauge_ = 100.0f;
 	isBarrelRolling_ = false;
 	barrelRollProgress_ = 0.0f;
+	hpRatio_ = 1.0f;
+	currentHp_ = maxHp_ = 0;
+	missileAmmo_ = maxMissileAmmo_ = 0;
+	missileRecoveryTimer_ = missileRecoveryTime_ = 0.0f;
+	isJustAvoidanceWindowActive_ = false;
+	justAvoidanceWindowRatio_ = 0.0f;
 
 	// アニメーション
 	isAnimating_ = isDeploying_ = false;
@@ -396,6 +402,18 @@ void HUD::Update(const Player *player, float unscaledDeltaTime) {
 	maxBoostGauge_ = player->GetMaxBoostGauge();
 	isBarrelRolling_ = player->IsBarrelRolling();
 	barrelRollProgress_ = player->GetBarrelRollProgress();
+	hpRatio_ = player->GetHPRatio();
+	currentHp_ = player->GetCurrentHP();
+	maxHp_ = player->GetMaxHP();
+	missileAmmo_ = player->GetMissileAmmo();
+	maxMissileAmmo_ = player->GetMissileMaxAmmo();
+	missileRecoveryTimer_ = player->GetMissileRecoveryTimer();
+	missileRecoveryTime_ = player->GetMissileRecoveryTime();
+	isJustAvoidanceWindowActive_ = player->IsInJustAvoidanceWindow();
+	const float justAvoidanceWindowSize = player->GetJustAvoidanceWindowSize();
+	justAvoidanceWindowRatio_ = justAvoidanceWindowSize > 0.0f
+		? std::clamp(player->GetJustAvoidanceWindowTimeRemaining() / justAvoidanceWindowSize, 0.0f, 1.0f)
+		: 0.0f;
 
 	// ロックオン情報の更新
 	lockOnTargetHandle_ = player->GetLockOnTargetHandle();
@@ -492,6 +510,7 @@ void HUD::Draw() {
 	float boostBarrelProgress = std::max(0.0f, (deployProgress_ - boostBarrelDeployStart_) / (1.0f - boostBarrelDeployStart_));
 	if (boostBarrelProgress > 0.0f) {
 		DrawBoostBarrel(boostBarrelProgress);
+		DrawCombatStatus(boostBarrelProgress);
 	}
 
 	// ロックオン用レティクル（長押しモード中も表示）
@@ -1067,6 +1086,86 @@ void HUD::DrawBoostBarrel(float progress) {
 		Vector3 labelRight = GetHUDPosition(7.0f, centerY - 2.0f);
 		Vector3 labelRightDraw = Lerp(labelLeft, labelRight, labelProgress);
 		lineManager->DrawLine(labelLeft, labelRightDraw, hudColor_, 1.0f);
+	}
+}
+
+///=============================================================================
+///                        機体・兵装ステータス
+/// 文字描画経路を増やさず、色・位置・分割数だけで戦闘中に判別できるようにする。
+void HUD::DrawCombatStatus(float progress) {
+	assert(lineManager_);
+	LineManager *lineManager = lineManager_;
+
+	const float panelY = -6.8f;
+	const float panelHalfWidth = 3.0f;
+	const float panelHeight = 1.25f;
+	const float hpCenterX = -8.6f;
+	const float weaponCenterX = 8.6f;
+	const float deploy = std::clamp(progress * 1.5f, 0.0f, 1.0f);
+
+	// 左下は機体状態。低耐久ほど暖色へ移行し、画面を見続けなくても危険を判別できる。
+	Vector4 hpColor = hudColor_;
+	if (hpRatio_ <= 0.2f) {
+		hpColor = hudColorCritical_;
+		hpColor.w *= 0.7f + 0.3f * std::abs(sinf(animationTime_ * 7.0f));
+	} else if (hpRatio_ <= 0.5f) {
+		hpColor = hudColorWarning_;
+	}
+
+	auto DrawPanelBracket = [&](float centerX, const Vector4 &color, bool opensRight) {
+		const float outerX = opensRight ? centerX - panelHalfWidth : centerX + panelHalfWidth;
+		const float innerX = opensRight ? centerX + panelHalfWidth : centerX - panelHalfWidth;
+		const float topY = panelY + panelHeight;
+		const float bottomY = panelY - panelHeight;
+		const float edge = opensRight ? 0.8f : -0.8f;
+		lineManager->DrawLine(GetHUDPosition(outerX, topY), GetHUDPosition(outerX + edge, topY), color, 1.5f);
+		lineManager->DrawLine(GetHUDPosition(outerX, topY), GetHUDPosition(outerX, bottomY), color, 1.5f);
+		lineManager->DrawLine(GetHUDPosition(outerX, bottomY), GetHUDPosition(outerX + edge, bottomY), color, 1.5f);
+		lineManager->DrawLine(GetHUDPosition(outerX, panelY), GetHUDPosition(innerX, panelY), color, 0.8f);
+	};
+
+	DrawPanelBracket(hpCenterX, hpColor, true);
+
+	// HPは8分割。欠損区画も残すことで残量の変化量を瞬時に認識できる。
+	constexpr int kHpSegments = 8;
+	const int filledHpSegments = static_cast<int>(std::ceil(std::clamp(hpRatio_, 0.0f, 1.0f) * kHpSegments));
+	for (int index = 0; index < kHpSegments; ++index) {
+		const float x = hpCenterX - 2.25f + index * 0.62f;
+		Vector4 segmentColor = index < filledHpSegments ? hpColor : Vector4{0.08f, 0.16f, 0.14f, 0.45f};
+		segmentColor.w *= deploy;
+		lineManager->DrawLine(GetHUDPosition(x, panelY + 0.48f), GetHUDPosition(x, panelY - 0.48f), segmentColor, 3.0f);
+	}
+
+	// 右下は兵装状態。点灯数が即時発射可能なミサイル、下段が次弾の補充進捗を示す。
+	const bool isReloading = missileAmmo_ < maxMissileAmmo_ && missileRecoveryTime_ > 0.0f;
+	Vector4 weaponColor = isReloading ? hudColorWarning_ : hudColorCyan_;
+	DrawPanelBracket(weaponCenterX, weaponColor, false);
+
+	const int displayAmmoSlots = std::clamp(maxMissileAmmo_, 1, 6);
+	for (int index = 0; index < displayAmmoSlots; ++index) {
+		const float x = weaponCenterX + 2.15f - index * 0.75f;
+		Vector4 slotColor = index < missileAmmo_ ? weaponColor : Vector4{0.10f, 0.14f, 0.18f, 0.50f};
+		slotColor.w *= deploy;
+		lineManager->DrawLine(GetHUDPosition(x - 0.20f, panelY + 0.52f), GetHUDPosition(x + 0.20f, panelY + 0.52f), slotColor, 3.0f);
+	}
+
+	if (isReloading) {
+		const float reloadRatio = std::clamp(missileRecoveryTimer_ / missileRecoveryTime_, 0.0f, 1.0f);
+		const float reloadLeft = weaponCenterX - 2.2f;
+		const float reloadRight = weaponCenterX + 2.2f;
+		Vector4 inactiveColor = {0.12f, 0.12f, 0.10f, 0.55f * deploy};
+		lineManager->DrawLine(GetHUDPosition(reloadLeft, panelY - 0.52f), GetHUDPosition(reloadRight, panelY - 0.52f), inactiveColor, 2.0f);
+		lineManager->DrawLine(GetHUDPosition(reloadLeft, panelY - 0.52f), GetHUDPosition(reloadLeft + (reloadRight - reloadLeft) * reloadRatio, panelY - 0.52f), weaponColor, 3.0f);
+	}
+
+	// 回避可能な短い判定窓は既存の回避リングをシアンで強調する。
+	if (isJustAvoidanceWindowActive_) {
+		const float dodgeX = 6.0f;
+		const float dodgeY = -10.0f;
+		Vector4 dodgeColor = hudColorCyan_;
+		dodgeColor.w = 0.7f + 0.3f * std::abs(sinf(animationTime_ * 10.0f));
+		const int segments = (std::max)(3, static_cast<int>(24.0f * justAvoidanceWindowRatio_));
+		lineManager->DrawCircle(GetHUDPosition(dodgeX, dodgeY), 1.55f, dodgeColor, 2.5f, {0.0f, 0.0f, 1.0f}, segments);
 	}
 }
 

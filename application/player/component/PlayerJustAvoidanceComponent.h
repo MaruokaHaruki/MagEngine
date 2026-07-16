@@ -52,6 +52,11 @@ public:
 	/// @brief ウィンドウ内の残り時間を取得（UI表示用）
 	float GetJustAvoidanceWindowTimeRemaining() const;
 
+	/// @brief ジャスト回避ウィンドウの最大時間を取得（UI表示用）
+	float GetJustAvoidanceWindowSize() const {
+		return justAvoidanceWindowSize_;
+	}
+
 	/// @brief 最後の成功率を取得
 	float GetLastSuccessRate() const {
 		return lastSuccessRate_;

@@ -52,6 +52,8 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 		throw std::runtime_error(initialSceneError);
 	}
 
+#ifdef _DEBUG
+	// NOTE: EditorUiSystemはDebugビルドでのみ生成されるため、Releaseで登録するとnull参照になる。
 	engineContext_->editorUiSystem->RegisterPanel("Scene Switcher", MagEngine::EditorUiCategory::Tools, true, [this]() {
 		if (!nowScene_) {
 			return;
@@ -76,6 +78,7 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 			ImGui::TextWrapped("Last scene initialization error: %s", lastSceneInitializationError_.c_str());
 		}
 	});
+#endif
 
 	// シーンの初期設定
 	currentSceneNo_ = SCENE::TITLE;

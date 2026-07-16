@@ -50,6 +50,7 @@ private:
 	void DrawHeadingTape(float progress = 1.0f);				   // 上部: 方位テープ
 	void DrawGForceIndicator(float progress = 1.0f);			   // G-Force表示
 	void DrawBoostBarrel(float progress = 1.0f);				   // 下部: ブースト＆回避統合UI
+	void DrawCombatStatus(float progress = 1.0f);                 // 下部: 機体・兵装状態
 	void DrawLockOnReticle(float progress = 1.0f);				   // ロックオン用レティクル
 	void DrawEnemyIndicators(float progress = 1.0f);			   // 敵位置インジケーター
 
@@ -97,6 +98,15 @@ private:
 	float maxBoostGauge_;
 	bool isBarrelRolling_;
 	float barrelRollProgress_;
+	float hpRatio_;
+	int currentHp_;
+	int maxHp_;
+	int missileAmmo_;
+	int maxMissileAmmo_;
+	float missileRecoveryTimer_;
+	float missileRecoveryTime_;
+	bool isJustAvoidanceWindowActive_;
+	float justAvoidanceWindowRatio_;
 
 	// HUD表示制御
 	bool showBoresight_;
