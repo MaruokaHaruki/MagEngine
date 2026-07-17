@@ -576,12 +576,13 @@ void HUD::RegisterText(MagEngine::RenderWorld &renderWorld) {
 
 	// NOTE: 文字も同じHUD平面を投影する。ラインのパネル直上に寄せ、視線移動を抑える。
 	AddStatus("HP " + std::to_string(currentHp_) + " / " + std::to_string(maxHp_), GetTextPosition(-8.6f, -5.1f), hudColor_, 0.58f);
-	AddStatus("MISSILE " + std::to_string(missileAmmo_) + " / " + std::to_string(maxMissileAmmo_), GetTextPosition(8.6f, -5.1f), hudColorCyan_, 0.58f);
+	AddStatus("MISSILE " + std::to_string(missileAmmo_) + " / " + std::to_string(maxMissileAmmo_), GetTextPosition(8.6f, -4.35f), hudColorCyan_, 0.58f);
 	if (missileAmmo_ < maxMissileAmmo_) {
-		AddStatus("RELOAD", GetTextPosition(8.6f, -5.9f), hudColorWarning_, 0.52f);
+		AddStatus("RELOAD", GetTextPosition(8.6f, -5.25f), hudColorWarning_, 0.52f);
 	}
+	AddStatus("DODGE", GetTextPosition(5.15f, -8.35f), hudColorCyan_, 0.45f);
 	if (isJustAvoidanceWindowActive_) {
-		AddStatus("DODGE READY", GetTextPosition(5.0f, -8.2f), hudColorCyan_, 0.52f);
+		AddStatus("READY", GetTextPosition(5.15f, -9.0f), hudColorCyan_, 0.45f);
 	}
 	if (justAvoidanceDisplayActive_) {
 		Vector4 successColor = justAvoidanceSuccessRate_ >= 0.99f ? Vector4{1.0f, 0.84f, 0.0f, 1.0f} : hudColor_;
@@ -1090,8 +1091,8 @@ void HUD::DrawBoostBarrel(float progress) {
 	if (progress > 0.0f) {
 		float frameProgress = std::min(progress / 0.25f, 1.0f);
 		Vector3 barrelCenter = GetHUDPosition(barrelX, barrelY);
-		float radius = 1.2f;
-		int segments = static_cast<int>(32 * frameProgress);
+		float radius = 0.85f;
+		int segments = static_cast<int>(20 * frameProgress);
 		if (segments > 0) {
 			lineManager->DrawCircle(barrelCenter, radius, hudColor_, 1.0f, {0.0f, 0.0f, 1.0f}, segments);
 		}
@@ -1102,8 +1103,8 @@ void HUD::DrawBoostBarrel(float progress) {
 		if (isBarrelRolling_) {
 			Vector3 barrelCenter = GetHUDPosition(barrelX, barrelY);
 			float barrelProgress = (progress - 0.25f) / 0.25f;
-			float fillRadius = 1.2f * (barrelRollProgress_);
-			int fillSegments = static_cast<int>(32 * barrelRollProgress_);
+			float fillRadius = 0.85f * (barrelRollProgress_);
+			int fillSegments = static_cast<int>(20 * barrelRollProgress_);
 			if (fillSegments > 0) {
 				Vector4 activeColor = {hudColor_.x, hudColor_.y * 0.5f, hudColor_.z, 0.8f};
 				lineManager->DrawCircle(barrelCenter, fillRadius, activeColor, 1.0f, {0.0f, 0.0f, 1.0f}, fillSegments);
@@ -1111,23 +1112,23 @@ void HUD::DrawBoostBarrel(float progress) {
 
 			// 回転矢印（進行度に応じて回転）
 			float rotAngle = barrelRollProgress_ * 6.28f; // 2π
-			Vector3 arrowStart = GetHUDPosition(barrelX + cosf(rotAngle) * 0.8f, barrelY + sinf(rotAngle) * 0.8f);
-			Vector3 arrowEnd = GetHUDPosition(barrelX + cosf(rotAngle + 0.5f) * 0.6f, barrelY + sinf(rotAngle + 0.5f) * 0.6f);
-			lineManager->DrawLine(arrowStart, arrowEnd, hudColor_, 2.0f);
+			Vector3 arrowStart = GetHUDPosition(barrelX + cosf(rotAngle) * 0.55f, barrelY + sinf(rotAngle) * 0.55f);
+			Vector3 arrowEnd = GetHUDPosition(barrelX + cosf(rotAngle + 0.5f) * 0.40f, barrelY + sinf(rotAngle + 0.5f) * 0.40f);
+			lineManager->DrawLine(arrowStart, arrowEnd, hudColor_, 1.5f);
 		} else {
 			// スタンバイ状態
 			Vector3 barrelCenter = GetHUDPosition(barrelX, barrelY);
 			float barrelProgress = (progress - 0.25f) / 0.25f;
 
 			// 十字マーク
-			Vector3 crossH1 = GetHUDPosition(barrelX - 0.8f, barrelY);
-			Vector3 crossH2 = GetHUDPosition(barrelX + 0.8f, barrelY);
-			Vector3 crossV1 = GetHUDPosition(barrelX, barrelY - 0.8f);
-			Vector3 crossV2 = GetHUDPosition(barrelX, barrelY + 0.8f);
+			Vector3 crossH1 = GetHUDPosition(barrelX - 0.55f, barrelY);
+			Vector3 crossH2 = GetHUDPosition(barrelX + 0.55f, barrelY);
+			Vector3 crossV1 = GetHUDPosition(barrelX, barrelY - 0.55f);
+			Vector3 crossV2 = GetHUDPosition(barrelX, barrelY + 0.55f);
 
 			if (barrelProgress > 0.5f) {
-				lineManager->DrawLine(crossH1, crossH2, hudColor_, 1.5f);
-				lineManager->DrawLine(crossV1, crossV2, hudColor_, 1.5f);
+				lineManager->DrawLine(crossH1, crossH2, hudColor_, 1.2f);
+				lineManager->DrawLine(crossV1, crossV2, hudColor_, 1.2f);
 			}
 		}
 	}
@@ -1179,15 +1180,19 @@ void HUD::DrawCombatStatus(float progress) {
 
 	DrawPanelBracket(hpCenterX, hpColor, true);
 
-	// HPは8分割。欠損区画も残すことで残量の変化量を瞬時に認識できる。
-	constexpr int kHpSegments = 8;
-	const int filledHpSegments = static_cast<int>(std::ceil(std::clamp(hpRatio_, 0.0f, 1.0f) * kHpSegments));
-	for (int index = 0; index < kHpSegments; ++index) {
-		const float x = hpCenterX - 2.25f + index * 0.62f;
-		Vector4 segmentColor = index < filledHpSegments ? hpColor : Vector4{0.08f, 0.16f, 0.14f, 0.45f};
-		segmentColor.w *= deploy;
-		lineManager->DrawLine(GetHUDPosition(x, panelY + 0.48f), GetHUDPosition(x, panelY - 0.48f), segmentColor, 3.0f);
-	}
+	// HPは連続ゲージ。残量と最大量の関係を、分割数を数えずに把握できるようにする。
+	const float hpGaugeLeft = hpCenterX - 2.25f;
+	const float hpGaugeRight = hpCenterX + 2.25f;
+	const float hpGaugeY = panelY + 0.18f;
+	const float hpGaugeHalfHeight = 0.36f;
+	Vector4 hpGaugeBackground = {0.06f, 0.13f, 0.11f, 0.65f * deploy};
+	lineManager->DrawLine(GetHUDPosition(hpGaugeLeft, hpGaugeY), GetHUDPosition(hpGaugeRight, hpGaugeY), hpGaugeBackground, 5.0f);
+	lineManager->DrawLine(GetHUDPosition(hpGaugeLeft, hpGaugeY - hpGaugeHalfHeight), GetHUDPosition(hpGaugeRight, hpGaugeY - hpGaugeHalfHeight), hpColor, 1.0f);
+	lineManager->DrawLine(GetHUDPosition(hpGaugeLeft, hpGaugeY + hpGaugeHalfHeight), GetHUDPosition(hpGaugeRight, hpGaugeY + hpGaugeHalfHeight), hpColor, 1.0f);
+	lineManager->DrawLine(GetHUDPosition(hpGaugeLeft, hpGaugeY - hpGaugeHalfHeight), GetHUDPosition(hpGaugeLeft, hpGaugeY + hpGaugeHalfHeight), hpColor, 1.0f);
+	lineManager->DrawLine(GetHUDPosition(hpGaugeRight, hpGaugeY - hpGaugeHalfHeight), GetHUDPosition(hpGaugeRight, hpGaugeY + hpGaugeHalfHeight), hpColor, 1.0f);
+	const float hpGaugeFill = hpGaugeLeft + (hpGaugeRight - hpGaugeLeft) * std::clamp(hpRatio_, 0.0f, 1.0f);
+	lineManager->DrawLine(GetHUDPosition(hpGaugeLeft, hpGaugeY), GetHUDPosition(hpGaugeFill, hpGaugeY), hpColor, 4.0f);
 
 	// 右下は兵装状態。点灯数が即時発射可能なミサイル、下段が次弾の補充進捗を示す。
 	const bool isReloading = missileAmmo_ < maxMissileAmmo_ && missileRecoveryTime_ > 0.0f;
@@ -1217,8 +1222,8 @@ void HUD::DrawCombatStatus(float progress) {
 		const float dodgeY = -10.0f;
 		Vector4 dodgeColor = hudColorCyan_;
 		dodgeColor.w = 0.7f + 0.3f * std::abs(sinf(animationTime_ * 10.0f));
-		const int segments = (std::max)(3, static_cast<int>(24.0f * justAvoidanceWindowRatio_));
-		lineManager->DrawCircle(GetHUDPosition(dodgeX, dodgeY), 1.55f, dodgeColor, 2.5f, {0.0f, 0.0f, 1.0f}, segments);
+		const int segments = (std::max)(3, static_cast<int>(16.0f * justAvoidanceWindowRatio_));
+		lineManager->DrawCircle(GetHUDPosition(dodgeX, dodgeY), 0.85f, dodgeColor, 1.5f, {0.0f, 0.0f, 1.0f}, segments);
 	}
 }
 
