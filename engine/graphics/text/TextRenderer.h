@@ -32,6 +32,7 @@ namespace MagEngine {
 		MagMath::Vector2 position{};
 		MagMath::Vector4 color{1.0f, 1.0f, 1.0f, 1.0f};
 		float scale = 1.0f;
+		float rotationRadians = 0.0f;
 		float drawOrder = 0.0f;
 	};
 
@@ -56,7 +57,7 @@ namespace MagEngine {
 		bool LoadMetrics(const std::string &metricsPath, std::string &errorMessage);
 		bool DecodeUtf8(const std::string &text);
 		void BuildGeometry();
-		void AppendGlyph(const GlyphMetrics &glyph, float penX, float penY, float scale);
+		void AppendGlyph(const GlyphMetrics &glyph, float penX, float penY, float scale, const MagMath::Vector2 &rotationOrigin, float rotationRadians);
 		void EnsureGpuCapacity(uint32_t requiredGlyphs);
 		const GlyphMetrics *FindGlyph(uint32_t codePoint) const;
 

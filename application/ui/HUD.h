@@ -11,13 +11,17 @@ using Vector4 = MagMath::Vector4;
 namespace MagEngine {
 	class CameraManager;
 	class LineManager;
+	class RenderWorld;
+	class TextRenderer;
 }
 
 class HUD {
 public:
-	void Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineManager &lineManager);
+	void Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineManager &lineManager, MagEngine::TextRenderer &textRenderer);
 	void Update(const Player *player, float unscaledDeltaTime);
 	void Draw();
+	/// @brief HUDが管理する戦闘状態をゲームUI文字として登録する
+	void RegisterText(MagEngine::RenderWorld &renderWorld);
 	void DrawImGui();
 
 	// FollowCameraの設定
@@ -56,6 +60,8 @@ private:
 
 	// スクリーン座標変換
 	Vector3 GetHUDPosition(float screenX, float screenY);
+	Vector2 GetTextPosition(float hudX, float hudY);
+	float GetTextRotationRadians();
 	Vector3 GetPlayerFrontPosition(float screenX, float screenY);
 	Vector3 GetPlayerFrontPositionWithOffset(float screenX, float screenY, const Vector3 &offset);
 	Vector3 ClampHUDPosition(const Vector3 &worldPos, const Vector3 &cameraPos, const Vector3 &cameraForward);
@@ -80,6 +86,7 @@ private:
 	FollowCamera *followCamera_;
 	MagEngine::CameraManager *cameraManager_;
 	MagEngine::LineManager *lineManager_;
+	MagEngine::TextRenderer *textRenderer_ = nullptr;
 
 	// プレイヤー参照
 	const Player *currentPlayer_;

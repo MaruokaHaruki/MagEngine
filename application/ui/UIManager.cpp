@@ -34,7 +34,7 @@ void UIManager::Initialize(MagEngine::SpriteSetup *spriteSetup,
 
 	// HUD の初期化
 	hud_ = std::make_unique<HUD>();
-	hud_->Initialize(cameraManager, lineManager);
+	hud_->Initialize(cameraManager, lineManager, textRenderer);
 
 	// MenuUI の初期化
 	menuUI_ = std::make_unique<MenuUI>();
@@ -123,23 +123,7 @@ void UIManager::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 	if (hud_) {
 		hud_->Draw();
 	}
-	if (textRenderer_ && hud_ && hud_->GetCurrentPlayer()) {
-		const Player *player = hud_->GetCurrentPlayer();
-		auto AddStatus = [this](const std::string &text, const Vector2 &position, const Vector4 &color) {
-			MagEngine::TextDrawCommand command{};
-			command.text = text;
-			command.position = position;
-			command.color = color;
-			command.scale = 0.75f;
-			command.drawOrder = 10.0f;
-			textRenderer_->AddText(command);
-		};
-		AddStatus("HP " + std::to_string(player->GetCurrentHP()) + " / " + std::to_string(player->GetMaxHP()), {42.0f, 610.0f}, {0.1f, 1.0f, 0.35f, 1.0f});
-		AddStatus("MISSILE " + std::to_string(player->GetMissileAmmo()) + " / " + std::to_string(player->GetMissileMaxAmmo()), {930.0f, 610.0f}, {0.2f, 0.9f, 1.0f, 1.0f});
-		if (player->GetMissileAmmo() < player->GetMissileMaxAmmo()) AddStatus("RELOAD", {930.0f, 640.0f}, {1.0f, 0.82f, 0.15f, 1.0f});
-		if (player->IsInJustAvoidanceWindow()) AddStatus("DODGE READY", {530.0f, 645.0f}, {0.2f, 0.95f, 1.0f, 1.0f});
-		textRenderer_->RegisterRenderables(renderWorld);
-	}
+	if (hud_) { hud_->RegisterText(renderWorld); }
 	if (lockOnHUD_) {
 		lockOnHUD_->Draw();
 	}

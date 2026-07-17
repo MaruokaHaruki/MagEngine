@@ -7,10 +7,14 @@
 #include "Camera.h"
 #include "ImguiSetup.h"
 #include "LineManager.h"
+#include "engine/graphics/text/TextRenderer.h"
+#include "engine/render/pass/RenderWorld.h"
 #include <algorithm>
 using namespace MagMath;
 #include <cassert>
 #include <cmath>
+#include <string>
+#include <utility>
 using namespace MagEngine;
 
 const float SCREEN_WIDTH = 1280.0f;
@@ -52,9 +56,10 @@ namespace {
 
 ///=============================================================================
 ///                        初期化
-void HUD::Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineManager &lineManager) {
+void HUD::Initialize(MagEngine::CameraManager &cameraManager, MagEngine::LineManager &lineManager, MagEngine::TextRenderer &textRenderer) {
 	cameraManager_ = &cameraManager;
 	lineManager_ = &lineManager;
+	textRenderer_ = &textRenderer;
 
 	// HUD基本設定
 	hudScale_ = 0.85f;
@@ -519,9 +524,71 @@ void HUD::Draw() {
 	}
 
 	// ジャスト回避成功通知を描画
-	if (justAvoidanceDisplayActive_) {
-		DrawJustAvoidanceNotification(deployProgress_);
+	// NOTE: 回避成功は中央の線演出ではなく、TextRenderer経由の通知として表示する。
+}
+
+///=============================================================================
+///                        HUD文字用スクリーン座標変換
+Vector2 HUD::GetTextPosition(float hudX, float hudY) {
+	if (!currentCamera_) {
+		return {SCREEN_WIDTH * 0.5f + hudX * 24.0f, SCREEN_HEIGHT * 0.5f - hudY * 24.0f};
 	}
+
+	const Vector3 worldPosition = GetHUDPosition(hudX, hudY);
+	const MagMath::Matrix4x4 &viewProjection = currentCamera_->GetViewProjectionMatrix();
+	Vector4 clipPosition{};
+	clipPosition.x = worldPosition.x * viewProjection.m[0][0] + worldPosition.y * viewProjection.m[1][0] + worldPosition.z * viewProjection.m[2][0] + viewProjection.m[3][0];
+	clipPosition.y = worldPosition.x * viewProjection.m[0][1] + worldPosition.y * viewProjection.m[1][1] + worldPosition.z * viewProjection.m[2][1] + viewProjection.m[3][1];
+	clipPosition.w = worldPosition.x * viewProjection.m[0][3] + worldPosition.y * viewProjection.m[1][3] + worldPosition.z * viewProjection.m[2][3] + viewProjection.m[3][3];
+
+	if (std::abs(clipPosition.w) < 1e-6f) {
+		return {-1000.0f, -1000.0f};
+	}
+
+	const float ndcX = clipPosition.x / clipPosition.w;
+	const float ndcY = clipPosition.y / clipPosition.w;
+	return {(ndcX + 1.0f) * SCREEN_WIDTH * 0.5f, (1.0f - ndcY) * SCREEN_HEIGHT * 0.5f};
+}
+
+float HUD::GetTextRotationRadians() {
+	const Vector2 origin = GetTextPosition(0.0f, 0.0f);
+	const Vector2 localXAxis = GetTextPosition(1.0f, 0.0f);
+	return std::atan2(localXAxis.y - origin.y, localXAxis.x - origin.x);
+}
+
+///=============================================================================
+///                        HUD文字登録
+void HUD::RegisterText(MagEngine::RenderWorld &renderWorld) {
+	if (!textRenderer_ || !currentPlayer_ || deployProgress_ <= 0.0f) {
+		return;
+	}
+
+	auto AddStatus = [this](std::string text, const Vector2 &position, const Vector4 &color, float scale = 0.75f) {
+		MagEngine::TextDrawCommand command{};
+		command.text = std::move(text);
+		command.position = position;
+		command.color = color;
+		command.scale = scale;
+		command.rotationRadians = GetTextRotationRadians();
+		command.drawOrder = 10.0f;
+		textRenderer_->AddText(command);
+	};
+
+	// NOTE: 文字も同じHUD平面を投影する。ラインのパネル直上に寄せ、視線移動を抑える。
+	AddStatus("HP " + std::to_string(currentHp_) + " / " + std::to_string(maxHp_), GetTextPosition(-8.6f, -5.1f), hudColor_, 0.58f);
+	AddStatus("MISSILE " + std::to_string(missileAmmo_) + " / " + std::to_string(maxMissileAmmo_), GetTextPosition(8.6f, -5.1f), hudColorCyan_, 0.58f);
+	if (missileAmmo_ < maxMissileAmmo_) {
+		AddStatus("RELOAD", GetTextPosition(8.6f, -5.9f), hudColorWarning_, 0.52f);
+	}
+	if (isJustAvoidanceWindowActive_) {
+		AddStatus("DODGE READY", GetTextPosition(5.0f, -8.2f), hudColorCyan_, 0.52f);
+	}
+	if (justAvoidanceDisplayActive_) {
+		Vector4 successColor = justAvoidanceSuccessRate_ >= 0.99f ? Vector4{1.0f, 0.84f, 0.0f, 1.0f} : hudColor_;
+		AddStatus("DODGE SUCCESS", GetTextPosition(0.0f, 5.2f), successColor, 0.7f);
+	}
+
+	textRenderer_->RegisterRenderables(renderWorld);
 }
 
 ///=============================================================================
@@ -783,32 +850,19 @@ void HUD::DrawVelocityVector(float progress) {
 	float offsetY = -Dot(fireOffset, Vector3{sinf(playerRotation_.y) * sinf(playerRotation_.x), cosf(playerRotation_.x), cosf(playerRotation_.y) * sinf(playerRotation_.x)}) * 12.0f;
 
 	float size = 0.7f * hudScale_;
-	Vector3 centerPos = GetPlayerFrontPositionWithOffset(
-		boresightOffset_.x + offsetX * 0.4f,
-		boresightOffset_.y + offsetY * 0.4f,
-		boresightOffset_);
-
 	Vector4 velocityCol = {0.0f, 0.85f, 1.0f, 0.85f}; // シアン系
 
-	// 円形マーカー（速度インジケーター）
-	if (progress > 0.0f) {
-		float circleProgress = std::min(progress, 1.0f);
-		int segments = static_cast<int>(16 * circleProgress);
-		if (segments > 0) {
-			lineManager->DrawCircle(centerPos, size, velocityCol, 1.5f, {0.0f, 0.0f, 1.0f}, segments);
-		}
-	}
-
-	// 翼マーク（シンプル化：1本のみ）
+	// NOTE: 照準の可読性を優先し、速度表示は中心を横切らない左右の短い翼だけにする。
 	if (progress > 0.4f) {
 		float wingProgress = std::min((progress - 0.4f) / 0.6f, 1.0f);
-		Vector3 leftWing = GetPlayerFrontPositionWithOffset(-size * 1.2f + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
-		Vector3 leftWingEnd = GetPlayerFrontPositionWithOffset(-size * 2.0f + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
+		const float centerGap = 1.8f * hudScale_;
+		Vector3 leftWing = GetPlayerFrontPositionWithOffset(-centerGap + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
+		Vector3 leftWingEnd = GetPlayerFrontPositionWithOffset(-centerGap - size + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
 		Vector3 leftWingDraw = Lerp(leftWing, leftWingEnd, wingProgress);
 		lineManager->DrawLine(leftWing, leftWingDraw, velocityCol, 2.0f);
 
-		Vector3 rightWing = GetPlayerFrontPositionWithOffset(size * 1.2f + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
-		Vector3 rightWingEnd = GetPlayerFrontPositionWithOffset(size * 2.0f + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
+		Vector3 rightWing = GetPlayerFrontPositionWithOffset(centerGap + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
+		Vector3 rightWingEnd = GetPlayerFrontPositionWithOffset(centerGap + size + offsetX * 0.4f, offsetY * 0.4f, boresightOffset_);
 		Vector3 rightWingDraw = Lerp(rightWing, rightWingEnd, wingProgress);
 		lineManager->DrawLine(rightWing, rightWingDraw, velocityCol, 2.0f);
 	}
@@ -843,35 +897,34 @@ void HUD::DrawPitchLadder(float progress) {
 		lineIndex++;
 
 		float offsetY = (angle - pitchDeg) * 0.3f;
-		if (std::abs(offsetY) > 12.0f)
+		if (std::abs(offsetY) > 12.0f || std::abs(offsetY) < 2.0f)
 			continue;
 
 		float lineLength = 2.0f; // 統一化
 		Vector3 left = GetPlayerFrontPositionWithOffset(-lineLength, offsetY, boresightOffset_);
 		Vector3 right = GetPlayerFrontPositionWithOffset(lineLength, offsetY, boresightOffset_);
 
-		Vector3 center = GetPlayerFrontPositionWithOffset(0.0f, offsetY, boresightOffset_);
-		Vector3 leftDraw = Lerp(center, left, progress);
-		Vector3 rightDraw = Lerp(center, right, progress);
+		Vector3 leftDraw = Lerp(GetPlayerFrontPositionWithOffset(-0.9f, offsetY, boresightOffset_), left, progress);
+		Vector3 rightDraw = Lerp(GetPlayerFrontPositionWithOffset(0.9f, offsetY, boresightOffset_), right, progress);
 
 		// 透明度を下げて背景化
 		Vector4 ladderCol = hudColor_;
 		ladderCol.w *= 0.5f; // 半透明化
-		lineManager->DrawLine(leftDraw, rightDraw, ladderCol, 1.0f);
+		lineManager->DrawLine(leftDraw, GetPlayerFrontPositionWithOffset(-0.9f, offsetY, boresightOffset_), ladderCol, 1.0f);
+		lineManager->DrawLine(GetPlayerFrontPositionWithOffset(0.9f, offsetY, boresightOffset_), rightDraw, ladderCol, 1.0f);
 	}
 
 	// 水平線強調（ピッチリファレンス）
 	float horizonOffsetY = -pitchDeg * 0.3f;
 	if (std::abs(horizonOffsetY) <= 12.0f && progress > 0.3f) {
+		const float centerGap = 1.6f;
 		Vector3 left = GetPlayerFrontPositionWithOffset(-4.5f, horizonOffsetY, boresightOffset_);
-		Vector3 center = GetPlayerFrontPositionWithOffset(0.0f, horizonOffsetY, boresightOffset_);
+		Vector3 leftInner = GetPlayerFrontPositionWithOffset(-centerGap, horizonOffsetY, boresightOffset_);
+		Vector3 rightInner = GetPlayerFrontPositionWithOffset(centerGap, horizonOffsetY, boresightOffset_);
 		Vector3 right = GetPlayerFrontPositionWithOffset(4.5f, horizonOffsetY, boresightOffset_);
 
-		Vector3 leftDraw = Lerp(center, left, progress);
-		Vector3 rightDraw = Lerp(center, right, progress);
-
-		lineManager->DrawLine(leftDraw, center, hudColor_, 2.5f);
-		lineManager->DrawLine(center, rightDraw, hudColor_, 2.5f);
+		lineManager->DrawLine(Lerp(leftInner, left, progress), leftInner, hudColor_, 2.5f);
+		lineManager->DrawLine(rightInner, Lerp(rightInner, right, progress), hudColor_, 2.5f);
 	}
 }
 

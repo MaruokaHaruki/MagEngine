@@ -6,7 +6,7 @@
     {
       "waveId": "wave_01",
       "startDelaySeconds": 1.5,
-      "nextWaveDelaySeconds": 1.5,
+      "nextWaveDelaySeconds": 2.5,
       "waitForAllGroupsFinished": true,
       "waitForAllEnemiesRemoved": true,
       "spawnGroups": [
@@ -16,8 +16,8 @@
           "formationPattern": "HorizontalLine",
           "attackPattern": "Staggered",
           "members": [
-            { "archetype": "Standard", "count": 20 },
-            { "archetype": "Gunner", "count": 100 }
+            { "archetype": "Standard", "count": 5 },
+            { "archetype": "Gunner", "count": 2 }
           ],
           "motion": {
             "entryDuration": 3.0,
@@ -30,8 +30,8 @@
             "orbitRadiusX": 14.0,
             "orbitRadiusY": 6.0,
             "orbitAngularSpeed": 1.2,
-            "attackInterval": 1.6,
-            "attackSlotDelay": 0.22,
+            "attackInterval": 2.0,
+            "attackSlotDelay": 0.35,
             "offscreenMarginX": 120.0,
             "offscreenMarginY": 34.0,
             "minimumSpawnDistance": 125.0
@@ -39,12 +39,12 @@
         },
         {
           "groupId": "v_entry_01",
-          "spawnDelaySeconds": 4.0,
+          "spawnDelaySeconds": 5.0,
           "formationPattern": "VShape",
           "attackPattern": "LeaderThenWing",
           "members": [
-            { "archetype": "Gunner", "count": 5 },
-            { "archetype": "Standard", "count": 20 }
+            { "archetype": "Gunner", "count": 2 },
+            { "archetype": "Standard", "count": 4 }
           ],
           "motion": {
             "entryDuration": 3.2,
@@ -64,7 +64,7 @@
     {
       "waveId": "wave_02",
       "startDelaySeconds": 1.5,
-      "nextWaveDelaySeconds": 0.0,
+      "nextWaveDelaySeconds": 2.0,
       "waitForAllGroupsFinished": true,
       "waitForAllEnemiesRemoved": true,
       "spawnGroups": [
@@ -74,8 +74,8 @@
           "formationPattern": "Circle",
           "attackPattern": "Staggered",
           "members": [
-            { "archetype": "Standard", "count": 100 },
-            { "archetype": "Gunner", "count": 5 }
+            { "archetype": "Standard", "count": 6 },
+            { "archetype": "Gunner", "count": 2 }
           ],
           "motion": {
             "entryDuration": 3.0,
@@ -95,12 +95,12 @@
         },
         {
           "groupId": "figure_eight_entry_01",
-          "spawnDelaySeconds": 4.5,
+          "spawnDelaySeconds": 5.5,
           "formationPattern": "FigureEight",
           "attackPattern": "Alternating",
           "members": [
-            { "archetype": "Standard", "count": 20 },
-            { "archetype": "Gunner", "count": 5 }
+            { "archetype": "Standard", "count": 4 },
+            { "archetype": "Gunner", "count": 3 }
           ],
           "motion": {
             "entryDuration": 3.0,
