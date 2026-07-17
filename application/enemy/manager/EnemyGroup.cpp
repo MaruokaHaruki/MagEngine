@@ -374,7 +374,7 @@ void EnemyGroup::InitializeMotionFromLeader(const Vector3 &playerPosition) {
 	const float exitX = (leaderPosition.x >= playerPosition.x) ? playerPosition.x + 80.0f : playerPosition.x - 80.0f;
 	motion_.exitPosition = {
 		exitX,
-		playerPosition.y + 12.0f,
+		playerPosition.y,
 		playerPosition.z + EnemyFormationConstants::kCombatForwardDistance + 45.0f,
 	};
 	groupCenter_ = motion_.entryPosition;
@@ -405,7 +405,8 @@ void EnemyGroup::UpdateGroupState(float deltaTime, const Vector3 &playerPosition
 			groupState_ = EnemyGroupState::Exit;
 			stateTimer_ = 0.0f;
 			const float exitX = groupCenter_.x >= playerPosition.x ? playerPosition.x + spawnBounds_.offscreenMarginX : playerPosition.x - spawnBounds_.offscreenMarginX;
-			motion_.exitPosition = {exitX, playerPosition.y + spawnBounds_.offscreenMarginY * 0.5f, playerPosition.z + combatArea_.combatDistance + 50.0f};
+			// NOTE: 時間切れの編隊は上下へ退避させず、左右の画面外へ抜ける挙動に統一する。
+			motion_.exitPosition = {exitX, playerPosition.y, playerPosition.z + combatArea_.combatDistance + 50.0f};
 		}
 		break;
 	case EnemyGroupState::Exit:

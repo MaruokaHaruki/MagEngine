@@ -108,7 +108,7 @@ struct BulletHoleGPU {
 // 弾痕配列定数バッファ（b2）
 cbuffer BulletHoleBufferCB : register(b2)
 {
-    BulletHoleGPU gBulletHoles[4];  // CPU側の固定バッファ数と一致させる
+    BulletHoleGPU gBulletHoles[8];  // CPU側の固定バッファ数と一致させる
 };
 
 #include "CloudBulletHole.hlsli"

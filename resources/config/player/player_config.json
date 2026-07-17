@@ -9,7 +9,7 @@
   },
   "weapon": {
     "bullet": {
-      "speed": 128.0,
+      "speed": 160.0,
       "lifetime": 3.0,
       "radius": 0.5,
       "shootCooldown": 0.1

@@ -15,7 +15,7 @@ float CalculateBulletHoleMask(float3 position)
         return mask;
     }
 
-    int activeBullets = min(gBulletHoleCount, 4);
+    int activeBullets = min(gBulletHoleCount, 8);
     for(int i = 0; i < activeBullets; ++i) {
         if(mask < 0.01f) {
             break;

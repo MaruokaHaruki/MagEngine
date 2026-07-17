@@ -39,6 +39,11 @@ public:
 	/// \brief 位置の取得
 	Vector3 GetPosition() const;
 
+	/// @brief 弾道方向の算出に使用する速度を取得
+	const Vector3 &GetVelocity() const {
+		return velocity_;
+	}
+
 	/// \brief 当たり判定の半径を取得
 	float GetRadius() const {
 		return radius_;

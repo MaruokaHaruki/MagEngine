@@ -348,6 +348,27 @@ namespace MagEngine {
 	///=============================================================================
 	///						弾痕を追加
 	void Cloud::AddBulletHole(const CloudHoleData &holeData) {
+		AddCloudHole(holeData, true);
+	}
+
+	void Cloud::AddMovementHole(const MagMath::Vector3 &origin,
+							const MagMath::Vector3 &direction,
+							float radius,
+							float length,
+							float lifeTime) {
+		CloudHoleData holeData = MakeCloudHolePreset(CloudHoleShape::Circle);
+	holeData.position = origin;
+	holeData.direction = NormalizeOrDefault(direction, {0.0f, 0.0f, 1.0f});
+	holeData.startRadius = radius;
+	// NOTE: 弾道は入口と出口を同じ半径にし、視認しやすい円柱状の抜け道にする。
+	holeData.endRadius = radius;
+		holeData.coneLength = length;
+		holeData.lifetime = lifeTime;
+		holeData.maxLifetime = lifeTime;
+		AddCloudHole(holeData, false);
+	}
+
+	void Cloud::AddCloudHole(const CloudHoleData &holeData, bool shouldLog) {
 		if (bulletHoles_.size() >= BulletHoleBuffer::kMaxBulletHoles) {
 			bulletHoles_.erase(bulletHoles_.begin());
 		}
@@ -356,14 +377,16 @@ namespace MagEngine {
 		CloudHoleData hole = SanitizeCloudHoleData(holeData);
 		bulletHoles_.push_back(hole);
 
-		// COMMENT: DEBUG ビルドのみログ出力（Release では削除）
-#ifdef _DEBUG
+		// NOTE: 移動体の軌跡は高頻度のため、明示的な弾痕だけをログに残す。
+	#ifdef _DEBUG
+		if (shouldLog) {
 		Logger::Log("BulletHole added at (" +
 						std::to_string(hole.position.x) + ", " +
 						std::to_string(hole.position.y) + ", " +
 						std::to_string(hole.position.z) + ")",
 					Logger::LogLevel::Info);
-#endif // DEBUG
+		}
+	#endif // DEBUG
 	}
 
 	///=============================================================================

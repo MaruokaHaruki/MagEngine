@@ -19,6 +19,7 @@
 #include "CollisionManager.h"
 #include "DebugTextManager.h"
 #include "EnemyManager.h"
+#include "EnemyBullet.h"
 #include "FollowCamera.h"
 #include "MenuUI.h"
 #include "ModelManager.h"
@@ -133,13 +134,15 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	// 雲
 	cloud_ = std::make_unique<Cloud>();
 	cloud_->Initialize(cloudSetup);
+	// NOTE: 敵弾収集用のバッファを再利用し、弾道穴の更新中に確保しない。
+	enemyBulletsForCloud_.reserve(32);
 
 	// 雲のサイズ設定（広い範囲に配置）
 	cloud_->SetSize({500.0f, 100.0f, 500.0f});
 	cloud_->SetEnabled(true);
 
 	// 雲のTransform設定
-	cloud_->GetTransform().translate = {0.0f, -50.0f, 250.0f};
+	cloud_->GetTransform().translate = {0.0f, -35.0f, 250.0f};
 
 	// 雲の密度と速度を調整（美しい表現）
 	auto &cloudParams = cloud_->GetMutableParams();
@@ -450,6 +453,8 @@ void GamePlayScene::Update(const FrameTime &frameTime) {
 		}
 	}
 
+	UpdateCloudProjectileHoles(gameplayDeltaTime);
+
 	if (!IsSimulationEnabled()) {
 		if (particle_) {
 			particle_->Update();
@@ -488,6 +493,48 @@ void GamePlayScene::Update(const FrameTime &frameTime) {
 		BeginTransitionOut(1.0f);
 	}
 #endif
+}
+
+void GamePlayScene::UpdateCloudProjectileHoles(float deltaTime) {
+	if (!cloud_ || !player_ || !enemyManager_) {
+		return;
+	}
+
+	cloudProjectileHoleTimer_ += deltaTime;
+	if (cloudProjectileHoleTimer_ < 0.08f) {
+		return;
+	}
+	cloudProjectileHoleTimer_ = 0.0f;
+
+	// NOTE: 固定8本の雲穴を弾道へ優先配分し、プレイヤー弾と敵弾の両方を必ず対象にする。
+	const auto addCylinderHole = [this](const Vector3 &position, const Vector3 &velocity, float radius, float length) {
+		const float speed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+		if (speed <= 0.001f) {
+			return;
+		}
+		const Vector3 direction = {velocity.x / speed, velocity.y / speed, velocity.z / speed};
+		const Vector3 origin = {
+			position.x - direction.x * (length * 0.25f),
+			position.y - direction.y * (length * 0.25f),
+			position.z - direction.z * (length * 0.25f),
+		};
+		cloud_->AddMovementHole(origin, direction, radius, length, 0.25f);
+	};
+
+	const auto &playerBullets = player_->GetBullets();
+	for (auto bulletIt = playerBullets.rbegin(); bulletIt != playerBullets.rend() && bulletIt - playerBullets.rbegin() < 4; ++bulletIt) {
+		if (*bulletIt && (*bulletIt)->IsAlive()) {
+			// NOTE: 雲の最大対角より長く取り、弾道が雲の反対側まで貫通するようにする。
+			addCylinderHole((*bulletIt)->GetPosition(), (*bulletIt)->GetVelocity(), 2.5f, 800.0f);
+		}
+	}
+
+	enemyManager_->CollectEnemyBullets(enemyBulletsForCloud_);
+	for (auto bulletIt = enemyBulletsForCloud_.rbegin(); bulletIt != enemyBulletsForCloud_.rend() && bulletIt - enemyBulletsForCloud_.rbegin() < 4; ++bulletIt) {
+		if (*bulletIt && (*bulletIt)->IsAlive()) {
+			addCylinderHole((*bulletIt)->GetPosition(), (*bulletIt)->GetVelocity(), 2.0f, 800.0f);
+		}
+	}
 }
 
 ///=============================================================================

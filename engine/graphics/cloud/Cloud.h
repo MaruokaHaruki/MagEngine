@@ -122,10 +122,10 @@ namespace MagEngine {
 
 	/**----------------------------------------------------------------------------
 	 * \brief  BulletHoleBuffer 弾痕配列定数バッファ(GPU用)
-	 * \note   最大4個の弾痕を管理（高速化優先）
+	 * \note   最大8個の弾痕を管理（移動体の通過表現との両立）
 	 */
 	struct alignas(16) BulletHoleBuffer {
-		static constexpr int kMaxBulletHoles = 4;	// 最大弾痕数（高速化のため削減）
+		static constexpr int kMaxBulletHoles = 8;	// 移動体の通過跡も保持できる数に限定
 		BulletHoleGPU bulletHoles[kMaxBulletHoles]; // 弾痕配列
 	};
 
@@ -180,6 +180,14 @@ namespace MagEngine {
 		/// @note Shapeごとの個別構造体を増やさず、固定CBレイアウトを維持するための入口。
 		void AddBulletHole(const CloudHoleData &holeData);
 
+		/// @brief 移動体が雲を通過した軌跡を追加する
+		/// @note 弾痕のデバッグログを出さず、ゲーム中の連続した通過表現に使用する。
+		void AddMovementHole(const MagMath::Vector3 &origin,
+							 const MagMath::Vector3 &direction,
+							 float radius,
+							 float length,
+							 float lifeTime);
+
 		/**----------------------------------------------------------------------------
 		 * \brief  すべての弾痕をクリアする
 		 * \note   シーン切り替え時などに使用
@@ -233,6 +241,8 @@ namespace MagEngine {
 		 * \note   CPU側の弾痕配列をGPU用フォーマットに変換して定数バッファに書き込む
 		 */
 		void TransferBulletHolesToGPU();
+
+		void AddCloudHole(const CloudHoleData &holeData, bool shouldLog);
 
 		///--------------------------------------------------------------
 		///							入出力関数

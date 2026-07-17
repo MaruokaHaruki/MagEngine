@@ -9,6 +9,7 @@
 #pragma once
 #include "BaseScene.h"
 #include <memory>
+#include <vector>
 //========================================
 // Engine
 #include "Cloud.h"
@@ -38,6 +39,7 @@ class FollowCamera;
 class Skydome;
 class Player;
 class EnemyManager;
+class EnemyBullet;
 class SceneTransition;
 class SceneContext;
 namespace MagEngine {
@@ -87,6 +89,7 @@ private:
 	void UpdateTerminalPresentation();
 	void UpdateTransitionOut();
 	void UpdateSceneTransition(float unscaledDeltaTime);
+	void UpdateCloudProjectileHoles(float deltaTime);
 	bool IsPaused() const;
 	bool IsSimulationEnabled() const;
 	void RequestGameClear();
@@ -148,6 +151,8 @@ private:
 	//========================================
 	// 雲
 	std::unique_ptr<MagEngine::Cloud> cloud_;
+	std::vector<EnemyBullet *> enemyBulletsForCloud_;
+	float cloudProjectileHoleTimer_ = 0.0f;
 
 	//=========================================
 	// Skybox

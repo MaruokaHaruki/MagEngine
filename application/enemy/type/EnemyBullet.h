@@ -58,6 +58,11 @@ public:
 		return transform_.translate;
 	}
 
+	/// @brief 弾道方向の算出に使用する速度を取得
+	const Vector3 &GetVelocity() const {
+		return velocity_;
+	}
+
 	/// \brief 半径取得
 	float GetRadius() const {
 		return radius_;

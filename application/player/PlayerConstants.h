@@ -42,8 +42,8 @@ namespace PlayerConstants {
 		//---- 弾（機銃）関連 ----
 		/// @brief 弾の飛行速度（units/秒）
 		/// @details 敵が回避困難になる速度。値が小さいと敵が素早く回避可能
-		/// @note BULLET_LIFETIME との積が有効距離: 128 × 3 = 384 units
-		constexpr float BULLET_SPEED = 128.0f;
+		/// @note BULLET_LIFETIME との積が有効距離: 160 × 3 = 480 units
+		constexpr float BULLET_SPEED = 160.0f;
 
 		/// @brief 弾の生存時間（秒）
 		/// @details この時間を超えた弾は自動削除される

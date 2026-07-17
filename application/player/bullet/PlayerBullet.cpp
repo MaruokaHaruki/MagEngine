@@ -1,4 +1,5 @@
 #include "PlayerBullet.h"
+#include "PlayerConstants.h"
 #include "Object3d.h"
 #include "TrailEffectManager.h"
 #include "engine/render/pass/RenderWorld.h"
@@ -22,7 +23,7 @@ void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
 	}
 
 	// 移動設定
-	speed_ = 128.0f; // 弾の速度
+	speed_ = PlayerConstants::Weapon::BULLET_SPEED;
 	velocity_ = {direction.x * speed_, direction.y * speed_, direction.z * speed_};
 
 	// 生存時間設定
