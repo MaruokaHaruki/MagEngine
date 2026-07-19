@@ -16,6 +16,8 @@ namespace MagEngine {
 	class RenderWorld;
 	class SpriteSetup;
 
+	/// @brief フォントアトラス内の1文字に対応する描画メトリクス
+	/// @note UVと寸法はメトリクスファイルとアトラス画像の組み合わせに依存する。
 	struct GlyphMetrics {
 		uint32_t codePoint = 0;
 		MagMath::Vector2 uvMin{};
@@ -25,8 +27,11 @@ namespace MagEngine {
 		float advance = 0.0f;
 	};
 
+	/// @brief ベースライン計算に使用するフォント全体のメトリクス
 	struct FontMetrics { float ascender = 0.0f; float descender = 0.0f; float lineHeight = 0.0f; };
 
+	/// @brief フレーム内に追加する文字列描画要求
+	/// @note textはAddText()時点でコピーされる。座標はSprite描画系と同じ画面空間として扱う。
 	struct TextDrawCommand {
 		std::string text;
 		MagMath::Vector2 position{};
@@ -36,12 +41,24 @@ namespace MagEngine {
 		float drawOrder = 0.0f;
 	};
 
+	/// @brief フォントアトラスから文字列の頂点を生成し、RenderWorldへ描画要求を登録するクラス
+	/// @details Draw要求はフレーム単位で蓄積する。BeginFrame()を呼ばないと前フレームの要求が残る。
+	/// @note GPUバッファは内部で所有し、SpriteSetupとRenderWorldは呼び出し側が所有する非所有参照。
 	class TextRenderer {
 	public:
+		/// @brief フォントアトラスと文字メトリクスを読み込む
+		/// @note 読み込みに失敗した場合は例外を送出し、IsReady()はfalseのままとなる。
 		void Initialize(SpriteSetup &spriteSetup, const std::string &texturePath, const std::string &metricsPath);
+		/// @brief 内部GPUリソースを解放
 		void Finalize();
+		/// @brief 前フレームの描画要求と統計値をリセット
+		/// @note 毎フレーム、AddText()より先に1回だけ呼び出す。
 		void BeginFrame();
+		/// @brief 文字列描画要求を追加
+		/// @note kMaxGlyphsPerFrameを超える文字は描画されないため、UI文言は上限内に収める。
 		void AddText(const TextDrawCommand &command);
+		/// @brief 蓄積した文字列を現フレームの描画対象として登録
+		/// @note RegisterRenderables()後に要求を追加しても当該フレームの描画には反映されない。
 		void RegisterRenderables(RenderWorld &renderWorld);
 		void Draw();
 
@@ -61,7 +78,7 @@ namespace MagEngine {
 		void EnsureGpuCapacity(uint32_t requiredGlyphs);
 		const GlyphMetrics *FindGlyph(uint32_t codePoint) const;
 
-		SpriteSetup *spriteSetup_ = nullptr;
+		SpriteSetup *spriteSetup_ = nullptr; // Engine側が所有するスプライト設定への非所有参照。Finalize()前まで有効である必要がある。
 		std::string texturePath_;
 		FontMetrics fontMetrics_{};
 		std::unordered_map<uint32_t, GlyphMetrics> glyphs_;
@@ -87,6 +104,6 @@ namespace MagEngine {
 		uint32_t drawCallCount_ = 0;
 		bool isRegistered_ = false;
 		bool isReady_ = false;
-		static constexpr uint32_t kMaxGlyphsPerFrame = 2048;
+		static constexpr uint32_t kMaxGlyphsPerFrame = 2048; // 毎フレームの頂点・インデックス転送量を固定上限に抑える。
 	};
 }
