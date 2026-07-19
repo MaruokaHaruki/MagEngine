@@ -138,7 +138,7 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	enemyBulletsForCloud_.reserve(32);
 
 	// 雲のサイズ設定（広い範囲に配置）
-	cloud_->SetSize({500.0f, 100.0f, 500.0f});
+	cloud_->SetSize({500.0f, 64.0f, 500.0f});
 	cloud_->SetEnabled(true);
 
 	// 雲のTransform設定

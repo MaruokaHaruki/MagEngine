@@ -42,8 +42,8 @@ namespace PlayerConstants {
 		//---- 弾（機銃）関連 ----
 		/// @brief 弾の飛行速度（units/秒）
 		/// @details 敵が回避困難になる速度。値が小さいと敵が素早く回避可能
-		/// @note BULLET_LIFETIME との積が有効距離: 160 × 3 = 480 units
-		constexpr float BULLET_SPEED = 160.0f;
+		/// @note BULLET_LIFETIME との積が有効距離: 180 × 3 = 540 units
+		constexpr float BULLET_SPEED = 180.0f;
 
 		/// @brief 弾の生存時間（秒）
 		/// @details この時間を超えた弾は自動削除される
@@ -53,7 +53,7 @@ namespace PlayerConstants {
 		/// @brief 弾の当たり判定半径（units）
 		/// @details 敵の当たり判定との交差判定に使用
 		/// @note 見た目より大きいと違和感、小さいと当たりにくくなる
-		constexpr float BULLET_RADIUS = 0.5f;
+		constexpr float BULLET_RADIUS = 0.65f;
 
 		/// @brief 連射クールタイム（秒）
 		/// @details この時間ごとに1発ずつ発射（逆数が発射レート）

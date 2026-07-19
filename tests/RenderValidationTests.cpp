@@ -243,12 +243,15 @@ namespace {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
 				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
 			}));
-		passes.push_back(MakePass(RenderPassId::Particle, RenderPhase::PostOverlay, 100, {
+		passes.push_back(MakePass(RenderPassId::Text, RenderPhase::Overlay, 110, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
-				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
 			}));
 		passes.push_back(MakePass(RenderPassId::HudLine, RenderPhase::PostOverlay, 50, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
+			}));
+		passes.push_back(MakePass(RenderPassId::Particle, RenderPhase::PostOverlay, 100, {
+				{RenderResourceId::SceneColor, RenderResourceAccess::ReadWrite, RenderResourceState::RenderTarget},
+				{RenderResourceId::SceneDepth, RenderResourceAccess::Read, RenderResourceState::DepthWrite},
 			}));
 		passes.push_back(MakePass(RenderPassId::PostEffect, RenderPhase::PostProcess, 100, {
 				{RenderResourceId::SceneColor, RenderResourceAccess::Read, RenderResourceState::PixelShaderResource},
@@ -648,7 +651,7 @@ namespace {
 		RecordDefaultBarriers(graph);
 		graph.ClearRecordedBarriers();
 		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::RenderTarget, RenderResourceState::RenderTarget, RenderBarrierPoint::RenderTexturePreDraw, 10u});
-		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::RenderTarget, RenderResourceState::PixelShaderResource, RenderBarrierPoint::RenderTexturePostDraw, 175u});
+		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::RenderTarget, RenderResourceState::PixelShaderResource, RenderBarrierPoint::RenderTexturePostDraw, 185u});
 		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::PresentColor, RenderResourceState::Present, RenderResourceState::RenderTarget, RenderBarrierPoint::BeginPresentRenderTarget, 166u});
 		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::PresentColor, RenderResourceState::RenderTarget, RenderResourceState::Present, RenderBarrierPoint::BeforePresent, 1000u});
 		const RenderTransitionPlanComparisonResult comparison = graph.CompareTransitionPlanWithManualBarriers(MakeDefaultPasses());
@@ -677,7 +680,7 @@ namespace {
 	void RenderGraphTest_CompareTransitionPlanBoundaryMismatch(TestResult &result) {
 		RenderGraph graph;
 		AddDefaultStates(graph);
-		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::PixelShaderResource, RenderResourceState::RenderTarget, RenderBarrierPoint::RenderTexturePostDraw, 175u});
+		graph.RecordManualBarrierForTesting(RenderResourceBarrierRecord{RenderResourceId::SceneColor, RenderResourceState::PixelShaderResource, RenderResourceState::RenderTarget, RenderBarrierPoint::RenderTexturePostDraw, 185u});
 		const RenderTransitionPlanComparisonResult comparison = graph.CompareTransitionPlanWithManualBarriers(MakeDefaultPasses());
 		Expect(result, !comparison.isMatch, "RenderGraphTest_CompareTransitionPlanBoundaryMismatch_Result");
 		Expect(result, !comparison.mismatches.empty() && comparison.mismatches.front().type == RenderTransitionMismatchType::Boundary, "RenderGraphTest_CompareTransitionPlanBoundaryMismatch_Type");

@@ -127,7 +127,8 @@ namespace MagEngine {
 		case RenderBarrierPoint::RenderTexturePreDraw:
 			return 10;
 		case RenderBarrierPoint::RenderTexturePostDraw:
-			return 175;
+			// NOTE: PostOverlay（HUD Line / Particle）の完了後に実行される境界。
+			return 185;
 		case RenderBarrierPoint::BeginPresentRenderTarget:
 			return 166;
 		case RenderBarrierPoint::BeforePresent:

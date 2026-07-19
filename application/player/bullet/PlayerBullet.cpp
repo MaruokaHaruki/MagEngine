@@ -32,7 +32,7 @@ void PlayerBullet::Initialize(MagEngine::Object3dSetup *object3dSetup,
 	isAlive_ = true;
 
 	// 当たり判定設定
-	radius_ = 0.5f;
+	radius_ = PlayerConstants::Weapon::BULLET_RADIUS;
 
 	// BaseObjectの初期化（当たり判定）
 	Vector3 pos = position;

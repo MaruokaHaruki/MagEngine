@@ -86,7 +86,8 @@ namespace MagEngine {
 			case RenderTransitionBoundary::RenderTexturePreDraw:
 				return 10u;
 		case RenderTransitionBoundary::RenderTexturePostDraw:
-			return 175u;
+			// NOTE: PostOverlay（HUD Line / Particle）の完了後にSceneColorをSRVへ戻す。
+			return 185u;
 			case RenderTransitionBoundary::BeginPresentRenderTarget:
 				return 166u;
 			case RenderTransitionBoundary::BeforePresent:

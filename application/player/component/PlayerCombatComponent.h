@@ -173,7 +173,7 @@ private:
 	///--------------------------------------------------------------
 	///                        弾アシスト機能設定
 	bool isBulletAssistEnabled_ = true;	// 弾アシストが有効か
-	float bulletAssistFOV_ = 30.0f;		// 弾アシスト視野角（度数法）
-	float bulletAssistRange_ = 80.0f;	// 弾アシスト検出範囲（メートル）
-	float bulletAssistStrength_ = 0.65f; // アシスト強度（0.0～1.0）
+	float bulletAssistFOV_ = 26.0f;		// 弾アシスト視野角（度数法）
+	float bulletAssistRange_ = 75.0f;	// 弾アシスト検出範囲（メートル）
+	float bulletAssistStrength_ = 0.60f; // アシスト強度（0.0～1.0）
 };
