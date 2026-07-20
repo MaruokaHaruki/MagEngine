@@ -28,22 +28,25 @@ class StartAnimation {
 	///--------------------------------------------------------------
 	///                        メンバ関数
 public:
-	/// \brief 初期化
+	/// \brief 開始演出で使用するスプライトを生成する
+	/// \param spriteSetup スプライト生成に使用するセットアップ
 	void Initialize(MagEngine::SpriteSetup *spriteSetup);
 
-	/// \brief 終了処理
+	/// \brief 保持するスプライトと演出状態を解放する
 	void Finalize();
 
-	/// \brief 更新
+	/// \brief 現在の開始演出状態を時間停止の影響なしで更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void Update(float unscaledDeltaTime);
 
-	/// \brief 描画
+	/// \brief 演出用スプライトの表示状態を更新する
 	void Draw();
 
-	/// \brief Sprite描画対象を登録
+	/// \brief 演出用スプライトをフレーム描画対象へ登録する
+	/// \param renderWorld 現フレームの描画対象を集約するRenderWorld
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
-	/// \brief ImGui描画
+	/// \brief 演出パラメータを調整するImGuiを描画する
 	void DrawImGui();
 
 	///--------------------------------------------------------------
@@ -60,52 +63,60 @@ public:
 	/// \param closeDuration バー退場時間（秒）
 	void StartClosing(float showDuration = 2.0f, float openDuration = 1.0f, float closeDuration = 1.0f);
 
-	/// \brief アニメーションのキャンセル
+	/// \brief 演出を中断して待機状態へ戻す
 	void Cancel();
 
-	/// \brief アニメーションのリセット
+	/// \brief スプライトを初期表示状態に戻し、演出を待機状態へ戻す
 	void Reset();
 
 	///--------------------------------------------------------------
 	///                        状態取得
-	/// \brief アニメーション中かどうか
+	/// \brief 開始演出が進行中かを判定する
+	/// \return 待機・完了以外の状態の場合はtrue、それ以外はfalse
 	bool IsAnimating() const {
 		return state_ != StartAnimationState::Idle && state_ != StartAnimationState::Done;
 	}
 
-	/// \brief 完了したかどうか
+	/// \brief 開始演出が完了したかを判定する
+	/// \return 完了状態の場合はtrue、それ以外はfalse
 	bool IsDone() const { // IsCompleted から IsDone に変更
 		return state_ == StartAnimationState::Done;
 	}
 
-	/// \brief 現在の状態を取得
+	/// \brief 現在の開始演出状態を取得する
+	/// \return 進行中の演出状態
 	StartAnimationState GetState() const {
 		return state_;
 	}
 
 	///--------------------------------------------------------------
 	///                        設定
-	/// \brief バーの色を設定
+	/// \brief 開始演出の上下バーの表示色を設定する
+	/// \param color RGBA形式の表示色
 	void SetBarColor(const Vector4 &color) {
 		barColor_ = color;
 	}
 
-	/// \brief テキストスプライトのテクスチャを設定
+	/// \brief 中央テキストに使用するテクスチャパスを設定する
+	/// \param textureFilePath 読み込むテクスチャファイルのパス
 	void SetTextTexture(const std::string &textureFilePath) {
 		textTexture_ = textureFilePath;
 	}
 
-	/// \brief バーの高さを設定（画面高さに対する比率 0.0〜1.0）
+	/// \brief 上下バーの高さ比率を設定する
+	/// \param ratio 画面高に対する比率
 	void SetBarHeightRatio(float ratio) {
 		barHeightRatio_ = ratio;
 	}
 
-	/// \brief テキストのサイズを設定
+	/// \brief 中央テキストの表示サイズを設定する
+	/// \param size スプライトの幅・高さ
 	void SetTextSize(const Vector2 &size) {
 		textSize_ = size;
 	}
 
-	/// \brief 完了時のコールバックを設定
+	/// \brief 演出完了時に呼び出すコールバックを設定する
+	/// \param callback 呼び出す処理
 	void SetOnCompleteCallback(std::function<void()> callback) {
 		onCompleteCallback_ = callback;
 	}
@@ -113,11 +124,20 @@ public:
 	///--------------------------------------------------------------
 	///                        プライベート関数
 private:
+	/// \brief バーを展開するフェーズを更新する
 	void UpdateOpening();
+	/// \brief バーとテキストを表示するフェーズを更新する
 	void UpdateShowing();
+	/// \brief バーを収束させるフェーズを更新する
 	void UpdateClosing();
 
+	/// \brief 加減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseInOut(float t);
+	/// \brief 減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseOut(float t);
 
 	///--------------------------------------------------------------

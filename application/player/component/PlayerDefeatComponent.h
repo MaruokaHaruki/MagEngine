@@ -20,47 +20,54 @@ class PlayerDefeatComponent {
 public:
 	///--------------------------------------------------------------
 	///                        メンバ関数
-	/// @brief 初期化
+	/// @brief 敗北演出の状態、物理パラメータ、進行度を初期化する
 	void Initialize();
 
-	/// @brief 敗北演出開始
+	/// @brief 敗北フラグを立て、落下・回転演出を開始する
+	/// @note すでに敗北中の場合は状態を上書きしない。
 	void StartDefeatAnimation();
 
-	/// @brief 敗北演出更新
-	/// @param transform 更新対象になるTransform
-	/// @param deltaTime フレーム時間
+	/// @brief 敗北中の位置・姿勢と演出完了状態を更新する
+	/// @param transform 落下・回転を反映するTransform。nullptrの場合は更新しない。
+	/// @param deltaTime 前フレームからの経過時間（秒）
 	void Update(MagMath::Transform *transform, float deltaTime);
 
 	///--------------------------------------------------------------
 	///                        状態取得
-	/// @brief 敗北フラグ取得
+	/// @brief 敗北演出が開始済みかを取得する
+	/// @return 敗北中または演出済みの場合はtrue、それ以外はfalse
 	bool IsDefeated() const {
 		return isDefeated_;
 	}
 
-	/// @brief 敗北演出完了判定
+	/// @brief 敗北演出の終了条件を満たしたかを取得する
+	/// @return 演出完了の場合はtrue、それ以外はfalse
 	bool IsDefeatAnimationComplete() const {
 		return defeatAnimationComplete_;
 	}
 
-	/// @brief 敗北演出進行度取得（0.0 ～ 1.0）
+	/// @brief 敗北演出の時間進行度を取得する
+	/// @return 0.0から1.0にクランプされた進行度
 	float GetAnimationProgress() const {
 		return animationProgress_;
 	}
 
 	///--------------------------------------------------------------
 	///                        設定変更
-	/// @brief 敗北演出の時間を設定
+	/// @brief 敗北演出の時間上限を設定する
+	/// @param duration 演出の総時間（秒）
 	void SetAnimationDuration(float duration) {
 		animationDuration_ = duration;
 	}
 
-	/// @brief 落下加速度を設定（重力値）
+	/// @brief 落下に使用する重力加速度を設定する
+	/// @param gravity 下向き加速に使用する値
 	void SetGravity(float gravity) {
 		gravity_ = gravity;
 	}
 
-	/// @brief 終了判定の高さを設定（この高さより下がったら完了）
+	/// @brief 演出完了と判定するワールド高さを設定する
+	/// @param height TransformのY座標がこの値以下になると演出を完了する
 	void SetDeadHeight(float height) {
 		deadHeight_ = height;
 	}
@@ -68,7 +75,9 @@ public:
 private:
 	///--------------------------------------------------------------
 	///                        内部処理
-	/// @brief 敗北演出のアニメーション更新
+	/// @brief 時間進行に応じて落下・回転をTransformへ反映する
+	/// @param transform 更新対象のTransform
+	/// @param deltaTime 前フレームからの経過時間（秒）
 	void UpdateAnimation(MagMath::Transform *transform, float deltaTime);
 
 	///--------------------------------------------------------------

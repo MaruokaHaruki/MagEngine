@@ -64,19 +64,23 @@ class OperationGuideUI {
 	///--------------------------------------------------------------
 	///                        メンバ関数
 public:
-	/// \brief 初期化
+	/// \brief 操作ガイドのスプライトと入力参照を初期化する
+	/// \param spriteSetup スプライト生成に使用するセットアップ
+	/// \param input ボタン状態の取得に使用する入力
 	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Input &input);
 
 	/// \brief 終了処理
 	void Finalize();
 
-	/// \brief 更新
+	/// \brief 入力状態、ボタン表示、展開アニメーションを更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void Update(float unscaledDeltaTime);
 
 	/// \brief 描画
 	void Draw();
 
-	/// \brief Sprite描画対象を登録
+	/// \brief 表示中の操作ガイドを描画対象へ登録する
+	/// \param renderWorld 現フレームの描画対象を集約するRenderWorld
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画
@@ -84,33 +88,40 @@ public:
 
 	///--------------------------------------------------------------
 	///                        表示制御
-	/// \brief 表示/非表示の切り替え
+	/// \brief 操作ガイドの表示・非表示を設定する
+	/// \param visible trueの場合は表示し、falseの場合は非表示にする
 	void SetVisible(bool visible) {
 		isVisible_ = visible;
 	}
 
-	/// \brief 表示状態を取得
+	/// \brief 操作ガイドが表示有効かを取得する
+	/// \return 表示有効の場合はtrue、それ以外はfalse
 	bool IsVisible() const {
 		return isVisible_;
 	}
 
-	/// \brief 不透明度を設定
+	/// \brief 操作ガイド全体の不透明度を設定する
+	/// \param opacity 設定する不透明度
 	void SetOpacity(float opacity) {
 		opacity_ = opacity;
 	}
 
-	/// \brief ガイド位置を設定（画面の隅に配置）
+	/// \brief 操作ガイドの基準表示位置を設定する
+	/// \param position 画面上の基準座標
 	void SetGuidePosition(const Vector2 &position) {
 		guideBasePosition_ = position;
 	}
 
-	/// \brief 展開アニメーションを開始
+	/// \brief 操作ガイドを展開するアニメーションを開始する
+	/// \param duration 展開時間（秒）
 	void StartDeployAnimation(float duration = 1.0f);
 
-	/// \brief 収束アニメーションを開始
+	/// \brief 操作ガイドを収束するアニメーションを開始する
+	/// \param duration 収束時間（秒）
 	void StartRetractAnimation(float duration = 0.8f);
 
-	/// \brief アニメーション中かどうか
+	/// \brief 展開または収束アニメーション中かを取得する
+	/// \return アニメーション中の場合はtrue、それ以外はfalse
 	bool IsAnimating() const {
 		return isAnimating_;
 	}
@@ -118,9 +129,15 @@ public:
 	///--------------------------------------------------------------
 	///                        プライベート関数
 private:
+	/// \brief コントローラーボタン表示用スプライトを生成する
 	void InitializeButtons();
+	/// \brief 現在の入力状態を各ボタン表示へ反映する
 	void UpdateButtonStates();
+	/// \brief 押下状態に応じたボタン表示を補間する
+	/// \param deltaTime 前フレームからの経過時間（秒）
 	void UpdateButtonAnimations(float deltaTime);
+	/// \brief 展開・収束アニメーションの進行度を更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void UpdateDeployAnimation(float unscaledDeltaTime);
 	float EaseOutElastic(float t);
 	float EaseInOutQuad(float t);

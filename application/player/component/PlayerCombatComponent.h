@@ -5,6 +5,7 @@
 #include "Vector3.h"
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 // 前方宣言
@@ -19,69 +20,115 @@ namespace MagEngine {
 
 ///=============================================================================
 ///						戦闘管理コンポーネント
+/// @brief プレイヤー弾・ミサイルの生成、更新、描画登録を管理する。
+/// @details 投射物はこのクラスが所有する。EnemyManagerと描画セットアップは外部所有の依存として扱うため、
+///          Initialize()およびSetEnemyManager()の後も投射物の更新・描画が終わるまで有効でなければならない。
 class PlayerCombatComponent {
 public:
 	///--------------------------------------------------------------
 	///                        メンバ関数
+	/// @brief 外部サービスと投射物の初期状態を設定する
+	/// @param object3dSetup 弾モデルの生成に使う非所有参照。発射前に有効である必要がある。
+	/// @param trailEffectManager トレイルを使用しない場合はnullptrを許容する非所有参照。
+	/// @param lineManager デバッグ線を使用しない場合はnullptrを許容する非所有参照。
 	void Initialize(MagEngine::Object3dSetup *object3dSetup,
 					MagEngine::TrailEffectManager *trailEffectManager = nullptr,
 					MagEngine::LineManager *lineManager = nullptr);
+	/// @brief クールタイムとミサイル回復を更新する
+	/// @note 投射物そのものの更新はUpdateBullets()/UpdateMissiles()へ分け、Scene側で更新順を制御する。
 	void Update(float deltaTime);
 
 	///--------------------------------------------------------------
 	///                        射撃処理
+	/// @brief 通常弾を生成する
+	/// @param position 発射時のワールド座標
+	/// @param direction 発射基準となる方向
+	/// @note 弾アシストが有効かつEnemyManager設定済みの場合のみ、発射方向を補正する。
 	void ShootBullet(const Vector3 &position, const Vector3 &direction);
+	/// @brief 指定ターゲットへ追尾するミサイルを生成する
+	/// @param position 発射時のワールド座標
+	/// @param direction 発射基準となる方向
+	/// @param target 追尾対象。nullptrの場合はターゲットなしで発射する。
 	void ShootMissile(const Vector3 &position, const Vector3 &direction, EnemyBase *target); // Enemy* から EnemyBase* に変更
 
 	/// @brief マルチロックオンで複数敵に同時発射
 	/// @param position ミサイル発射位置
 	/// @param direction 発射基準方向
-	/// @param targets ロックオン対象敵のリスト
+	/// @param targets ロックオン対象の非所有ハンドル一覧。無効な要素は発射対象から除外する。
+	/// @note 残弾数まで発射し、実際に生成できた数だけ残弾を消費する。
 	void ShootMultipleMissiles(const Vector3 &position, const Vector3 &direction,
 							   const std::vector<EnemyBase *> &targets);
 
+	/// @brief 所有する通常弾を更新し、寿命切れまたは削除済みの弾を除去する
+	/// @param deltaTime 前フレームからの経過時間（秒）
 	void UpdateBullets(float deltaTime);
+	/// @brief 所有するミサイルを更新し、寿命切れまたは削除済みのミサイルを除去する
+	/// @param deltaTime 前フレームからの経過時間（秒）
 	void UpdateMissiles(float deltaTime);
 
 	///--------------------------------------------------------------
 	///                        描画
+	/// @brief 所有する生存中の投射物をフレーム描画対象へ登録する
+	/// @note UpdateBullets()/UpdateMissiles()後の状態を登録するため、Sceneの描画登録フェーズで呼び出す。
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	///--------------------------------------------------------------
 	///                        ゲッター
+	/// @brief 所有する通常弾一覧を取得する
+	/// @return 生存管理中の通常弾一覧への参照
 	const std::vector<std::unique_ptr<PlayerBullet>> &GetBullets() const {
 		return bullets_;
 	}
+	/// @brief 所有するミサイル一覧を取得する
+	/// @return 生存管理中のミサイル一覧への参照
 	const std::vector<std::unique_ptr<PlayerMissile>> &GetMissiles() const {
 		return missiles_;
 	}
+	/// @brief 次の通常弾を発射可能になるまでの残り時間を取得する
+	/// @return 発射クールタイムの残り秒数
 	float GetShootCoolTime() const {
 		return shootCoolTime_;
 	}
+	/// @brief 通常弾を発射可能かを判定する
+	/// @return クールタイムが終了している場合はtrue、それ以外はfalse
 	bool CanShootBullet() const {
 		return shootCoolTime_ <= 0.0f;
 	}
+	/// @brief ミサイルを発射可能かを判定する
+	/// @return ミサイル残弾が1以上の場合はtrue、それ以外はfalse
 	bool CanShootMissile() const {
 		return missileAmmo_ > 0;
 	}
+	/// @brief 現在のミサイル残弾数を取得する
+	/// @return 発射可能なミサイル数
 	int GetMissileAmmo() const {
 		return missileAmmo_;
 	}
+	/// @brief ミサイル残弾の上限を取得する
+	/// @return 最大ミサイル残弾数
 	int GetMaxMissileAmmo() const {
 		return maxMissileAmmo_;
 	}
+	/// @brief 次のミサイル回復までの経過時間を取得する
+	/// @return ミサイル回復タイマーの経過秒数
 	float GetMissileRecoveryTimer() const {
 		return missileRecoveryTimer_;
 	}
+	/// @brief ミサイル1発を回復するまでの設定時間を取得する
+	/// @return ミサイル回復に必要な秒数
 	float GetMissileRecoveryTime() const {
 		return maxMissileRecoveryTime_;
 	}
+	/// @brief HUD表示に用いる直近の通常弾発射方向を取得する
+	/// @return 最終的に発射へ使用した方向ベクトル
 	Vector3 GetBulletFireDirection() const {
 		return bulletFireDirection_;
 	}
 
 	///--------------------------------------------------------------
 	///                        セッター
+	/// @brief ミサイルの探索・追尾に用いる敵管理を設定する
+	/// @note 所有権は取得しない。弾アシストと生成済みミサイルが参照する間は有効でなければならない。
 	void SetEnemyManager(EnemyManager *enemyManager) {
 		enemyManager_ = enemyManager;
 	}
@@ -150,13 +197,13 @@ public:
 private:
 	///--------------------------------------------------------------
 	///                        メンバ変数
-	MagEngine::Object3dSetup *object3dSetup_;			// オブジェクト設定（弾生成用）
-	MagEngine::TrailEffectManager *trailEffectManager_; // トレイルエフェクト管理
-	MagEngine::LineManager *lineManager_;				// デバッグ線描画管理
-	EnemyManager *enemyManager_;						// 敵管理への参照（ミサイルターゲット用）
+	MagEngine::Object3dSetup *object3dSetup_;           // 弾モデル生成に使う外部所有のセットアップ
+	MagEngine::TrailEffectManager *trailEffectManager_; // トレイル生成に使う外部所有のサービス。nullptrを許容する。
+	MagEngine::LineManager *lineManager_;               // ミサイルのデバッグ線用。nullptrを許容する。
+	EnemyManager *enemyManager_;                        // 弾アシストとミサイル追尾に使う外部所有の敵管理
 
-	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 弾のリスト
-	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // ミサイルリスト
+	std::vector<std::unique_ptr<PlayerBullet>> bullets_;   // 生存期間をこのコンポーネントが所有する通常弾
+	std::vector<std::unique_ptr<PlayerMissile>> missiles_; // 生存期間をこのコンポーネントが所有するミサイル
 
 	float shootCoolTime_;		   // 現在のクールタイム
 	float maxShootCoolTime_;	   // 最大クールタイム

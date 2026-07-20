@@ -17,41 +17,58 @@ namespace MagEngine {
 
 class PlayerBullet : public BaseObject {
 public:
-	/// \brief 初期化
+	/// \brief 弾の3D表示、移動方向、寿命を初期化する
+	/// \param object3dSetup 弾モデル生成に使用するセットアップ
+	/// \param trailEffectManager 弾道トレイル生成に使用する管理クラス
+	/// \param modelPath 弾モデルのファイルパス
+	/// \param position 発射時のワールド座標
+	/// \param direction 発射方向
 	void Initialize(MagEngine::Object3dSetup *object3dSetup,
 					MagEngine::TrailEffectManager *trailEffectManager,
 					const std::string &modelPath, const Vector3 &position, const Vector3 &direction);
 
-	/// \brief 更新
+	/// \brief 速度に基づく移動と寿命切れ判定を更新する
+	/// \param deltaTime 前フレームからの経過時間（秒）
 	void Update(float deltaTime);
 
-	/// \brief 3D不透明描画対象の登録
+	/// \brief 弾モデルとトレイルをフレームの描画対象へ登録する
+	/// \param renderWorld 現フレームの描画対象を集約するRenderWorld
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
-	/// \brief 生存フラグの取得
+	/// \brief 弾が寿命切れまたは衝突で削除対象になっていないかを取得する
+	/// \return 生存中の場合はtrue、削除対象の場合はfalse
 	bool IsAlive() const {
 		return isAlive_;
 	}
 
-	/// \brief 削除フラグの設定
+	/// \brief 弾を削除対象としてマークする
 	void SetDead();
 
-	/// \brief 位置の取得
+	/// \brief 現在の弾のワールド座標を取得する
+	/// \return 弾の現在位置
 	Vector3 GetPosition() const;
 
 	/// @brief 弾道方向の算出に使用する速度を取得
+	/// @return 現在の移動速度への参照
 	const Vector3 &GetVelocity() const {
 		return velocity_;
 	}
 
-	/// \brief 当たり判定の半径を取得
+	/// \brief 当たり判定に使用する半径を取得する
+	/// \return 弾の衝突半径
 	float GetRadius() const {
 		return radius_;
 	}
 
-	// BaseObjectの純粋仮想関数を実装
+	/// @brief 他オブジェクトとの衝突開始を処理する
+	/// @param other 衝突した相手オブジェクト
+	/// @note 相手の種類によらず弾を削除対象にする。
 	void OnCollisionEnter(BaseObject *other) override;
+	/// @brief 他オブジェクトとの接触継続を通知する
+	/// @param other 接触を継続している相手オブジェクト
 	void OnCollisionStay(BaseObject *other) override;
+	/// @brief 他オブジェクトとの接触終了を通知する
+	/// @param other 接触を終了した相手オブジェクト
 	void OnCollisionExit(BaseObject *other) override;
 
 private:

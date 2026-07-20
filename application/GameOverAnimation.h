@@ -38,22 +38,25 @@ class GameOverAnimation {
 	///--------------------------------------------------------------
 	///                        メンバ関数
 public:
-	/// \brief 初期化
+	/// \brief ゲームオーバー演出で使用するスプライトを生成する
+	/// \param spriteSetup スプライト生成に使用するセットアップ
 	void Initialize(MagEngine::SpriteSetup *spriteSetup);
 
-	/// \brief 終了処理
+	/// \brief 保持するスプライトとパーティクルを解放する
 	void Finalize();
 
-	/// \brief 更新
+	/// \brief 演出状態とパーティクルを時間停止の影響なしで更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void Update(float unscaledDeltaTime);
 
-	/// \brief 描画
+	/// \brief 演出用スプライトの表示状態を更新する
 	void Draw();
 
-	/// \brief Sprite描画対象を登録
+	/// \brief 演出用スプライトをフレームの描画対象へ登録する
+	/// \param renderWorld 現フレームの描画対象を集約するRenderWorld
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
-	/// \brief ImGui描画（デバッグ用）
+	/// \brief 演出パラメータを調整するデバッグImGuiを描画する
 	void DrawImGui();
 
 	///--------------------------------------------------------------
@@ -67,49 +70,57 @@ public:
 		float displayDuration = 2.5f,
 		float fadeDuration = 1.2f);
 
-	/// \brief アニメーションのリセット
+	/// \brief 演出を待機状態へ戻し、全表示要素を初期状態へ戻す
 	void Reset();
 
 	///--------------------------------------------------------------
 	///                        状態取得
-	/// \brief アニメーション中かどうか
+	/// \brief 演出が待機・完了以外の状態かを判定する
+	/// \return 演出を進行中の場合はtrue、待機または完了済みの場合はfalse
 	bool IsAnimating() const {
 		return state_ != GameOverAnimationState::Idle && state_ != GameOverAnimationState::Done;
 	}
 
-	/// \brief 完了したかどうか
+	/// \brief 演出が完了状態へ到達したかを判定する
+	/// \return 完了状態の場合はtrue、それ以外はfalse
 	bool IsDone() const {
 		return state_ == GameOverAnimationState::Done;
 	}
 
-	/// \brief 現在の状態を取得
+	/// \brief 現在のゲームオーバー演出状態を取得する
+	/// \return 進行中の演出状態
 	GameOverAnimationState GetState() const {
 		return state_;
 	}
 
 	///--------------------------------------------------------------
 	///                        設定
-	/// \brief テキストの色を設定
+	/// \brief ゲームオーバーテキストの表示色を設定する
+	/// \param color RGBA形式の表示色
 	void SetTextColor(const Vector4 &color) {
 		textColor_ = color;
 	}
 
-	/// \brief テキストのサイズを設定
+	/// \brief ゲームオーバーテキストの表示サイズを設定する
+	/// \param size スプライトの幅・高さ
 	void SetTextSize(const Vector2 &size) {
 		textSize_ = size;
 	}
 
-	/// \brief テキストスプライトのテクスチャを設定
+	/// \brief ゲームオーバーテキストに使用するテクスチャパスを設定する
+	/// \param textureFilePath 読み込むテクスチャファイルのパス
 	void SetTextTexture(const std::string &textureFilePath) {
 		textTexture_ = textureFilePath;
 	}
 
-	/// \brief 背景フェードの色を設定
+	/// \brief フェード背景の表示色を設定する
+	/// \param color RGBA形式の表示色
 	void SetFadeBackgroundColor(const Vector4 &color) {
 		fadeBackgroundColor_ = color;
 	}
 
-	/// \brief 完了時のコールバックを設定
+	/// \brief 演出完了時に呼び出すコールバックを設定する
+	/// \param callback 呼び出す処理
 	void SetOnCompleteCallback(std::function<void()> callback) {
 		onCompleteCallback_ = callback;
 	}
@@ -117,16 +128,34 @@ public:
 	///--------------------------------------------------------------
 	///                        プライベート関数
 private:
+	/// \brief テキスト出現とパーティクル発生を行うフェーズを更新する
 	void UpdateAppearing();
+	/// \brief テキストを表示し続けるフェーズを更新する
 	void UpdateDisplaying();
+	/// \brief 表示要素をフェードアウトして完了するフェーズを更新する
 	void UpdateFading();
 
+	/// \brief 発生済みパーティクルの寿命と表示状態を更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void UpdateParticles(float unscaledDeltaTime);
+	/// \brief 出現演出で使用するパーティクルを初期化する
 	void GenerateParticles();
 
+	/// \brief 加減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseInOut(float t);
+	/// \brief 減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseOut(float t);
+	/// \brief 加速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseIn(float t);
+	/// \brief 跳ね返りを伴う減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseOutBounce(float t);
 
 	///--------------------------------------------------------------

@@ -28,9 +28,11 @@ public:
 	/// @brief 初期化
 	/// @param player プレイヤーポインタ
 	/// @param enemyManager 敵マネージャーポインタ
+	/// @note プレイヤーと敵一覧はUpdate()/Draw()の実行中に有効でなければならない。
 	void Initialize(Player *player, EnemyManager *enemyManager);
 
-	/// @brief 線描画マネージャーを設定
+	/// @brief ロックオン線の描画先を設定する
+	/// @param lineManager マーカーと接続線を登録する線描画マネージャー
 	void SetLineManager(MagEngine::LineManager &lineManager) {
 		lineManager_ = &lineManager;
 	}
@@ -38,23 +40,27 @@ public:
 	/// @brief 終了処理
 	void Finalize();
 
-	/// @brief 更新処理
+	/// @brief カメラと経過時間を基にマーカーのアニメーション状態を更新する
+	/// @param camera マーカー配置に使用するカメラ
+	/// @param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void Update(MagEngine::Camera *camera, float unscaledDeltaTime);
 
-	/// @brief 描画処理
+	/// @brief 敵マーカーとロックオン接続線を描画する
 	void Draw();
 
-	/// @brief ImGui描画
+	/// @brief 表示設定を調整するImGuiを描画する
 	void DrawImGui();
 
 	///--------------------------------------------------------------
 	///                        機能制御
-	/// @brief ロックオンHUDの表示/非表示
+	/// @brief ロックオンHUDの表示・非表示を切り替える
+	/// @param visible trueの場合は描画し、falseの場合は描画しない
 	void SetVisible(bool visible) {
 		isVisible_ = visible;
 	}
 
-	/// @brief 表示状態の取得
+	/// @brief ロックオンHUDが表示有効かを取得する
+	/// @return 表示有効の場合はtrue、それ以外はfalse
 	bool IsVisible() const {
 		return isVisible_;
 	}
@@ -79,10 +85,14 @@ private:
 	/// @brief ロックオンラインの描画（複数敵への結線）
 	void DrawLockOnLines();
 
-	/// @brief 影響範囲のディスプレイ設定を取得
+	/// @brief 敵までの距離に応じたマーカー不透明度を求める
+	/// @param distance カメラから敵までの距離
+	/// @param maxRange 表示対象とする最大距離
+	/// @return 距離に応じた不透明度
 	float GetMarkerAlpha(float distance, float maxRange) const;
 
-	/// @brief パルスアニメーション値を取得
+	/// @brief マーカー強調に使用するパルス値を取得する
+	/// @return 現在時刻に対応するパルス値
 	float GetPulseValue() const;
 
 	///--------------------------------------------------------------

@@ -51,19 +51,23 @@ class MenuUI {
 	///--------------------------------------------------------------
 	///                        メンバ関数
 public:
-	/// \brief 初期化
+	/// \brief メニュースプライトと入力参照を初期化する
+	/// \param spriteSetup スプライト生成に使用するセットアップ
+	/// \param input メニュー操作に使用する入力
 	void Initialize(MagEngine::SpriteSetup *spriteSetup, MagEngine::Input &input);
 
 	/// \brief 終了処理
 	void Finalize();
 
-	/// \brief 更新
+	/// \brief 開閉状態に応じて選択入力とボタンアニメーションを更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void Update(float unscaledDeltaTime);
 
 	/// \brief 描画
 	void Draw();
 
-	/// \brief Sprite描画対象を登録
+	/// \brief 開いているメニューのスプライトを描画対象へ登録する
+	/// \param renderWorld 現フレームの描画対象を集約するRenderWorld
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
 	/// \brief ImGui描画
@@ -71,7 +75,7 @@ public:
 
 	///--------------------------------------------------------------
 	///                        表示制御
-	/// \brief メニューを開く
+	/// \brief メニューを開き、先頭ボタンを選択状態にする
 	void Open() {
 		isOpen_ = true;
 		selectedIndex_ = 0;
@@ -82,22 +86,25 @@ public:
 		isOpen_ = false;
 	}
 
-	/// \brief メニューが開いているか
+	/// \brief メニューが開いているかを取得する
+	/// \return 開いている場合はtrue、それ以外はfalse
 	bool IsOpen() const {
 		return isOpen_;
 	}
 
-	/// \brief 選択されたボタンを取得
+	/// \brief 現在選択されているボタン種別を取得する
+	/// \return 選択中のMenuButton
 	MenuButton GetSelectedButton() const {
 		return static_cast<MenuButton>(selectedIndex_);
 	}
 
-	/// \brief ボタンが選択されたか確認
+	/// \brief 決定入力によりボタンが押されたかを取得する
+	/// \return 押下フラグが立っている場合はtrue、それ以外はfalse
 	bool IsButtonPressed() const {
 		return isButtonPressed_;
 	}
 
-	/// \brief ボタン押下フラグをリセット
+	/// \brief 消費済みのボタン押下フラグをリセットする
 	void ResetButtonPressedFlag() {
 		isButtonPressed_ = false;
 	}
@@ -105,10 +112,21 @@ public:
 	///--------------------------------------------------------------
 	///                        プライベート関数
 private:
+	/// \brief 各メニューボタンのスプライトと初期表示値を生成する
 	void InitializeButtons();
+	/// \brief 入力に応じて選択中のボタンと決定フラグを更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void UpdateButtonSelection(float unscaledDeltaTime);
+	/// \brief 選択・押下状態に対応するボタン表示を補間する
+	/// \param deltaTime 前フレームからの経過時間（秒）
 	void UpdateButtonAnimations(float deltaTime);
+	/// \brief 弾性を伴う減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseOutElastic(float t);
+	/// \brief 加減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseInOutQuad(float t);
 
 	///--------------------------------------------------------------

@@ -34,22 +34,25 @@ class GameClearAnimation {
 	///--------------------------------------------------------------
 	///                        メンバ関数
 public:
-	/// \brief 初期化
+	/// \brief クリア演出で使用するスプライトを生成する
+	/// \param spriteSetup スプライト生成に使用するセットアップ
 	void Initialize(MagEngine::SpriteSetup *spriteSetup);
 
-	/// \brief 終了処理
+	/// \brief 保持するスプライトと演出状態を解放する
 	void Finalize();
 
-	/// \brief 更新
+	/// \brief 現在の演出状態を進め、状態ごとの表示・カメラ演出を更新する
+	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void Update(float unscaledDeltaTime);
 
-	/// \brief 描画
+	/// \brief 保持するスプライトの表示状態を更新する
 	void Draw();
 
-	/// \brief Sprite描画対象を登録
+	/// \brief 保持するスプライトをフレームの描画対象へ登録する
+	/// \param renderWorld 現フレームの描画対象を集約するRenderWorld
 	void RegisterRenderables(MagEngine::RenderWorld &renderWorld);
 
-	/// \brief ImGui描画
+	/// \brief 演出パラメータを調整するImGuiを描画する
 	void DrawImGui();
 
 	///--------------------------------------------------------------
@@ -65,75 +68,90 @@ public:
 		float cameraUpDuration = 3.0f,
 		float closeDuration = 1.0f);
 
-	/// \brief アニメーションのキャンセル
+	/// \brief 実行中の演出を中断し、完了コールバックを呼び出す
 	void Cancel();
 
-	/// \brief アニメーションのリセット
+	/// \brief 演出を待機状態へ戻し、各スプライトを非表示にする
 	void Reset();
 
 	///--------------------------------------------------------------
 	///                        状態取得
-	/// \brief アニメーション中かどうか
+	/// \brief 演出が待機・完了以外の状態かを判定する
+	/// \return 演出を進行中の場合はtrue、待機または完了済みの場合はfalse
 	bool IsAnimating() const {
 		return state_ != GameClearAnimationState::Idle && state_ != GameClearAnimationState::Done;
 	}
 
-	/// \brief 完了したかどうか
+	/// \brief 演出が完了状態へ到達したかを判定する
+	/// \return 完了状態の場合はtrue、それ以外はfalse
 	bool IsDone() const {
 		return state_ == GameClearAnimationState::Done;
 	}
 
-	/// \brief 現在の状態を取得
+	/// \brief 現在のクリア演出状態を取得する
+	/// \return 進行中の演出状態
 	GameClearAnimationState GetState() const {
 		return state_;
 	}
 
 	///--------------------------------------------------------------
 	///                        設定
-	/// \brief FollowCameraの設定
+	/// \brief カメラ上昇演出を適用するFollowCameraを設定する
+	/// \param followCamera 演出で操作するカメラ。未設定時はカメラ演出を行わない。
 	void SetFollowCamera(FollowCamera *followCamera) {
 		followCamera_ = followCamera;
 	}
 
-	/// \brief Playerの設定
+	/// \brief 飛行演出の基準となるプレイヤーを設定する
+	/// \param player 演出中に位置と姿勢を更新するプレイヤー。未設定時はプレイヤー演出を行わない。
 	void SetPlayer(Player *player) {
 		player_ = player;
 	}
 
-	/// \brief バーの色を設定
+	/// \brief シネスコバーの表示色を設定する
+	/// \param color RGBA形式の表示色
 	void SetBarColor(const Vector4 &color) {
 		barColor_ = color;
 	}
 
-	/// \brief テキストスプライトのテクスチャを設定
+	/// \brief クリアテキストに使用するテクスチャパスを設定する
+	/// \param textureFilePath 読み込むテクスチャファイルのパス
 	void SetTextTexture(const std::string &textureFilePath) {
 		textTexture_ = textureFilePath;
 	}
 
-	/// \brief バーの高さを設定（画面高さに対する比率 0.0〜1.0）
+	/// \brief シネスコバーの高さ比率を設定する
+	/// \param ratio 画面高に対する比率
 	void SetBarHeightRatio(float ratio) {
 		barHeightRatio_ = ratio;
 	}
 
-	/// \brief テキストのサイズを設定
+	/// \brief クリアテキストの表示サイズを設定する
+	/// \param size スプライトの幅・高さ
 	void SetTextSize(const Vector2 &size) {
 		textSize_ = size;
 	}
 
-	/// \brief カメラ上昇パラメータを設定
+	/// \brief カメラ上昇演出の目標高さと距離を設定する
+	/// \param height カメラの目標高さ
+	/// \param distance プレイヤーからの目標距離
 	void SetCameraUpParameters(float height, float distance) {
 		cameraTargetHeight_ = height;
 		cameraTargetDistance_ = distance;
 	}
 
-	/// \brief 飛行演出パラメータを設定
+	/// \brief プレイヤー飛行演出の速度パラメータを設定する
+	/// \param speed 前進速度
+	/// \param spinRate 旋回速度（ラジアン/秒）
+	/// \param climbRate 上昇速度
 	void SetFlightParameters(float speed, float spinRate, float climbRate) {
 		flightSpeed_ = speed;
 		spinRate_ = spinRate;
 		climbRate_ = climbRate;
 	}
 
-	/// \brief 完了時のコールバックを設定
+	/// \brief 演出完了またはキャンセル時に呼び出すコールバックを設定する
+	/// \param callback 呼び出す処理
 	void SetOnCompleteCallback(std::function<void()> callback) {
 		onCompleteCallback_ = callback;
 	}
@@ -141,13 +159,26 @@ public:
 	///--------------------------------------------------------------
 	///                        プライベート関数
 private:
+	/// \brief バーを展開する開始フェーズを更新する
 	void UpdateOpening();
+	/// \brief クリアテキストを表示するフェーズを更新する
 	void UpdateShowing();
+	/// \brief カメラとプレイヤーを移動させるフェーズを更新する
 	void UpdateCameraUp();
+	/// \brief バーを収束させて演出を完了するフェーズを更新する
 	void UpdateClosing();
 
+	/// \brief 0から1の値へ滑らかな加減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseInOut(float t);
+	/// \brief 0から1の値へ減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseOut(float t);
+	/// \brief 0から1の値へ加速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseIn(float t);
 
 	///--------------------------------------------------------------
