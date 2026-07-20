@@ -9,6 +9,7 @@
 #include "MagMath.h"
 using Vector3 = MagMath::Vector3;
 #include "EnemyBase.h"
+#include <memory>
 
 // 定数定義（Enemy固有の行動パラメータ）
 namespace EnemyConstants {
@@ -39,6 +40,12 @@ class Enemy : public EnemyBase {
 	///--------------------------------------------------------------
 	///							メンバ関数
 public:
+	/// @brief 行動状態オブジェクトの生成を実装ファイル側へ限定する
+	Enemy();
+
+	/// @brief 状態オブジェクトを実装ファイル側で破棄する
+	~Enemy() override;
+
 	/// \brief 初期化
 	void Initialize(MagEngine::Object3dSetup *object3dSetup,
 					const std::string &modelPath, const Vector3 &position) override;
@@ -78,10 +85,21 @@ public:
 	///--------------------------------------------------------------
 	///							メンバ変数
 private:
-	/// @brief 現在の行動ステートだけを更新
+	enum class BehaviorState;
+	class BehaviorStateBase;
+	class ApproachBehaviorState;
+	class CombatBehaviorState;
+	class RetreatBehaviorState;
+
+	/// @brief 現在の行動状態へ更新処理を委譲する
 	/// @param deltaTime 上限値で保護済みのフレーム経過時間
-	/// @note Update()の共通前処理と状態固有処理を分離し、状態遷移条件をこの関数へ集約する
 	void UpdateBehaviorState(float deltaTime);
+	/// @brief 次フレームではなく現在状態の更新終了後に適用する遷移を要求する
+	/// @param nextState 遷移先の行動状態
+	void RequestBehaviorState(BehaviorState nextState);
+	/// @brief 保留済みの行動状態を適用する
+	/// @note 状態のUpdate()実行中に自身を破棄しないため、委譲後に呼び出す。
+	void ApplyPendingBehaviorState();
 	//========================================
 	// グループ編隊関連
 	int groupId_;                     // 属するグループのID（-1=単独）
@@ -94,7 +112,9 @@ private:
 		Retreat,        // 退却中
 		FormationFollow // 編隊フォロー中
 	};
-	BehaviorState behaviorState_;
+	BehaviorState behaviorState_; // ImGui表示用の識別子。振る舞いの選択は状態オブジェクトへ委譲する。
+	std::unique_ptr<BehaviorStateBase> behaviorStateObject_;
+	std::unique_ptr<BehaviorStateBase> pendingBehaviorStateObject_;
 	float combatTimer_;
 	float combatDuration_;
 	Vector3 combatCenter_;

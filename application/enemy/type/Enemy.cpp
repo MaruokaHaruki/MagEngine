@@ -8,6 +8,75 @@
 using namespace MagEngine;
 
 ///=============================================================================
+/// Enemy行動状態
+class Enemy::BehaviorStateBase {
+public:
+	virtual ~BehaviorStateBase() = default;
+	virtual void Update(Enemy &enemy, float deltaTime) = 0;
+};
+
+class Enemy::ApproachBehaviorState final : public Enemy::BehaviorStateBase {
+public:
+	void Update(Enemy &enemy, float deltaTime) override {
+		if (!enemy.player_) {
+			enemy.transform_.translate.z += enemy.speed_ * enemy.GetSpawnSpeedMultiplier() * deltaTime;
+			return;
+		}
+
+		const Vector3 playerPos = enemy.player_->GetPosition();
+		enemy.targetPosition_ = {playerPos.x, playerPos.y, playerPos.z - EnemyConstants::kCombatDepth};
+		if (enemy.GetDistanceTo(enemy.targetPosition_) < 20.0f) {
+			enemy.combatTimer_ = 0.0f;
+			enemy.combatCenter_ = playerPos;
+			enemy.moveTimer_ = 0.0f;
+			enemy.RequestBehaviorState(BehaviorState::Combat);
+			return;
+		}
+		enemy.MoveToward(enemy.targetPosition_, EnemyConstants::kApproachSpeed * enemy.GetSpawnSpeedMultiplier(), EnemyConstants::kMovementSmoothing, deltaTime);
+	}
+};
+
+class Enemy::CombatBehaviorState final : public Enemy::BehaviorStateBase {
+public:
+	void Update(Enemy &enemy, float deltaTime) override {
+		enemy.combatTimer_ += deltaTime;
+		enemy.moveTimer_ += deltaTime;
+		if (enemy.combatTimer_ >= enemy.combatDuration_) {
+			enemy.RequestBehaviorState(BehaviorState::Retreat);
+			return;
+		}
+		if (enemy.player_) {
+			const Vector3 playerPos = enemy.player_->GetPosition();
+			enemy.combatCenter_.x += (playerPos.x - enemy.combatCenter_.x) * EnemyConstants::kPlayerTrackingSpeed;
+			enemy.combatCenter_.y += (playerPos.y - enemy.combatCenter_.y) * EnemyConstants::kPlayerTrackingSpeed;
+			enemy.combatCenter_.z += (playerPos.z - enemy.combatCenter_.z) * EnemyConstants::kPlayerTrackingSpeed;
+		}
+		if (enemy.moveTimer_ >= EnemyConstants::kMoveInterval) {
+			const float angle = enemy.combatTimer_ * 1.2f;
+			enemy.targetPosition_ = {enemy.combatCenter_.x + std::sin(angle) * EnemyConstants::kCombatRadius, enemy.combatCenter_.y + std::cos(angle * 0.7f) * 5.0f, enemy.combatCenter_.z - EnemyConstants::kCombatDepth};
+			enemy.moveTimer_ = 0.0f;
+		}
+		enemy.MoveToward(enemy.targetPosition_, EnemyConstants::kCombatSpeed * enemy.GetSpawnSpeedMultiplier(), EnemyConstants::kMovementSmoothing, deltaTime);
+	}
+};
+
+class Enemy::RetreatBehaviorState final : public Enemy::BehaviorStateBase {
+public:
+	void Update(Enemy &enemy, float deltaTime) override {
+		const Vector3 targetVelocity = {0.0f, 8.0f, EnemyConstants::kRetreatSpeed};
+		enemy.currentVelocity_.x += (targetVelocity.x - enemy.currentVelocity_.x) * EnemyConstants::kMovementSmoothing;
+		enemy.currentVelocity_.y += (targetVelocity.y - enemy.currentVelocity_.y) * EnemyConstants::kMovementSmoothing;
+		enemy.currentVelocity_.z += (targetVelocity.z - enemy.currentVelocity_.z) * EnemyConstants::kMovementSmoothing;
+		enemy.transform_.translate.x += enemy.currentVelocity_.x * deltaTime;
+		enemy.transform_.translate.y += enemy.currentVelocity_.y * deltaTime;
+		enemy.transform_.translate.z += enemy.currentVelocity_.z * deltaTime;
+	}
+};
+
+Enemy::Enemy() = default;
+Enemy::~Enemy() = default;
+
+///=============================================================================
 ///                        初期化
 void Enemy::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::string &modelPath, const Vector3 &position) {
 	EnemyBase::Initialize(object3dSetup, modelPath, position);
@@ -22,6 +91,8 @@ void Enemy::Initialize(MagEngine::Object3dSetup *object3dSetup, const std::strin
 
 	// 行動ステート初期化
 	behaviorState_ = BehaviorState::Approach;
+	behaviorStateObject_ = std::make_unique<ApproachBehaviorState>();
+	pendingBehaviorStateObject_.reset();
 	combatTimer_ = 0.0f;
 	combatDuration_ = EnemyConstants::kCombatDuration;
 	combatCenter_ = {0.0f, 0.0f, 0.0f};
@@ -53,77 +124,27 @@ void Enemy::Update(float deltaTime) {
 }
 
 void Enemy::UpdateBehaviorState(float safeDeltaTime) {
-	// 共通の生存・編隊判定はUpdate()で済ませ、ここでは通常行動ステートだけを扱う。
-	// FormationFollowは早期復帰で処理されるため、通常ステートとの二重更新を避けられる。
-	switch (behaviorState_) {
-	case BehaviorState::Approach: {
-		if (player_) {
-			Vector3 playerPos = player_->GetPosition();
-			targetPosition_ = {
-				playerPos.x,
-				playerPos.y,
-				playerPos.z - EnemyConstants::kCombatDepth};
-
-			if (GetDistanceTo(targetPosition_) < 20.0f) {
-				behaviorState_ = BehaviorState::Combat;
-				combatTimer_ = 0.0f;
-				combatCenter_ = playerPos;
-				moveTimer_ = 0.0f;
-			} else {
-				MoveToward(targetPosition_, EnemyConstants::kApproachSpeed * GetSpawnSpeedMultiplier(), EnemyConstants::kMovementSmoothing, safeDeltaTime);
-			}
-		} else {
-			transform_.translate.z += speed_ * GetSpawnSpeedMultiplier() * safeDeltaTime;
-		}
-		break;
+	if (behaviorStateObject_) {
+		behaviorStateObject_->Update(*this, safeDeltaTime);
 	}
+	ApplyPendingBehaviorState();
+}
 
-	case BehaviorState::Combat: {
-		combatTimer_ += safeDeltaTime;
-		moveTimer_ += safeDeltaTime;
-
-		if (combatTimer_ >= combatDuration_) {
-			behaviorState_ = BehaviorState::Retreat;
-			break;
-		}
-
-		// プレイヤー位置を滑らかに追跡
-		if (player_) {
-			Vector3 currentPlayerPos = player_->GetPosition();
-			combatCenter_.x += (currentPlayerPos.x - combatCenter_.x) * EnemyConstants::kPlayerTrackingSpeed;
-			combatCenter_.y += (currentPlayerPos.y - combatCenter_.y) * EnemyConstants::kPlayerTrackingSpeed;
-			combatCenter_.z += (currentPlayerPos.z - combatCenter_.z) * EnemyConstants::kPlayerTrackingSpeed;
-		}
-
-		// 一定間隔で周回目標位置を更新
-		if (moveTimer_ >= EnemyConstants::kMoveInterval) {
-			float angle = combatTimer_ * 1.2f;
-			targetPosition_ = {
-				combatCenter_.x + std::sin(angle) * EnemyConstants::kCombatRadius,
-				combatCenter_.y + std::cos(angle * 0.7f) * 5.0f,
-				combatCenter_.z - EnemyConstants::kCombatDepth};
-			moveTimer_ = 0.0f;
-		}
-
-		MoveToward(targetPosition_, EnemyConstants::kCombatSpeed * GetSpawnSpeedMultiplier(), EnemyConstants::kMovementSmoothing, safeDeltaTime);
-		break;
+void Enemy::RequestBehaviorState(BehaviorState nextState) {
+	if (nextState == behaviorState_) {
+		return;
 	}
-
-	case BehaviorState::Retreat: {
-		Vector3 targetVel = {0.0f, 8.0f, EnemyConstants::kRetreatSpeed};
-		currentVelocity_.x += (targetVel.x - currentVelocity_.x) * EnemyConstants::kMovementSmoothing;
-		currentVelocity_.y += (targetVel.y - currentVelocity_.y) * EnemyConstants::kMovementSmoothing;
-		currentVelocity_.z += (targetVel.z - currentVelocity_.z) * EnemyConstants::kMovementSmoothing;
-		transform_.translate.x += currentVelocity_.x * safeDeltaTime;
-		transform_.translate.y += currentVelocity_.y * safeDeltaTime;
-		transform_.translate.z += currentVelocity_.z * safeDeltaTime;
-		break;
+	if (nextState == BehaviorState::Combat) {
+		pendingBehaviorStateObject_ = std::make_unique<CombatBehaviorState>();
+	} else if (nextState == BehaviorState::Retreat) {
+		pendingBehaviorStateObject_ = std::make_unique<RetreatBehaviorState>();
 	}
+	behaviorState_ = nextState;
+}
 
-	case BehaviorState::FormationFollow: {
-		behaviorState_ = BehaviorState::Combat;
-		break;
-	}
+void Enemy::ApplyPendingBehaviorState() {
+	if (pendingBehaviorStateObject_) {
+		behaviorStateObject_ = std::move(pendingBehaviorStateObject_);
 	}
 }
 
