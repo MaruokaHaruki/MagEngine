@@ -1,3 +1,4 @@
+# 実行時依存ではないため、resources/tools配下でアセット生成手順を管理する。
 param(
 	[Parameter(Mandatory = $true)][string]$FontPath,
 	[Parameter(Mandatory = $true)][string]$CharsetPath,

@@ -69,6 +69,14 @@ BenchmarkDotNet.Artifacts/
 # Local application state
 imgui.ini
 
+# Optional source assets / authoring tools
+# 実行時はDDSを読むため、変換元PNGとローカルの変換ツールは公開対象にしない。
+resources/texture/source/
+resources/tools/texture/TextureConverter.exe
+
+# 現在のゲームコードはWAVを再生していないため、容量の大きい音源はローカル管理とする。
+resources/sound/
+
 # OS
 .DS_Store
 Thumbs.db
