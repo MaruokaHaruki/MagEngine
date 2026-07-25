@@ -139,7 +139,13 @@ private:
 	/// \brief 展開・収束アニメーションの進行度を更新する
 	/// \param unscaledDeltaTime 時間停止の影響を受けない経過時間（秒）
 	void UpdateDeployAnimation(float unscaledDeltaTime);
+	/// \brief 弾性を伴う減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseOutElastic(float t);
+	/// \brief 加減速補間を適用する
+	/// \param t 補間率
+	/// \return 補間後の値
 	float EaseInOutQuad(float t);
 
 	///--------------------------------------------------------------

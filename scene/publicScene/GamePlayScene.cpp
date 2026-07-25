@@ -53,6 +53,57 @@ namespace {
 }
 
 ///=============================================================================
+/// GamePlaySceneフェーズ状態
+/// NOTE: enumはデバッグ表示と共通判定に限定し、更新時の振る舞いは状態オブジェクトへ委譲する。
+class GamePlayScene::PhaseStateBase {
+public:
+	virtual ~PhaseStateBase() = default;
+	virtual void Update(GamePlayScene &scene, const FrameTime &frameTime) = 0;
+};
+
+class GamePlayScene::StartingPhaseState final : public GamePlayScene::PhaseStateBase {
+public:
+	void Update(GamePlayScene &scene, const FrameTime &frameTime) override {
+		scene.UpdateStartPhase();
+		scene.UpdateSimulation(frameTime);
+	}
+};
+
+class GamePlayScene::PlayingPhaseState final : public GamePlayScene::PhaseStateBase {
+public:
+	void Update(GamePlayScene &scene, const FrameTime &frameTime) override {
+		scene.UpdateSimulation(frameTime);
+	}
+};
+
+class GamePlayScene::GameClearPresentationPhaseState final : public GamePlayScene::PhaseStateBase {
+public:
+	void Update(GamePlayScene &scene, const FrameTime &frameTime) override {
+		scene.UpdateSceneTransition(frameTime.unscaledDeltaTime);
+		scene.UpdateTerminalPresentation();
+	}
+};
+
+class GamePlayScene::GameOverPresentationPhaseState final : public GamePlayScene::PhaseStateBase {
+public:
+	void Update(GamePlayScene &scene, const FrameTime &frameTime) override {
+		scene.UpdateSceneTransition(frameTime.unscaledDeltaTime);
+		scene.UpdateTerminalPresentation();
+	}
+};
+
+class GamePlayScene::TransitionOutPhaseState final : public GamePlayScene::PhaseStateBase {
+public:
+	void Update(GamePlayScene &scene, const FrameTime &frameTime) override {
+		scene.UpdateSceneTransition(frameTime.unscaledDeltaTime);
+		scene.UpdateTransitionOut();
+	}
+};
+
+GamePlayScene::GamePlayScene() = default;
+GamePlayScene::~GamePlayScene() = default;
+
+///=============================================================================
 /// 初期化
 /// NOTE: contextからセットアップを取得
 void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) {
@@ -247,6 +298,8 @@ void GamePlayScene::Initialize(const MagEngine::EngineContext &engineContext, Sc
 	}
 	isGameClear_ = false;
 	phase_ = GamePlayPhase::Starting;
+	phaseStateObject_ = std::make_unique<StartingPhaseState>();
+	pendingPhaseStateObject_.reset();
 	hasSceneChangeRequested_ = false;
 
 	//========================================
@@ -357,8 +410,6 @@ void GamePlayScene::Update(const FrameTime &frameTime) {
 	debugController_.Update();
 #endif
 
-	UpdateStartPhase();
-
 	ProcessMenuInput();
 
 	//========================================
@@ -367,16 +418,17 @@ void GamePlayScene::Update(const FrameTime &frameTime) {
 		return;
 	}
 
-	if (phase_ == GamePlayPhase::GameClearPresentation || phase_ == GamePlayPhase::GameOverPresentation) {
-		UpdateSceneTransition(unscaledDeltaTime);
-		UpdateTerminalPresentation();
-		return;
-	}
-	if (phase_ == GamePlayPhase::TransitionOut) {
-		UpdateSceneTransition(unscaledDeltaTime);
-		UpdateTransitionOut();
-		return;
-	}
+	// NOTE: UIコールバックやメニュー入力で要求された遷移は状態更新の外で発生するため、
+	//       旧フェーズのシミュレーションを1フレーム実行しないよう先に反映する。
+	ApplyPendingPhaseState();
+	UpdatePhaseState(frameTime);
+	ApplyPendingPhaseState();
+}
+
+void GamePlayScene::UpdateSimulation(const FrameTime &frameTime) {
+	assert(engineContext_);
+	CameraManager *cameraManager = engineContext_->cameraManager;
+	const float unscaledDeltaTime = frameTime.unscaledDeltaTime;
 
 	//========================================
 	// タイムスケール計算（ジャスト回避スロー効果）
@@ -495,6 +547,45 @@ void GamePlayScene::Update(const FrameTime &frameTime) {
 #endif
 }
 
+void GamePlayScene::UpdatePhaseState(const FrameTime &frameTime) {
+	if (phaseStateObject_) {
+		phaseStateObject_->Update(*this, frameTime);
+	}
+}
+
+void GamePlayScene::ApplyPendingPhaseState() {
+	if (pendingPhaseStateObject_) {
+		phaseStateObject_ = std::move(pendingPhaseStateObject_);
+	}
+}
+
+void GamePlayScene::RequestPhaseState(GamePlayPhase nextPhase) {
+	if (nextPhase == phase_) {
+		return;
+	}
+
+	switch (nextPhase) {
+	case GamePlayPhase::Starting:
+		pendingPhaseStateObject_ = std::make_unique<StartingPhaseState>();
+		break;
+	case GamePlayPhase::Playing:
+		pendingPhaseStateObject_ = std::make_unique<PlayingPhaseState>();
+		break;
+	case GamePlayPhase::GameClearPresentation:
+		pendingPhaseStateObject_ = std::make_unique<GameClearPresentationPhaseState>();
+		break;
+	case GamePlayPhase::GameOverPresentation:
+		pendingPhaseStateObject_ = std::make_unique<GameOverPresentationPhaseState>();
+		break;
+	case GamePlayPhase::TransitionOut:
+		pendingPhaseStateObject_ = std::make_unique<TransitionOutPhaseState>();
+		break;
+	}
+
+	// NOTE: シミュレーション停止判定を遷移要求フレームから維持するため、識別子は直ちに更新する。
+	phase_ = nextPhase;
+}
+
 void GamePlayScene::UpdateCloudProjectileHoles(float deltaTime) {
 	if (!cloud_ || !player_ || !enemyManager_) {
 		return;
@@ -555,7 +646,7 @@ void GamePlayScene::UpdateStartPhase() {
 	}
 
 	hasUIDeploymentStarted_ = true;
-	phase_ = GamePlayPhase::Playing;
+	RequestPhaseState(GamePlayPhase::Playing);
 	if (auto hud = uiManager_->GetHUD()) {
 		hud->StartDeployAnimation(1.5f);
 	}
@@ -623,7 +714,7 @@ void GamePlayScene::RequestGameClear() {
 		return;
 	}
 
-	phase_ = GamePlayPhase::GameClearPresentation;
+	RequestPhaseState(GamePlayPhase::GameClearPresentation);
 	isGameClear_ = true;
 	if (!uiManager_) {
 		return;
@@ -648,7 +739,7 @@ void GamePlayScene::RequestGameOver() {
 		return;
 	}
 
-	phase_ = GamePlayPhase::GameOverPresentation;
+	RequestPhaseState(GamePlayPhase::GameOverPresentation);
 	isGameOver_ = true;
 	if (!uiManager_) {
 		return;
@@ -673,7 +764,7 @@ void GamePlayScene::BeginTransitionOut(float transitionDuration) {
 		return;
 	}
 
-	phase_ = GamePlayPhase::TransitionOut;
+	RequestPhaseState(GamePlayPhase::TransitionOut);
 	sceneTransition_->StartClosing(TransitionType::Fade, transitionDuration);
 	sceneTransition_->SetOnCompleteCallback([this]() {
 		// SceneTransitionは完了状態を保持するため、Scene変更要求も一度だけに制限する。

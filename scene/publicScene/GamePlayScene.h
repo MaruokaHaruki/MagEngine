@@ -60,6 +60,9 @@ class GamePlayScene : public BaseScene {
 	///--------------------------------------------------------------
 	///                            メンバ関数
 public:
+	GamePlayScene();
+	~GamePlayScene() override;
+
 	/// \brief 初期化 - NOTE: 引数がSceneContext*の1つに削減
 	void Initialize(const MagEngine::EngineContext &engineContext, SceneContext &sceneContext) override;
 	void Finalize() override;
@@ -84,6 +87,26 @@ public:
 #endif
 
 private:
+	class PhaseStateBase;
+	class StartingPhaseState;
+	class PlayingPhaseState;
+	class GameClearPresentationPhaseState;
+	class GameOverPresentationPhaseState;
+	class TransitionOutPhaseState;
+
+	/// \brief 現在のフェーズ状態へ更新処理を委譲する
+	/// \param frameTime 今フレームの時間情報
+	void UpdatePhaseState(const FrameTime &frameTime);
+	/// \brief 状態更新完了後に保留したフェーズ遷移を適用する
+	/// @note Update中に状態オブジェクト自身を破棄しないため、委譲後に呼び出す。
+	void ApplyPendingPhaseState();
+	/// \brief 指定したフェーズへの遷移を要求する
+	/// \param nextPhase 遷移先のフェーズ
+	/// @note enumはImGui表示とシミュレーション可否の識別に残し、振る舞いの選択は状態オブジェクトへ委譲する。
+	void RequestPhaseState(GamePlayPhase nextPhase);
+	/// \brief 開始・プレイ中に共通のゲームシミュレーションを更新する
+	/// \param frameTime 今フレームの時間情報
+	void UpdateSimulation(const FrameTime &frameTime);
 	void UpdateStartPhase();
 	void ProcessMenuInput();
 	void UpdateTerminalPresentation();
@@ -172,7 +195,9 @@ private:
 
 	//========================================
 	// ゲーム状態
-	GamePlayPhase phase_ = GamePlayPhase::Starting;
+	GamePlayPhase phase_ = GamePlayPhase::Starting; // ImGui表示と共通判定用の識別子。振る舞いはphaseStateObject_が保持する。
+	std::unique_ptr<PhaseStateBase> phaseStateObject_;
+	std::unique_ptr<PhaseStateBase> pendingPhaseStateObject_;
 	bool isGameOver_ = false;
 	bool isGameClear_ = false;
 	bool hasSceneChangeRequested_ = false;
