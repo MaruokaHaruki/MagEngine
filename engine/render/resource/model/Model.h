@@ -34,6 +34,7 @@ namespace MagEngine {
 		///							メンバ関数
 	public:
 		/// \brief 初期化
+		/// @note 成功時のみ描画資源を公開する。失敗は資産名付き例外。生成済みモデルへの再初期化は拒否する。
 		void Initialize(ModelSetup *modelSetup, const std::string &directorypath, const std::string &filename);
 
 		/// \brief 更新
@@ -52,6 +53,7 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							静的メンバ関数
 	private:
+		friend struct AssetSafetyTests; // デバイス非依存の読み込み境界を直接検証するための限定アクセス
 		/**----------------------------------------------------------------------------
 		 * \brief  LoadMaterialTemplateFile .mtlファイル読み込み
 		 * \param  directoryPath ディレクトリパス
@@ -65,9 +67,9 @@ namespace MagEngine {
 		 * \brief  LoadObjFile .objファイル読み込み
 		 * \param  directoryPath ディレクトリパス
 		 * \param  filename ファイルネーム
-		 * \note   そのままmodelDataに格納
+		 * \note   GPU生成前にCPUデータ全体を検証し、失敗はファイル名付き例外で通知する。
 		 */
-		void LoadModelFile(const std::string &directoryPath, const std::string &filename);
+		static MagMath::ModelData LoadModelFile(const std::string &directoryPath, const std::string &filename);
 
 		/// @brief ReadNode ノードの読み込み
 		/// @param node ノード

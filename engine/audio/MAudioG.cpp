@@ -16,6 +16,9 @@
 #include <mmdeviceapi.h>
 #include <Functiondiscoverykeys_devpkey.h>
 #include <algorithm>
+#include <cmath>
+#include <cstring>
+#include <stdexcept>
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
@@ -35,6 +38,8 @@ namespace MagEngine {
 	///=============================================================================
 	///						初期化
 	void MAudioG::Initialize(const std::string &directoryPath, const std::wstring &deviceId) {
+		Finalize();
+		std::lock_guard<std::mutex> lock(voiceMutex_);
 		HRESULT result;
 
 		this->directoryPath_ = directoryPath;
@@ -48,6 +53,7 @@ namespace MagEngine {
 		result = xAudio2_->CreateMasteringVoice(&masterVoice_, XAUDIO2_DEFAULT_CHANNELS, XAUDIO2_DEFAULT_SAMPLERATE, 0, deviceId.empty() ? nullptr : deviceId.c_str(), nullptr);
 		if(FAILED(result)) {
 			std::cerr << "Failed to create mastering voice: " << std::hex << result << std::endl;
+			xAudio2_.Reset();
 			return; // 初期化に失敗したら終了
 		}
 
@@ -57,13 +63,8 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void MAudioG::Finalize() {
-		//========================================
-		// 再生中のボイスを停止
-		for(auto &[filename, voice] : voiceMap_) {
-			if(voice.sourceVoice) {
-				voice.sourceVoice->DestroyVoice();
-			}
-		}
+		std::lock_guard<std::mutex> lock(voiceMutex_);
+		// NOTE: Voiceの破棄が参照終了を待ってから音声データを解放する。
 		voiceMap_.clear();
 
 		//========================================
@@ -81,193 +82,181 @@ namespace MagEngine {
 		xAudio2_.Reset();
 	}
 
-	///=============================================================================
-	///						サウンドのロード
-	void MAudioG::LoadWav(const std::string &filename) {
-		// 既にロードされている場合は何もしない
-		if(soundDataMap_.find(filename) != soundDataMap_.end()) {
-			return;
+	///--------------------------------------------------------------
+	/// PCM形式の検証
+	namespace {
+		void ValidatePcm(const WAVEFORMATEX &format, const std::string &name) {
+			if(format.wFormatTag != WAVE_FORMAT_PCM || format.cbSize != 0 ||
+			   (format.nChannels != 1 && format.nChannels != 2) ||
+			   (format.wBitsPerSample != 8 && format.wBitsPerSample != 16) ||
+			   format.nSamplesPerSec < XAUDIO2_MIN_SAMPLE_RATE || format.nSamplesPerSec > XAUDIO2_MAX_SAMPLE_RATE ||
+			   format.nBlockAlign != format.nChannels * (format.wBitsPerSample / 8) ||
+			   uint64_t(format.nAvgBytesPerSec) != uint64_t(format.nSamplesPerSec) * format.nBlockAlign) {
+				throw std::runtime_error("WAV " + name + ": unsupported or inconsistent PCM format");
+			}
 		}
-
-		//========================================
-		// ファイルをバイナリモードで開く
-		std::ifstream file(directoryPath_ + filename, std::ios_base::binary);
-		if(!file.is_open()) {
-			std::cerr << "Failed to open file: " << filename << std::endl;
-			return;
-		}
-
-		//========================================
-		// RIFFヘッダーを読み込む
-		RiffHeader riff;
-		file.read((char *)&riff, sizeof(riff));
-		if(strncmp(riff.chunk.id, "RIFF", 4) != 0 || strncmp(riff.type, "WAVE", 4) != 0) {
-			std::cerr << "Invalid RIFF or WAVE header in file: " << filename << std::endl;
-			file.close();
-			return;
-		}
-
-		//========================================
-		// フォーマットチャンクを読み込む
-		FormatChunk format = {};
-		file.read((char *)&format, sizeof(ChunkHeader));
-		if(strncmp(format.chunk.id, "fmt ", 4) != 0) {
-			std::cerr << "Invalid fmt chunk in file: " << filename << std::endl;
-			file.close();
-			return;
-		}
-		file.read((char *)&format.fmt, format.chunk.size);
-
-		//========================================
-		// データチャンクを読み込む
-		ChunkHeader data;
-		file.read((char *)&data, sizeof(data));
-		while(strncmp(data.id, "data", 4) != 0) {
-			// 他のチャンクをスキップ
-			file.seekg(data.size, std::ios_base::cur);
-			file.read((char *)&data, sizeof(data));
-		}
-
-		//========================================
-		// 音声データのバッファを読み込む
-		std::vector<uint8_t> buffer(data.size);
-		file.read(reinterpret_cast<char *>( buffer.data() ), data.size);
-		file.close();
-
-		//========================================
-		// サウンドデータを設定
-		SoundData soundData = {};
-		soundData.wfex = format.fmt;
-		soundData.buffer = std::move(buffer);
-		soundData.name = filename;
-
-		//========================================
-		// サウンドデータをマップに保存
-		soundDataMap_[filename] = std::move(soundData);
 	}
 
 	///=============================================================================
-	///						サウンドデータのアンロード
+	/// デバイス非依存のWAV読み込み
+	MAudioG::SoundData MAudioG::ReadWav(const std::string &filePath) {
+		std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+		auto fail = [&filePath](const char *reason) { throw std::runtime_error("WAV " + filePath + ": " + reason); };
+		if(!file) { fail("cannot open file"); }
+		const auto fileSize = file.tellg();
+		if(fileSize < 12) { fail("truncated RIFF header"); }
+		file.seekg(0);
+		auto read = [&](void *destination, size_t bytes) {
+			if(!file.read(static_cast<char *>(destination), static_cast<std::streamsize>(bytes))) {
+				fail("truncated chunk");
+			}
+		};
+		RiffHeader riff{};
+		read(&riff, sizeof(riff));
+		if(std::memcmp(riff.chunk.id, "RIFF", 4) || std::memcmp(riff.type, "WAVE", 4) || riff.chunk.size < 4) {
+			fail("invalid RIFF/WAVE header");
+		}
+		const uint64_t riffEnd = uint64_t(riff.chunk.size) + 8;
+		if(riffEnd > static_cast<uint64_t>(fileSize)) { fail("RIFF size exceeds file"); }
+
+		//========================================
+		// チャンク境界を先に検証し、成功するまでキャッシュへ公開しない
+		SoundData result{};
+		result.name = filePath;
+		bool hasFormat = false;
+		bool hasData = false;
+		uint64_t position = 12;
+		while(position < riffEnd) {
+			if(riffEnd - position < sizeof(ChunkHeader)) { fail("truncated chunk header"); }
+			ChunkHeader chunk{};
+			read(&chunk, sizeof(chunk));
+			position += sizeof(chunk);
+			const uint64_t paddedSize = uint64_t(chunk.size) + (chunk.size & 1u);
+			if(paddedSize > riffEnd - position) { fail("chunk size exceeds RIFF boundary"); }
+			if(std::memcmp(chunk.id, "fmt ", 4) == 0) {
+				if(hasFormat || (chunk.size != 16 && chunk.size != 18)) { fail("invalid or unsupported fmt size"); }
+				// NOTE: WindowsのPCM先頭16バイトだけを読み、拡張領域の上書きを防ぐ。
+				static_assert(offsetof(WAVEFORMATEX, cbSize) == 16);
+				read(&result.wfex, chunk.size);
+				ValidatePcm(result.wfex, filePath);
+				hasFormat = true;
+			} else if(std::memcmp(chunk.id, "data", 4) == 0) {
+				if(!hasFormat || hasData || chunk.size == 0 || chunk.size > XAUDIO2_MAX_BUFFER_BYTES ||
+				   chunk.size % result.wfex.nBlockAlign != 0) { fail("invalid data size or order"); }
+				result.buffer.resize(chunk.size);
+				read(result.buffer.data(), chunk.size);
+				hasData = true;
+			}
+			position += paddedSize;
+			file.seekg(static_cast<std::streamoff>(position));
+			if(!file) { fail("cannot seek to next chunk"); }
+		}
+		if(!hasFormat || !hasData) { fail("missing fmt or data chunk"); }
+		return result;
+	}
+
+	///=============================================================================
+	/// キャッシュへの登録
+	void MAudioG::LoadWavInternal(const std::string &filename) {
+		if(soundDataMap_.contains(filename)) { return; }
+		if(soundDataMap_.size() >= kMaxSoundData) { throw std::runtime_error("WAV " + filename + ": cache capacity exceeded"); }
+		auto soundData = ReadWav(directoryPath_ + filename);
+		soundData.name = filename;
+		soundDataMap_.emplace(filename, std::move(soundData));
+	}
+
+	///=============================================================================
+	/// サウンドのロード
+	void MAudioG::LoadWav(const std::string &filename) {
+		std::lock_guard<std::mutex> lock(voiceMutex_);
+		try {
+			LoadWavInternal(filename);
+		} catch(const std::exception &error) {
+			std::cerr << error.what() << std::endl;
+		}
+	}
+
+	///=============================================================================
+	/// サウンドデータのアンロード
 	void MAudioG::Unload(SoundData *soundData) {
+		if(!soundData) { return; }
+		std::lock_guard<std::mutex> lock(voiceMutex_);
+		for(auto it = soundDataMap_.begin(); it != soundDataMap_.end(); ++it) {
+			if(&it->second == soundData) {
+				voiceMap_.erase(it->first);
+				soundDataMap_.erase(it);
+				return;
+			}
+		}
 		soundData->buffer.clear();
 		soundData->name.clear();
+		soundData->wfex = {};
 	}
 
 	///=============================================================================
-	///						サウンドを再生
+	/// PCMフレームの反転
+	std::vector<uint8_t> MAudioG::ReverseFrames(const SoundData &soundData) {
+		ValidatePcm(soundData.wfex, soundData.name);
+		const size_t frameBytes = soundData.wfex.nBlockAlign;
+		if(soundData.buffer.empty() || soundData.buffer.size() % frameBytes != 0) {
+			throw std::runtime_error("WAV " + soundData.name + ": incomplete PCM frame");
+		}
+		std::vector<uint8_t> reversed(soundData.buffer.size());
+		for(size_t offset = 0; offset < reversed.size(); offset += frameBytes) {
+			std::memcpy(reversed.data() + offset, soundData.buffer.data() + reversed.size() - offset - frameBytes, frameBytes);
+		}
+		return reversed;
+	}
+
+	///=============================================================================
+	/// 通常・逆再生の共通経路
+	void MAudioG::PlayWavInternal(const std::string &filename, bool loopFlag, float volume, float maxPlaySpeed, bool reverse) {
+		std::lock_guard<std::mutex> lock(voiceMutex_);
+		try {
+			if(!xAudio2_ || !masterVoice_) { throw std::runtime_error("audio is not initialized"); }
+			if(!std::isfinite(volume) || volume < 0.0f || volume > XAUDIO2_MAX_VOLUME_LEVEL ||
+			   !std::isfinite(maxPlaySpeed) || maxPlaySpeed < XAUDIO2_MIN_FREQ_RATIO || maxPlaySpeed > XAUDIO2_MAX_FREQ_RATIO) {
+				throw std::runtime_error("invalid volume or maximum playback speed");
+			}
+			LoadWavInternal(filename);
+			const auto &soundData = soundDataMap_.at(filename);
+			Voice voice{};
+			if(reverse) { voice.reversedBuffer = ReverseFrames(soundData); }
+			auto check = [](HRESULT result, const char *operation) {
+				if(FAILED(result)) { throw std::runtime_error(std::string(operation) + " failed: " + std::to_string(result)); }
+			};
+			IXAudio2SourceVoice *source = nullptr;
+			const HRESULT created = xAudio2_->CreateSourceVoice(&source, &soundData.wfex, XAUDIO2_VOICE_USEFILTER, maxPlaySpeed, &voiceCallback_);
+			voice.sourceVoice.reset(source);
+			check(created, "CreateSourceVoice");
+			check(source->SetVolume(volume), "SetVolume");
+			XAUDIO2_BUFFER buffer{};
+			buffer.pAudioData = reverse ? voice.reversedBuffer.data() : soundData.buffer.data();
+			buffer.AudioBytes = static_cast<UINT32>(soundData.buffer.size());
+			buffer.Flags = XAUDIO2_END_OF_STREAM;
+			buffer.LoopCount = loopFlag ? XAUDIO2_LOOP_INFINITE : 0;
+			check(source->SubmitSourceBuffer(&buffer), "SubmitSourceBuffer");
+			check(source->Start(0), "Start");
+			voice.oldVolume = volume;
+			// NOTE: 古いVoiceを破棄してから移すことで、代入中にも反転データの寿命を維持する。
+			voiceMap_.erase(filename);
+			voiceMap_.emplace(filename, std::move(voice));
+		} catch(const std::exception &error) {
+			std::cerr << "Play WAV " << filename << ": " << error.what() << std::endl;
+		}
+	}
+
+	///=============================================================================
+	/// サウンドを再生
 	void MAudioG::PlayWav(const std::string &filename, bool loopFlag, float volume, float maxPlaySpeed) {
-		// サウンドデータがロードされていなければロードする
-		if(soundDataMap_.find(filename) == soundDataMap_.end()) {
-			LoadWav(filename);
-		}
-
-		auto &soundData = soundDataMap_[filename];
-
-		// 既に再生中の場合は一旦停止
-		StopWav(filename);
-
-		// ソースボイスを作成
-		IXAudio2SourceVoice *sourceVoice = nullptr;
-		HRESULT result = xAudio2_->CreateSourceVoice(&sourceVoice, &soundData.wfex, XAUDIO2_VOICE_USEFILTER, maxPlaySpeed, &voiceCallback_);
-		if(FAILED(result)) {
-			std::cerr << "Failed to create source voice: " << std::hex << result << std::endl;
-			return;
-		}
-
-		// バッファを設定
-		XAUDIO2_BUFFER buf = {};
-		buf.pAudioData = soundData.buffer.data();
-		buf.AudioBytes = (UINT32)soundData.buffer.size();
-		buf.Flags = XAUDIO2_END_OF_STREAM;
-		buf.LoopCount = loopFlag ? XAUDIO2_LOOP_INFINITE : 0;
-
-		// ソースボイスにバッファを送信
-		result = sourceVoice->SubmitSourceBuffer(&buf);
-		if(FAILED(result)) {
-			std::cerr << "Failed to submit source buffer: " << std::hex << result << std::endl;
-			sourceVoice->DestroyVoice();
-			return;
-		}
-
-		// 再生開始
-		result = sourceVoice->Start(0);
-		if(FAILED(result)) {
-			std::cerr << "Failed to start playback: " << std::hex << result << std::endl;
-			sourceVoice->DestroyVoice();
-			return;
-		}
-
-		// ボイスを作成し、マップに追加
-		Voice voice = {};
-		voice.sourceVoice = sourceVoice;
-		voice.sourceVoice->SetVolume(volume);
-		voice.oldVolume = volume;
-		voice.oldSpeed = 1.0f;
-
-		std::lock_guard<std::mutex> lock(voiceMutex_);
-		voiceMap_[filename] = std::move(voice);
+		PlayWavInternal(filename, loopFlag, volume, maxPlaySpeed, false);
 	}
 
 	///=============================================================================
-	///						逆再生
+	/// 逆再生
 	void MAudioG::PlayWavReverse(const std::string &filename, bool loopFlag, float volume, float maxPlaySpeed) {
-		// サウンドデータがロードされていなければロードする
-		if(soundDataMap_.find(filename) == soundDataMap_.end()) {
-			LoadWav(filename);
-		}
-
-		auto &soundData = soundDataMap_[filename];
-
-		// 既に再生中の場合は一旦停止
-		StopWav(filename);
-
-		// ソースボイスを作成
-		IXAudio2SourceVoice *sourceVoice = nullptr;
-		HRESULT result = xAudio2_->CreateSourceVoice(&sourceVoice, &soundData.wfex, XAUDIO2_VOICE_USEFILTER, maxPlaySpeed, &voiceCallback_);
-		if(FAILED(result)) {
-			std::cerr << "Failed to create source voice: " << std::hex << result << std::endl;
-			return;
-		}
-
-		// 音声データのバッファを逆順にする
-		std::vector<uint8_t> reversedBuffer(soundData.buffer.size());
-		std::reverse_copy(soundData.buffer.begin(), soundData.buffer.end(), reversedBuffer.begin());
-
-		// バッファを設定
-		XAUDIO2_BUFFER buf = {};
-		buf.pAudioData = reversedBuffer.data();
-		buf.AudioBytes = (UINT32)reversedBuffer.size();
-		buf.Flags = XAUDIO2_END_OF_STREAM;
-		buf.LoopCount = loopFlag ? XAUDIO2_LOOP_INFINITE : 0;
-
-		// ソースボイスにバッファを送信
-		result = sourceVoice->SubmitSourceBuffer(&buf);
-		if(FAILED(result)) {
-			std::cerr << "Failed to submit source buffer: " << std::hex << result << std::endl;
-			sourceVoice->DestroyVoice();
-			return;
-		}
-
-		// 再生開始
-		result = sourceVoice->Start(0);
-		if(FAILED(result)) {
-			std::cerr << "Failed to start playback: " << std::hex << result << std::endl;
-			sourceVoice->DestroyVoice();
-			return;
-		}
-
-		// ボイスを作成し、マップに追加
-		Voice voice = {};
-		voice.sourceVoice = sourceVoice;
-		voice.sourceVoice->SetVolume(volume);
-		voice.oldVolume = volume;
-		voice.oldSpeed = 1.0f;
-
-		std::lock_guard<std::mutex> lock(voiceMutex_);
-		voiceMap_[filename] = std::move(voice);
+		PlayWavInternal(filename, loopFlag, volume, maxPlaySpeed, true);
 	}
-
-
 
 	///--------------------------------------------------------------
 	///						 サウンドの停止
@@ -275,8 +264,6 @@ namespace MagEngine {
 		std::lock_guard<std::mutex> lock(voiceMutex_);
 		auto it = voiceMap_.find(filename);
 		if(it != voiceMap_.end()) {
-			it->second.sourceVoice->Stop();
-			it->second.sourceVoice->DestroyVoice();
 			voiceMap_.erase(it);
 		}
 	}

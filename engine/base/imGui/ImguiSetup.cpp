@@ -7,6 +7,7 @@
  * \note   ImGui初期化、スタイル設定、イベント処理の実装
  *********************************************************************/
 #include "ImguiSetup.h"
+#include <filesystem>
 #include <psapi.h>
 #include <string>
 #include <unordered_map>
@@ -37,6 +38,11 @@ namespace MagEngine {
 		} else {
 			// その他のスタイル: デフォルトフォント
 			LoadFont("firge_regular", "resources\\fonts\\Firge-Regular.ttf", 16.0f);
+		}
+		// NOTE: 作品のフォントを配布しない最小アプリでもEditor基盤を起動できるようにする。
+		if (ImGui::GetIO().Fonts->Fonts.empty()) {
+			ImGui::GetIO().Fonts->AddFontDefault();
+			fontsDirty_ = true;
 		}
 		RebuildFonts();
 		//---------------------------------------
@@ -396,6 +402,10 @@ namespace MagEngine {
 	///=============================================================================
 	///						フォントをロード
 	bool ImguiSetup::LoadFont(const std::string &fontName, const std::string &filePath, float size) {
+		std::error_code error;
+		if (!std::filesystem::is_regular_file(filePath, error)) {
+			return false;
+		}
 		ImGuiIO &io = ImGui::GetIO();
 		ImFont *font = io.Fonts->AddFontFromFileTTF(filePath.c_str(), size, nullptr, io.Fonts->GetGlyphRangesJapanese());
 		if (font) {

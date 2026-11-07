@@ -16,24 +16,42 @@
 // テクスチャマネージャ
 #include "TextureManager.h"
 #include <cmath>
+#include <limits>
+#include <stdexcept>
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
 ///=============================================================================
 ///						初期化
 	void Model::Initialize(ModelSetup *modelSetup, const std::string &directorypath, const std::string &filename) {
-		// modelSetupから受け取る
-		modelSetup_ = modelSetup;
-		// モデルデータの読み込み
-		LoadModelFile(directorypath, filename);
-		// 頂点バッファの作成
-		CreateVertexBuffer();
-		// マテリアルバッファの作成
-		CreateMaterialBuffer();
-		// テクスチャの読み込み
-		modelSetup_->GetTextureManager().LoadTexture(modelData_.material.textureFilePath);
-		// テクスチャ番号を取得して、メンバ変数に格納
-		textureIndex_ = modelSetup_->GetTextureManager().GetTextureIndex(modelData_.material.textureFilePath);
+		if(vertexBuffer_ || materialBuffer_) {
+			throw std::runtime_error("Model " + filename + ": already initialized; GPU references must finish before replacement");
+		}
+		try {
+			if(!modelSetup || !modelSetup->GetDXManager() || !modelSetup->GetDXManager()->GetDevice()) {
+				throw std::runtime_error("model setup/device is not initialized");
+			}
+			//========================================
+			// 一時所有者ですべて生成し、失敗時は不完全なモデルを公開しない
+			Model candidate;
+			candidate.modelSetup_ = modelSetup;
+			candidate.modelData_ = LoadModelFile(directorypath, filename);
+			candidate.CreateVertexBuffer();
+			candidate.CreateMaterialBuffer();
+			auto &textures = modelSetup->GetTextureManager();
+			textures.LoadTexture(candidate.modelData_.material.textureFilePath);
+			candidate.textureIndex_ = textures.GetTextureIndex(candidate.modelData_.material.textureFilePath);
+
+			modelData_ = std::move(candidate.modelData_);
+			vertexBuffer_ = std::move(candidate.vertexBuffer_);
+			materialBuffer_ = std::move(candidate.materialBuffer_);
+			vertexBufferView_ = candidate.vertexBufferView_;
+			materialData_ = candidate.materialData_;
+			textureIndex_ = candidate.textureIndex_;
+			modelSetup_ = modelSetup;
+		} catch(const std::exception &error) {
+			throw std::runtime_error("Model " + directorypath + "/" + filename + ": " + error.what());
+		}
 	}
 
 	///=============================================================================
@@ -126,7 +144,7 @@ namespace MagEngine {
 
 	///--------------------------------------------------------------
 	///						 OBJファイル読み込み関数
-	void Model::LoadModelFile(const std::string &directoryPath, const std::string &filename) {
+	MagMath::ModelData Model::LoadModelFile(const std::string &directoryPath, const std::string &filename) {
 		//========================================
 		// Assimpインポーターの作成
 		Assimp::Importer importer;
@@ -134,7 +152,11 @@ namespace MagEngine {
 		const aiScene *scene = importer.ReadFile(filePath, aiProcess_FlipWindingOrder | aiProcess_FlipUVs);
 		//========================================
 		// 読み込みエラーのチェック
-		assert(scene && scene->HasMeshes() && "Failed to load the model file.");
+		auto fail = [&filePath](const char *reason) { throw std::runtime_error("Model " + filePath + ": " + reason); };
+		if(!scene || !scene->HasMeshes() || !scene->mMeshes || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)) {
+			throw std::runtime_error("Model " + filePath + ": no complete meshes: " + importer.GetErrorString());
+		}
+		MagMath::ModelData modelData{};
 		//========================================
 		// シーンの階層構造を構築
 
@@ -142,18 +164,27 @@ namespace MagEngine {
 		// メッシュの取得
 		for(uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 			aiMesh *mesh = scene->mMeshes[meshIndex];
-			assert(mesh->HasNormals() && "Mesh does not have normals.");
-			assert(mesh->HasTextureCoords(0) && "Mesh does not have texture coordinates.");
+			if(!mesh || !mesh->HasPositions() || !mesh->HasNormals() || !mesh->HasTextureCoords(0) ||
+			   !mesh->mFaces || mesh->mNumFaces == 0) {
+				fail("mesh requires positions, normals, UV0 and faces");
+			}
+			if(!scene->mMaterials || mesh->mMaterialIndex >= scene->mNumMaterials || !scene->mMaterials[mesh->mMaterialIndex]) {
+				fail("invalid material index");
+			}
 			//---------------------------------------
 			// faseを解析
 			for(uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
 				aiFace &face = mesh->mFaces[faceIndex];
-				assert(face.mNumIndices == 3 && "Only triangular faces are supported.");
+				if(face.mNumIndices != 3 || !face.mIndices) { fail("only triangular faces are supported"); }
+				if(modelData.vertices.size() > (std::numeric_limits<UINT>::max)() / sizeof(MagMath::VertexData) - 3) {
+					fail("vertex buffer exceeds D3D12 view capacity");
+				}
 				//========================================
 				// 頂点データの取得
 				for(uint32_t vertexIndex = 0; vertexIndex < face.mNumIndices; ++vertexIndex) {
 					uint32_t index = face.mIndices[vertexIndex];
-					MagMath::VertexData vertexData;
+					if(index >= mesh->mNumVertices) { fail("vertex index out of range"); }
+					MagMath::VertexData vertexData{};
 					vertexData.position.x = mesh->mVertices[index].x;
 					vertexData.position.y = mesh->mVertices[index].y;
 					vertexData.position.z = mesh->mVertices[index].z;
@@ -163,26 +194,31 @@ namespace MagEngine {
 					vertexData.normal.x = mesh->mNormals[index].x;
 					vertexData.normal.y = mesh->mNormals[index].y;
 					vertexData.normal.z = mesh->mNormals[index].z;
+					if(!std::isfinite(vertexData.position.x) || !std::isfinite(vertexData.position.y) || !std::isfinite(vertexData.position.z) ||
+					   !std::isfinite(vertexData.normal.x) || !std::isfinite(vertexData.normal.y) || !std::isfinite(vertexData.normal.z) ||
+					   !std::isfinite(vertexData.texCoord.x) || !std::isfinite(vertexData.texCoord.y)) { fail("non-finite vertex data"); }
 					// aiProcess_MakeLeftHandedはz* = -1で､右手系から左手系に変換するため手動で対処
 					vertexData.position.z *= -1.0f;
 					vertexData.normal.z *= -1.0f;
-					modelData_.vertices.push_back(vertexData);
+					modelData.vertices.push_back(vertexData);
 				}
 			}
 			//---------------------------------------
 			// マテリアルデータの解析
-			if(mesh->mMaterialIndex >= 0) {
+			if(scene->mMaterials[mesh->mMaterialIndex]) {
 				aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 				//========================================
 				// マテリアルの取得
 				aiString texturePath;
 				if(material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
 					std::string textureFilePath = texturePath.C_Str();
-					modelData_.material.textureFilePath = textureFilePath;
+					modelData.material.textureFilePath = textureFilePath;
 				}
 			}
 		}
 
+		if(modelData.vertices.empty() || modelData.material.textureFilePath.empty()) { fail("missing vertices or diffuse texture"); }
+		return modelData;
 	}
 
 	///--------------------------------------------------------------
@@ -232,13 +268,16 @@ namespace MagEngine {
 		vertexBuffer_ = modelSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::VertexData) * modelData_.vertices.size());
 		//========================================
 		// 頂点バッファビューを作成する
+		if(!vertexBuffer_) { throw std::runtime_error("cannot create vertex buffer"); }
 		vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();			   // リソースの先頭アドレスから使う
 		vertexBufferView_.SizeInBytes = UINT(sizeof(MagMath::VertexData) * modelData_.vertices.size()); // 使用するリソースのサイズは頂点サイズ
 		vertexBufferView_.StrideInBytes = sizeof(MagMath::VertexData);								   // 1頂点あたりのサイズ
 		//========================================
 		// 頂点リソースにデータを書き込む
 		MagMath::VertexData *vertexData = nullptr;
-		vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &vertexData ));
+		if(FAILED(vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData))) || !vertexData) {
+			throw std::runtime_error("cannot map vertex buffer");
+		}
 		std::memcpy(vertexData, modelData_.vertices.data(), sizeof(MagMath::VertexData) * modelData_.vertices.size());
 	}
 
@@ -246,12 +285,15 @@ namespace MagEngine {
 	///						 マテリアルデータの作成
 	void Model::CreateMaterialBuffer() {
 		materialBuffer_ = modelSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::Material));
+		if(!materialBuffer_) { throw std::runtime_error("cannot create material buffer"); }
 		// マテリアルデータ
 		materialData_ = nullptr;
 		// マテリアルデータ書き込み用変数
 		MagMath::Material material = { {1.0f, 1.0f, 1.0f, 1.0f}, true };
 		// 書き込むためのアドレス取得
-		materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &materialData_ ));
+		if(FAILED(materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&materialData_))) || !materialData_) {
+			throw std::runtime_error("cannot map material buffer");
+		}
 		// 今回は赤を書き込む
 		*materialData_ = material;
 		materialData_->uvTransform = MagMath::Identity4x4();

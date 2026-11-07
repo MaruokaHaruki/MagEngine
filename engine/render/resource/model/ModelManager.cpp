@@ -7,6 +7,7 @@
  * \note
  *********************************************************************/
 #include "ModelManager.h"
+#include <stdexcept>
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
@@ -38,6 +39,7 @@ namespace MagEngine {
 
 		//========================================
 		// モデルの生成とファイル読み込み、初期化
+		if(!modelSetup_) { throw std::runtime_error("Model " + filePath + ": manager is not initialized"); }
 		std::unique_ptr<Model> model = std::make_unique<Model>();
 		model->Initialize(modelSetup_.get(), "resources/model", filePath);
 

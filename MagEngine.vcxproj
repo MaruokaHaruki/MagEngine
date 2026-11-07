@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -11,433 +11,47 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCProjectVersion>17.0</VCProjectVersion>
-    <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{6b9b221f-140b-47a0-91c7-8c8bd3eb71dc}</ProjectGuid>
-    <RootNamespace>MagEngine</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectGuid>{9C24208D-197B-4A5D-9A89-0997E9CF9A26}</ProjectGuid>
     <ProjectName>MagEngine</ProjectName>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)'!='Debug'">false</UseDebugLibraries>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings"></ImportGroup>
-  <ImportGroup Label="Shared"></ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)externals\imgui;$(IncludePath)</IncludePath>
-    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IntDir>$(SolutionDir)..\generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)..\generated\outputs\$(Configuration)\</OutDir>
+  <Import Project="msbuild\EngineSettings.props" />
+  <ItemGroup>
+    <ClCompile Include="engine\**\*.cpp" />
+    <ClInclude Include="engine\**\*.h" />
+  </ItemGroup>
+  <!-- NOTE: ImGuiは別プロジェクトを作らず、外部ソースをそのまま利用する。 -->
+  <ItemGroup>
+    <ClCompile Include="externals\imgui\imgui.cpp"><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+    <ClCompile Include="externals\imgui\imgui_demo.cpp"><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+    <ClCompile Include="externals\imgui\imgui_draw.cpp"><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+    <ClCompile Include="externals\imgui\imgui_tables.cpp"><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+    <ClCompile Include="externals\imgui\imgui_widgets.cpp"><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp"><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp"><TreatWarningAsError>false</TreatWarningAsError></ClCompile>
+  </ItemGroup>
+  <!-- NOTE: 外部依存はソリューションに追加せず、x64を明示してビルドする。 -->
+  <PropertyGroup>
+    <DirectXTexOutputDir>$(ProjectDir)..\generated\dependencies\DirectXTex\$(Configuration)\</DirectXTexOutputDir>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)externals\imgui;$(IncludePath)</IncludePath>
-    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IntDir>$(SolutionDir)..\generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)..\generated\outputs\$(Configuration)\</OutDir>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine/render;$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/core/directXCore;$(ProjectDir)engine/base/core/directXCore/graphicsDevice;$(ProjectDir)engine/base/imGui;$(ProjectDir)engine/base/levelDataLoader;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)application;$(ProjectDir)application/enemy;$(ProjectDir)application/enemy/base;$(ProjectDir)application/enemy/manager;$(ProjectDir)application/enemy/type;$(ProjectDir)application/enemy/config;$(ProjectDir)application/enemy/config/data;$(ProjectDir)application/collision;$(ProjectDir)application/player;$(ProjectDir)application/player/bullet;$(ProjectDir)application/player/missile;$(ProjectDir)application/player/component;$(ProjectDir)application/ui;$(ProjectDir)application/utils;$(ProjectDir)engine/math/structure/drawData;%(AdditionalIncludeDirectories);$(ProjectDir)engine/render/pipeline;$(ProjectDir)engine/render/graph;$(ProjectDir)engine/render/pass;$(ProjectDir)engine/render/resource;$(ProjectDir)engine/render/resource/texture;$(ProjectDir)engine/render/resource/model;$(ProjectDir)engine/render/post_effect;$(ProjectDir)engine/render/post_effect/fullscreenPass;$(ProjectDir)engine/render/post_effect/grayscale;$(ProjectDir)engine/graphics;$(ProjectDir)engine/graphics/sprite;$(ProjectDir)engine/graphics/particle;$(ProjectDir)engine/graphics/object3d;$(ProjectDir)engine/graphics/skybox;$(ProjectDir)engine/graphics/cloud;$(ProjectDir)engine/graphics/trail;$(ProjectDir)engine/graphics/line;$(ProjectDir)engine/debug;$(ProjectDir)engine/collision;$(ProjectDir)engine/integration</AdditionalIncludeDirectories>
-      <TreatWarningAsError>true</TreatWarningAsError>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)externals/assimp/lib/Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-    <PostBuildEvent>
-      <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"</Command>
-    </PostBuildEvent>
+  <ItemDefinitionGroup>
+    <Lib>
+      <AdditionalDependencies>$(DirectXTexOutputDir)DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir)engine/render;$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/core/directXCore;$(ProjectDir)engine/base/core/directXCore/graphicsDevice;$(ProjectDir)engine/base/imGui;$(ProjectDir)engine/base/levelDataLoader;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)scene;$(ProjectDir)scene/base;$(ProjectDir)scene/privateScene;$(ProjectDir)scene/publicScene;$(ProjectDir)application;$(ProjectDir)application/enemy;$(ProjectDir)application/enemy/base;$(ProjectDir)application/enemy/manager;$(ProjectDir)application/enemy/type;$(ProjectDir)application/enemy/config;$(ProjectDir)application/enemy/config/data;$(ProjectDir)application/collision;$(ProjectDir)application/player;$(ProjectDir)application/player/bullet;$(ProjectDir)application/player/missile;$(ProjectDir)application/player/component;$(ProjectDir)application/ui;$(ProjectDir)application/utils;$(ProjectDir)engine/math/structure/drawData;%(AdditionalIncludeDirectories);$(ProjectDir)engine/render/pipeline;$(ProjectDir)engine/render/graph;$(ProjectDir)engine/render/pass;$(ProjectDir)engine/render/resource;$(ProjectDir)engine/render/resource/texture;$(ProjectDir)engine/render/resource/model;$(ProjectDir)engine/render/post_effect;$(ProjectDir)engine/render/post_effect/fullscreenPass;$(ProjectDir)engine/render/post_effect/grayscale;$(ProjectDir)engine/graphics;$(ProjectDir)engine/graphics/sprite;$(ProjectDir)engine/graphics/particle;$(ProjectDir)engine/graphics/object3d;$(ProjectDir)engine/graphics/skybox;$(ProjectDir)engine/graphics/cloud;$(ProjectDir)engine/graphics/trail;$(ProjectDir)engine/graphics/line;$(ProjectDir)engine/debug;$(ProjectDir)engine/collision;$(ProjectDir)engine/integration</AdditionalIncludeDirectories>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
-      <AdditionalLibraryDirectories>$(ProjectDir)externals/assimp/lib/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-    <PostBuildEvent>
-      <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"</Command>
-    </PostBuildEvent>
-  </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="application\collision\Collider.cpp" />
-    <ClCompile Include="application\collision\CollisionManager.cpp" />
-    <ClCompile Include="application\collision\BaseObject.cpp" />
-	<ClCompile Include="application\gameplay\GamePlayDebugController.cpp" />
-	<ClCompile Include="application\gameplay\GamePlayCollisionCoordinator.cpp" />
-    <ClCompile Include="application\enemy\config\ConfigLoader.cpp" />
-    <ClCompile Include="application\enemy\config\EnemyParamConfig.cpp" />
-    <ClCompile Include="application\enemy\config\FormationConfig.cpp" />
-    <ClCompile Include="application\enemy\manager\EnemyManager.cpp" />
-    <ClCompile Include="application\enemy\base\EnemyBase.cpp" />
-    <ClCompile Include="application\enemy\type\Enemy.cpp" />
-    <ClCompile Include="application\enemy\type\EnemyBullet.cpp" />
-    <ClCompile Include="application\enemy\type\EnemyGunner.cpp" />
-    <ClCompile Include="application\enemy\manager\EnemyGroup.cpp" />
-    <ClCompile Include="application\enemy\stage\EnemyStageSystem.cpp" />
-    <ClCompile Include="application\player\component\PlayerLockedOnComponent.cpp" />
-    <ClCompile Include="application\ui\MenuUI.cpp" />
-    <ClCompile Include="engine\graphics\cloud\Cloud.cpp" />
-    <ClCompile Include="engine\graphics\cloud\CloudSetup.cpp" />
-    <ClCompile Include="engine\base\imGui\DebugTextManager.cpp" />
-    <ClCompile Include="engine\graphics\particle\Particle.cpp" />
-    <ClCompile Include="engine\graphics\particle\ParticleEmitter.cpp" />
-    <ClCompile Include="engine\graphics\particle\ParticleSetup.cpp" />
-    <ClCompile Include="engine\graphics\line\Line.cpp" />
-    <ClCompile Include="engine\graphics\line\LineSetup.cpp" />
-    <ClCompile Include="engine\graphics\line\LineManager.cpp" />
-    <ClCompile Include="engine\base\imGui\EditorUiSystem.cpp" />
-    <ClCompile Include="externals\imgui\imgui.cpp" />
-    <ClCompile Include="externals\imgui\imgui_demo.cpp" />
-    <ClCompile Include="externals\imgui\imgui_draw.cpp" />
-    <ClCompile Include="externals\imgui\imgui_impl_dx12.cpp" />
-    <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
-    <ClCompile Include="externals\imgui\imgui_tables.cpp" />
-    <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="engine\base\levelDataLoader\LevelDataLoader.cpp" />
-    <ClCompile Include="engine\light\LightManager.cpp" />
-    <ClCompile Include="application\player\Player.cpp" />
-    <ClCompile Include="application\player\bullet\PlayerBullet.cpp" />
-    <ClCompile Include="application\player\missile\PlayerMissile.cpp" />
-    <ClCompile Include="application\utils\FollowCamera.cpp" />
-    <ClCompile Include="engine\render\post_effect\grayscale\GrayscaleEffect.cpp" />
-    <ClCompile Include="engine\render\post_effect\PostEffectManager.cpp" />
-    <ClCompile Include="engine\render\post_effect\fullscreenPass\FullscreenPassRendere.cpp" />
-    <ClCompile Include="application\ui\HUD.cpp" />
-    <ClCompile Include="application\SceneTransition.cpp" />
-    <ClCompile Include="application\ui\GameOverUI.cpp" />
-    <ClCompile Include="application\GameClearAnimation.cpp" />
-    <ClCompile Include="application\GameOverAnimation.cpp" />
-    <ClCompile Include="application\player\component\PlayerCombatComponent.cpp" />
-    <ClCompile Include="application\player\component\PlayerMovementComponent.cpp" />
-    <ClCompile Include="application\player\component\PlayerHealthComponent.cpp" />
-    <ClCompile Include="application\player\component\PlayerDefeatComponent.cpp" />
-    <ClCompile Include="application\player\component\PlayerJustAvoidanceComponent.cpp" />
-    <ClCompile Include="application\ui\OperationGuideUI.cpp" />
-    <ClCompile Include="application\ui\LockOnHUD.cpp" />
-    <ClCompile Include="engine\integration\MagVoiceBridge.cpp" />
-    <ClCompile Include="scene\base\SceneFactory.cpp" />
-    <ClCompile Include="scene\publicScene\ClearScene.cpp" />
-    <ClCompile Include="scene\privateScene\DebugScene.cpp" />
-    <ClCompile Include="engine\camera\CameraManager.cpp" />
-    <ClCompile Include="engine\audio\MAudioG.cpp" />
-    <ClCompile Include="engine\base\core\DescriptorAllocator.cpp" />
-    <ClCompile Include="engine\base\core\FrameContext.cpp" />
-    <ClCompile Include="engine\base\core\SrvSetup.cpp" />
-    <ClCompile Include="engine\render\pass\CloudRenderPass.cpp" />
-    <ClCompile Include="engine\render\pass\LineRenderPass.cpp" />
-    <ClCompile Include="engine\render\pass\OpaqueRenderPass.cpp" />
-    <ClCompile Include="engine\render\pass\ParticleRenderPass.cpp" />
-    <ClCompile Include="engine\render\pipeline\PipelineBuilder.cpp" />
-    <ClCompile Include="engine\render\pipeline\PipelineRecipe.cpp" />
-    <ClCompile Include="engine\render\pass\PostEffectRenderPass.cpp" />
-    <ClCompile Include="engine\render\graph\RenderBarrierRecorder.cpp" />
-    <ClCompile Include="engine\render\Renderer.cpp" />
-    <ClCompile Include="engine\render\graph\RenderGraph.cpp" />
-    <ClCompile Include="engine\render\graph\RenderTransitionExecutor.cpp" />
-    <ClCompile Include="engine\render\pass\RenderWorld.cpp" />
-    <ClCompile Include="engine\render\pass\SkyboxRenderPass.cpp" />
-    <ClCompile Include="engine\render\pass\SpriteRenderPass.cpp" />
-    <ClCompile Include="engine\render\pass\TextRenderPass.cpp" />
-    <ClCompile Include="engine\render\pass\TrailRenderPass.cpp" />
-    <ClCompile Include="engine\camera\Camera.cpp" />
-    <ClCompile Include="engine\base\core\DirectXCore.cpp" />
-    <ClCompile Include="engine\utils\WstringUtility.cpp" />
-    <ClCompile Include="engine\utils\Logger.cpp" />
-    <ClCompile Include="engine\input\Input.cpp" />
-    <ClCompile Include="engine\base\imGui\ImguiSetup.cpp" />
-    <ClCompile Include="scene\base\SceneManager.cpp" />
-    <ClCompile Include="scene\base\BaseScene.cpp" />
-    <ClCompile Include="scene\publicScene\GamePlayScene.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="engine\base\core\WinApp.cpp" />
-    <ClCompile Include="engine\graphics\sprite\SpriteSetup.cpp" />
-    <ClCompile Include="engine\graphics\sprite\Sprite.cpp" />
-    <ClCompile Include="engine\graphics\text\TextRenderer.cpp" />
-    <ClCompile Include="engine\render\resource\texture\TextureManager.cpp" />
-    <ClCompile Include="engine\graphics\object3d\Object3dSetup.cpp" />
-    <ClCompile Include="engine\graphics\object3d\Object3d.cpp" />
-    <ClCompile Include="engine\render\resource\model\Model.cpp" />
-    <ClCompile Include="engine\render\resource\model\ModelSetup.cpp" />
-    <ClCompile Include="engine\render\resource\model\ModelManager.cpp" />
-    <ClCompile Include="engine\base\framework\EngineApp.cpp" />
-    <ClCompile Include="engine\base\framework\MagFramework.cpp" />
-    <ClCompile Include="scene\publicScene\TitleScene.cpp" />
-    <ClCompile Include="application\utils\Skydome.cpp" />
-    <ClCompile Include="engine\graphics\skybox\Skybox.cpp" />
-    <ClCompile Include="engine\graphics\skybox\SkyboxSetup.cpp" />
-    <ClCompile Include="application\utils\TitleCamera.cpp" />
-    <ClCompile Include="application\StartAnimation.cpp" />
-    <ClCompile Include="engine\render\post_effect\Vignetting.cpp" />
-    <ClCompile Include="application\ui\UIManager.cpp" />
-    <ClCompile Include="engine\graphics\trail\TrailEffect.cpp" />
-    <ClCompile Include="engine\graphics\trail\TrailEffectSetup.cpp" />
-    <ClCompile Include="engine\graphics\trail\TrailEffectPreset.cpp" />
-    <ClCompile Include="engine\graphics\trail\TrailEffectManager.cpp" />
-    <ClCompile Include="engine\graphics\trail\TrailEmitter.cpp" />
-    <ClCompile Include="application\player\config\PlayerConfigLoader.cpp" />
-    <ClCompile Include="engine\graphics\trail\TrailEffectLibrary.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="application\enemy\config\ConfigLoader.h" />
-    <ClInclude Include="application\enemy\config\EnemyParamConfig.h" />
-    <ClInclude Include="application\enemy\config\FormationConfig.h" />
-    <ClInclude Include="application\enemy\manager\EnemyManager.h" />
-	<ClInclude Include="application\enemy\manager\EnemyHandle.h" />
-    <ClInclude Include="application\enemy\base\EnemyBase.h" />
-    <ClInclude Include="application\enemy\type\Enemy.h" />
-    <ClInclude Include="application\enemy\type\EnemyBullet.h" />
-    <ClInclude Include="application\enemy\type\EnemyGunner.h" />
-    <ClInclude Include="application\enemy\manager\EnemyGroup.h" />
-    <ClInclude Include="application\enemy\stage\EnemyStageSystem.h" />
-    <ClInclude Include="application\player\component\PlayerLockedOnComponent.h" />
-    <ClInclude Include="application\ui\MenuUI.h" />
-    <ClInclude Include="engine\graphics\cloud\Cloud.h" />
-    <ClInclude Include="engine\graphics\cloud\CloudSetup.h" />
-    <ClInclude Include="engine\base\imGui\DebugTextManager.h" />
-    <ClInclude Include="engine\graphics\particle\Particle.h" />
-    <ClInclude Include="engine\graphics\particle\ParticleEmitter.h" />
-    <ClInclude Include="engine\graphics\particle\ParticleSetup.h" />
-    <ClInclude Include="engine\graphics\line\Line.h" />
-    <ClInclude Include="engine\graphics\line\LineSetup.h" />
-    <ClInclude Include="engine\graphics\line\LineManager.h" />
-    <ClInclude Include="engine\graphics\line\LineStyle.h" />
-    <ClInclude Include="engine\base\imGui\EditorUiSystem.h" />
-    <ClInclude Include="engine\math\MagMath.h" />
-    <ClInclude Include="engine\math\structure\GraphicsStructures.h" />
-    <ClInclude Include="engine\math\structure\MathStructures.h" />
-    <ClInclude Include="externals\imgui\imconfig.h" />
-    <ClInclude Include="externals\imgui\imgui.h" />
-    <ClInclude Include="externals\imgui\imgui_impl_dx12.h" />
-    <ClInclude Include="externals\imgui\imgui_impl_win32.h" />
-    <ClInclude Include="externals\imgui\imgui_internal.h" />
-    <ClInclude Include="externals\imgui\imstb_rectpack.h" />
-    <ClInclude Include="externals\imgui\imstb_textedit.h" />
-    <ClInclude Include="externals\imgui\imstb_truetype.h" />
-    <ClInclude Include="externals\json.hpp" />
-    <ClInclude Include="engine\base\levelDataLoader\LevelDataLoader.h" />
-    <ClInclude Include="engine\light\LightManager.h" />
-    <ClInclude Include="application\player\Player.h" />
-    <ClInclude Include="application\player\bullet\PlayerBullet.h" />
-    <ClInclude Include="application\player\missile\PlayerMissile.h" />
-    <ClInclude Include="application\utils\FollowCamera.h" />
-    <ClInclude Include="engine\render\post_effect\grayscale\GrayscaleEffect.h" />
-    <ClInclude Include="engine\render\post_effect\PostEffectParameterSet.h" />
-    <ClInclude Include="engine\render\post_effect\PostEffectManager.h" />
-    <ClInclude Include="engine\render\post_effect\fullscreenPass\FullscreenPassRendere.h" />
-    <ClInclude Include="application\ui\HUD.h" />
-    <ClInclude Include="engine\base\time\FrameTime.h" />
-    <ClInclude Include="application\SceneTransition.h" />
-    <ClInclude Include="application\ui\GameOverUI.h" />
-    <ClInclude Include="application\GameClearAnimation.h" />
-    <ClInclude Include="application\GameOverAnimation.h" />
-    <ClInclude Include="application\player\component\PlayerCombatComponent.h" />
-    <ClInclude Include="application\player\component\PlayerHealthComponent.h" />
-    <ClInclude Include="application\player\component\PlayerMovementComponent.h" />
-    <ClInclude Include="application\player\component\PlayerDefeatComponent.h" />
-    <ClInclude Include="application\player\component\PlayerJustAvoidanceComponent.h" />
-    <ClInclude Include="application\ui\OperationGuideUI.h" />
-    <ClInclude Include="application\ui\LockOnHUD.h" />
-    <ClInclude Include="engine\integration\MagVoiceBridge.h" />
-    <ClInclude Include="scene\base\AbstractSceneFactory.h" />
-    <ClInclude Include="application\collision\Collider.h" />
-    <ClInclude Include="application\collision\CollisionManager.h" />
-    <ClInclude Include="application\collision\BaseObject.h" />
-    <ClInclude Include="scene\base\SceneFactory.h" />
-    <ClInclude Include="scene\publicScene\ClearScene.h" />
-    <ClInclude Include="scene\privateScene\DebugScene.h" />
-    <ClInclude Include="engine\camera\CameraManager.h" />
-    <ClInclude Include="engine\audio\MAudioG.h" />
-    <ClInclude Include="engine\base\core\DescriptorAllocator.h" />
-    <ClInclude Include="engine\base\core\DescriptorHandle.h" />
-    <ClInclude Include="engine\base\core\FrameContext.h" />
-    <ClInclude Include="engine\base\core\SrvSetup.h" />
-    <ClInclude Include="engine\render\pass\CloudRenderPass.h" />
-    <ClInclude Include="engine\render\pass\IRenderPass.h" />
-    <ClInclude Include="engine\render\pass\LineRenderPass.h" />
-    <ClInclude Include="engine\render\pass\OpaqueRenderPass.h" />
-    <ClInclude Include="engine\render\pass\ParticleRenderPass.h" />
-    <ClInclude Include="engine\render\pipeline\PipelineBuilder.h" />
-    <ClInclude Include="engine\render\pipeline\PipelineRecipe.h" />
-    <ClInclude Include="engine\render\pass\PostEffectRenderPass.h" />
-    <ClInclude Include="engine\render\graph\RenderBarrierRecorder.h" />
-    <ClInclude Include="engine\render\Renderer.h" />
-    <ClInclude Include="engine\render\pass\RenderContext.h" />
-    <ClInclude Include="engine\render\graph\RenderGraph.h" />
-    <ClInclude Include="engine\render\graph\RenderTransitionExecutor.h" />
-    <ClInclude Include="engine\render\pass\RenderWorld.h" />
-    <ClInclude Include="engine\render\pass\SkyboxRenderPass.h" />
-    <ClInclude Include="engine\render\pass\SpriteRenderPass.h" />
-    <ClInclude Include="engine\render\pass\TextRenderPass.h" />
-    <ClInclude Include="engine\render\pass\TrailRenderPass.h" />
-    <ClInclude Include="engine\camera\Camera.h" />
-    <ClInclude Include="engine\base\core\DirectXCore.h" />
-    <ClInclude Include="engine\utils\WstringUtility.h" />
-    <ClInclude Include="engine\utils\Logger.h" />
-    <ClInclude Include="engine\input\Input.h" />
-    <ClInclude Include="engine\math\operations\MathFunc4x4.h" />
-    <ClInclude Include="engine\math\structure\graphics\Light.h" />
-    <ClInclude Include="engine\math\structure\graphics\Material.h" />
-    <ClInclude Include="engine\math\structure\graphics\MaterialData.h" />
-    <ClInclude Include="engine\graphics\text\TextRenderer.h" />
-    <ClInclude Include="engine\math\structure\graphics\ModelData.h" />
-    <ClInclude Include="engine\math\structure\graphics\TransformationMatrix.h" />
-    <ClInclude Include="engine\math\structure\graphics\VertexData.h" />
-    <ClInclude Include="engine\math\structure\common\Matrix4x4.h" />
-    <ClInclude Include="engine\math\structure\common\Transform.h" />
-    <ClInclude Include="engine\math\structure\common\Vector3.h" />
-    <ClInclude Include="engine\math\structure\common\Vector4.h" />
-    <ClInclude Include="engine\math\operations\AffineTransformations.h" />
-    <ClInclude Include="engine\math\operations\RenderingMatrices.h" />
-    <ClInclude Include="engine\math\structure\common\Matrix3x3.h" />
-    <ClInclude Include="engine\base\core\WinApp.h" />
-    <ClInclude Include="engine\graphics\sprite\SpriteSetup.h" />
-    <ClInclude Include="engine\graphics\sprite\Sprite.h" />
-    <ClInclude Include="engine\graphics\sprite\SpriteRenderMode.h" />
-    <ClInclude Include="engine\math\structure\common\Vector2.h" />
-    <ClInclude Include="engine\render\resource\texture\TextureManager.h" />
-    <ClInclude Include="engine\graphics\object3d\Object3dSetup.h" />
-    <ClInclude Include="engine\graphics\object3d\Object3d.h" />
-    <ClInclude Include="engine\render\resource\model\Model.h" />
-    <ClInclude Include="engine\render\resource\model\ModelSetup.h" />
-    <ClInclude Include="engine\render\resource\model\ModelManager.h" />
-    <ClInclude Include="engine\base\imGui\ImguiSetup.h" />
-    <ClInclude Include="engine\base\framework\EngineApp.h" />
-    <ClInclude Include="engine\base\framework\EngineContext.h" />
-    <ClInclude Include="engine\base\framework\MagFramework.h" />
-    <ClInclude Include="scene\base\SceneManager.h" />
-    <ClInclude Include="scene\base\BaseScene.h" />
-    <ClInclude Include="scene\publicScene\GamePlayScene.h" />
-	<ClInclude Include="application\gameplay\GamePlayDebugController.h" />
-	<ClInclude Include="application\gameplay\GamePlayCollisionCoordinator.h" />
-    <ClInclude Include="scene\publicScene\TitleScene.h" />
-    <ClInclude Include="application\utils\Skydome.h" />
-    <ClInclude Include="engine\graphics\skybox\Skybox.h" />
-    <ClInclude Include="engine\graphics\skybox\SkyboxSetup.h" />
-    <ClInclude Include="application\utils\TitleCamera.h" />
-    <ClInclude Include="application\StartAnimation.h" />
-    <ClInclude Include="engine\render\post_effect\Vignetting.h" />
-    <ClInclude Include="application\ui\UIManager.h" />
-    <ClInclude Include="engine\graphics\trail\TrailEffect.h" />
-    <ClInclude Include="engine\graphics\trail\TrailEffectSetup.h" />
-    <ClInclude Include="engine\graphics\trail\TrailEffectPreset.h" />
-    <ClInclude Include="engine\graphics\trail\TrailEffectManager.h" />
-    <ClInclude Include="engine\graphics\trail\TrailEmitter.h" />
-    <ClInclude Include="application\player\config\PlayerConfigLoader.h" />
-    <ClInclude Include="application\player\PlayerConstants.h" />
-    <ClInclude Include="application\player\ResourcePaths.h" />
-    <ClInclude Include="application\player\MathUtility.h" />
-    <ClInclude Include="engine\graphics\particle\ParticlePreset.h" />
-    <ClInclude Include="engine\graphics\trail\TrailEffectLibrary.h" />
-    <ClInclude Include="engine\math\MathConstants.h" />
-    <ClInclude Include="scene\base\SceneContext.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".editorconfig" />
-    <None Include="externals\imgui\.editorconfig" />
-    <None Include="externals\imgui\.gitattributes" />
-    <None Include="externals\imgui\.gitignore" />
-    <None Include="docs\ANALYSIS_REPORT.md" />
-    <None Include="docs\MagVoiceBridge_Usage.md" />
-    <None Include="README.md" />
-    <None Include="resources\config\enemy\enemies.json" />
-    <None Include="resources\config\enemy\formations.json" />
-    <None Include="resources\config\stage\stage_01.json" />
-    <None Include="resources\config\player\player_config.json" />
-    <None Include="resources\config\player\PROJECT_COMPLETION_REPORT.md" />
-    <None Include="resources\config\player\README.md" />
-    <None Include="resources\levels\test.json" />
-    <None Include="resources\shader\Cloud.hlsli" />
-    <None Include="resources\shader\Cloud.PS.hlsl" />
-    <None Include="resources\shader\Cloud.VS.hlsl" />
-    <None Include="resources\shader\CloudBulletHole.hlsli" />
-    <None Include="resources\shader\CRT.PS.hlsl" />
-    <None Include="resources\shader\FullScreen.hlsli" />
-    <None Include="resources\shader\FullScreen.PS.hlsl" />
-    <None Include="resources\shader\FullScreen.VS.hlsl" />
-    <None Include="resources\shader\Grayscale.PS.hlsl" />
-    <None Include="resources\shader\Line.hlsli" />
-    <None Include="resources\shader\Line.PS.hlsl" />
-    <None Include="resources\shader\Line.VS.hlsl" />
-    <None Include="resources\shader\Object3d.hlsli" />
-    <None Include="resources\shader\Object3d.PS.hlsl" />
-    <None Include="resources\shader\Object3d.VS.hlsl" />
-    <None Include="resources\shader\OPTIMIZATION_NOTES.md" />
-    <None Include="resources\shader\Particle.hlsli" />
-    <None Include="resources\shader\Particle.PS.hlsl" />
-    <None Include="resources\shader\Particle.VS.hlsl" />
-    <None Include="resources\shader\Skybox.hlsli" />
-    <None Include="resources\shader\Skybox.PS.hlsl" />
-    <None Include="resources\shader\Skybox.VS.hlsl" />
-    <None Include="resources\shader\Sprite.hlsli" />
-    <None Include="resources\shader\Sprite.PS.hlsl" />
-    <None Include="resources\shader\Sprite.VS.hlsl" />
-    <None Include="resources\shader\Trail.hlsli" />
-    <None Include="resources\shader\Trail.PS.hlsl" />
-    <None Include="resources\shader\Trail.VS.hlsl" />
-    <None Include="resources\shader\Vignetting.hlsl" />
-    <None Include="resources\trail\test_preset.json" />
-    <None Include="tests\RenderValidationTests.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
-      <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
-    </ProjectReference>
-    <ProjectReference Include="externals\imgui\imgui.vcxproj">
-      <Project>{52140c89-8a1e-4b13-ac4b-c6c98a61c00f}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="externals\imgui\LICENSE.txt" />
-  </ItemGroup>
+  <Target Name="BuildDirectXTex" BeforeTargets="PrepareForBuild">
+    <MSBuild Projects="$(ProjectDir)externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=x64;SolutionDir=$(ProjectDir);OutDir=$(DirectXTexOutputDir)" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets"></ImportGroup>
 </Project>

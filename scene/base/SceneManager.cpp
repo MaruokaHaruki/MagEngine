@@ -88,6 +88,13 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 ///=============================================================================
 /// 終了処理
 void SceneManager::Finalize() {
+	// NOTE: SceneとManagerを破棄する前に、それらを参照するUIのコールバックを解除する。
+#ifdef _DEBUG
+	if (engineContext_ && engineContext_->editorUiSystem) {
+		engineContext_->editorUiSystem->ClearScenePanels();
+		engineContext_->editorUiSystem->UnregisterPanel("Scene Switcher");
+	}
+#endif // _DEBUG
 	if (engineContext_ && engineContext_->graphics) {
 		engineContext_->graphics->WaitForGpuIdle();
 	}

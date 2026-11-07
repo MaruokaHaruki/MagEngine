@@ -2,6 +2,7 @@
 #include "ParticleEmitter.h"
 #include <cmath>
 #include <random>
+#include <stdexcept>
 #define _USE_MATH_DEFINES
 #include <math.h>
 ///=============================================================================
@@ -9,12 +10,21 @@
 namespace MagEngine {
 	ParticleEmitter::ParticleEmitter(Particle *particle, const std::string &name, const MagMath::Transform &transform, uint32_t count, float frequency, bool repeat)
 		: particle_(particle), name_(name), transform_(transform), count_(count), frequency_(frequency), elapsedTime_(frequency), repeat_(repeat) {
-		Emit(); // 初期化時に即時発生
+		if(!particle_) { throw std::invalid_argument("ParticleEmitter " + name_ + ": particle must not be null"); }
+		if(!std::isfinite(frequency_) || frequency_ <= 0.0f) {
+			Logger::Log("ParticleEmitter " + name_ + ": invalid frequency; repeat disabled.", Logger::LogLevel::Error);
+			repeat_ = false;
+		}
+		Emit(); // 既存の生成時即時発生を維持する
 	}
 
 	void ParticleEmitter::Update(float deltaTime) {
-		// COMMENT: パーティクルの更新 (GPU インスタンシング時にはスキップ可能)
-		particle_->Update();
+		// NOTE: 共有Particleの更新は所有側のSceneに限定し、Emitterの数で時間を進めない。
+		if(!std::isfinite(deltaTime) || deltaTime < 0.0f) {
+			Logger::Log("ParticleEmitter " + name_ + ": invalid deltaTime; update skipped.", Logger::LogLevel::Error);
+			return;
+		}
+		if(deltaTime == 0.0f || !std::isfinite(frequency_) || frequency_ <= 0.0f) { return; }
 
 		if(!repeat_)
 			return; // 繰り返しフラグがfalseの場合は処理をスキップ

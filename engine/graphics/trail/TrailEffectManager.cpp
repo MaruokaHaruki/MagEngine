@@ -95,7 +95,7 @@ namespace MagEngine {
 					newPreset.name = presetNameBuffer_;
 					RegisterPreset(newPreset);
 					// 作成後、メインファイルに保存
-					SaveAllPresetsToJson("resources/trail/test_preset.json");
+					if (!presetFilePath_.empty()) { SaveAllPresetsToJson(presetFilePath_); }
 					Log("Preset created and saved: " + newPreset.name, LogLevel::Success);
 					memset(presetNameBuffer_, 0, sizeof(presetNameBuffer_));
 				}
@@ -136,7 +136,7 @@ namespace MagEngine {
 							copy.name = presetName + "_copy";
 							RegisterPreset(copy);
 							// 複製後、メインファイルに保存
-							SaveAllPresetsToJson("resources/trail/test_preset.json");
+							if (!presetFilePath_.empty()) { SaveAllPresetsToJson(presetFilePath_); }
 							Log("Preset duplicated and saved: " + copy.name, LogLevel::Success);
 						}
 					}
@@ -149,7 +149,7 @@ namespace MagEngine {
 							editingPresetName_ = "";
 						}
 						// 削除後、メインファイルに保存
-						SaveAllPresetsToJson("resources/trail/test_preset.json");
+						if (!presetFilePath_.empty()) { SaveAllPresetsToJson(presetFilePath_); }
 						Log("Preset deleted and saved", LogLevel::Success);
 					}
 					ImGui::TreePop();
@@ -192,7 +192,7 @@ namespace MagEngine {
 						editingPresetName_ = newName;
 						editingPresetCopy_ = preset;
 						// 名前変更後、メインファイルに保存
-						SaveAllPresetsToJson("resources/trail/test_preset.json");
+						if (!presetFilePath_.empty()) { SaveAllPresetsToJson(presetFilePath_); }
 						Log("Preset renamed and saved: " + newName, LogLevel::Success);
 						memset(renamingBuffer, 0, sizeof(renamingBuffer));
 					}
@@ -313,7 +313,7 @@ namespace MagEngine {
 			if (ImGui::Button("Save Preset", ImVec2(150, 0))) {
 				UpdatePreset(editingPresetName_, editingPresetCopy_);
 				// メモリに確定後、すぐにメインファイルに保存
-				SaveAllPresetsToJson("resources/trail/test_preset.json");
+				if (!presetFilePath_.empty()) { SaveAllPresetsToJson(presetFilePath_); }
 				Log("Preset updated and saved: " + editingPresetName_, LogLevel::Success);
 			}
 			ImGui::SameLine();
@@ -328,7 +328,7 @@ namespace MagEngine {
 
 		//========================================
 		// JSON状態表示
-		ImGui::Text("Main Preset File: resources/trail/test_preset.json");
+		ImGui::Text("Main Preset File: %s", presetFilePath_.empty() ? "(not configured)" : presetFilePath_.c_str());
 		ImGui::Text("(Changes are auto-saved to this file)");
 
 		ImGui::Separator();
@@ -826,6 +826,7 @@ namespace MagEngine {
 			}
 
 			Log("All presets loaded from JSON: " + filePath, LogLevel::Success);
+			presetFilePath_ = filePath;
 			return true;
 		} catch (const std::exception &e) {
 			Log(std::string("JSON load error: ") + e.what(), LogLevel::Error);

@@ -8,8 +8,9 @@
  *********************************************************************/
 #pragma once
 #include <chrono>
+#include "engine/base/time/FrameTime.h"
 //========================================
-// COMMENT: リリースビルド時に ImGui を完全に除外する
+// NOTE: ReleaseではEditor UIを生成・描画しない。共有コードのImGuiリンクは残す。
 #ifdef _DEBUG
 #define ENABLE_IMGUI 1
 #else
@@ -37,8 +38,6 @@
 #include "MAudioG.h"
 #include "ModelManager.h"
 #include "PostEffectManager.h"
-#include "SceneFactory.h"
-#include "SceneManager.h"
 #include "TextureManager.h"
 // Setup
 #include "CloudSetup.h"
@@ -70,22 +69,36 @@ namespace MagEngine {
 		/// \brief 更新
 		virtual void Update();
 		/// \brief 描画
-		virtual void Draw() = 0;
+		virtual void Draw();
 		/// \brief 終了処理
 		virtual void Finalize();
 		/// @brief ポストエフェクトのImGui描画
 		void DrawPostEffectImGui();
+
+	protected:
+		///--------------------------------------------------------------
+		/// アプリケーションとの接続
+		/// @brief EngineContext構築後に利用側を初期化する
+		virtual void InitializeApplication() {}
+		/// @brief 入力取得後に利用側を更新する
+		/// @param frameTime 検証済みの経過時間（秒）
+		virtual void UpdateApplication(const FrameTime &frameTime) { (void)frameTime; }
+		/// @brief 利用側の描画対象を登録する
+		/// @note 非所有参照はGPU完了まで有効に保つ。
+		virtual void RegisterApplicationRenderables(RenderWorld &renderWorld) { (void)renderWorld; }
+		/// @brief GPU完了後、Engineサービス破棄前に利用側を終了する
+		virtual void FinalizeApplication() {}
 
 	private:
 		/// @brief EngineContextへ既存サービスの非所有参照を設定
 		void InitializeEngineContext();
 
 		///--------------------------------------------------------------
-		///						 静的メンバ関数
+		///                        描画処理
 	public:
 		/// @brief レンダーテクスチャ前処理
 		void RenderPreDraw();
-		/// @biref レンダーテクスチャ後処理
+		/// @brief レンダーテクスチャ後処理
 		void RenderPostDraw();
 		/// @brief フレームワーク共通後処理
 		void PostDraw();
@@ -125,7 +138,7 @@ namespace MagEngine {
 		std::unique_ptr<DirectXCore> dxCore_;
 		//========================================
 		// ImGui
-		/// COMMENT: リリースビルド（NDEBUG）では ImGui を除外してメモリ節約
+		/// NOTE: ReleaseではEditor UIのインスタンスを生成しない。
 #if ENABLE_IMGUI
 		std::unique_ptr<ImguiSetup> imguiSetup_;
 		std::unique_ptr<EditorUiSystem> editorUiSystem_;
@@ -166,10 +179,6 @@ namespace MagEngine {
 		// マネージャ
 		// ポストエフェクトマネージャ
 		std::unique_ptr<PostEffectManager> postEffectManager_;
-		// シーンマネージャ
-		std::unique_ptr<SceneManager> sceneManager_;
-		// シーンファクトリー
-		std::unique_ptr<SceneFactory> sceneFactory_;
 		// ライトマネージャ
 		std::unique_ptr<LightManager> lightManager_;
 		// トレイルエフェクトマネージャ

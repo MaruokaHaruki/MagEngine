@@ -68,7 +68,7 @@ namespace MagEngine {
 		// インスタンシングリソース
 		Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource = nullptr;
 		// インスタンス数
-		UINT instanceCount = 0;
+		UINT instanceCount = 0; // Updateで再構築し、Drawでは変更しない描画スナップショット
 		// インスタンシングデータを書き込むためのポインタ
 		ParticleForGPU *instancingDataPtr = nullptr;
 
@@ -88,10 +88,12 @@ namespace MagEngine {
 		///							メンバ関数
 	public:
 		/// \brief 初期化
+		/// @note 生成済み資源の再初期化は拒否する。GPUが参照を終えてから所有側が破棄する。
 		void Initialize(ParticleSetup *particleSetup);
 
-		/// \brief 更新
-		void Update();
+		/// \brief 所有側が1フレームに1回更新する。deltaTimeの単位は秒。
+		/// @note 0秒・不正時間（0秒扱い）でも描画データを再構築する。Emitterから共有更新しない。
+		void Update(float deltaTime);
 
 		/// \brief 描画
 		void Draw();
@@ -103,15 +105,16 @@ namespace MagEngine {
 		 * \brief  Emit
 		 * \param  name
 		 * \param  position
-		 * \param  count
+		 * \param  count 今回の追加要求数。残容量まで追加する。未登録名は記録して拒否する。
 		 */
 		void Emit(const std::string name, const MagMath::Vector3 &position, uint32_t count);
 
 		/**----------------------------------------------------------------------------
-		 * \brief  CreateParticleGroup
+		 * \brief  CreateParticleGroup 同名は確保前に拒否し既存グループを維持する。
 		 * \param  name
-		 * \param  materialFilePath
-		 * \param  maxInstanceCount
+		 * \param  textureFilePath 使用するテクスチャ
+		 * \param  shape グループの形状
+		 * \note 資源・容量不足は例外で中断する。呼び出しとGPU資源の寿命は所有側で直列化する。
 		 */
 		void CreateParticleGroup(const std::string &name, const std::string &textureFilePath, ParticleShape shape);
 
@@ -243,6 +246,10 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///						 静的メンバ関数
 	private:
+		friend struct ParticleRegressionTests; // 非公開の状態とCPU更新境界を直接検証するための限定アクセス
+		/// @brief GPU・Window非依存の時間進行と描画スナップショット構築。
+		void UpdateGroups(float deltaTime, const MagMath::Matrix4x4 &billboardMatrix, const MagMath::Matrix4x4 &viewProjectionMatrix);
+
 		/**----------------------------------------------------------------------------
 		 * \brief  CreateVertexData 頂点データの作成
 		 */
@@ -320,8 +327,6 @@ namespace MagEngine {
 		bool isUsedBillboard = false; // デフォルトを false に変更
 		// 最大インスタンス数
 		static const uint32_t kNumMaxInstance = 2048;
-		//
-		const float kDeltaTime = 1.0f / 60.0f;
 		// 乱数範囲の調整用
 		struct RangeForRandom {
 			float min;

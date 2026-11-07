@@ -7,12 +7,19 @@
 #include "MagMath.h"
 #include <cmath>
 #include <numbers>
+#include <algorithm>
+#include <utility>
+#include <stdexcept>
 ///=============================================================================
 ///                        namespace MagEngine
 namespace MagEngine {
 ///=============================================================================
 ///						初期化処理
 	void Particle::Initialize(ParticleSetup *particleSetup) {
+		if(vertexBuffer_ || materialBuffer_) { throw std::runtime_error("Particle::Initialize: already initialized"); }
+		if(!particleSetup || !particleSetup->GetDXManager() || !particleSetup->GetDXManager()->GetDevice()) {
+			throw std::runtime_error("Particle::Initialize: setup/device is not initialized");
+		}
 		//========================================
 		// 引数からSetupを受け取る
 		this->particleSetup_ = particleSetup;
@@ -25,14 +32,18 @@ namespace MagEngine {
 		CreateVertexBufferView();
 		//========================================
 		// 書き込むためのアドレスを取得
-		vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &vertexData_ ));
+		if(FAILED(vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData_))) || !vertexData_) {
+			throw std::runtime_error("Particle::Initialize: cannot map vertex buffer");
+		}
 		// 頂点データをリソースにコピー
 		std::memcpy(vertexData_, modelData_.vertices.data(), sizeof(MagMath::VertexData) * modelData_.vertices.size());
+		// NOTE: グループ追加時に共有マテリアルを置き換え、GPU参照を切らない。
+		CreateMaterialData();
 	}
 
 	///=============================================================================
 	///						更新処理
-	void Particle::Update() {
+	void Particle::Update(float deltaTime) {
 		//========================================
 		// カメラの取得
 		Camera *camera = particleSetup_->GetDefaultCamera();
@@ -62,19 +73,27 @@ namespace MagEngine {
 			billboardMatrix = MagMath::Identity4x4();
 		}
 
-		// スケール調整用の倍率を設定
-		// constexpr float scaleMultiplier = 0.01f; // 必要に応じて調整
+		UpdateGroups(deltaTime, billboardMatrix, viewProjectionMatrix);
+	}
 
+	///--------------------------------------------------------------
+	/// 時間進行と当該フレームの描画データ構築
+	void Particle::UpdateGroups(float deltaTime, const MagMath::Matrix4x4 &billboardMatrix, const MagMath::Matrix4x4 &viewProjectionMatrix) {
+		if(!std::isfinite(deltaTime) || deltaTime < 0.0f) {
+			Logger::Log("Particle::Update: deltaTime must be finite and nonnegative; using zero seconds.", Logger::LogLevel::Error);
+			deltaTime = 0.0f;
+		}
 		//========================================
 		// パーティクルの更新
 		for(auto &group : particleGroups) {
-			// テクスチャサイズの取得
-			MagMath::Vector2 textureSize = group.second.textureSize;
-			// インスタンス数の初期化
+			// NOTE: Drawの有無や0秒更新に依存せず、このフレームのスナップショットを作り直す。
+			group.second.instanceCount = 0;
+			if(group.second.particleList.size() > kNumMaxInstance) { group.second.particleList.resize(kNumMaxInstance); }
 			for(auto it = group.second.particleList.begin(); it != group.second.particleList.end();) {
 				// パーティクルの参照
 				ParticleStr &particle = *it;
-				// パーティクルの寿命が尽きた場合は削除
+				// NOTE: 今回の時間を反映してから寿命を判定し、描画と生存判定を同じ時刻に揃える。
+				particle.currentTime += deltaTime;
 				if(particle.lifeTime <= particle.currentTime) {
 					it = group.second.particleList.erase(it);
 					continue;
@@ -94,12 +113,10 @@ namespace MagEngine {
 				particle.transform.rotate.z = std::lerp(particle.initialRotation.z, particle.endRotation.z, timeRatio);
 
 				// 重力の適用
-				particle.velocity = AddVec3(particle.velocity, MultiplyVec3(kDeltaTime, gravity_));
+				particle.velocity = AddVec3(particle.velocity, MultiplyVec3(deltaTime, gravity_));
 
 				// 位置の更新
-				particle.transform.translate = AddVec3(particle.transform.translate, MultiplyVec3(kDeltaTime, particle.velocity));
-				// 経過時間を更新
-				particle.currentTime += kDeltaTime;
+				particle.transform.translate = AddVec3(particle.transform.translate, MultiplyVec3(deltaTime, particle.velocity));
 				// ワールド行列の計算a
 				MagMath::Matrix4x4 worldMatrix = Multiply4x4(
 					billboardMatrix,
@@ -162,8 +179,6 @@ namespace MagEngine {
 			// Draw Call (インスタンシング描画) - グループごとの頂点数とオフセットを使用
 			commandList->DrawInstanced(group.vertexCount, group.instanceCount, group.vertexOffset, 0);
 
-			// インスタンスカウントをリセット
-			group.instanceCount = 0;
 		}
 	}
 
@@ -190,21 +205,16 @@ namespace MagEngine {
 	///=============================================================================
 	///						エミッター
 	void Particle::Emit(const std::string name, const MagMath::Vector3 &position, uint32_t count) {
-		if(particleGroups.find(name) == particleGroups.end()) {
-			// パーティクルグループが存在しない場合はエラーを出力して終了
-			assert("Specified particle group does not exist!");
-		}
-
-		// 指定されたパーティクルグループが存在する場合、そのグループにパーティクルを追加
-		ParticleGroup &group = particleGroups[name];
-
-		// すでにkNumMaxInstanceに達している場合、新しいパーティクルの追加をスキップする
-		if(group.particleList.size() >= count) {
+		const auto found = particleGroups.find(name);
+		if(found == particleGroups.end()) {
+			Logger::Log("Particle::Emit: group is not registered: " + name, Logger::LogLevel::Error);
 			return;
 		}
-
-		// 指定された数のパーティクルを生成して追加
-		for(uint32_t i = 0; i < count; ++i) {
+		ParticleGroup &group = found->second;
+		const size_t existingCount = group.particleList.size();
+		if(count == 0 || existingCount >= kNumMaxInstance) { return; }
+		const uint32_t addCount = (std::min)(count, kNumMaxInstance - static_cast<uint32_t>(existingCount));
+		for(uint32_t i = 0; i < addCount; ++i) {
 			group.particleList.push_back(CreateNewParticle(randomEngine_, position));
 		}
 	}
@@ -212,20 +222,20 @@ namespace MagEngine {
 	///=============================================================================
 	///						パーティクルグループ
 	void Particle::CreateParticleGroup(const std::string &name, const std::string &textureFilePath, ParticleShape shape) {
-		// 登録済みの名前かチェックして assert
-		bool nameExists = false;
-		for(auto it = particleGroups.begin(); it != particleGroups.end(); ++it) {
-			if(it->second.materialFilePath == name) {
-				nameExists = true;
-				break;
-			}
+		// NOTE: 重複名は依存へのアクセスやGPU資源・Descriptor確保より先に拒否する。
+		if(particleGroups.contains(name)) {
+			Logger::Log("Particle::CreateParticleGroup: group already exists: " + name, Logger::LogLevel::Error);
+			return;
 		}
-		if(nameExists) {
-			assert(false && "Particle group with this name already exists!");
+		if(!particleSetup_ || !particleSetup_->GetDXManager() || !particleSetup_->GetSrvSetup()) {
+			throw std::runtime_error("Particle group " + name + ": setup is not initialized");
+		}
+		if(!particleSetup_->GetSrvSetup()->CanAllocate()) {
+			throw std::runtime_error("Particle group " + name + ": descriptor heap is full");
 		}
 
 		// 新たなパーティクルグループを作成
-		ParticleGroup newGroup;
+		ParticleGroup newGroup{};
 		newGroup.materialFilePath = textureFilePath;
 		newGroup.shape = shape;
 
@@ -251,6 +261,10 @@ namespace MagEngine {
 
 		// テクスチャのSRVインデックスを取得して設定
 		particleSetup_->GetTextureManager().LoadTexture(textureFilePath);
+		// NOTE: 未読込テクスチャが最後のDescriptorを使った場合も、無効なSRV確保へ進めない。
+		if(!particleSetup_->GetSrvSetup()->CanAllocate()) {
+			throw std::runtime_error("Particle group " + name + ": descriptor heap is full after texture loading");
+		}
 
 		// テクスチャのSRVインデックスを取得して設定
 		newGroup.srvIndex = particleSetup_->GetTextureManager().GetTextureIndex(textureFilePath);
@@ -277,7 +291,9 @@ namespace MagEngine {
 		newGroup.instancingResource =
 			particleSetup_->GetDXManager()->CreateBufferResource(sizeof(ParticleForGPU) * kNumMaxInstance);
 
-		newGroup.instancingResource->Map(0, nullptr, reinterpret_cast<void **>( &newGroup.instancingDataPtr ));
+		if(!newGroup.instancingResource || FAILED(newGroup.instancingResource->Map(0, nullptr, reinterpret_cast<void **>(&newGroup.instancingDataPtr))) || !newGroup.instancingDataPtr) {
+			throw std::runtime_error("Particle group " + name + ": cannot create/map instance buffer");
+		}
 		for(uint32_t index = 0; index < kNumMaxInstance; ++index) {
 			newGroup.instancingDataPtr[index].WVP = MagMath::Identity4x4();
 			newGroup.instancingDataPtr[index].World = MagMath::Identity4x4();
@@ -295,10 +311,7 @@ namespace MagEngine {
 		particleSetup_->GetSrvSetup()->CreateSRVStructuredBuffer(newGroup.instancingSrvIndex, newGroup.instancingResource.Get(), kNumMaxInstance, sizeof(ParticleForGPU));
 
 		// パーティクルグループをリストに追加
-		particleGroups.emplace(name, newGroup);
-
-		// マテリアルデータの初期化
-		CreateMaterialData();
+		particleGroups.emplace(name, std::move(newGroup));
 
 		// TODO:新しいブレンドモードを設定
 		// blendMode_ = blendMode;
@@ -444,6 +457,7 @@ namespace MagEngine {
 		//========================================
 		// 1.頂点バッファの作成
 		vertexBuffer_ = particleSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::VertexData) * modelData_.vertices.size());
+		if(!vertexBuffer_) { throw std::runtime_error("Particle: cannot create vertex buffer"); }
 
 		//========================================
 		// 2.頂点バッファビューの作成
@@ -460,9 +474,12 @@ namespace MagEngine {
 	void Particle::CreateMaterialData() {
 		// マテリアル用のリソースを作成
 		materialBuffer_ = particleSetup_->GetDXManager()->CreateBufferResource(sizeof(MagMath::Material));
+		if(!materialBuffer_) { throw std::runtime_error("Particle: cannot create material buffer"); }
 
 		// 書き込むためのアドレスを取得
-		materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>( &materialData_ ));
+		if(FAILED(materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&materialData_))) || !materialData_) {
+			throw std::runtime_error("Particle: cannot map material buffer");
+		}
 		materialData_->color = MagMath::Vector4(1.0f, 1.0f, 1.0f, 0.9f);
 		// SpriteはLightingしないのfalseを設定する
 		materialData_->enableLighting = false;

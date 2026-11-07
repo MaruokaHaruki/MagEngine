@@ -53,11 +53,16 @@ jobs:
             /p:PlatformToolset=$env:TOOLSET `
             /p:WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION
 
+      # ゲーム層からEngineへの一方向依存と2プロジェクト構成を確認する
+      - name: Verify engine boundary
+        run: ./scripts/VerifyEngineBoundary.ps1
+
       # Artifactアップロード
       - name: Upload Debug Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: MagEngine-Debug
+          name: Game-Debug
           path: |
-            **/x64/Debug/
-            !**/*.pdb
+            ../generated/outputs/Game/Debug/
+            !../generated/outputs/**/*.pdb
+          if-no-files-found: error

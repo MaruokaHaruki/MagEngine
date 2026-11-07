@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- NOTE: Engineと利用側でABI・言語設定を揃え、作品用includeパスは共有しない。 -->
+  <PropertyGroup>
+    <IntDir>$(ProjectDir)..\generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)..\generated\outputs\$(ProjectName)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary Condition="'$(Configuration)'!='Debug'">MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)'!='Debug'">NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine/render;$(ProjectDir);$(ProjectDir)engine/base;$(ProjectDir)engine/camera;$(ProjectDir)engine/input;$(ProjectDir)engine/math;$(ProjectDir)engine/light;$(ProjectDir)engine/utils;$(ProjectDir)engine/math/operations;$(ProjectDir)engine/math/structure;$(ProjectDir)engine/math/structure/common;$(ProjectDir)engine/math/structure/graphics;$(ProjectDir)engine/math/utility;$(ProjectDir)engine/audio;$(ProjectDir)engine/base/framework;$(ProjectDir)engine/base/core;$(ProjectDir)engine/base/core/directXCore;$(ProjectDir)engine/base/core/directXCore/graphicsDevice;$(ProjectDir)engine/base/imGui;$(ProjectDir)engine/base/levelDataLoader;$(ProjectDir)externals/DirectXTex;$(ProjectDir)externals/imgui;$(ProjectDir)externals/assimp/include;$(ProjectDir)engine/math/structure/drawData;%(AdditionalIncludeDirectories);$(ProjectDir)engine/render/pipeline;$(ProjectDir)engine/render/graph;$(ProjectDir)engine/render/pass;$(ProjectDir)engine/render/resource;$(ProjectDir)engine/render/resource/texture;$(ProjectDir)engine/render/resource/model;$(ProjectDir)engine/render/post_effect;$(ProjectDir)engine/render/post_effect/fullscreenPass;$(ProjectDir)engine/render/post_effect/grayscale;$(ProjectDir)engine/graphics;$(ProjectDir)engine/graphics/sprite;$(ProjectDir)engine/graphics/particle;$(ProjectDir)engine/graphics/object3d;$(ProjectDir)engine/graphics/skybox;$(ProjectDir)engine/graphics/cloud;$(ProjectDir)engine/graphics/trail;$(ProjectDir)engine/graphics/line;$(ProjectDir)engine/debug;$(ProjectDir)engine/collision;$(ProjectDir)engine/integration</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(ProjectDir)externals/assimp/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies Condition="'$(Configuration)'=='Debug'">assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)'!='Debug'">assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>

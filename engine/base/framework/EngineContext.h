@@ -73,7 +73,10 @@ namespace MagEngine {
 			assert(trailEffectManager);
 			assert(debugTextManager);
 			assert(lineManager);
+			// NOTE: ReleaseではEditor UIを生成しない。
+#ifdef _DEBUG
 			assert(editorUiSystem);
+#endif // _DEBUG
 		}
 	};
 }

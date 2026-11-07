@@ -40,15 +40,16 @@ namespace MagEngine {
 		void Initialize(DirectXCore *dxCore, TextureManager &textureManager);
 
 		/**----------------------------------------------------------------------------
-		 * \brief  LoadMedel モデルの読み込み
+		 * \brief  LoadModel モデルの読み込み
 		 * \param  filePath ファイルパス
-		 * \note
+		 * \note 検証・GPU生成・テクスチャ読込の成功後に登録する。失敗は資産名付き例外で通知する。
 		 */
 		void LoadModel(const std::string &filePath);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  FindModel モデルデータの検索
 		 * \param  filePath ファイルパス
+		 * \note 検証・GPU生成・テクスチャ読込の成功後に登録する。失敗は資産名付き例外で通知する。
 		 * \return Model* モデルデータ
 		 * \note
 		 */

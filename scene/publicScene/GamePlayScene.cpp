@@ -364,17 +364,22 @@ void GamePlayScene::Update(const FrameTime &frameTime) {
 	//========================================
 	// メニュー中はゲーム更新をスキップ
 	if (IsPaused()) {
+		if (particle_) { particle_->Update(0.0f); }
 		return;
 	}
 
+	// NOTE: 終端演出・遷移中もゲーム側の最後の時間倍率を継承する。
+	const float presentationDeltaTime = unscaledDeltaTime * (std::isfinite(gameTimeScale_) ? (std::max)(0.0f, gameTimeScale_) : 0.0f);
 	if (phase_ == GamePlayPhase::GameClearPresentation || phase_ == GamePlayPhase::GameOverPresentation) {
 		UpdateSceneTransition(unscaledDeltaTime);
 		UpdateTerminalPresentation();
+		if (particle_) { particle_->Update(presentationDeltaTime); }
 		return;
 	}
 	if (phase_ == GamePlayPhase::TransitionOut) {
 		UpdateSceneTransition(unscaledDeltaTime);
 		UpdateTransitionOut();
+		if (particle_) { particle_->Update(presentationDeltaTime); }
 		return;
 	}
 
@@ -455,18 +460,11 @@ void GamePlayScene::Update(const FrameTime &frameTime) {
 
 	UpdateCloudProjectileHoles(gameplayDeltaTime);
 
-	if (!IsSimulationEnabled()) {
-		if (particle_) {
-			particle_->Update();
-		}
-		return;
-	}
-
-	//========================================
-	// パーティクルの更新
+	// NOTE: 発生要求の後に一度だけ更新し、停止経路でもこのフレームの描画データを作る。
 	if (particle_) {
-		particle_->Update();
+		particle_->Update(gameplayDeltaTime);
 	}
+	if (!IsSimulationEnabled()) { return; }
 
 	//========================================
 	// スカイドーム
@@ -594,9 +592,6 @@ void GamePlayScene::ProcessMenuInput() {
 void GamePlayScene::UpdateTerminalPresentation() {
 	if (followCamera_) {
 		followCamera_->Update();
-	}
-	if (particle_) {
-		particle_->Update();
 	}
 }
 

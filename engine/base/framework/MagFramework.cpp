@@ -106,34 +106,41 @@ namespace MagEngine {
 	void MagFramework::Run() {
 		//========================================
 		// 初期化
-		Initialize();
-		//========================================
-		// メインループ
-		MSG msg{};
-		// メッセージがなくなるまでループ
-		while (msg.message != WM_QUIT) {
-			// メッセージがあれば処理
-			if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-				// メッセージ処理
-				TranslateMessage(&msg);
-				// メッセージ処理
-				DispatchMessage(&msg);
-			} else {
-				//---------------------------------------
-				// 更新
-				Update();
-				//---------------------------------------
-				// 終了リクエストがあれば終了
-				if (IsEndRequest()) {
-					break;
+		try {
+			Initialize();
+			InitializeApplication();
+			//========================================
+			// メインループ
+			MSG msg{};
+			// メッセージがなくなるまでループ
+			while (msg.message != WM_QUIT) {
+				// メッセージがあれば処理
+				if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+					// メッセージ処理
+					TranslateMessage(&msg);
+					// メッセージ処理
+					DispatchMessage(&msg);
+				} else {
+					//---------------------------------------
+					// 更新
+					Update();
+					//---------------------------------------
+					// 終了リクエストがあれば終了
+					if (IsEndRequest()) {
+						break;
+					}
+					//---------------------------------------
+					// 描画
+					Draw();
 				}
-				//---------------------------------------
-				// 描画
-				Draw();
 			}
+			//========================================
+			// 終了処理
+		} catch (...) {
+			// NOTE: 部分初期化時も利用側を先に終了する。
+			Finalize();
+			throw;
 		}
-		//========================================
-		// 終了処理
 		Finalize();
 	}
 
@@ -214,7 +221,6 @@ namespace MagEngine {
 		// スプライト共通部の初期化
 		spriteSetup_->Initialize(dxCore_.get(), *textureManager_);
 		textRenderer_ = std::make_unique<TextRenderer>();
-		textRenderer_->Initialize(*spriteSetup_, "font_atlas.png", "resources/config/ui/font_atlas.json");
 
 		///--------------------------------------------------------------
 		///						 Object3D共通部
@@ -278,10 +284,6 @@ namespace MagEngine {
 		trailEffectManager_ = std::make_unique<TrailEffectManager>();
 		// トレイルエフェクトマネージャの初期化
 		trailEffectManager_->Initialize(trailEffectSetup_.get());
-		// トレイルプリセットJSONを一度だけ読み込む（シーン内では読み込まない）
-		trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
-		// テスト用インスタンスを作成
-		trailEffectManager_->CreateFromPreset("test_trail", "test_trail");
 
 		///--------------------------------------------------------------
 		///						 オーディオの初期化
@@ -301,14 +303,6 @@ namespace MagEngine {
 			[this]() { imguiSetup_->ShowPerformanceMonitor(); });
 #endif
 
-		///--------------------------------------------------------------
-		///						 シーンマネージャ
-		sceneManager_ = std::make_unique<SceneManager>();
-		// シーンファクトリーのセット
-		sceneFactory_ = std::make_unique<SceneFactory>();
-		sceneManager_->SetSceneFactory(sceneFactory_.get());
-		// シーンマネージャの初期化
-		sceneManager_->Initialize(engineContext_);
 
 		///--------------------------------------------------------------
 		///						 各種設定
@@ -404,8 +398,8 @@ namespace MagEngine {
 		Input::GetInstance()->Update();
 
 		//========================================
-		// シーンマネージャの更新
-		sceneManager_->Update(frameTime);
+		// アプリケーションの更新
+		UpdateApplication(frameTime);
 	}
 
 	///=============================================================================
@@ -416,12 +410,8 @@ namespace MagEngine {
 			dxCore_->WaitForGpuIdle();
 		}
 		//========================================
-		// シーンの終了処理
-		if (sceneManager_) {
-			sceneManager_->Finalize();
-			sceneManager_.reset();
-		}
-		sceneFactory_.reset();
+		// 利用側のSceneとUIをEngineサービスより先に解除する
+		FinalizeApplication();
 		// COMMENT: ImGui 条件付き終了処理
 #if ENABLE_IMGUI
 		if (editorUiSystem_) {
@@ -559,7 +549,7 @@ namespace MagEngine {
 	void MagFramework::OpaqueRender() {
 		renderWorld_.Clear();
 		if (textRenderer_) { textRenderer_->BeginFrame(); }
-		sceneManager_->RegisterRenderables(renderWorld_);
+		RegisterApplicationRenderables(renderWorld_);
 		// NOTE: World/HUDで描画順と深度方針を分けるため、同じLineManager参照をモード付きで登録する。
 		renderWorld_.AddLine(LineRenderItem{lineManager_.get(), 0, true, LineRenderMode::World});
 		renderWorld_.AddLine(LineRenderItem{lineManager_.get(), 1, true, LineRenderMode::Hud});
@@ -631,5 +621,39 @@ namespace MagEngine {
 		}
 #endif
 
+	}
+	///=============================================================================
+	///						描画
+	void MagFramework::Draw() {
+		//========================================
+		// レンダーテクスチャ前処理
+		MagFramework::RenderPreDraw();
+
+		//========================================
+		// Sceneフェーズ描画（Skybox/Opaque/Cloud/Trail）
+		MagFramework::OpaqueRender();
+
+		//========================================
+		// Overlayフェーズ描画（Sprite）
+		MagFramework::ExecuteRenderPhase(RenderPhase::Overlay);
+
+		//========================================
+		// Overlay後フェーズ描画（Particleなど）
+		MagFramework::ExecuteRenderPhase(RenderPhase::PostOverlay);
+
+		//========================================
+		// レンダーテクスチャ後処理
+		MagFramework::RenderPostDraw();
+
+		//========================================
+		// PostProcessフェーズ描画（SceneColorからPresentColorへ合成）
+		MagFramework::ExecuteRenderPhase(RenderPhase::PostProcess);
+
+		MagFramework::ImGuiPreDraw();
+		MagFramework::ImGuiPostDraw();
+
+		//========================================
+		// 描画後処理
+		MagFramework::PostDraw();
 	}
 }

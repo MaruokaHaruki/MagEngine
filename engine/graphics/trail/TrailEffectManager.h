@@ -201,6 +201,7 @@ namespace MagEngine {
 
 		//========================================
 		// エディター用
+		std::string presetFilePath_; // 利用側が読み込んだプリセットの保存先。未指定では自動保存しない。
 		std::string editingPresetName_;		  ///< 編集中のプリセット名
 		bool editingPresetActive_ = false;	  ///< 編集中か
 		TrailEffectPreset editingPresetCopy_; ///< 編集中のプリセット（コピー）

@@ -24,8 +24,8 @@ namespace MagEngine {
 		~ParticleEmitter() = default;
 
 		/// \brief 更新
-		/// COMMENT: 可変長の elapsedTime_ を deltaTime パラメータで動的対応
-		void Update(float deltaTime = 1.0f / 60.0f);
+		/// @note 秒単位の周期発生のみを管理する。0秒・不正時間では発生せず、共有Particleを更新しない。
+		void Update(float deltaTime);
 
 		/// @brief Emit
 		/// \details COMMENT: バッチ発生させるパーティクルをGPUで処理することで CPU 負荷軽減
@@ -196,12 +196,12 @@ namespace MagEngine {
 		///--------------------------------------------------------------
 		///							メンバ変数
 	private:
-		Particle *particle_;  // Particleのインスタンスを保持
+		Particle *particle_;  // 所有側Sceneが保持するParticleへの非所有参照。Emitterより長く生存する。
 		std::string name_;	  // パーティクルグループ名
 		MagMath::Transform transform_; // エミッターの位置・回転・スケール
 		uint32_t count_;	  // 発生させるパーティクルの数
 		float frequency_;	  // 発生頻度
-		float elapsedTime_;	  // 経過時間
+		double elapsedTime_;	  // 経過時間
 		bool repeat_;		  // 繰り返し発生させるかどうかのフラグ
 	};
 }
