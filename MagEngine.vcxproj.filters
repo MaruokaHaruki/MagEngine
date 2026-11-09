@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
+    <Filter Include="engine\editor"><UniqueIdentifier>{6DEAB214-3C71-4CDA-8FE0-C2E93B328AAD}</UniqueIdentifier></Filter>
+    <ClCompile Include="engine\editor\EditorDocument.cpp"><Filter>engine\editor</Filter></ClCompile>
+    <ClInclude Include="engine\editor\EditorDocument.h"><Filter>engine\editor</Filter></ClInclude>
+    <ClCompile Include="engine\editor\EditorHistory.cpp"><Filter>engine\editor</Filter></ClCompile>
+    <ClInclude Include="engine\editor\EditorHistory.h"><Filter>engine\editor</Filter></ClInclude>
+    <ClCompile Include="engine\editor\EditorDocumentStore.cpp"><Filter>engine\editor</Filter></ClCompile>
+    <ClInclude Include="engine\editor\EditorDocumentStore.h"><Filter>engine\editor</Filter></ClInclude>
+    <ClCompile Include="engine\editor\EditorPanels.cpp"><Filter>engine\editor</Filter></ClCompile>
+    <ClInclude Include="engine\editor\EditorPanels.h"><Filter>engine\editor</Filter></ClInclude>
+    <ClCompile Include="engine\editor\EditorPlaySession.cpp"><Filter>engine\editor</Filter></ClCompile>
+    <ClInclude Include="engine\editor\EditorPlaySession.h"><Filter>engine\editor</Filter></ClInclude>
+    <ClCompile Include="engine\editor\EditorViewportMath.cpp"><Filter>engine\editor</Filter></ClCompile>
+    <ClInclude Include="engine\editor\EditorViewportMath.h"><Filter>engine\editor</Filter></ClInclude>
+    <ClInclude Include="engine\editor\EditorTypeRegistry.h"><Filter>engine\editor</Filter></ClInclude>
     <Filter Include="engine">
       <UniqueIdentifier>{884CBEEB-1D2F-545D-B823-D21B1499180D}</UniqueIdentifier>
     </Filter>

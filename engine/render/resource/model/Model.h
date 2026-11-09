@@ -40,6 +40,9 @@ namespace MagEngine {
 		/// \brief 更新
 		void Update();
 
+		/// @brief モデル所有のCPU頂点データ。モデル破棄まで有効な読み取り専用参照
+		const MagMath::ModelData &GetModelData() const { return modelData_; }
+
 		/// \brief 描画
 		void Draw();
 

@@ -180,6 +180,7 @@ namespace MagEngine {
 		}
 
 		if (ImGui::BeginMenu("Editor")) {
+			if (creationLayout_ && ImGui::MenuItem("Reset Creation Layout")) { resetLayout_ = true; }
 			ImGui::MenuItem("Enable Editor UI", nullptr, &editorState_.isEditorEnabled);
 			ImGui::MenuItem("Enable DockSpace", nullptr, &editorState_.isDockSpaceEnabled);
 			ImGui::MenuItem("Show Menu Bar", nullptr, &editorState_.isMenuBarEnabled);
@@ -197,12 +198,24 @@ namespace MagEngine {
 
 			// isOpenはImGuiの閉じる操作を反映するための一時値であり、Panel記述子が状態を所有する。
 			bool isOpen = panel.isOpen;
+			if (creationLayout_ && resetLayout_) {
+				const auto *viewport = ImGui::GetMainViewport(); const auto p = viewport->WorkPos; const auto size = viewport->WorkSize;
+				const float left = size.x * 0.2f, right = size.x * 0.25f, top = 150.0f, bottom = size.y * 0.25f;
+				ImVec2 position = p, extent = size;
+				if (panel.name == "制作操作") { extent.y = top; }
+				else if (panel.name == "オブジェクト") { position.y += top; extent = {left, size.y - top}; }
+				else if (panel.name == "設定") { position.x += size.x - right; position.y += top; extent = {right, size.y - top}; }
+				else if (panel.name == "シーン") { position.x += left; position.y += top; extent = {size.x - left - right, size.y - top - bottom}; }
+				else if (panel.name == "資産・メッセージ") { position.x += left; position.y += size.y - bottom; extent = {size.x - left - right, bottom}; }
+				ImGui::SetNextWindowPos(position); ImGui::SetNextWindowSize(extent);
+			}
 			if (ImGui::Begin(panel.name.c_str(), &isOpen)) {
 				panel.drawFunc();
 			}
 			ImGui::End();
 			panel.isOpen = isOpen;
 		}
+		resetLayout_ = false;
 	}
 
 	void EditorUiSystem::DrawCategoryMenu(EditorUiCategory category) {

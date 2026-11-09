@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="application\editor\EditorHost.cpp"><Filter>application</Filter></ClCompile>
+    <ClCompile Include="application\editor\EditorLaunchOptions.cpp"><Filter>application</Filter></ClCompile>
+    <ClInclude Include="application\editor\EditorHost.h"><Filter>application</Filter></ClInclude>
+    <ClInclude Include="application\editor\EditorLaunchOptions.h"><Filter>application</Filter></ClInclude>
     <ClCompile Include="application\EngineApp.cpp"><Filter>application</Filter></ClCompile>
     <ClInclude Include="application\EngineApp.h"><Filter>application</Filter></ClInclude>
     <ClCompile Include="main.cpp">

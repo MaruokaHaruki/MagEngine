@@ -129,6 +129,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						マウスの移動量を取得
 	MagMath::Vector2 Input::GetMouseMove() const {
+		if (!applicationInputEnabled_) { return {}; }
 		return MagMath::Vector2(
 			static_cast<float>( mousePos_.x - mousePosPrev_.x ),
 			static_cast<float>( mousePos_.y - mousePosPrev_.y ));
@@ -137,6 +138,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						ウィンドウの中心からのマウスの位置を取得
 	MagMath::Vector2 Input::GetMousePosFromWindowCenter() const {
+		if (!applicationInputEnabled_) { return {}; }
 		RECT rect;
 		GetClientRect(hwnd_, &rect);
 		float centerX = ( rect.right - rect.left ) / 2.0f;
@@ -150,12 +152,14 @@ namespace MagEngine {
 	///=============================================================================
 	///						マウスホイールの移動量を取得
 	float Input::GetMouseWheel() const {
+		if (!applicationInputEnabled_) { return 0; }
 		return mouseWheel_ * 16.0f;
 	}
 
 	///=============================================================================
 	///						マウスのボタンの押下をチェック
 	bool Input::PushMouseButton(int buttonNumber) const {
+		if (!applicationInputEnabled_) { return false; }
 		if(buttonNumber < 0 || buttonNumber >= 3) {
 			return false;
 		}
@@ -165,6 +169,7 @@ namespace MagEngine {
 	///=============================================================================
 	///						マウスのボタンのトリガーチェック
 	bool Input::TriggerMouseButton(int buttonNumber) const {
+		if (!applicationInputEnabled_) { return false; }
 		if(buttonNumber < 0 || buttonNumber >= 3) {
 			return false;
 		}
@@ -176,12 +181,14 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 キーの押下をチェック
 	bool Input::PushKey(int keyCode) const {
+		if (!applicationInputEnabled_ || keyCode < 0 || keyCode >= 256) { return false; }
 		return ( keyState_[keyCode] & 0x80 ) != 0;
 	}
 
 	///--------------------------------------------------------------
 	///						 キーのトリガーチェック
 	bool Input::TriggerKey(int keyCode) const {
+		if (!applicationInputEnabled_ || keyCode < 0 || keyCode >= 256) { return false; }
 		return ( ( keyState_[keyCode] & 0x80 ) != 0 ) && ( ( keyStatePrev_[keyCode] & 0x80 ) == 0 );
 	}
 
@@ -195,7 +202,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 ボタンの押下をチェック
 	bool Input::PushButton(WORD button) const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return false;
 		}
 		return ( controllerState_.Gamepad.wButtons & button ) != 0;
@@ -204,7 +211,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 ボタンのトリガーチェック
 	bool Input::TriggerButton(WORD button) const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return false;
 		}
 		return ( ( controllerState_.Gamepad.wButtons & button ) != 0 ) && ( ( controllerStatePrev_.Gamepad.wButtons & button ) == 0 );
@@ -213,7 +220,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 左トリガーの値を取得
 	float Input::GetLeftTrigger() const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return 0.0f;
 		}
 		return controllerState_.Gamepad.bLeftTrigger / 255.0f;
@@ -222,7 +229,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 右トリガーの値を取得
 	float Input::GetRightTrigger() const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return 0.0f;
 		}
 		return controllerState_.Gamepad.bRightTrigger / 255.0f;
@@ -231,7 +238,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 左スティックのX軸の値を取得
 	float Input::GetLeftStickX() const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return 0.0f;
 		}
 		float value = static_cast<float>( controllerState_.Gamepad.sThumbLX ) / 32767.0f;
@@ -241,7 +248,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 左スティックのY軸の値を取得
 	float Input::GetLeftStickY() const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return 0.0f;
 		}
 		float value = static_cast<float>( controllerState_.Gamepad.sThumbLY ) / 32767.0f;
@@ -251,7 +258,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 右スティックのX軸の値を取得
 	float Input::GetRightStickX() const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return 0.0f;
 		}
 		float value = static_cast<float>( controllerState_.Gamepad.sThumbRX ) / 32767.0f;
@@ -261,7 +268,7 @@ namespace MagEngine {
 	///--------------------------------------------------------------
 	///						 右スティックのY軸の値を取得
 	float Input::GetRightStickY() const {
-		if(!controllerConnected_) {
+		if(!applicationInputEnabled_ || !controllerConnected_) {
 			return 0.0f;
 		}
 		float value = static_cast<float>( controllerState_.Gamepad.sThumbRY ) / 32767.0f;

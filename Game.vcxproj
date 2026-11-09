@@ -108,6 +108,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="application\editor\EditorHost.cpp" />
+    <ClCompile Include="application\editor\EditorLaunchOptions.cpp" />
+    <ClInclude Include="application\editor\EditorHost.h" />
+    <ClInclude Include="application\editor\EditorLaunchOptions.h" />
     <ClCompile Include="application\collision\Collider.cpp" />
     <ClCompile Include="application\collision\CollisionManager.cpp" />
     <ClCompile Include="application\collision\BaseObject.cpp" />

@@ -59,6 +59,8 @@ namespace MagEngine {
 		bool IsPanelOpen(const std::string &name) const;
 
 		void Draw();
+		/// @brief 制作用の既定配置を適用。通常ゲームのパネル配置には影響しない
+		void UseCreationLayout() { creationLayout_ = true; resetLayout_ = true; }
 
 	private:
 		void DrawDockSpace();
@@ -70,5 +72,7 @@ namespace MagEngine {
 
 		EditorState editorState_;
 		std::vector<EditorUiPanelDesc> panels_;
+		bool creationLayout_ = false;
+		bool resetLayout_ = false;
 	};
 }

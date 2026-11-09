@@ -42,7 +42,8 @@ $batch = Join-Path $output 'compile.cmd'
 [IO.File]::WriteAllLines($batch, @('@echo off', ('call "' + $vcvars + '" >nul'), 'if errorlevel 1 exit /b 1', ('cl @"' + $rsp + '"'), 'exit /b %errorlevel%'))
 & $env:ComSpec /d /c $batch
 if ($LASTEXITCODE -ne 0) { throw '回帰検証のコンパイルに失敗しました。' }
-if ($Suite -eq 'Particle') {
+# Debugの静的ライブラリはCPU検証でもDXCのimportを保持するため、両Suiteへ配置する。
+& {
     $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
     $compilerBin = Get-ChildItem -LiteralPath $sdkBin -Directory | Sort-Object Name -Descending |
         Where-Object { (Test-Path -LiteralPath (Join-Path $_.FullName 'x64/dxcompiler.dll')) -and (Test-Path -LiteralPath (Join-Path $_.FullName 'x64/dxil.dll')) } |

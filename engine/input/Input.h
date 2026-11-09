@@ -37,6 +37,8 @@ namespace MagEngine {
 		* \brief  Update 更新
 		*/
 		void Update();
+		/// @brief ゲーム向け読取の許可。falseでもOS状態の取得とImGui入力は維持する
+		void SetApplicationInputEnabled(bool enabled) { applicationInputEnabled_ = enabled; }
 
 		///--------------------------------------------------------------
 		///						 マウス系
@@ -253,5 +255,7 @@ namespace MagEngine {
 		//========================================
 		// デッドゾーン
 		float stickDeadZone_ = 0.2f;
+		bool applicationInputEnabled_ = true;
+		friend struct EditorInputTests; // デバイス取得後の境界状態をCPUで直接検証する
 	};
 }

@@ -19,6 +19,14 @@ namespace MagEngine {
 ///=============================================================================
 ///                        ウィンドウプロシージャ
 	LRESULT WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+		if (msg == WM_NCCREATE) {
+			const auto *create = reinterpret_cast<CREATESTRUCTW *>(lparam);
+			SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(create->lpCreateParams));
+		}
+		if (msg == WM_CLOSE) {
+			auto *app = reinterpret_cast<WinApp *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+			if (app && app->closeRequestHandler_ && !app->closeRequestHandler_()) { return 0; }
+		}
 		//========================================
 		// ImGuiに伝える
 		if(ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
@@ -77,7 +85,7 @@ namespace MagEngine {
 			nullptr,
 			nullptr,
 			wc_.hInstance,
-			nullptr);
+			this);
 		//========================================
 		// ウィンドウ表示
 		ShowWindow(hwnd_, SW_SHOW);

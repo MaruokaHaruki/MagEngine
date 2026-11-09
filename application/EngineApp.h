@@ -6,11 +6,15 @@
 #include "MagFramework.h"
 #include "SceneFactory.h"
 #include "SceneManager.h"
+#include "application/editor/EditorHost.h"
 
 namespace MagEngine {
 	///=============================================================================
 	/// 現行ゲームアプリケーション
 	class EngineApp : public MagFramework {
+	public:
+		/// @brief 起動時の編集指定。未指定なら従来のゲームを起動する
+		explicit EngineApp(EditorLaunchOptions options = {}) : launchOptions_(std::move(options)) {}
 	protected:
 		///--------------------------------------------------------------
 		/// 初期化・更新・描画登録・終了
@@ -28,5 +32,7 @@ namespace MagEngine {
 		/// ゲームが所有するScene管理
 		std::unique_ptr<SceneFactory> sceneFactory_;
 		std::unique_ptr<SceneManager> sceneManager_;
+		EditorLaunchOptions launchOptions_;
+		std::unique_ptr<EditorHost> editorHost_;
 	};
 }

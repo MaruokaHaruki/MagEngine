@@ -7,6 +7,7 @@
  * \note   ウィンドウズAPIを管理し、ウィンドウ作成・破棄を行う
  *********************************************************************/
 #pragma once
+#include <functional>
 #include <cstdint>
 #include <string>
 #include <windows.h>
@@ -42,6 +43,8 @@ namespace MagEngine {
 
 		/// @brief CloseWindow ウィンドウの破棄
 		void CloseWindow();
+		/// @brief falseを返す間は閉じる操作を保留。所有者は解除まで存続すること
+		void SetCloseRequestHandler(std::function<bool()> handler) { closeRequestHandler_ = std::move(handler); }
 
 		///--------------------------------------------------------------
 		///                        Getter
@@ -109,5 +112,6 @@ namespace MagEngine {
 		//========================================
 		// ウィンドウハンドル
 		HWND hwnd_{};
+		std::function<bool()> closeRequestHandler_;
 	};
 }
