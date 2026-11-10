@@ -213,5 +213,18 @@ namespace MagEngine {
 		textureData2.srvHandle = dxCore_->GetResourceAllocator().Allocate();
 		assert(textureData2.srvHandle.IsValid());
 		srvSetup_->CreateOffScreenTexture(textureData2.srvHandle.index, 1);
+		RefreshRenderTextureViews();
+	}
+	///=============================================================================
+	/// 描画画像の既存ビューを更新する（通常資産は対象外）
+	void TextureManager::RefreshRenderTextureViews() {
+		for (uint32_t i = 0; i < 2; ++i) {
+			auto &data = textureDatas_.at(i == 0 ? "RenderTexture0" : "RenderTexture1");
+			srvSetup_->CreateOffScreenTexture(data.srvHandle.index, i);
+			const auto desc = dxCore_->GetRenderTextureResource(i)->GetDesc();
+			data.metadata.width = static_cast<size_t>(desc.Width); data.metadata.height = desc.Height;
+			data.metadata.format = desc.Format; data.metadata.mipLevels = 1; data.metadata.arraySize = 1; data.metadata.depth = 1;
+			data.metadata.dimension = DirectX::TEX_DIMENSION_TEXTURE2D;
+		}
 	}
 }

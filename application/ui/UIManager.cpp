@@ -71,6 +71,10 @@ void UIManager::Finalize() {
 ///=============================================================================
 ///                        更新
 void UIManager::Update(const Player *player, float unscaledDeltaTime) {
+	if (hud_ && spriteSetup_) {
+		const auto size = spriteSetup_->GetDXManager()->GetRenderSize();
+		hud_->SetRenderSize(static_cast<float>(size.width), static_cast<float>(size.height));
+	}
 	if (gameOverUI_) {
 		gameOverUI_->Update(unscaledDeltaTime);
 	}

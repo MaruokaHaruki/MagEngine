@@ -13,6 +13,12 @@ int main() {
 		const auto rect = FitViewport({100, 50, 800, 800}, 16.0f / 9.0f);
 		Check(rect.x == 100 && rect.y == 225 && rect.width == 800 && rect.height == 450, "LetterboxCoordinatesPickCorrectly");
 		MagMath::Transform camera{{1, 1, 1}, {}, {0, 0, -10}};
+		const auto resized = FitViewport({0, 0, 800, 800}, 4.0f / 3.0f);
+		const auto resizedRay = ScreenToViewportRay({400, 400}, resized, camera, 0.45f);
+		Check(resizedRay && std::abs(resizedRay->direction.z - 1) < 0.0001f, "FourByThreeCenterRay");
+		EditorViewportInputState resizedInput; resizedInput.imageRect = resized; resizedInput.renderSize = {1024, 768}; resizedInput.allowInput = true;
+		const auto mapped = MapViewportPosition({600, 550}, resizedInput);
+		Check(std::abs(mapped.x - 256) < 0.001f && std::abs(mapped.y - 192) < 0.001f, "ResizedImageMapsInputCorrectly");
 		Check(!ScreenToViewportRay({100, 50}, rect, camera, 0.45f), "IgnoreLetterbox");
 		Check(!ScreenToViewportRay({0, 0}, {}, camera, 0.45f), "ZeroViewportReturnsNoRay");
 		const auto ray = ScreenToViewportRay({500, 450}, rect, camera, 0.45f);

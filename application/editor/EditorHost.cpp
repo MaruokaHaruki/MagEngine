@@ -67,16 +67,7 @@ namespace MagEngine {
 		panels_->actions.bounds = [this](const auto &record) { return Bounds(record); };
 #ifdef _DEBUG
 		if (options.editor) {
-			for (uint32_t i = 0; i < 2; ++i) {
-				imageDescriptors_[i] = context.graphics->GetResourceAllocator().Allocate();
-				if (!imageDescriptors_[i].IsValid()) { throw std::runtime_error("シーン画像用Descriptorを確保できません"); }
-				D3D12_SHADER_RESOURCE_VIEW_DESC view{}; view.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING; view.Texture2D.MipLevels = 1;
-				context.graphics->GetDevice()->CreateShaderResourceView(context.graphics->GetRenderTextureResource(i).Get(), &view, imageDescriptors_[i].cpuHandle);
-			}
-			panels_->actions.sceneTexture = [this] { return imageDescriptors_[context_->graphics->GetRenderResourceIndex()].gpuHandle.ptr; };
-			for (const char *name : {"Camera Manager", "Light Manager", "Post Effects"}) { context.editorUiSystem->SetPanelOpen(name, false); }
 			panels_->Register(*context.editorUiSystem);
-			context.editorUiSystem->UseCreationLayout();
 		}
 #endif
 		if (!ApplyDocument(document_, panels_->error)) { throw std::runtime_error(panels_->error); }
@@ -152,15 +143,14 @@ namespace MagEngine {
 		else { saved_ = {}; panels_->sceneName = "imported.json"; }
 	}
 	void EditorHost::Update(const FrameTime &frameTime) {
+		const auto renderSize = context_->graphics->GetRenderSize();
+		camera_.SetAspectRatio(static_cast<float>(renderSize.width) / renderSize.height);
 		ProcessRequest();
 		auto &document = panels_->ActiveDocument();
 		if (session_.IsRunning() && !session_.IsPaused() && runtimeUpdate_) {
-			POINT cursor{}; const HWND window = context_->graphics->GetWinApp().GetWindowHandle();
-			const bool cursorAvailable = GetCursorPos(&cursor) && ScreenToClient(window, &cursor);
-			const bool allowInput = !options_.editor || (cursorAvailable && GetForegroundWindow() == window && panels_->ContainsViewportPoint({static_cast<float>(cursor.x), static_cast<float>(cursor.y)}));
-			context_->input->SetApplicationInputEnabled(allowInput);
-			try { runtimeUpdate_(frameTime, document); } catch (...) { context_->input->SetApplicationInputEnabled(true); throw; }
-			context_->input->SetApplicationInputEnabled(true);
+
+			try { runtimeUpdate_(frameTime, document); } catch (...) {  throw; }
+
 		}
 		if (!hasApplied_ || !EqualDocument(applied_, document)) { ApplyDocument(document, panels_->error); }
 		camera_.SetTransform(document.camera); camera_.Update();

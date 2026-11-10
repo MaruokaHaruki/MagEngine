@@ -54,7 +54,7 @@ void SceneManager::Initialize(const MagEngine::EngineContext &engineContext) {
 
 #ifdef _DEBUG
 	// NOTE: EditorUiSystemはDebugビルドでのみ生成されるため、Releaseで登録するとnull参照になる。
-	engineContext_->editorUiSystem->RegisterPanel("Scene Switcher", MagEngine::EditorUiCategory::Tools, true, [this]() {
+	engineContext_->editorUiSystem->RegisterPanel("game.switcher", "シーン切替", MagEngine::EditorUiCategory::GameDebug, MagEngine::EditorPanelScope::Engine, MagEngine::EditorDockRegion::Right, false, [this]() {
 		if (!nowScene_) {
 			return;
 		}
@@ -92,7 +92,7 @@ void SceneManager::Finalize() {
 #ifdef _DEBUG
 	if (engineContext_ && engineContext_->editorUiSystem) {
 		engineContext_->editorUiSystem->ClearScenePanels();
-		engineContext_->editorUiSystem->UnregisterPanel("Scene Switcher");
+		engineContext_->editorUiSystem->UnregisterPanel("game.switcher");
 	}
 #endif // _DEBUG
 	if (engineContext_ && engineContext_->graphics) {

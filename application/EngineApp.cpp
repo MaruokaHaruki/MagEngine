@@ -3,6 +3,7 @@
  * \brief  エンジンの接続点から現行ゲームを実行する
  *********************************************************************/
 #include "EngineApp.h"
+#include "Logger.h"
 
 namespace MagEngine {
 	///=============================================================================
@@ -11,6 +12,9 @@ namespace MagEngine {
 		if (launchOptions_.editor || !launchOptions_.scene.empty()) {
 			editorHost_ = std::make_unique<EditorHost>();
 			editorHost_->Initialize(engineContext_, launchOptions_);
+#ifdef _DEBUG
+			editorUiSystem_->ConfigureWorkspace(launchOptions_.projectRoot, launchOptions_.editor ? EditorWorkspaceMode::Edit : EditorWorkspaceMode::Game);
+#endif
 			win_->SetCloseRequestHandler([this] { return editorHost_->CanClose(); });
 			return;
 		}
@@ -26,6 +30,9 @@ namespace MagEngine {
 		sceneManager_ = std::make_unique<SceneManager>();
 		sceneManager_->SetSceneFactory(sceneFactory_.get());
 		sceneManager_->Initialize(engineContext_);
+#ifdef _DEBUG
+		editorUiSystem_->ConfigureWorkspace(launchOptions_.projectRoot.empty() ? std::filesystem::current_path() : launchOptions_.projectRoot, EditorWorkspaceMode::Game);
+#endif
 	}
 
 	///=============================================================================
@@ -45,6 +52,9 @@ namespace MagEngine {
 	///=============================================================================
 	/// ゲームの終了
 	void EngineApp::FinalizeApplication() {
+#ifdef _DEBUG
+		if (editorUiSystem_) { std::string error; if (!editorUiSystem_->SaveWorkspaceSession(error)) { Logger::Log(error, Logger::LogLevel::Warning); } }
+#endif
 		if (editorHost_) { win_->SetCloseRequestHandler({}); editorHost_->Finalize(); editorHost_.reset(); }
 		// NOTE: 部分初期化時も呼ばれるため、生成済みの所有物だけを解除する。
 		if (sceneManager_) {

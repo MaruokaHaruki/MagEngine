@@ -121,6 +121,26 @@ namespace MagEngine {
 					// メッセージ処理
 					DispatchMessage(&msg);
 				} else {
+					// 最小化中はUI/GPU記録を始めず、復帰メッセージを待つ。
+					if (win_->GetSurfaceState().IsMinimized()) { WaitMessage(); continue; }
+					if (const auto size = win_->GetSurfaceState().Pending()) {
+						std::string error;
+						if (!dxCore_->ResizeSurface(*size, error)) {
+							Logger::Log(error, Logger::LogLevel::Error); break;
+						}
+						// 予約slot 0を仮定する旧APIは未使用。フォントのSRVを上書きしない。
+						textureManager_->RefreshRenderTextureViews();
+#if ENABLE_IMGUI
+						for (uint32_t i = 0; i < 2; ++i) {
+							D3D12_SHADER_RESOURCE_VIEW_DESC view{}; view.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING; view.Texture2D.MipLevels = 1;
+							dxCore_->GetDevice()->CreateShaderResourceView(dxCore_->GetRenderTextureResource(i).Get(), &view, editorImageDescriptors_[i].cpuHandle);
+						}
+						editorUiSystem_->SetRenderSize(*size);
+#endif
+						win_->GetSurfaceState().Commit(*size);
+					}
+					const auto renderSize = dxCore_->GetRenderSize();
+					cameraManager_->SetRenderAspect(static_cast<float>(renderSize.width) / renderSize.height);
 					//---------------------------------------
 					// 更新
 					Update();
@@ -306,6 +326,16 @@ namespace MagEngine {
 
 		///--------------------------------------------------------------
 		///						 各種設定
+#if ENABLE_IMGUI
+        // 画像用SRVは永続確保し、SceneColorがPSRへ戻った後のImGui描画から参照する。
+        for (uint32_t i = 0; i < 2; ++i) {
+            editorImageDescriptors_[i] = dxCore_->GetResourceAllocator().Allocate();
+            if (!editorImageDescriptors_[i].IsValid()) { throw std::runtime_error("画像用Descriptorを確保できません"); }
+            D3D12_SHADER_RESOURCE_VIEW_DESC view{}; view.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING; view.Texture2D.MipLevels = 1;
+            dxCore_->GetDevice()->CreateShaderResourceView(dxCore_->GetRenderTextureResource(i).Get(), &view, editorImageDescriptors_[i].cpuHandle);
+        }
+        editorUiSystem_->SetSceneTexture([this] { return editorImageDescriptors_[dxCore_->GetRenderResourceIndex()].gpuHandle.ptr; });
+#endif
 		// ライトマネージャへラインマネージャポインタの受け渡し
 		lightManager_->SetLineManager(lineManager_.get());
 
@@ -342,6 +372,15 @@ namespace MagEngine {
 	///=============================================================================
 	///						更新
 	void MagFramework::Update() {
+#if ENABLE_IMGUI
+        Input::GetInstance()->Update();
+        Input::GetInstance()->SetUiInputReadEnabled(true);
+        try { ImGuiPreDraw(); } catch (...) { Input::GetInstance()->SetUiInputReadEnabled(false); throw; }
+        Input::GetInstance()->SetUiInputReadEnabled(false);
+        auto viewportState = editorUiSystem_->GetViewport().GetInputState();
+        viewportState.allowInput = viewportState.allowInput && GetForegroundWindow() == win_->GetWindowHandle();
+        Input::GetInstance()->SetApplicationViewport(viewportState);
+#endif
 		const auto currentFrameTime = std::chrono::steady_clock::now();
 		float rawDeltaTime = 1.0f / 60.0f;
 		if (hasPreviousFrameTime_) {
@@ -395,7 +434,9 @@ namespace MagEngine {
 
 		//========================================
 		// インプットの更新
+#if !ENABLE_IMGUI
 		Input::GetInstance()->Update();
+#endif
 
 		//========================================
 		// アプリケーションの更新
@@ -405,6 +446,9 @@ namespace MagEngine {
 	///=============================================================================
 	///						終了処理
 	void MagFramework::Finalize() {
+#if ENABLE_IMGUI
+		if (uiFrameOpen_) { ImGuiPostDraw(); }
+#endif
 		// GPUが参照中のリソースを各マネージャが解放しないよう、破棄前に同期する
 		if (dxCore_) {
 			dxCore_->WaitForGpuIdle();
@@ -525,6 +569,7 @@ namespace MagEngine {
 		// COMMENT: デバッグビルドのみ ImGui フレーム開始
 #if ENABLE_IMGUI
 		imguiSetup_->Begin();
+		uiFrameOpen_ = true;
 #ifdef _DEBUG
 		// NOTE: 個別Debug UIはEditorUiSystemへ登録し、Frameworkは実行入口だけを持つ。
 		if (editorUiSystem_) {
@@ -540,7 +585,7 @@ namespace MagEngine {
 		//========================================
 		// COMMENT: デバッグビルドのみ ImGui フレーム終了
 #if ENABLE_IMGUI
-		imguiSetup_->End();
+		if (uiFrameOpen_) { imguiSetup_->End(); uiFrameOpen_ = false; }
 #endif // ENABLE_IMGUI
 	}
 
@@ -649,7 +694,6 @@ namespace MagEngine {
 		// PostProcessフェーズ描画（SceneColorからPresentColorへ合成）
 		MagFramework::ExecuteRenderPhase(RenderPhase::PostProcess);
 
-		MagFramework::ImGuiPreDraw();
 		MagFramework::ImGuiPostDraw();
 
 		//========================================

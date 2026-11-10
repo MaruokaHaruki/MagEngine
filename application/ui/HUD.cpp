@@ -17,8 +17,8 @@ using namespace MagMath;
 #include <utility>
 using namespace MagEngine;
 
-const float SCREEN_WIDTH = 1280.0f;
-const float SCREEN_HEIGHT = 720.0f;
+
+
 
 namespace {
 	class ScopedLineRenderMode {
@@ -531,7 +531,7 @@ void HUD::Draw() {
 ///                        HUD文字用スクリーン座標変換
 Vector2 HUD::GetTextPosition(float hudX, float hudY) {
 	if (!currentCamera_) {
-		return {SCREEN_WIDTH * 0.5f + hudX * 24.0f, SCREEN_HEIGHT * 0.5f - hudY * 24.0f};
+		return {screenWidth_ * 0.5f + hudX * 24.0f, screenHeight_ * 0.5f - hudY * 24.0f};
 	}
 
 	const Vector3 worldPosition = GetHUDPosition(hudX, hudY);
@@ -547,7 +547,7 @@ Vector2 HUD::GetTextPosition(float hudX, float hudY) {
 
 	const float ndcX = clipPosition.x / clipPosition.w;
 	const float ndcY = clipPosition.y / clipPosition.w;
-	return {(ndcX + 1.0f) * SCREEN_WIDTH * 0.5f, (1.0f - ndcY) * SCREEN_HEIGHT * 0.5f};
+	return {(ndcX + 1.0f) * screenWidth_ * 0.5f, (1.0f - ndcY) * screenHeight_ * 0.5f};
 }
 
 float HUD::GetTextRotationRadians() {
@@ -1342,7 +1342,7 @@ void HUD::DrawEnemyIndicators(float progress) {
 	assert(lineManager_);
 	LineManager *lineManager = lineManager_;
 	Camera *camera = currentCamera_;
-	Vector3 screenCenter = {SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f, 0.0f};
+	Vector3 screenCenter = {screenWidth_ / 2.0f, screenHeight_ / 2.0f, 0.0f};
 
 	// 敵リストを取得
 	const auto &enemies = enemyManager->GetEnemies();
@@ -1361,8 +1361,8 @@ void HUD::DrawEnemyIndicators(float progress) {
 		// 簡易的なスクリーン座標計算
 		// X: 敵が左右どこにいるか（プレイヤーの横方向）
 		// Y: 敵が上下どこにいるか（プレイヤーの上下方向）
-		float screenX = SCREEN_WIDTH / 2.0f;
-		float screenY = SCREEN_HEIGHT / 2.0f;
+		float screenX = screenWidth_ / 2.0f;
+		float screenY = screenHeight_ / 2.0f;
 
 		if (distance > 0.1f) {
 			// プレイヤーの回転情報を取得
@@ -1394,8 +1394,8 @@ void HUD::DrawEnemyIndicators(float progress) {
 		}
 
 		// 画面外チェック（画面内のみ描画）
-		if (screenX < 0.0f || screenX > SCREEN_WIDTH ||
-			screenY < 0.0f || screenY > SCREEN_HEIGHT) {
+		if (screenX < 0.0f || screenX > screenWidth_ ||
+			screenY < 0.0f || screenY > screenHeight_) {
 			continue;
 		}
 
@@ -1471,7 +1471,7 @@ void HUD::DrawJustAvoidanceNotification(float progress) {
 	}
 
 	// テキスト表示位置（画面上部中央）
-	Vector3 textPos = {SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.2f, 0.0f};
+	Vector3 textPos = {screenWidth_ * 0.5f, screenHeight_ * 0.2f, 0.0f};
 
 	// 成功率に基づいて色を決定
 	Vector4 textColor;

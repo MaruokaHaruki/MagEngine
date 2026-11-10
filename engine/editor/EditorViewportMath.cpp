@@ -16,6 +16,15 @@ namespace MagEngine {
 		const float width = (std::min)(r.width, r.height * aspect); const float height = width / aspect;
 		return {r.x + (r.width - width) * 0.5f, r.y + (r.height - height) * 0.5f, width, height};
 	}
+	MagMath::Vector2 MapViewportPosition(MagMath::Vector2 point, const EditorViewportInputState &s) {
+		const auto &r = s.imageRect;
+		if (!s.allowInput || r.width <= 0 || r.height <= 0 || s.renderSize.x <= 0 || s.renderSize.y <= 0 || point.x < r.x || point.y < r.y || point.x >= r.x + r.width || point.y >= r.y + r.height) { return {}; }
+		return {(point.x - r.x) * s.renderSize.x / r.width - s.renderSize.x * 0.5f, (point.y - r.y) * s.renderSize.y / r.height - s.renderSize.y * 0.5f};
+	}
+	MagMath::Vector2 MapViewportDelta(MagMath::Vector2 delta, const EditorViewportInputState &s) {
+		if (!s.allowInput || s.imageRect.width <= 0 || s.imageRect.height <= 0) { return {}; }
+		return {delta.x * s.renderSize.x / s.imageRect.width, delta.y * s.renderSize.y / s.imageRect.height};
+	}
 	std::optional<EditorRay> ScreenToViewportRay(MagMath::Vector2 point, const ViewportRect &r, const MagMath::Transform &camera, float fov) {
 		if (r.width <= 0 || r.height <= 0 || point.x < r.x || point.y < r.y || point.x >= r.x + r.width || point.y >= r.y + r.height || !std::isfinite(fov) || fov <= 0 || fov >= 3.14159265f) { return {}; }
 		using namespace DirectX;

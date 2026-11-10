@@ -6,6 +6,7 @@
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 #include "MagMath.h"
+#include "engine/editor/EditorViewportMath.h"
 #include "memory"
 #include <wrl/client.h>
 using Microsoft::WRL::ComPtr;
@@ -39,6 +40,10 @@ namespace MagEngine {
 		void Update();
 		/// @brief ゲーム向け読取の許可。falseでもOS状態の取得とImGui入力は維持する
 		void SetApplicationInputEnabled(bool enabled) { applicationInputEnabled_ = enabled; }
+		/// @brief UI描画後、ゲーム更新前に1回設定。nulloptなら従来のウィンドウ基準へ戻る
+		void SetApplicationViewport(std::optional<EditorViewportInputState> state);
+		/// @brief UIコールバックの間だけ、生の取得済み入力を診断へ渡す
+		void SetUiInputReadEnabled(bool enabled) { uiInputRead_ = enabled; }
 
 		///--------------------------------------------------------------
 		///						 マウス系
@@ -256,6 +261,10 @@ namespace MagEngine {
 		// デッドゾーン
 		float stickDeadZone_ = 0.2f;
 		bool applicationInputEnabled_ = true;
+		bool IsApplicationInputEnabled() const { return uiInputRead_ || (applicationInputEnabled_ && (!applicationViewport_ || applicationViewport_->allowInput)); }
+		bool uiInputRead_ = false;
+		std::optional<EditorViewportInputState> applicationViewport_;
+		bool suppressViewportTriggers_ = false;
 		friend struct EditorInputTests; // デバイス取得後の境界状態をCPUで直接検証する
 	};
 }

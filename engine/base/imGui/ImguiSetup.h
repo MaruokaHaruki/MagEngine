@@ -112,6 +112,8 @@ namespace MagEngine {
 		 * \brief  RebuildFonts フォント情報をImGuiに反映
 		 */
 		void RebuildFonts();
+		/// @brief フレーム開始前に基準寸法とフォントを再構築。GPU完了待ちを含む
+		void ApplyDpi(float scale);
 
 		/**----------------------------------------------------------------------------
 		 * \brief  GetFont ロード済みフォントを取得
@@ -147,6 +149,9 @@ namespace MagEngine {
 		//========================================
 		// ロード済みフォントのマップ
 		std::unordered_map<std::string, ImFont *> loadedFonts_;
+		struct FontSource { std::string path; float size; };
+		std::unordered_map<std::string, FontSource> fontSources_;
+		float dpiScale_ = 1;
 		// フォントがリビルドされたか
 		bool fontsDirty_ = false;
 	};

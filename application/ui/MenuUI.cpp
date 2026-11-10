@@ -158,6 +158,17 @@ void MenuUI::Finalize() {
 ///=============================================================================
 ///                        更新
 void MenuUI::Update(float unscaledDeltaTime) {
+	if (spriteSetup_) {
+		const auto size = spriteSetup_->GetDXManager()->GetRenderSize();
+		const float dx = (static_cast<float>(size.width) - screenWidth_) * 0.5f;
+		const float dy = (static_cast<float>(size.height) - screenHeight_) * 0.5f;
+		if (dx != 0 || dy != 0) {
+			screenWidth_ = static_cast<float>(size.width); screenHeight_ = static_cast<float>(size.height);
+			backgroundSprite_->SetSize({screenWidth_, screenHeight_}); backgroundSprite_->SetPosition({screenWidth_ * 0.5f, screenHeight_ * 0.5f});
+			titleSprite_->SetPosition({screenWidth_ * 0.5f, screenHeight_ * 0.15f});
+			for (auto &[id, button] : buttons_) { button.basePosition.x += dx; button.basePosition.y += dy; button.textPosition.x += dx; button.textPosition.y += dy; }
+		}
+	}
 
 	assert(input_);
 	Input *input = input_;

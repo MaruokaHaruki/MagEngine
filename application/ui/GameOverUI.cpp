@@ -89,6 +89,11 @@ void GameOverUI::Finalize() {
 ///=============================================================================
 // 毎フレーム更新
 void GameOverUI::Update(float unscaledDeltaTime) {
+    // 初期化時のキャッシュを描画済み寸法へ追従させる。
+    if (spriteSetup_) {
+        const auto size = spriteSetup_->GetDXManager()->GetRenderSize();
+        screenWidth_ = static_cast<float>(size.width); screenHeight_ = static_cast<float>(size.height);
+    }
 	if (state_ == GameOverState::Idle || state_ == GameOverState::Done) {
 		return;
 	}

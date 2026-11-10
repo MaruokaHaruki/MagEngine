@@ -15,6 +15,12 @@
  ///=============================================================================
  ///                        namespace MagEngine
 namespace MagEngine {
+	///=============================================================================
+	/// 描画寸法を全カメラへ反映する
+	void CameraManager::SetRenderAspect(float aspect) {
+		if (!std::isfinite(aspect) || aspect <= 0) return;
+		for (auto &[name, camera] : cameras_) camera->SetAspectRatio(aspect);
+	}
 
 	///=============================================================================
 	///						終了処理

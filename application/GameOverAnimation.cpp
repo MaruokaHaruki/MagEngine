@@ -82,6 +82,11 @@ void GameOverAnimation::Finalize() {
 //=============================================================================
 // Update
 void GameOverAnimation::Update(float unscaledDeltaTime) {
+    // 初期化時のキャッシュを描画済み寸法へ追従させる。
+    if (spriteSetup_) {
+        const auto size = spriteSetup_->GetDXManager()->GetRenderSize();
+        screenWidth_ = static_cast<float>(size.width); screenHeight_ = static_cast<float>(size.height);
+    }
 	if (state_ == GameOverAnimationState::Idle || state_ == GameOverAnimationState::Done) {
 		return;
 	}

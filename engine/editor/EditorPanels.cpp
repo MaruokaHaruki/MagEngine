@@ -4,6 +4,7 @@
  *********************************************************************/
 #include "EditorPanels.h"
 #include "EditorUiSystem.h"
+#include "EditorTheme.h"
 #ifdef _DEBUG
 #include "imgui.h"
 #include <DirectXMath.h>
@@ -23,22 +24,30 @@ namespace MagEngine {
 		bool Text(const char *label, std::string &value) {
 			std::vector<char> buffer((std::max)(value.size() + 256, size_t{1024}), '\0');
 			std::copy(value.begin(), value.end(), buffer.begin());
-			if (!ImGui::InputText(label, buffer.data(), buffer.size())) { return false; }
+			ImGui::TextUnformatted(label); ImGui::SetNextItemWidth(-1); ImGui::PushID(label);
+			const bool changed = ImGui::InputText("##text", buffer.data(), buffer.size()); ImGui::PopID();
+			if (!changed) { return false; }
 			value = buffer.data(); return true;
 		}
 	}
 	///=============================================================================
 	/// パネル登録と編集履歴
 	void EditorPanels::Register(EditorUiSystem &system) {
-		system.RegisterPanel("制作操作", EditorUiCategory::Scene, true, [this] { DrawToolbar(); });
-		system.RegisterPanel("オブジェクト", EditorUiCategory::Scene, true, [this] { DrawHierarchy(); });
-		system.RegisterPanel("設定", EditorUiCategory::Scene, true, [this] { DrawInspector(); });
-		system.RegisterPanel("シーン", EditorUiCategory::Scene, true, [this] { DrawViewport(); });
-		system.RegisterPanel("資産・メッセージ", EditorUiCategory::Scene, true, [this] { DrawAssets(); });
-	}
-	void EditorPanels::Unregister(EditorUiSystem &system) {
-		for (const char *name : {"制作操作", "オブジェクト", "設定", "シーン", "資産・メッセージ"}) { system.UnregisterPanel(name); }
-	}
+        system_ = &system;
+        system.SetToolbar([this] { DrawToolbar(); });
+        system.SetFileMenu([this] { DrawFileMenu(); });
+        system.SetBeforeLayoutChange([this] { FinishEditing(); });
+        system.SetAdditionalMessages([this] { if (!error.empty()) { ImGui::TextWrapped("%s", error.c_str()); } });
+        system.GetViewport().SetOverlay([this](const ViewportRect &rect) { DrawViewportOverlay(rect); });
+        system.RegisterPanel("authoring.objects", "オブジェクト", EditorUiCategory::Authoring, EditorPanelScope::Engine, EditorDockRegion::Left, true, [this] { DrawHierarchy(); });
+        system.RegisterPanel("authoring.inspector", "設定", EditorUiCategory::Authoring, EditorPanelScope::Engine, EditorDockRegion::Right, true, [this] { DrawInspector(); });
+        system.RegisterPanel("authoring.assets", "資産", EditorUiCategory::Authoring, EditorPanelScope::Engine, EditorDockRegion::Bottom, true, [this] { DrawAssets(); });
+        system.RegisterPanel("authoring.playchanges", "再生変更の反映", EditorUiCategory::Tools, EditorPanelScope::Engine, EditorDockRegion::Bottom, false, [this] { DrawPlayChanges(); });
+    }
+    void EditorPanels::Unregister(EditorUiSystem &system) {
+        for (const char *id : {"authoring.objects", "authoring.inspector", "authoring.assets", "authoring.playchanges"}) { system.UnregisterPanel(id); }
+        system.SetToolbar({}); system.SetFileMenu({}); system.SetBeforeLayoutChange({}); system.SetAdditionalMessages({}); system.GetViewport().SetOverlay({}); system_ = nullptr;
+    }
 	void EditorPanels::Commit(EditorDocument candidate) {
 		for (const auto &record : candidate.objects) { const auto *type = registry_.Find(record.typeId); if (!type || (type->validate && !type->validate(record, error))) { return; } }
 		if (!session_.IsRunning()) { history_.Execute(document_, candidate); return; }
@@ -65,37 +74,57 @@ namespace MagEngine {
 	///=============================================================================
 	/// 操作・一覧・設定
 	void EditorPanels::DrawToolbar() {
-		ImGui::TextUnformatted(session_.IsRunning() ? "再生中の調整" : "シーン編集");
-		ImGui::SameLine(); ImGui::TextUnformatted(EqualDocument(document_, saved_) ? "保存済み" : "● 未保存");
-		if (ImGui::Button("保存")) { FlushEdit(); if (actions.save) { actions.save(); } }
-		ImGui::BeginDisabled(session_.IsRunning());
-		ImGui::SameLine(); if (ImGui::Button("読込")) { FlushEdit(); if (actions.load) { actions.load(); } }
-		ImGui::SameLine(); if (ImGui::Button("Blender読込")) { FlushEdit(); if (actions.importBlender) { actions.importBlender(); } }
-		ImGui::EndDisabled();
-		Text("シーン名", sceneName);
-		if (ImGui::Button("元に戻す")) { FlushEdit(); if (session_.IsRunning()) { session_.UndoUserEdit(error); } else { history_.Undo(document_); } }
-		ImGui::SameLine(); if (ImGui::Button("やり直す")) { FlushEdit(); if (session_.IsRunning()) { session_.RedoUserEdit(error); } else { history_.Redo(document_); } }
-		if (!session_.IsRunning()) {
-			if (ImGui::Button("▶ 再生")) { FlushEdit(); if (actions.play) { actions.play(); } }
-		} else {
-			if (ImGui::Button(session_.IsPaused() ? "続ける" : "一時停止")) { FlushEdit(); session_.Pause(!session_.IsPaused()); }
-			ImGui::SameLine(); if (ImGui::Button("■ 停止")) { FlushEdit(); if (actions.stop) { actions.stop(); } }
-		}
-		if (!session_.IsRunning() && !session_.Pending().empty()) {
-			ImGui::SeparatorText("再生中の変更を残す");
-			for (const auto &[key, change] : session_.Pending()) {
-				const auto *object = FindObject(document_, key.objectId);
-				const std::string label = (object ? object->name : "削除済み") + " / " + key.property + "##" + std::to_string(key.objectId);
-				auto found = std::find_if(selectedChanges_.begin(), selectedChanges_.end(), [&key](const auto &v) { return v.objectId == key.objectId && v.property == key.property; });
-				bool checked = found != selectedChanges_.end();
-				if (ImGui::Checkbox(label.c_str(), &checked)) { if (checked) { selectedChanges_.push_back(key); } else { selectedChanges_.erase(found); } }
-				ImGui::TextWrapped("%s → %s", change.before.dump().c_str(), change.after.dump().c_str());
-			}
-			if (ImGui::Button("選択した設定を反映")) { session_.ApplySelected(document_, selectedChanges_, history_, error); selectedChanges_.clear(); }
-			ImGui::SameLine(); if (ImGui::Button("残りを破棄")) { session_.DiscardPending(); selectedChanges_.clear(); }
-		}
-		if (ImGui::IsKeyPressed(ImGuiKey_Escape)) { FlushEdit(true); }
-	}
+        const bool narrow = EditorToolbarRows(ImGui::GetContentRegionAvail().x, ImGui::GetFontSize() / 16.0f) > 1;
+        if (ImGui::BeginTable("authoring.toolbar", narrow ? 1 : 3, ImGuiTableFlags_SizingStretchProp)) {
+            ImGui::TableSetupColumn("files", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+            if (!narrow) {
+                ImGui::TableSetupColumn("play", ImGuiTableColumnFlags_WidthStretch, 0.3f);
+                ImGui::TableSetupColumn("state", ImGuiTableColumnFlags_WidthStretch, 0.3f);
+            }
+            ImGui::TableNextColumn();
+            if (ImGui::Button("保存")) { FlushEdit(); if (actions.save) { actions.save(); } }
+            ImGui::SameLine(); if (ImGui::Button("戻す")) { FlushEdit(); if (session_.IsRunning()) { session_.UndoUserEdit(error); } else { history_.Undo(document_); } }
+            ImGui::SameLine(); if (ImGui::Button("やり直す")) { FlushEdit(); if (session_.IsRunning()) { session_.RedoUserEdit(error); } else { history_.Redo(document_); } }
+            ImGui::TableNextColumn();
+            if (!session_.IsRunning()) { if (ImGui::Button("再生")) { FlushEdit(); if (actions.play) { actions.play(); } } }
+            else {
+                if (ImGui::Button(session_.IsPaused() ? "続ける" : "一時停止")) { FlushEdit(); session_.Pause(!session_.IsPaused()); }
+                ImGui::SameLine(); if (ImGui::Button("停止")) { FlushEdit(); if (actions.stop) { actions.stop(); } }
+            }
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(session_.IsRunning() ? "再生中の調整" : "シーン編集");
+            ImGui::SameLine(); ImGui::TextDisabled("%s", EqualDocument(document_, saved_) ? "保存済み" : "未保存");
+            ImGui::EndTable();
+        }
+        ImGui::RadioButton("移動", &mode_, 0); ImGui::SameLine(); ImGui::RadioButton("回転", &mode_, 1); ImGui::SameLine(); ImGui::RadioButton("拡縮", &mode_, 2);
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) { FlushEdit(true); }
+        if (system_) {
+            const bool pending = !session_.IsRunning() && !session_.Pending().empty();
+            system_->SetPanelOpen("authoring.playchanges", pending);
+            system_->SetPanelTitle("authoring.playchanges", "再生変更の反映 (" + std::to_string(session_.Pending().size()) + ")");
+        }
+    }
+    void EditorPanels::DrawFileMenu() {
+        Text("保存名", sceneName);
+        if (ImGui::MenuItem("保存")) { FlushEdit(); if (actions.save) { actions.save(); } }
+        ImGui::BeginDisabled(session_.IsRunning());
+        if (ImGui::MenuItem("読込")) { FlushEdit(); if (actions.load) { actions.load(); } }
+        if (ImGui::MenuItem("Blender読込")) { FlushEdit(); if (actions.importBlender) { actions.importBlender(); } }
+        ImGui::EndDisabled();
+    }
+    void EditorPanels::DrawPlayChanges() {
+        if (session_.IsRunning() || session_.Pending().empty()) { ImGui::TextUnformatted("反映する変更はありません"); return; }
+        for (const auto &[key, change] : session_.Pending()) {
+            const auto *object = FindObject(document_, key.objectId);
+            const std::string label = (object ? object->name : "削除済み") + " / " + key.property + "##" + std::to_string(key.objectId);
+            auto found = std::find_if(selectedChanges_.begin(), selectedChanges_.end(), [&key](const auto &v) { return v.objectId == key.objectId && v.property == key.property; });
+            bool checked = found != selectedChanges_.end();
+            if (ImGui::Checkbox(label.c_str(), &checked)) { if (checked) { selectedChanges_.push_back(key); } else { selectedChanges_.erase(found); } }
+            ImGui::TextWrapped("%s → %s", change.before.dump().c_str(), change.after.dump().c_str());
+        }
+        if (ImGui::Button("選択した設定を反映")) { session_.ApplySelected(document_, selectedChanges_, history_, error); selectedChanges_.clear(); }
+        ImGui::SameLine(); if (ImGui::Button("残りを破棄")) { session_.DiscardPending(); selectedChanges_.clear(); }
+    }
 	void EditorPanels::DrawHierarchy() {
 		Text("検索", search_);
 		ImGui::BeginDisabled(session_.IsRunning() || editing_);
@@ -111,20 +140,32 @@ namespace MagEngine {
 	}
 	void EditorPanels::DrawInspector() {
 		auto &document = ActiveDocument(); auto *object = FindObject(document, selected);
-		if (!object) { selected = 0; ImGui::TextUnformatted("対象を一覧またはシーンで選択してください"); return; }
-		ImGui::Text("ID: %llu", static_cast<unsigned long long>(selected));
+		if (!object) { selected = 0; ImGui::TextWrapped("対象を一覧またはシーンで選択してください"); return; }
+		if (ImGui::CollapsingHeader("詳細情報")) { ImGui::Text("ID: %llu", static_cast<unsigned long long>(selected)); }
+		ImGui::SeparatorText("名前と表示");
 		auto before = document; bool changed = Text("名前", object->name); TrackEdit(changed, before, "name");
 		object = FindObject(document, selected); before = document; changed = ImGui::Checkbox("表示", &object->visible); TrackEdit(changed, before, "visible");
-		object = FindObject(document, selected); before = document;
-		changed = ImGui::DragFloat3("位置", &object->transform.translate.x, 0.1f); TrackEdit(changed, before, "position");
-		object = FindObject(document, selected); before = document;
-		constexpr float degrees = 180.0f / std::numbers::pi_v<float>;
-		float rotation[]{object->transform.rotate.x * degrees, object->transform.rotate.y * degrees, object->transform.rotate.z * degrees};
-		changed = ImGui::DragFloat3("回転（度）", rotation, 0.5f);
-		if (changed) { object->transform.rotate = {rotation[0] / degrees, rotation[1] / degrees, rotation[2] / degrees}; } TrackEdit(changed, before, "rotation");
-		object = FindObject(document, selected); before = document;
-		changed = ImGui::DragFloat3("大きさ（倍率）", &object->transform.scale.x, 0.01f, 0.001f, 10000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp); TrackEdit(changed, before, "scale");
-		if (ImGui::Button("Transformを初期値に戻す")) { FlushEdit(); auto candidate = document; FindObject(candidate, selected)->transform = {{1, 1, 1}, {}, {}}; Commit(std::move(candidate)); }
+        ImGui::SeparatorText("位置・回転・大きさ");
+        auto vectorField = [&](const char *label, const char *property, float speed, bool degrees) {
+            ImGui::PushID(property); ImGui::TextUnformatted(label);
+            if (ImGui::BeginTable("axes", ImGui::GetContentRegionAvail().x < 360 * ImGui::GetFontSize() / 16.0f ? 1 : 3, ImGuiTableFlags_SizingStretchSame)) {
+                const ImVec4 colors[]{{0.94f,0.38f,0.38f,1},{0.4f,0.85f,0.5f,1},{0.4f,0.65f,1,1}};
+                for (int axis = 0; axis < 3; ++axis) {
+                    ImGui::TableNextColumn(); object = FindObject(document, selected); before = document;
+                    auto value = ReadEditorProperty(*object, property); float component = value[axis].get<float>();
+                    constexpr float factor = 180.0f / std::numbers::pi_v<float>; if (degrees) { component *= factor; }
+                    ImGui::TextColored(colors[axis], "%s", axis == 0 ? "X" : axis == 1 ? "Y" : "Z"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                    ImGui::PushID(axis); const bool scale = std::string_view(property) == "scale";
+                    const bool edited = ImGui::DragFloat("##value", &component, speed, scale ? 0.001f : 0, scale ? 10000.0f : 0, "%.3f", scale ? ImGuiSliderFlags_AlwaysClamp : ImGuiSliderFlags_None);
+                    if (edited) { value[axis] = degrees ? component / factor : component; WriteEditorProperty(*object, property, value, error); }
+                    TrackEdit(edited, before, property); ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+            ImGui::PopID();
+        };
+        vectorField("位置", "position", 0.1f, false); vectorField("回転（度）", "rotation", 0.5f, true); vectorField("大きさ（倍率）", "scale", 0.01f, false);
+		if (ImGui::Button("Transformを初期化")) { FlushEdit(); auto candidate = document; FindObject(candidate, selected)->transform = {{1, 1, 1}, {}, {}}; Commit(std::move(candidate)); }
 		object = FindObject(document, selected);
 		ImGui::SeparatorText("描画設定"); ImGui::TextWrapped("モデル: %s", object->modelPath.empty() ? "未設定（空オブジェクト）" : object->modelPath.c_str());
 		ImGui::TextWrapped("下の資産一覧でモデルを選択すると、この対象へ設定します。");
@@ -139,7 +180,7 @@ namespace MagEngine {
 			std::sort(assets_.begin(), assets_.end());
 		}
 		if (!error.empty()) { ImGui::TextWrapped("%s", error.c_str()); }
-		static char filter[256]{}; ImGui::InputText("モデル検索", filter, sizeof(filter));
+		static char filter[256]{}; ImGui::TextUnformatted("モデル検索"); ImGui::SetNextItemWidth(-1); ImGui::InputText("##modelSearch", filter, sizeof(filter));
 		for (const auto &asset : assets_) {
 			if (asset.find(filter) == std::string::npos) { continue; }
 			if (ImGui::Selectable(asset.c_str()) && selected) { FlushEdit(); auto candidate = ActiveDocument(); if (auto *object = FindObject(candidate, selected)) { object->modelPath = asset; Commit(std::move(candidate)); } }
@@ -147,18 +188,12 @@ namespace MagEngine {
 	}
 	///=============================================================================
 	/// シーン画像と選択・軸操作
-	void EditorPanels::DrawViewport() {
-		ImGui::RadioButton("移動", &mode_, 0); ImGui::SameLine(); ImGui::RadioButton("回転", &mode_, 1); ImGui::SameLine(); ImGui::RadioButton("拡縮", &mode_, 2);
-		ImGui::TextUnformatted("右ドラッグ: 視点 / WASD: 移動 / QE: 上下 / 色付きの軸: 配置操作");
-		const auto position = ImGui::GetCursorScreenPos(), available = ImGui::GetContentRegionAvail();
-		const auto rect = FitViewport({position.x, position.y, available.x, available.y}, 16.0f / 9.0f);
-		imageRect_ = rect;
-		if (rect.width <= 0 || rect.height <= 0) { viewportFocused = false; return; }
-		ImGui::SetCursorScreenPos({rect.x, rect.y});
-		const auto texture = actions.sceneTexture ? actions.sceneTexture() : 0;
-		if (!texture) { ImGui::TextUnformatted("描画画面を準備しています"); return; }
-		ImGui::Image(static_cast<ImTextureID>(texture), {rect.width, rect.height});
-		const bool hovered = ImGui::IsItemHovered(); viewportFocused = hovered && ImGui::IsWindowFocused() && !ImGui::GetIO().WantTextInput;
+	void EditorPanels::DrawViewportOverlay(const ViewportRect &rect) {
+        imageRect_ = rect;
+        const auto mousePosition = ImGui::GetIO().MousePos;
+        const bool hovered = mousePosition.x >= rect.x && mousePosition.y >= rect.y && mousePosition.x < rect.x + rect.width && mousePosition.y < rect.y + rect.height && ImGui::IsWindowHovered();
+        viewportFocused = hovered && ImGui::IsWindowFocused() && !ImGui::GetIO().WantTextInput;
+
 		auto &document = ActiveDocument();
 		auto project = [&document, rect](MagMath::Vector3 point) -> std::optional<ImVec2> {
 			using namespace DirectX; const auto &c = document.camera;

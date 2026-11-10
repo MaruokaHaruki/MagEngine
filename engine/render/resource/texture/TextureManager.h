@@ -75,6 +75,8 @@ namespace MagEngine {
 
 		/// @brief CreateRenderTextureMetaData レンダーテクスチャのメタデータを生成
 		void CreateRenderTextureMetaData();
+		/// @brief GPU完了待ち後、既存SRVと描画画像の寸法だけを更新する
+		void RefreshRenderTextureViews();
 
 	private:
 		//========================================

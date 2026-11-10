@@ -710,7 +710,7 @@ void GamePlayScene::RegisterRenderables(MagEngine::RenderWorld &renderWorld) {
 ///						Editor Panel登録
 void GamePlayScene::RegisterEditorPanels() {
 	// NOTE: Scene所有オブジェクトを参照するため、Scene切替時は必ずClearScenePanelsで登録を破棄する。
-	engineContext_->editorUiSystem->RegisterPanel("GamePlay", MagEngine::EditorUiCategory::Scene, true, [this]() {
+	engineContext_->editorUiSystem->RegisterPanel("game.scene.gameplay", "ゲームプレイ", MagEngine::EditorUiCategory::GameDebug, MagEngine::EditorPanelScope::Scene, MagEngine::EditorDockRegion::Right, false, [this]() {
 		DrawDebugUi();
 	});
 }

@@ -55,6 +55,8 @@ namespace MagEngine {
 
 		/// \brief 全てのカメラの更新
 		void UpdateAll(LineManager &lineManager);
+		/// @brief 所有する全カメラの縦横比を描画寸法へ合わせる
+		void SetRenderAspect(float aspect);
 
 		/// @brief デバックカメラの更新
 		void DebugCameraUpdate();

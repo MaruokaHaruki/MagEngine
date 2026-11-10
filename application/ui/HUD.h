@@ -61,6 +61,11 @@ public:
 	}
 
 private:
+	float screenWidth_ = 1280, screenHeight_ = 720; // GPUへ適用済みのピクセル寸法
+public:
+	/// @brief 描画前に適用済みの描画寸法を受け取る
+	void SetRenderSize(float width, float height) { if (width > 0 && height > 0) { screenWidth_ = width; screenHeight_ = height; } }
+private:
 	/// @brief 画面中央へ照準を描画する
 	/// @param progress 展開アニメーションの進行度
 	void DrawBoresight(float progress = 1.0f);

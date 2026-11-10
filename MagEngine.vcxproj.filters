@@ -597,4 +597,17 @@
       <Filter>engine\utils</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="engine\base\imGui\EditorPanelRegistry.h"><Filter>engine\base\imGui</Filter></ClInclude>
+	<ClInclude Include="engine\base\core\WindowSurfaceState.h"><Filter>engine\base\core</Filter></ClInclude>
+	<ClInclude Include="engine\base\imGui\EditorTheme.h"><Filter>engine\base\imGui</Filter></ClInclude>
+	<ClCompile Include="engine\base\imGui\EditorTheme.cpp"><Filter>engine\base\imGui</Filter></ClCompile>
+    <ClCompile Include="engine\base\imGui\EditorPanelRegistry.cpp"><Filter>engine\base\imGui</Filter></ClCompile>
+    <ClInclude Include="engine\base\imGui\EditorLayoutStore.h"><Filter>engine\base\imGui</Filter></ClInclude>
+    <ClCompile Include="engine\base\imGui\EditorLayoutStore.cpp"><Filter>engine\base\imGui</Filter></ClCompile>
+    <ClInclude Include="engine\base\imGui\EditorWorkspaceLayout.h"><Filter>engine\base\imGui</Filter></ClInclude>
+    <ClCompile Include="engine\base\imGui\EditorWorkspaceLayout.cpp"><Filter>engine\base\imGui</Filter></ClCompile>
+    <ClInclude Include="engine\editor\EditorViewport.h"><Filter>engine\editor</Filter></ClInclude>
+    <ClCompile Include="engine\editor\EditorViewport.cpp"><Filter>engine\editor</Filter></ClCompile>
+  </ItemGroup>
 </Project>

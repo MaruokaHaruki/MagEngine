@@ -54,7 +54,7 @@ namespace MagEngine {
 		MagMath::Matrix4x4 viewMatrix = Inverse4x4(cameraMatrix);
 		// プロジェクション行列の取得
 		MagMath::Matrix4x4 projectionMatrix = MagMath::MakePerspectiveFovMatrix(0.45f,
-			float(particleSetup_->GetDXManager()->GetWinApp().kWindowWidth_) / float(particleSetup_->GetDXManager()->GetWinApp().kWindowHeight_),
+			camera->GetAspectRatio(),
 			0.1f, 100.0f);
 // ビュープロジェクション行列の取得
 		MagMath::Matrix4x4 viewProjectionMatrix = Multiply4x4(viewMatrix, projectionMatrix);

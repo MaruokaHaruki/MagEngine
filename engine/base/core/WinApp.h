@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <string>
 #include <windows.h>
+#include "WindowSurfaceState.h"
 
  ///=============================================================================
  ///                        namespace MagEngine
@@ -51,15 +52,19 @@ namespace MagEngine {
 
 		/// @brief GetWindowWidth 	ウィンドウ横幅取得
 		/// @return 				ウィンドウ横幅
-		static constexpr int32_t GetWindowWidth() {
-			return kWindowWidth_;
+		int32_t GetWindowWidth() const {
+			return static_cast<int32_t>(surfaceState_.Requested().width);
 		}
 
 		/// @brief GetWindowHeight 	ウィンドウ縦幅取得
 		/// @return 				ウィンドウ縦幅
-		static constexpr int32_t GetWindowHeight() {
-			return kWindowHeight_;
+		int32_t GetWindowHeight() const {
+			return static_cast<int32_t>(surfaceState_.Requested().height);
 		}
+		/// @brief GPU更新成功時に所有者がCommitする要求状態
+		WindowSurfaceState &GetSurfaceState() { return surfaceState_; }
+		/// @brief Windowsから得たDPI倍率（96dpiを1とする）
+		float GetDpiScale() const { return dpiScale_; }
 
 		/// @brief GetWindowClass 	ウィンドウクラス取得
 		/// @return 				ウィンドウクラス
@@ -112,6 +117,8 @@ namespace MagEngine {
 		//========================================
 		// ウィンドウハンドル
 		HWND hwnd_{};
+		WindowSurfaceState surfaceState_;
+		float dpiScale_ = 1;
 		std::function<bool()> closeRequestHandler_;
 	};
 }

@@ -23,6 +23,18 @@ namespace MagEngine {
 			const auto *create = reinterpret_cast<CREATESTRUCTW *>(lparam);
 			SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(create->lpCreateParams));
 		}
+		auto *window = reinterpret_cast<WinApp *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+		// サイズ通知ではGPUを操作せず、次の安全なフレーム境界へ要求だけ渡す。
+		if (msg == WM_SIZE && window) {
+			window->surfaceState_.Request({LOWORD(lparam), HIWORD(lparam)});
+		}
+		if (msg == WM_DPICHANGED && window) {
+			window->dpiScale_ = HIWORD(wparam) / 96.0f;
+			const auto *rect = reinterpret_cast<const RECT *>(lparam);
+			SetWindowPos(hwnd, nullptr, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top, SWP_NOACTIVATE | SWP_NOZORDER);
+			RECT client{}; if (GetClientRect(hwnd, &client)) window->surfaceState_.Request({static_cast<uint32_t>(client.right), static_cast<uint32_t>(client.bottom)});
+			return 0;
+		}
 		if (msg == WM_CLOSE) {
 			auto *app = reinterpret_cast<WinApp *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
 			if (app && app->closeRequestHandler_ && !app->closeRequestHandler_()) { return 0; }
@@ -53,6 +65,10 @@ namespace MagEngine {
 	///=============================================================================
 	///                        ウィンドウの生成
 	void WinApp::CreateGameWindow(const wchar_t *title, int32_t clientWidth, int32_t clientHeight) {
+		// manifest指定はないため、最初のHWND生成前に一度だけ設定する。
+		// ホスト側が指定済みの場合のACCESS_DENIEDは既存の設定を維持する。
+		SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+		surfaceState_.Request({static_cast<uint32_t>(clientWidth), static_cast<uint32_t>(clientHeight)});
 		//========================================
 		// COM 初期化
 		CoInitializeEx(0, COINIT_MULTITHREADED);
@@ -89,6 +105,7 @@ namespace MagEngine {
 		//========================================
 		// ウィンドウ表示
 		ShowWindow(hwnd_, SW_SHOW);
+		dpiScale_ = GetDpiForWindow(hwnd_) / 96.0f;
 	}
 
 	///=============================================================================

@@ -7,6 +7,7 @@
  * \note   ImGui初期化、スタイル設定、イベント処理の実装
  *********************************************************************/
 #include "ImguiSetup.h"
+#include "EditorTheme.h"
 #include <filesystem>
 #include <psapi.h>
 #include <string>
@@ -38,6 +39,7 @@ namespace MagEngine {
 		} else {
 			// その他のスタイル: デフォルトフォント
 			LoadFont("firge_regular", "resources\\fonts\\Firge-Regular.ttf", 16.0f);
+			LoadFont("editor_heading", "resources\\fonts\\MS Sans Serif Bold.ttf", 18.0f);
 		}
 		// NOTE: 作品のフォントを配布しない最小アプリでもEditor基盤を起動できるようにする。
 		if (ImGui::GetIO().Fonts->Fonts.empty()) {
@@ -86,77 +88,13 @@ namespace MagEngine {
 	}
 
 	void ImguiSetup::StyleColorsEditorDark(ImGuiStyle &style) {
-		ImGui::StyleColorsDark(&style);
-
-		style.WindowPadding = ImVec2(8.0f, 8.0f);
-		style.FramePadding = ImVec2(8.0f, 4.0f);
-		style.CellPadding = ImVec2(6.0f, 4.0f);
-		style.ItemSpacing = ImVec2(8.0f, 6.0f);
-		style.ItemInnerSpacing = ImVec2(6.0f, 4.0f);
-		style.ScrollbarSize = 14.0f;
-		style.GrabMinSize = 10.0f;
-		style.WindowBorderSize = 1.0f;
-		style.ChildBorderSize = 1.0f;
-		style.PopupBorderSize = 1.0f;
-		style.FrameBorderSize = 0.0f;
-		style.TabBorderSize = 0.0f;
-		style.WindowRounding = 3.0f;
-		style.ChildRounding = 3.0f;
-		style.FrameRounding = 3.0f;
-		style.PopupRounding = 3.0f;
-		style.ScrollbarRounding = 3.0f;
-		style.GrabRounding = 3.0f;
-		style.TabRounding = 3.0f;
-		style.WindowMenuButtonPosition = ImGuiDir_Right;
-
-		ImVec4 *colors = style.Colors;
-		colors[ImGuiCol_Text] = ImVec4(0.88f, 0.90f, 0.92f, 1.00f);
-		colors[ImGuiCol_TextDisabled] = ImVec4(0.46f, 0.50f, 0.54f, 1.00f);
-		colors[ImGuiCol_WindowBg] = ImVec4(0.10f, 0.11f, 0.12f, 1.00f);
-		colors[ImGuiCol_ChildBg] = ImVec4(0.12f, 0.13f, 0.14f, 1.00f);
-		colors[ImGuiCol_PopupBg] = ImVec4(0.13f, 0.14f, 0.15f, 1.00f);
-		colors[ImGuiCol_Border] = ImVec4(0.24f, 0.27f, 0.30f, 1.00f);
-		colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-		colors[ImGuiCol_FrameBg] = ImVec4(0.18f, 0.20f, 0.22f, 1.00f);
-		colors[ImGuiCol_FrameBgHovered] = ImVec4(0.24f, 0.28f, 0.31f, 1.00f);
-		colors[ImGuiCol_FrameBgActive] = ImVec4(0.30f, 0.36f, 0.40f, 1.00f);
-		colors[ImGuiCol_TitleBg] = ImVec4(0.08f, 0.09f, 0.10f, 1.00f);
-		colors[ImGuiCol_TitleBgActive] = ImVec4(0.12f, 0.15f, 0.18f, 1.00f);
-		colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.08f, 0.09f, 0.10f, 1.00f);
-		colors[ImGuiCol_MenuBarBg] = ImVec4(0.12f, 0.13f, 0.14f, 1.00f);
-		colors[ImGuiCol_ScrollbarBg] = ImVec4(0.08f, 0.09f, 0.10f, 1.00f);
-		colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.28f, 0.31f, 0.34f, 1.00f);
-		colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.36f, 0.40f, 0.44f, 1.00f);
-		colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.48f, 0.56f, 0.62f, 1.00f);
-		colors[ImGuiCol_CheckMark] = ImVec4(0.35f, 0.73f, 0.94f, 1.00f);
-		colors[ImGuiCol_SliderGrab] = ImVec4(0.35f, 0.73f, 0.94f, 0.85f);
-		colors[ImGuiCol_SliderGrabActive] = ImVec4(0.55f, 0.83f, 1.00f, 1.00f);
-		colors[ImGuiCol_Button] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
-		colors[ImGuiCol_ButtonHovered] = ImVec4(0.28f, 0.37f, 0.43f, 1.00f);
-		colors[ImGuiCol_ButtonActive] = ImVec4(0.35f, 0.52f, 0.62f, 1.00f);
-		colors[ImGuiCol_Header] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
-		colors[ImGuiCol_HeaderHovered] = ImVec4(0.28f, 0.37f, 0.43f, 1.00f);
-		colors[ImGuiCol_HeaderActive] = ImVec4(0.35f, 0.52f, 0.62f, 1.00f);
-		colors[ImGuiCol_Separator] = ImVec4(0.24f, 0.27f, 0.30f, 1.00f);
-		colors[ImGuiCol_SeparatorHovered] = ImVec4(0.35f, 0.73f, 0.94f, 0.78f);
-		colors[ImGuiCol_SeparatorActive] = ImVec4(0.35f, 0.73f, 0.94f, 1.00f);
-		colors[ImGuiCol_ResizeGrip] = ImVec4(0.24f, 0.27f, 0.30f, 0.55f);
-		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.35f, 0.73f, 0.94f, 0.75f);
-		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.35f, 0.73f, 0.94f, 1.00f);
-		colors[ImGuiCol_Tab] = ImVec4(0.14f, 0.16f, 0.18f, 1.00f);
-		colors[ImGuiCol_TabHovered] = ImVec4(0.27f, 0.42f, 0.50f, 1.00f);
-		colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
-		colors[ImGuiCol_TabUnfocused] = ImVec4(0.11f, 0.12f, 0.13f, 1.00f);
-		colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.15f, 0.18f, 0.20f, 1.00f);
-		colors[ImGuiCol_DockingPreview] = ImVec4(0.35f, 0.73f, 0.94f, 0.70f);
-		colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.08f, 0.09f, 0.10f, 1.00f);
-		colors[ImGuiCol_TextSelectedBg] = ImVec4(0.35f, 0.73f, 0.94f, 0.35f);
-		colors[ImGuiCol_NavHighlight] = ImVec4(0.35f, 0.73f, 0.94f, 1.00f);
+		ApplyEditorTheme(style, dpiScale_);
 	}
 
 	///=============================================================================
-	///						ImGuiの受付開始処理
+	/// ImGuiの受付開始処理
 	void ImguiSetup::Begin() {
+		ApplyDpi(winApp_->GetDpiScale());
 		//========================================
 		// ImGuiのフレーム開始
 		ImGui_ImplDX12_NewFrame();	// ImGuiのDirectX12サポート開始
@@ -407,8 +345,9 @@ namespace MagEngine {
 			return false;
 		}
 		ImGuiIO &io = ImGui::GetIO();
-		ImFont *font = io.Fonts->AddFontFromFileTTF(filePath.c_str(), size, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		ImFont *font = io.Fonts->AddFontFromFileTTF(filePath.c_str(), size * dpiScale_, nullptr, io.Fonts->GetGlyphRangesJapanese());
 		if (font) {
+			fontSources_[fontName] = {filePath, size};
 			loadedFonts_[fontName] = font;
 			fontsDirty_ = true;
 			return true;
@@ -424,6 +363,24 @@ namespace MagEngine {
 			io.Fonts->Build();
 			fontsDirty_ = false;
 		}
+	}
+	///=============================================================================
+	/// フォントとスタイルを100%基準から再作成する
+	void ImguiSetup::ApplyDpi(float scale) {
+		if (!std::isfinite(scale) || scale < 0.5f || scale > 4 || scale == dpiScale_) return;
+		dxCore_->WaitForGpuIdle();
+		ImGui_ImplDX12_InvalidateDeviceObjects();
+		auto &io = ImGui::GetIO(); io.FontDefault = nullptr;
+		io.Fonts->Clear(); loadedFonts_.clear(); dpiScale_ = scale;
+		// 再登録時に同じmapを書き換えるため、基準情報だけをコピーする。
+		const auto sources = fontSources_;
+		// 本文を先に登録して既定フォントを日本語対応に保つ。
+		const auto body = sources.find("firge_regular");
+		if (body != sources.end()) LoadFont(body->first, body->second.path, body->second.size);
+		for (const auto &[name, source] : sources) if (name != "firge_regular") LoadFont(name, source.path, source.size);
+		if (io.Fonts->Fonts.empty()) { ImFontConfig config; config.SizePixels = 16 * scale; io.Fonts->AddFontDefault(&config); }
+		if (!io.Fonts->Build() || !ImGui_ImplDX12_CreateDeviceObjects()) throw std::runtime_error("DPI変更後のフォント生成に失敗しました");
+		fontsDirty_ = false; ApplyEditorTheme(ImGui::GetStyle(), scale);
 	}
 
 	///=============================================================================

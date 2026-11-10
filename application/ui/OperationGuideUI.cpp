@@ -220,6 +220,11 @@ void OperationGuideUI::Finalize() {
 ///=============================================================================
 ///                        更新
 void OperationGuideUI::Update(float unscaledDeltaTime) {
+    // 初期化時のキャッシュを描画済み寸法へ追従させる。
+    if (spriteSetup_) {
+        const auto size = spriteSetup_->GetDXManager()->GetRenderSize();
+        screenWidth_ = static_cast<float>(size.width); screenHeight_ = static_cast<float>(size.height);
+    }
 	if (!isVisible_) {
 		return;
 	}

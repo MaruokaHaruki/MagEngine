@@ -42,7 +42,6 @@ namespace MagEngine {
 		std::map<EditorObjectId, std::unique_ptr<EditorRenderable>> objects_;
 		std::map<EditorObjectId, EditorBounds> bounds_;
 		Camera camera_;
-		std::array<DescriptorHandle, 2> imageDescriptors_{};
 		std::function<void(const FrameTime &, EditorDocument &)> runtimeUpdate_;
 		Request request_ = Request::None;
 		bool hasApplied_ = false;

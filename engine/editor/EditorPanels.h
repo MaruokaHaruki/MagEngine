@@ -34,10 +34,12 @@ namespace MagEngine {
 		void FinishEditing() { FlushEdit(); }
 	private:
 		void DrawToolbar();
+		void DrawFileMenu();
 		void DrawHierarchy();
 		void DrawInspector();
 		void DrawAssets();
-		void DrawViewport();
+		void DrawViewportOverlay(const ViewportRect &rect);
+		void DrawPlayChanges();
 		void Commit(EditorDocument candidate);
 		void TrackEdit(bool changed, const EditorDocument &before, std::string_view property);
 		void FlushEdit(bool cancel = false);
@@ -58,5 +60,6 @@ namespace MagEngine {
 		MagMath::Vector3 dragValue_{};
 		std::vector<EditorPropertyKey> selectedChanges_;
 		ViewportRect imageRect_;
+		EditorUiSystem *system_ = nullptr; // 非所有。Unregisterで参照とコールバックを解除する
 	};
 }

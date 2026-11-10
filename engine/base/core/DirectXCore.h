@@ -101,6 +101,10 @@ namespace MagEngine {
 		//========================================
 		/// @brief WaitForGpuIdle GPUに積まれた処理の完了を待つ
 		void WaitForGpuIdle();
+		/// @brief UI/GPU記録開始前にサイズ依存資源を交換。失敗時は描画を続けないこと
+		bool ResizeSurface(SurfaceSize size, std::string &error);
+		/// @brief GPU資源へ適用済みのピクセル寸法
+		SurfaceSize GetRenderSize() const { return {swapChainDesc_.Width, swapChainDesc_.Height}; }
 
 		///--------------------------------------------------------------
 		///						 ダイレクトXの初期化系

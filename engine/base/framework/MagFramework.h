@@ -142,6 +142,8 @@ namespace MagEngine {
 #if ENABLE_IMGUI
 		std::unique_ptr<ImguiSetup> imguiSetup_;
 		std::unique_ptr<EditorUiSystem> editorUiSystem_;
+		std::array<DescriptorHandle, 2> editorImageDescriptors_{};
+		bool uiFrameOpen_ = false;
 #endif
 		//========================================
 		// SrvSetup

@@ -808,7 +808,7 @@ void DebugScene::DrawVoiceTestImGui() {
 #ifdef _DEBUG
 void DebugScene::RegisterEditorPanels() {
 	// NOTE: Scene所有リソースを参照するため、Scene切替時にEditorUiSystem側でScene Panelを破棄する。
-	engineContext_->editorUiSystem->RegisterPanel("Debug Scene", MagEngine::EditorUiCategory::Scene, true, [this]() {
+	engineContext_->editorUiSystem->RegisterPanel("game.scene.debug", "検証シーン", MagEngine::EditorUiCategory::GameDebug, MagEngine::EditorPanelScope::Scene, MagEngine::EditorDockRegion::Right, false, [this]() {
 		DrawDebugUi();
 	});
 }

@@ -165,6 +165,42 @@ namespace MagEngine {
 	}
 
 	///=============================================================================
+	/// フレーム境界でサイズ依存資源を交換する
+	bool DirectXCore::ResizeSurface(SurfaceSize size, std::string &error) {
+		if (!size.width || !size.height || size.width > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION || size.height > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION) {
+			error = "描画サイズが有効範囲外です"; return false;
+		}
+		if (size == GetRenderSize()) return true;
+		try {
+			WaitForGpuIdle();
+			// 候補は交換前に生成する。Descriptorは既存のスロットへ書き直す。
+			auto depth = CreateDepthStencilTextureResource(size.width, size.height);
+			std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> colors;
+			for (auto &color : colors) color = CreateRenderTextureResource(size.width, size.height, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, {0.298f, 0.427f, 0.698f, 1}, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			if (!depth || !colors[0] || !colors[1]) { error = "サイズ依存画像の生成に失敗しました"; return false; }
+			// 前フレームの記録を参照するコマンドリストもリセットしてからDXGIへ渡す。
+			if (FAILED(commandList_->Close())) { error = "リサイズ前のコマンド終了に失敗しました"; return false; }
+			BeginFrame();
+			barrier_ = {};
+			for (auto &buffer : swapChainResource_) buffer.Reset();
+			const HRESULT result = swapChain_->ResizeBuffers(SwapChainBufferCount, size.width, size.height, swapChainDesc_.Format, swapChainDesc_.Flags);
+			if (FAILED(result)) { error = std::format("ResizeBuffers failed: 0x{:08X}", static_cast<uint32_t>(result)); return false; }
+			swapChainDesc_.Width = size.width; swapChainDesc_.Height = size.height;
+			GetResourcesFromSwapChain(); CreateRenderTargetViews();
+			depthStencilResource_ = std::move(depth);
+			for (uint32_t i = 0; i < 2; ++i) renderTextureResources_[i] = std::move(colors[i]);
+			D3D12_DEPTH_STENCIL_VIEW_DESC dsv{}; dsv.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; dsv.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+			device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsv, dsvHandle_.cpuHandle);
+			for (uint32_t i = 0; i < 2; ++i) device_->CreateRenderTargetView(renderTextureResources_[i].Get(), &rtvDesc_, renderTextureRtvHandles_[i].cpuHandle);
+			viewport_ = {0, 0, static_cast<float>(size.width), static_cast<float>(size.height), 0, 1};
+			scissorRect_ = {0, 0, static_cast<LONG>(size.width), static_cast<LONG>(size.height)};
+			currentBackBufferIndex_ = swapChain_->GetCurrentBackBufferIndex(); renderResourceIndex_ = 0; renderTargetIndex_ = 1;
+			Logger::Log(std::format("Surface {}x{} RTV={} DSV={} SRV={}", size.width, size.height, rtvAllocator_.GetAllocatedCount(), dsvAllocator_.GetAllocatedCount(), resourceAllocator_.GetAllocatedCount()));
+			return true;
+		} catch (const std::exception &exception) { error = exception.what(); return false; }
+	}
+
+	///=============================================================================
 	///						GPU完了待ち
 	void DirectXCore::WaitForGpuIdle() {
 		if(!commandQueue_ || !fence_ || !fenceEvent_) {
@@ -173,12 +209,12 @@ namespace MagEngine {
 
 		const uint64_t fenceValue = ++nextFenceValue_;
 		hr_ = commandQueue_->Signal(fence_.Get(), fenceValue);
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error("GPU idle signal failed");
 
 		if(fence_->GetCompletedValue() < fenceValue) {
 			hr_ = fence_->SetEventOnCompletion(fenceValue, fenceEvent_);
-			assert(SUCCEEDED(hr_));
-			WaitForSingleObject(fenceEvent_, INFINITE);
+			if (FAILED(hr_)) throw std::runtime_error("GPU idle fence failed");
+			if (WaitForSingleObject(fenceEvent_, INFINITE) != WAIT_OBJECT_0) throw std::runtime_error("GPU idle wait failed");
 		}
 
 		for(FrameContext &frameContext : frameContexts_) {
@@ -393,7 +429,7 @@ namespace MagEngine {
 		for(uint32_t i = 0; i < SwapChainBufferCount; ++i) {
 			// SwapChainのBufferCountと一致する範囲だけ取得する
 			hr_ = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResource_[i]));
-			assert(SUCCEEDED(hr_));
+			if (FAILED(hr_)) throw std::runtime_error("SwapChain GetBuffer failed");
 		}
 	}
 
@@ -404,7 +440,7 @@ namespace MagEngine {
 		rtvDesc_.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2dテクスチャとして書き込む
 		// NOTE:SwapChain BackBufferのRTVはallocatorから順に確保し、手動ptr加算を行わない
 		for(uint32_t i = 0; i < SwapChainBufferCount; ++i) {
-			swapChainRtvHandles_[i] = rtvAllocator_.Allocate();
+			if (!swapChainRtvHandles_[i].IsValid()) swapChainRtvHandles_[i] = rtvAllocator_.Allocate();
 			device_->CreateRenderTargetView(swapChainResource_[i].Get(), &rtvDesc_, swapChainRtvHandles_[i].cpuHandle);
 		}
 	}
