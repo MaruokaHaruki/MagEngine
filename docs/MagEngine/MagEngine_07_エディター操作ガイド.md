@@ -17,10 +17,10 @@
 
 ## 起動
 
-DebugのGame.exeを次のように起動する。制作ルートにはresources/shader、resources/model等を含むプロジェクトフォルダを指定する。
+Visual Studio／VS CodeのDebug起動は制作元を開く。直接起動する場合は次の例を使う。制作ルートにはresources/shader、resources/model等を含むプロジェクトフォルダを指定する。
 
 ```powershell
-& ..\generated\outputs\Game\Debug\Game.exe --editor --project "C:\Users\harukichimaru\Workspace\30_School\MagEngine\project"
+& .\bin\Debug\MagEngine.exe --editor --project "C:\Users\harukichimaru\Workspace\30_School\MagEngine\project"
 ```
 
 Debugの引数なし起動は空の制作画面です。この場合はexeの配置先が資産・保存の基準になります。制作元の資産を編集する場合は上記の --editor --project を明示してください。Releaseの引数なし起動は制作UIなしの空文書です。旧ゲームは起動しません。

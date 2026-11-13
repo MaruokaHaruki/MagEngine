@@ -56,6 +56,7 @@ namespace MagEngine {
 		registry_.Register(std::move(type));
 		if (!options.scene.empty()) {
 			if (!store_->Load(options.projectRoot / options.scene, document_, panels_->error)) { throw std::runtime_error(panels_->error); }
+			scenePath_ = options.projectRoot / options.scene;
 			const auto name = options.scene.filename().u8string(); panels_->sceneName.assign(name.begin(), name.end());
 		}
 		saved_ = document_; camera_.SetFovY(0.45f); camera_.SetAspectRatio(16.0f / 9.0f);
@@ -108,7 +109,16 @@ namespace MagEngine {
 		for (const auto &record : document_.objects) { const auto *type = registry_.Find(record.typeId); if (!type || (type->validate && !type->validate(record, panels_->error))) { return; } }
 		const auto path = std::filesystem::path(std::u8string(panels_->sceneName.begin(), panels_->sceneName.end()));
 		if (path.empty() || path.filename() != path || path.extension() != ".json") { panels_->error = "シーン名は拡張子.jsonのファイル名で指定してください"; return; }
-		if (store_->Save(options_.projectRoot / "resources/config/scenes" / path, document_, panels_->error)) { saved_ = document_; }
+		const auto scenesRoot = options_.projectRoot / "resources/config/scenes";
+		const auto relative = scenePath_.lexically_normal().lexically_relative(scenesRoot.lexically_normal());
+		const bool inScenes = !relative.empty() && *relative.begin() != "..";
+		const auto destination = inScenes && scenePath_.filename() == path
+			? scenePath_
+			: scenesRoot / path;
+		if (store_->Save(destination, document_, panels_->error)) {
+			scenePath_ = destination;
+			saved_ = document_;
+		}
 	}
 	bool EditorHost::CanClose() {
 		if (!panels_) { return true; }
@@ -139,8 +149,16 @@ namespace MagEngine {
 		const bool loaded = request == Request::Import ? store_->ImportBlender(filename, candidate, panels_->error) : store_->Load(filename, candidate, panels_->error);
 		if (!loaded || !ApplyDocument(candidate, panels_->error)) { return; }
 		document_ = std::move(candidate); history_.Reset(); panels_->selected = 0;
-		if (request == Request::Load) { saved_ = document_; const auto name = std::filesystem::path(filename).filename().u8string(); panels_->sceneName.assign(name.begin(), name.end()); }
-		else { saved_ = {}; panels_->sceneName = "imported.json"; }
+		if (request == Request::Load) {
+			scenePath_ = filename;
+			saved_ = document_;
+			const auto name = scenePath_.filename().u8string();
+			panels_->sceneName.assign(name.begin(), name.end());
+		} else {
+			scenePath_.clear();
+			saved_ = {};
+			panels_->sceneName = "imported.json";
+		}
 	}
 	void EditorHost::Update(const FrameTime &frameTime) {
 		const auto renderSize = context_->graphics->GetRenderSize();
@@ -165,6 +183,6 @@ namespace MagEngine {
 #ifdef _DEBUG
 		if (panels_ && options_.editor) { panels_->Unregister(*context_->editorUiSystem); }
 #endif
-		context_->graphics->WaitForGpuIdle(); objects_.clear(); panels_.reset(); store_.reset(); runtimeUpdate_ = {}; context_ = nullptr;
+		context_->graphics->WaitForGpuIdle(true); objects_.clear(); panels_.reset(); store_.reset(); runtimeUpdate_ = {}; context_ = nullptr;
 	}
 }

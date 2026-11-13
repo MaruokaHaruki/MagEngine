@@ -74,12 +74,22 @@ namespace MagEngine {
 
 		//========================================
 		// DirectX12用の初期化
-		ImGui_ImplDX12_Init(dxCore_->GetDevice().Get(),
-							dxCore_->GetFramesInFlight(),
-							dxCore_->GetRtvDesc().Format,
-							dxCore_->GetResourceAllocator().GetHeap(),
-							fontDescriptor_.cpuHandle,
-							fontDescriptor_.gpuHandle);
+		// DPI再構築でバックエンドを無効化しても、借用したキューは存続する。
+		ImGui_ImplDX12_InitInfo init;
+		init.Device = dxCore_->GetDevice().Get();
+		init.CommandQueue = dxCore_->GetCommandQueue();
+		init.NumFramesInFlight = dxCore_->GetFramesInFlight();
+		init.RTVFormat = dxCore_->GetRtvDesc().Format;
+		init.SrvDescriptorHeap = dxCore_->GetResourceAllocator().GetHeap();
+		init.UserData = this;
+		init.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo *info, D3D12_CPU_DESCRIPTOR_HANDLE *cpu, D3D12_GPU_DESCRIPTOR_HANDLE *gpu) {
+			const auto &slot = static_cast<ImguiSetup *>(info->UserData)->fontDescriptor_;
+			*cpu = slot.cpuHandle;
+			*gpu = slot.gpuHandle;
+		};
+		// 同梱バックエンドの単一フォント用スロットを再利用する。
+		init.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo *, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE) {};
+		if (!ImGui_ImplDX12_Init(&init)) throw std::runtime_error("ImGui DX12 initialization failed");
 
 		//========================================
 		// ドッキング設定

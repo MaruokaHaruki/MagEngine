@@ -126,7 +126,7 @@ namespace MagEngine {
 					if (const auto size = win_->GetSurfaceState().Pending()) {
 						std::string error;
 						if (!dxCore_->ResizeSurface(*size, error)) {
-							Logger::Log(error, Logger::LogLevel::Error); break;
+							throw std::runtime_error(error);
 						}
 						// 予約slot 0を仮定する旧APIは未使用。フォントのSRVを上書きしない。
 						textureManager_->RefreshRenderTextureViews();
@@ -158,7 +158,12 @@ namespace MagEngine {
 			// 終了処理
 		} catch (...) {
 			// NOTE: 部分初期化時も利用側を先に終了する。
-			Finalize();
+			try {
+				Finalize();
+			} catch (const std::exception &error) {
+				// 終了処理の失敗で、起動・描画の元の例外を失わない。
+				Logger::Log(error.what(), Logger::LogLevel::Error);
+			}
 			throw;
 		}
 		Finalize();
@@ -451,7 +456,7 @@ namespace MagEngine {
 #endif
 		// GPUが参照中のリソースを各マネージャが解放しないよう、破棄前に同期する
 		if (dxCore_) {
-			dxCore_->WaitForGpuIdle();
+			dxCore_->WaitForGpuIdle(true);
 		}
 		//========================================
 		// 利用側のSceneとUIをEngineサービスより先に解除する

@@ -202,21 +202,38 @@ namespace MagEngine {
 
 	///=============================================================================
 	///						GPU完了待ち
-	void DirectXCore::WaitForGpuIdle() {
+	void DirectXCore::WaitForGpuIdle(bool allowRemoved) {
 		if(!commandQueue_ || !fence_ || !fenceEvent_) {
 			return;
 		}
 
+		const auto deviceRemoved = [this, allowRemoved]() {
+			const HRESULT reason = device_->GetDeviceRemovedReason();
+			if (SUCCEEDED(reason)) return false;
+			const auto message = std::format("GPU device removed: HRESULT 0x{:08X}", static_cast<uint32_t>(reason));
+			if (!allowRemoved) throw std::runtime_error(message);
+			Logger::Log(message, Logger::LogLevel::Error);
+			return true;
+		};
+		if (deviceRemoved()) return;
+
 		const uint64_t fenceValue = ++nextFenceValue_;
 		hr_ = commandQueue_->Signal(fence_.Get(), fenceValue);
-		if (FAILED(hr_)) throw std::runtime_error("GPU idle signal failed");
+		if (FAILED(hr_)) {
+			if (deviceRemoved()) return;
+			throw std::runtime_error("GPU idle signal failed: HRESULT " + std::to_string(hr_));
+		}
 
 		if(fence_->GetCompletedValue() < fenceValue) {
 			hr_ = fence_->SetEventOnCompletion(fenceValue, fenceEvent_);
-			if (FAILED(hr_)) throw std::runtime_error("GPU idle fence failed");
+			if (FAILED(hr_)) {
+				if (deviceRemoved()) return;
+				throw std::runtime_error("GPU idle fence failed: HRESULT " + std::to_string(hr_));
+			}
 			if (WaitForSingleObject(fenceEvent_, INFINITE) != WAIT_OBJECT_0) throw std::runtime_error("GPU idle wait failed");
 		}
 
+		if (deviceRemoved()) return;
 		for(FrameContext &frameContext : frameContexts_) {
 			frameContext.SetFenceValue(fenceValue);
 		}
@@ -249,8 +266,8 @@ namespace MagEngine {
 		// HRESULTはWindows系のエラーコードであり、
 		// 開数が成功したかどうかをSUCCEEDマクロで判断できる
 		hr_ = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory_));
-		// 初期化の根本的なエラーを判断するためassertにする
-		assert(SUCCEEDED(hr_));
+		// 初期化に失敗した場合は描画を開始できない。
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CreateDXGIFactory2 failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 	}
 
 	///=============================================================================
@@ -264,7 +281,7 @@ namespace MagEngine {
 			i++) {
 		   // アダプターの情報を取得
 			hr_ = useAdapter_->GetDesc3(&adapterDesc_);
-			assert(SUCCEEDED(hr_)); // 取得不可
+			if (FAILED(hr_)) throw std::runtime_error(std::format("IDXGIAdapter4::GetDesc3 failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 			// ソフトウェアアダプタでなければ採用
 			if(!( adapterDesc_.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE )) {
 				// 採用したアダプタの情報をログに出力。Wstringの方に注意
@@ -350,7 +367,7 @@ namespace MagEngine {
 		hr_ = device_->CreateCommandQueue(&commandQueueDesc,
 			IID_PPV_ARGS(&commandQueue_));
 // コマンドキューの生成がうまくいかなかったので起動できない
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CreateCommandQueue failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 	}
 
 	///=============================================================================
@@ -364,7 +381,7 @@ namespace MagEngine {
 		hr_ = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, frameContexts_[currentFrameContextIndex_].GetCommandAllocator(), nullptr,
 			IID_PPV_ARGS(&commandList_));
 // コマンドリストの生成がうまくいかなかったので起動できない
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CreateCommandList failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 	}
 
 	///=============================================================================
@@ -380,7 +397,7 @@ namespace MagEngine {
 		swapChainDesc_.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		// コマンドキュー、ウィンドウバレル、設定を渡して生成する
 		hr_ = dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(), winApp_->GetWindowHandle(), &swapChainDesc_, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1 **>( swapChain_.GetAddressOf() ));
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CreateSwapChainForHwnd failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 	}
 
 	///=============================================================================
@@ -390,10 +407,10 @@ namespace MagEngine {
 		fence_ = nullptr;
 		nextFenceValue_ = 0;
 		hr_ = device_->CreateFence(nextFenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_));
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CreateFence failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 		// FenceのSignalを持つためのイベントを生成する
 		fenceEvent_ = CreateEvent(NULL, FALSE, FALSE, NULL);
-		assert(fenceEvent_ != nullptr);
+		if (!fenceEvent_) throw std::runtime_error(std::format("CreateEvent failed: {}", GetLastError()));
 	}
 
 	///=============================================================================
@@ -402,8 +419,10 @@ namespace MagEngine {
 		//=======================================
 		// DepthStencilTextureをウィンドウのサイズで作成
 		depthStencilResource_ = CreateDepthStencilTextureResource(winApp_->GetWindowWidth(), winApp_->GetWindowHeight());
+		if (!depthStencilResource_) throw std::runtime_error("Depth stencil allocation failed");
 		// NOTE:DSV DescriptorはDirectXCore所有Allocatorから確保し、Depthリソースより長く保持する
 		dsvHandle_ = dsvAllocator_.Allocate();
+		if (!dsvHandle_.IsValid()) throw std::runtime_error("Depth stencil descriptor allocation failed");
 		//=======================================
 		// dsvの設定
 		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
@@ -516,7 +535,7 @@ namespace MagEngine {
 		}
 		// コマンドリストの内容を確定させる。すべてのコマンドを積んでからCloseすること
 		hr_ = commandList_->Close();
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CommandList::Close failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 	}
 
 	///=============================================================================
@@ -535,11 +554,11 @@ namespace MagEngine {
 
 		// GPUとOSに画面の交換を行うように通知する
 		hr_ = swapChain_->Present(1, 0);
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("SwapChain::Present failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 
 		const uint64_t fenceValue = ++nextFenceValue_;
 		hr_ = commandQueue_->Signal(fence_.Get(), fenceValue);
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CommandQueue::Signal failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 		frameContexts_[currentFrameContextIndex_].SetFenceValue(fenceValue);
 
 		// NOTE:既存の弾・エフェクト・シーン破棄は即時解放のため、DeferredReleaseQueue導入まではGPU参照中破棄を防ぐ。
@@ -557,7 +576,7 @@ namespace MagEngine {
 		// 次フレーム用のコマンドリストを準備
 		frameContext.ResetCommandAllocator();
 		hr_ = commandList_->Reset(frameContext.GetCommandAllocator(), nullptr);
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CommandList::Reset failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 		currentBackBufferIndex_ = swapChain_->GetCurrentBackBufferIndex();
 	}
 
@@ -565,20 +584,22 @@ namespace MagEngine {
 	///						FrameContextのGPU完了待ち
 	void DirectXCore::WaitForFrameContext(const FrameContext &frameContext) {
 		const uint64_t fenceValue = frameContext.GetFenceValue();
-		if(fenceValue == 0 || fence_->GetCompletedValue() >= fenceValue) {
+		const uint64_t completed = fence_->GetCompletedValue();
+		if (completed == UINT64_MAX) throw std::runtime_error("GPU device removed while waiting for frame");
+		if(fenceValue == 0 || completed >= fenceValue) {
 			return;
 		}
 
 		hr_ = fence_->SetEventOnCompletion(fenceValue, fenceEvent_);
-		assert(SUCCEEDED(hr_));
-		WaitForSingleObject(fenceEvent_, INFINITE);
+		if (FAILED(hr_)) throw std::runtime_error(std::format("Fence::SetEventOnCompletion failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
+		if (WaitForSingleObject(fenceEvent_, INFINITE) != WAIT_OBJECT_0) throw std::runtime_error("Frame fence wait failed");
 	}
 
 	///=============================================================================
 	///						開放処理
 	void DirectXCore::ReleaseResources() {
 		// GPU処理の完了を待つ（リソース破棄前に必須）
-		WaitForGpuIdle();
+		WaitForGpuIdle(true);
 		
 		if(fenceEvent_) {
 			CloseHandle(fenceEvent_);
@@ -637,12 +658,12 @@ namespace MagEngine {
 	void DirectXCore::CreateDXCCompiler() {
 		// dxcCompilerを初期化
 		hr_ = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils_));
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("DxcCreateInstance(Utils) failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 		hr_ = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler_));
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("DxcCreateInstance(Compiler) failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 		// 現時点でincludeはしないが、includeに対応するために設定を行う
 		hr_ = dxcUtils_->CreateDefaultIncludeHandler(&includeHandler_);
-		assert(SUCCEEDED(hr_));
+		if (FAILED(hr_)) throw std::runtime_error(std::format("CreateDefaultIncludeHandler failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr_)));
 	}
 
 	///=============================================================================
@@ -721,10 +742,11 @@ namespace MagEngine {
 		// これからシェーダーをコンパイルする旨をログに出す
 		Logger::Log(WstringUtility::ConvertString(std::format(L"Begin Compiler,path:{},profile:{}", filePath, profile)), Logger::LogLevel::Info);
 		// hlseファイルを読む
-		IDxcBlobEncoding *shaderSource = nullptr;
+		Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource;
 		HRESULT hr = dxcUtils_->LoadFile(filePath.c_str(), nullptr, &shaderSource);
-		// 読めなかったら止める
-		assert(SUCCEEDED(hr));
+		if (FAILED(hr)) {
+			throw std::runtime_error("DXC LoadFile failed: " + WstringUtility::ConvertString(filePath) + " HRESULT " + std::to_string(hr));
+		}
 		// 読み込んだファイルの内容を設定する
 		DxcBuffer shaderSourceBuffer = {};
 		shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
@@ -744,7 +766,7 @@ namespace MagEngine {
 			L"-Zpr",
 			L"-I", L"resources/shader/" };
 		// 実際にShaderをコンパイルする
-		IDxcResult *shaderResult = nullptr;
+		Microsoft::WRL::ComPtr<IDxcResult> shaderResult;
 		hr = dxcCompiler_->Compile(
 			&shaderSourceBuffer,
 			arguments,
@@ -752,38 +774,31 @@ namespace MagEngine {
 			includeHandler_,
 			IID_PPV_ARGS(&shaderResult));
 		// コンパイルエラーではなくdxcが起動できないと致命的な状況
-		assert(SUCCEEDED(hr));
+		if (FAILED(hr)) throw std::runtime_error("DXC Compile failed: " + std::to_string(hr));
 		//=======================================
 		// 警告・エラーがでてないか確認する
-		IDxcBlobUtf8 *shaderError = nullptr;
+		Microsoft::WRL::ComPtr<IDxcBlobUtf8> shaderError;
 		if(shaderResult->HasOutput(DXC_OUT_ERRORS)) {
 			shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
 		}
-		// エラーがある場合はエラーを出力して終了
-		if(shaderError != nullptr && shaderError->GetStringLength() != 0) {
-			Log(shaderError->GetStringPointer(), Logger::LogLevel::Error);
-			if(shaderResult->HasOutput(DXC_OUT_ERRORS)) {
-				shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
-			}
-
-			// HOTFIX:エラー内容をファイルに書き出す
-			WriteToFile("shaderError.txt", shaderError->GetStringPointer());
-
-			// 警告・エラーダメ絶対
-			assert(false);
+		HRESULT status = E_FAIL;
+		hr = shaderResult->GetStatus(&status);
+		if (FAILED(hr) || FAILED(status)) {
+			const std::string details = shaderError ? shaderError->GetStringPointer() : "診断情報なし";
+			throw std::runtime_error("DXC: " + WstringUtility::ConvertString(filePath) + ": " + details);
 		}
 		//=======================================
 		// Compile結果を受け取って返す
 		// コンパイル結果から実行用のバイナリ部分を取得
-		IDxcBlob *shaderBlob = nullptr;
+		Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob;
 		hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
+		if (FAILED(hr) || !shaderBlob) {
+			throw std::runtime_error("DXC object output failed: " + WstringUtility::ConvertString(filePath));
+		}
 		// 成功したログを出す
 		Logger::Log(WstringUtility::ConvertString(std::format(L"Compile Succeeded, path:{},profile:{}", filePath, profile)), Logger::LogLevel::Success);
-		// もう使わないリソースを開放
-		shaderSource->Release();
-		shaderResult->Release();
 		// 実行用のバイナリを返却
-		return shaderBlob;
+		return shaderBlob.Detach();
 	}
 
 	///=============================================================================
@@ -1036,6 +1051,9 @@ namespace MagEngine {
 		// ========================================
 		// NOTE:RTV DescriptorはAllocatorから確保し、BackBuffer数に依存した手動計算を避ける
 		renderTextureRtvHandles_[0] = rtvAllocator_.Allocate();
+		if (!renderTextureResources_[0] || !renderTextureRtvHandles_[0].IsValid()) {
+			throw std::runtime_error("Render texture 0 allocation failed");
+		}
 		// レンダーターのビューを作成
 		device_->CreateRenderTargetView(renderTextureResources_[0].Get(), &rtvDesc_, renderTextureRtvHandles_[0].cpuHandle);
 		// assertはデバッグビルド時にのみ有効になる
@@ -1054,6 +1072,9 @@ namespace MagEngine {
 		//========================================
 		// RTVの設定
 		renderTextureRtvHandles_[1] = rtvAllocator_.Allocate();
+		if (!renderTextureResources_[1] || !renderTextureRtvHandles_[1].IsValid()) {
+			throw std::runtime_error("Render texture 1 allocation failed");
+		}
 		// レンダーターのビューを作成
 		device_->CreateRenderTargetView(renderTextureResources_[1].Get(), &rtvDesc_, renderTextureRtvHandles_[1].cpuHandle);
 		// assertはデバッグビルド時にのみ有効になる
@@ -1117,14 +1138,18 @@ namespace MagEngine {
 		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob_ = nullptr;
 		hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob_, &errorBlob_);
 		if(FAILED(hr)) {
-			Logger::Log(reinterpret_cast<char *>( errorBlob_->GetBufferPointer() ));
-			assert(false);
+			const std::string details = errorBlob_
+				? std::string(static_cast<const char *>(errorBlob_->GetBufferPointer()), errorBlob_->GetBufferSize())
+				: "診断情報なし";
+			throw std::runtime_error(std::format("D3D12SerializeRootSignature failed: HRESULT 0x{:08X} {}", static_cast<uint32_t>(hr), details));
 		}
 
 		// バイナリを元に生成
 		renderTextureRootSignature_ = nullptr;
 		hr = device_->CreateRootSignature(0, signatureBlob_->GetBufferPointer(), signatureBlob_->GetBufferSize(), IID_PPV_ARGS(&renderTextureRootSignature_));
-		assert(SUCCEEDED(hr));
+		if (FAILED(hr)) {
+			throw std::runtime_error(std::format("CreateRootSignature failed: HRESULT 0x{:08X}", static_cast<uint32_t>(hr)));
+		}
 	}
 
 	///--------------------------------------------------------------

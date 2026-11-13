@@ -7,6 +7,8 @@
  *********************************************************************/
 #include "DescriptorAllocator.h"
 #include "Logger.h"
+#include <stdexcept>
+#include <string>
 
 ///=============================================================================
 ///                        namespace MagEngine
@@ -28,9 +30,8 @@ namespace MagEngine {
 		descriptorHeapDesc.Flags = shaderVisible_ ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 		HRESULT hr = device.CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap_));
-		assert(SUCCEEDED(hr));
 		if(FAILED(hr)) {
-			Logger::Log("Failed to create descriptor heap.", Logger::LogLevel::Error);
+			throw std::runtime_error("CreateDescriptorHeap failed: HRESULT " + std::to_string(hr));
 		}
 	}
 

@@ -163,11 +163,10 @@ private:
 
 仕様IDに対応する実装・呼び出し元・fixture・設定が揃い、必要な確認を実施し、仕様と履歴が実態に一致していること。未確認が残る場合は「実装済み・検証待ち」とし、成功扱いにしない。
 
-現行ソリューションはMagEngineとGameの2プロジェクトに限定する。Minimal・Core・Test・ImGui用の独立プロジェクトを追加しない。ビルドと層境界の確認例：
+現行ソリューションはMagEngine実行プロジェクト1つ。アプリ側はapplication/、エンジン側はengine/に配置する。
 
 ```powershell
 msbuild MagEngine.sln /m /p:Configuration=Debug /p:Platform=x64
-& .\scripts\VerifyEngineBoundary.ps1
 ```
 
 Releaseは構成名をReleaseに変える。以前のCPUテスト実行結果は履歴として残すが、削除したTestプロジェクトのコマンドを現行手順として記載しない。ビルド・実行・ユーザーによる動作確認・Hosted CIの結果は分けて報告する。

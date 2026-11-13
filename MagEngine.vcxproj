@@ -56,7 +56,7 @@
   <Target Name="BuildDirectXTex" BeforeTargets="PrepareForBuild">
     <MSBuild Projects="$(ProjectDir)externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj"
              Targets="Build"
-             Properties="Configuration=$(Configuration);Platform=x64;SolutionDir=$(ProjectDir);OutDir=$(DirectXTexOutputDir);IntDir=$(DirectXTexOutputDir)obj\" />
+             Properties="Configuration=$(Configuration);Platform=x64;SolutionDir=$(ProjectDir);OutDir=$(DirectXTexOutputDir);IntDir=$(DirectXTexOutputDir)obj\;ForceImportBeforeCppTargets=$(ProjectDir)msbuild\DirectXTexSettings.props" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="msbuild\DeployRuntime.targets" />

@@ -33,6 +33,7 @@ namespace MagEngine {
 		EditorBounds Bounds(const EditorObjectRecord &record) const;
 		const EngineContext *context_ = nullptr; // Framework所有。Finalizeまで有効
 		EditorLaunchOptions options_;
+		std::filesystem::path scenePath_; // 現在の保存先。名前を変えた場合は既定の保存先へ保存する
 		EditorDocument document_, saved_, applied_;
 		EditorHistory history_;
 		EditorPlaySession session_;

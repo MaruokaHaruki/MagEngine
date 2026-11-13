@@ -100,7 +100,8 @@ namespace MagEngine {
 
 		//========================================
 		/// @brief WaitForGpuIdle GPUに積まれた処理の完了を待つ
-		void WaitForGpuIdle();
+		/// @param allowRemoved 終了処理に限り、消失済みデバイスの待機を省略する
+		void WaitForGpuIdle(bool allowRemoved = false);
 		/// @brief UI/GPU記録開始前にサイズ依存資源を交換。失敗時は描画を続けないこと
 		bool ResizeSurface(SurfaceSize size, std::string &error);
 		/// @brief GPU資源へ適用済みのピクセル寸法
@@ -347,6 +348,9 @@ namespace MagEngine {
 		//========================================
 		/// @brief GetDevice デバイスの取得
 		/// \return デバイスポインタ
+		/// @brief DirectXCoreが所有するキューを借用する
+		ID3D12CommandQueue *GetCommandQueue() const { return commandQueue_.Get(); }
+
 		Microsoft::WRL::ComPtr<ID3D12Device> GetDevice() {
 			return device_;
 		}

@@ -22,7 +22,10 @@ namespace MagEngine {
 		MagMath::Transform Transform(const Json &v) { return {Vector(v.at("scale")), Vector(v.at("rotation")), Vector(v.at("position"))}; }
 		std::string Read(const std::filesystem::path &path) {
 			std::ifstream stream(path, std::ios::binary);
-			if (!stream) { throw std::runtime_error("ファイルを開けません: " + path.string()); }
+			if (!stream) {
+				const auto utf8Path = path.u8string();
+				throw std::runtime_error("ファイルを開けません: " + std::string(utf8Path.begin(), utf8Path.end()));
+			}
 			std::string bytes((std::istreambuf_iterator<char>(stream)), {});
 			if (stream.bad()) { throw std::runtime_error("ファイル読込失敗"); }
 			return bytes;

@@ -6,7 +6,11 @@ status: 2プロジェクト構成へ整理
 ---
 # MagEngine ゲーム層・エンジン層の分離設計
 
-## 決定
+## 現行の構成
+
+MagEngine.sln は MagEngine 実行プロジェクト1つ。engine と application の依存方向はアプリからエンジンへ保つ。成果物は bin、ビルド中間ファイルは obj に置く。起動方法は README.md を参照。
+
+## 旧構成の決定（履歴）
 
 ソリューションは **MagEngineとGameの2プロジェクト** に限定する。最小起動アプリと編集ホストを利用側として残し、依存方向はGame → MagEngine → 外部ライブラリとする。
 

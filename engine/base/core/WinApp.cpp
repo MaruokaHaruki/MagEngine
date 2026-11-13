@@ -7,6 +7,8 @@
  * \note   ウィンドウ作成・破棄・イベント処理を実装
  *********************************************************************/
 #include "WinApp.h"
+#include <stdexcept>
+#include <string>
 #include "Input.h"
 #include "imgui.h"
 #include "imgui_impl_dx12.h"
@@ -102,6 +104,9 @@ namespace MagEngine {
 			nullptr,
 			wc_.hInstance,
 			this);
+		if (!hwnd_) {
+			throw std::runtime_error("CreateWindow failed: Windows error " + std::to_string(GetLastError()));
+		}
 		//========================================
 		// ウィンドウ表示
 		ShowWindow(hwnd_, SW_SHOW);
