@@ -43,6 +43,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			throw std::runtime_error("Cannot resolve executable path");
 		}
 		std::filesystem::current_path(std::filesystem::path(executablePath).parent_path());
+#ifdef _DEBUG
+		constexpr bool editorAvailable = true;
+#else
+		constexpr bool editorAvailable = false;
+#endif // _DEBUG
+		if (!MagEngine::ResolveEngineLaunchOptions(launch, std::filesystem::current_path(), editorAvailable, launchError)) { throw std::runtime_error(launchError); }
 		// 既存のShader／モデル読込はresources相対。編集時は明示した制作ルートを使う。
 		if (!launch.projectRoot.empty()) { std::filesystem::current_path(launch.projectRoot); }
 		//========================================

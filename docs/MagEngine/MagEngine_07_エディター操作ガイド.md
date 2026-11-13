@@ -23,7 +23,7 @@ DebugのGame.exeを次のように起動する。制作ルートにはresources/
 & ..\generated\outputs\Game\Debug\Game.exe --editor --project "C:\Users\harukichimaru\Workspace\30_School\MagEngine\project"
 ```
 
-通常の引数なし起動は従来のゲーム。編集時は明示した制作ルートを資産の基準にする。制作ルートや保存先を配布用コピーへ暗黙に切り替えない。
+Debugの引数なし起動は空の制作画面です。この場合はexeの配置先が資産・保存の基準になります。制作元の資産を編集する場合は上記の --editor --project を明示してください。Releaseの引数なし起動は制作UIなしの空文書です。旧ゲームは起動しません。
 
 保存文書を指定する場合は`--scene resources/config/scenes/scene.json`を追加する。Releaseでも`--project <root> --scene <relative-file>`で文書からObject3dを生成できるが、`--editor`はDebug専用。
 

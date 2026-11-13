@@ -139,3 +139,7 @@ MP-01・MP-02・MP-05は[承認済み設計](../superpowers/specs/2026-11-09-edi
 - 直接回帰検証はtests/ParticleRegressionTests.cppをRunAssetSafetyTests.ps1 -Suite Particleから実行する。Gpu指定ではWindowなしに実D3D12のPSO・リソース・Descriptor・Mapを検証する。描画実行・画面の確認とは区別する。
 
 - 最終結果：全体・エンジン単独Debug／Releaseと、両構成の粒子CPU・WindowなしD3D12直接検証が成功した。実際のゲーム画面操作はユーザー指定で実施していない。ログとObsidian反映状況は履歴の2026-11-06-02を参照する。
+
+## 2026-11-11 エンジン専用構成
+
+旧ゲーム固有のPlayer、Enemy、シーン管理、作品用UI・演出を削除する。GameはEngineAppとapplication/editorを接続する最小実行アプリとし、MagEngine／Gameの2プロジェクトを維持する。Debugの引数なし起動は空の制作画面、ReleaseはUIなしの空文書。明示したシーン文書の実行は維持し、旧ゲームのレベルや設定は自動ロードしない。resources以下の217ファイルは再利用資産として場所・内容を変更しない。新作のゲーム機能や資産の再分類は今回追加しない。

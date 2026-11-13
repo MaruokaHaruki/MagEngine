@@ -2,13 +2,14 @@
 param(
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug',
     [switch]$Audio,
-    [ValidateSet('Asset', 'Particle')][string]$Suite = 'Asset',
+    [ValidateSet('Asset', 'Particle', 'Render', 'Startup')][string]$Suite = 'Asset',
     [switch]$Gpu
 )
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$folder = if ($Suite -eq 'Particle') { 'particle-regression' } else { 'asset-safety' }
-$testName = if ($Suite -eq 'Particle') { 'ParticleRegressionTests' } else { 'AssetSafetyTests' }
+$folder = if ($Suite -eq 'Particle') { 'particle-regression' } elseif ($Suite -eq 'Render') { 'render-validation' } else { 'asset-safety' }
+$testName = if ($Suite -eq 'Particle') { 'ParticleRegressionTests' } elseif ($Suite -eq 'Render') { 'RenderValidationTests' } else { 'AssetSafetyTests' }
+if ($Suite -eq 'Startup') { $folder = 'engine-startup'; $testName = 'EngineStartupTests' }
 if (($Audio -and $Suite -ne 'Asset') -or ($Gpu -and $Suite -ne 'Particle')) { throw 'AudioはAsset、GpuはParticleで指定してください。' }
 $output = [IO.Path]::GetFullPath((Join-Path $root "../generated/validation/$folder/$Configuration"))
 $library = Join-Path $root "../generated/outputs/MagEngine/$Configuration/MagEngine.lib"
@@ -37,6 +38,10 @@ $response = @(
     'user32.lib'
 )
 $rsp = Join-Path $output 'compile.rsp'
+if ($Suite -eq 'Startup') {
+    $response = $response | ForEach-Object { $_.Replace((Join-Path $output "$testName.obj"), ($output + '/')) }
+    $response += @('application/EngineApp.cpp', 'application/editor/EditorHost.cpp', 'application/editor/EditorLaunchOptions.cpp') | ForEach-Object { '"' + (Join-Path $root $_) + '"' }
+}
 [IO.File]::WriteAllLines($rsp, $response)
 $batch = Join-Path $output 'compile.cmd'
 [IO.File]::WriteAllLines($batch, @('@echo off', ('call "' + $vcvars + '" >nul'), 'if errorlevel 1 exit /b 1', ('cl @"' + $rsp + '"'), 'exit /b %errorlevel%'))
@@ -58,3 +63,7 @@ if ($Audio) { $arguments += '--audio' }
 if ($Gpu) { $arguments += '--gpu' }
 & $exe @arguments
 if ($LASTEXITCODE -ne 0) { throw "回帰検証に失敗しました。終了コード: $LASTEXITCODE" }
+if ($Suite -eq 'Startup') {
+    & $exe @arguments '--scene'
+    if ($LASTEXITCODE -ne 0) { throw "指定文書の起動検証に失敗しました。終了コード: $LASTEXITCODE" }
+}

@@ -21,6 +21,17 @@ namespace {
 int main() {
 	try {
 		using namespace MagEngine;
+		std::string resolveError;
+		const std::filesystem::path runtimeRoot = L"C:\\制作 フォルダ";
+		EditorLaunchOptions defaults;
+		Check(ResolveEngineLaunchOptions(defaults, runtimeRoot, true, resolveError) && defaults.editor && defaults.scene.empty() && defaults.projectRoot == runtimeRoot, "DefaultDebugOpensEmptyEditor");
+		defaults = {};
+		Check(ResolveEngineLaunchOptions(defaults, runtimeRoot, false, resolveError) && !defaults.editor && defaults.scene.empty(), "DefaultReleaseHasNoEditor");
+		defaults = {}; defaults.scene = "resources/config/scenes/example.json"; defaults.projectRoot = L"D:\\別の 制作";
+		Check(ResolveEngineLaunchOptions(defaults, runtimeRoot, true, resolveError) && !defaults.editor && defaults.scene == "resources/config/scenes/example.json", "ExplicitSceneKeepsRuntimeMode");
+		Check(defaults.projectRoot == std::filesystem::path(L"D:\\別の 制作"), "UnicodeProjectRootIsPreserved");
+		defaults = {};
+		Check(!ResolveEngineLaunchOptions(defaults, "relative", true, resolveError) && !defaults.editor && defaults.projectRoot.empty(), "InvalidRuntimeRootDoesNotMutateOptions");
 		EditorTypeRegistry registry;
 		EditorTypeDescriptor descriptor; descriptor.typeId = "object3d";
 		Check(registry.Register(descriptor) && !registry.Register(descriptor) && !registry.Find("unknown"), "RegistryRejectsDuplicateAndUnknownType");

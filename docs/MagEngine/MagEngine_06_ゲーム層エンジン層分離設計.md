@@ -8,7 +8,7 @@ status: 2プロジェクト構成へ整理
 
 ## 決定
 
-ソリューションは **MagEngineとGameの2プロジェクト** に限定する。現行ゲームはゲーム層として残し、依存方向はGame → MagEngine → 外部ライブラリとする。
+ソリューションは **MagEngineとGameの2プロジェクト** に限定する。最小起動アプリと編集ホストを利用側として残し、依存方向はGame → MagEngine → 外部ライブラリとする。
 
 Core、Minimal、Test、ImGuiの独立プロジェクトは作らない。以前の検証記録は[履歴](MagEngine_04_仕様改修履歴.md)に残すが、削除済み構成を現在の実行経路として扱わない。
 
@@ -17,7 +17,7 @@ Core、Minimal、Test、ImGuiの独立プロジェクトは作らない。以前
 | プロジェクト | 種類 | 対象 |
 | --- | --- | --- |
 | MagEngine | 静的ライブラリ | engine以下、外部ImGuiソース |
-| Game | 実行アプリ | main.cpp、application、scene |
+| Game | 実行アプリ | main.cpp、application（最小起動アプリ・editor） |
 
 Gameだけをスタートアップ対象にする。GameはMagEngineへのProjectReferenceを持ち、Engineのソースを直接コンパイルしない。エンジンのinclude設定にapplication／sceneを追加しない。
 
@@ -28,7 +28,7 @@ Gameだけをスタートアップ対象にする。GameはMagEngineへのProjec
 - Gameに必要なDLLとresourcesはmsbuild/DeployRuntime.targetsで配置する。実行時の資産参照ルートはexeの配置場所。
 - 旧Core／Minimal／Testsの生成物は現行の起動・配布対象ではない。
 
-## 責務と接続
+## 責務と接続（旧ゲーム分離時点の記録）
 
 | エンジン層 | ゲーム層 |
 | --- | --- |
@@ -47,7 +47,7 @@ EngineContextはエンジン所有、ゲームからは非所有参照とする�
 
 共通描画順とGPU待機は維持する。SceneManager終了時は、ゲームのthisを参照するパネルを先に解除する。作品用フォント・トレイル設定はゲームが選ぶ。トレイル保存先は実際に読み込んだ設定パスを使う。
 
-## 検証と完了条件
+## 検証と完了条件（旧ゲーム分離時点の記録）
 
 - MagEngine単独およびソリューションのDebug／Releaseビルドが通る。
 - scripts/VerifyEngineBoundary.ps1でEngineからゲームへのinclude依存、ビルド対象、2プロジェクト制約を確認する。
@@ -59,3 +59,7 @@ EngineContextはエンジン所有、ゲームからは非所有参照とする�
 今回の構成整理ではゲーム挙動を変更しない。内部基盤 → 制作エディタ → 独自技術の順で進める方針も維持する。第1段階の安全性課題まで全て解決済みとはしない。
 
 最新の確認結果とObsidianへの反映状況は[履歴](MagEngine_04_仕様改修履歴.md)を参照する。
+
+## 2026-11-11 新作用の整理
+
+旧ゲーム固有のコードとscene/は削除。現在のGameはEditorHostを接続する最小起動アプリです。上記のSceneManager等の責務記載は旧ゲームを分離した時点の設計記録で、現在の実行経路ではありません。resources/とエンジン機能は維持します。

@@ -9,6 +9,7 @@ $engineHeaders = @{}
 foreach ($file in $engineFiles) { $engineHeaders[$file.Name] = $true }
 $gameHeaders = @{}
 foreach ($folder in @('application', 'scene')) {
+	if (-not (Test-Path -LiteralPath (Join-Path $root $folder))) { continue }
     foreach ($file in Get-ChildItem -LiteralPath (Join-Path $root $folder) -Recurse -Filter '*.h') {
         $gameHeaders[$file.Name] = $true
     }
@@ -37,6 +38,14 @@ if ($settings -match '\$\(ProjectDir\)(application|scene)[\\/]?') {
     throw 'Engine共通設定にゲーム用includeパスが含まれています。'
 }
 [xml]$game = Get-Content -LiteralPath (Join-Path $root 'Game.vcxproj') -Raw
+# globを使うEngineは既存の範囲検査に任せ、明示登録は実ファイルの存在を確認する。
+foreach ($project in @($core, $game)) {
+    foreach ($item in @($project.Project.ItemGroup.ClCompile) + @($project.Project.ItemGroup.ClInclude)) {
+        if ($item.Include -and $item.Include -notmatch '[*?]' -and -not (Test-Path -LiteralPath (Join-Path $root $item.Include) -PathType Leaf)) {
+            throw "登録先が存在しません: $($item.Include)"
+        }
+    }
+}
 foreach ($item in $game.Project.ItemGroup.ClCompile) {
     if ($item.Include -match '^(engine|externals)[\\/]') { throw 'ゲームがEngineまたは外部ソースを重複コンパイルしています。' }
 }

@@ -1,66 +1,39 @@
 /*********************************************************************
- * \file   EngineApp.cpp
- * \brief  エンジンの接続点から現行ゲームを実行する
+ * \file EngineApp.cpp
+ * \brief 制作文書を共通エンジンへ接続する最小の起動アプリ
  *********************************************************************/
 #include "EngineApp.h"
 #include "Logger.h"
-
 namespace MagEngine {
-	///=============================================================================
-	/// 作品の初期化
-	void EngineApp::InitializeApplication() {
-		if (launchOptions_.editor || !launchOptions_.scene.empty()) {
-			editorHost_ = std::make_unique<EditorHost>();
-			editorHost_->Initialize(engineContext_, launchOptions_);
+    ///=============================================================================
+    /// 空文書または明示した文書の初期化
+    void EngineApp::InitializeApplication() {
+        editorHost_ = std::make_unique<EditorHost>();
+        editorHost_->Initialize(engineContext_, launchOptions_);
 #ifdef _DEBUG
-			editorUiSystem_->ConfigureWorkspace(launchOptions_.projectRoot, launchOptions_.editor ? EditorWorkspaceMode::Edit : EditorWorkspaceMode::Game);
-#endif
-			win_->SetCloseRequestHandler([this] { return editorHost_->CanClose(); });
-			return;
-		}
-		//========================================
-		// 作品用の文字と演出
-		textRenderer_->Initialize(*spriteSetup_, "font_atlas.png", "resources/config/ui/font_atlas.json");
-		trailEffectManager_->LoadAllPresetsFromJson("resources/trail/test_preset.json");
-		trailEffectManager_->CreateFromPreset("test_trail", "test_trail");
-
-		//========================================
-		// Sceneの構築
-		sceneFactory_ = std::make_unique<SceneFactory>();
-		sceneManager_ = std::make_unique<SceneManager>();
-		sceneManager_->SetSceneFactory(sceneFactory_.get());
-		sceneManager_->Initialize(engineContext_);
+        editorUiSystem_->ConfigureWorkspace(launchOptions_.projectRoot, launchOptions_.editor ? EditorWorkspaceMode::Edit : EditorWorkspaceMode::Game);
+#endif // _DEBUG
+        win_->SetCloseRequestHandler([this] { return editorHost_->CanClose(); });
+    }
+    ///=============================================================================
+    /// 文書と再生セッションの更新
+    void EngineApp::UpdateApplication(const FrameTime &frameTime) {
+        if (editorHost_) editorHost_->Update(frameTime);
+    }
+    ///=============================================================================
+    /// 編集対象の描画登録
+    void EngineApp::RegisterApplicationRenderables(RenderWorld &renderWorld) {
+        if (editorHost_) editorHost_->RegisterRenderables(renderWorld);
+    }
+    ///=============================================================================
+    /// 部分初期化にも対応した終了処理
+    void EngineApp::FinalizeApplication() {
 #ifdef _DEBUG
-		editorUiSystem_->ConfigureWorkspace(launchOptions_.projectRoot.empty() ? std::filesystem::current_path() : launchOptions_.projectRoot, EditorWorkspaceMode::Game);
-#endif
-	}
-
-	///=============================================================================
-	/// ゲームの更新
-	void EngineApp::UpdateApplication(const FrameTime &frameTime) {
-		if (editorHost_) { editorHost_->Update(frameTime); return; }
-		sceneManager_->Update(frameTime);
-	}
-
-	///=============================================================================
-	/// 描画対象の登録
-	void EngineApp::RegisterApplicationRenderables(RenderWorld &renderWorld) {
-		if (editorHost_) { editorHost_->RegisterRenderables(renderWorld); return; }
-		sceneManager_->RegisterRenderables(renderWorld);
-	}
-
-	///=============================================================================
-	/// ゲームの終了
-	void EngineApp::FinalizeApplication() {
-#ifdef _DEBUG
-		if (editorUiSystem_) { std::string error; if (!editorUiSystem_->SaveWorkspaceSession(error)) { Logger::Log(error, Logger::LogLevel::Warning); } }
-#endif
-		if (editorHost_) { win_->SetCloseRequestHandler({}); editorHost_->Finalize(); editorHost_.reset(); }
-		// NOTE: 部分初期化時も呼ばれるため、生成済みの所有物だけを解除する。
-		if (sceneManager_) {
-			sceneManager_->Finalize();
-			sceneManager_.reset();
-		}
-		sceneFactory_.reset();
-	}
+        if (editorUiSystem_) { std::string error; if (!editorUiSystem_->SaveWorkspaceSession(error)) Logger::Log(error, Logger::LogLevel::Warning); }
+#endif // _DEBUG
+        if (editorHost_) {
+            if (win_) win_->SetCloseRequestHandler({});
+            editorHost_->Finalize(); editorHost_.reset();
+        }
+    }
 }

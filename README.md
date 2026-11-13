@@ -19,8 +19,8 @@ DirectX 12を用いた自作ゲームエンジンです。
 - DirectX 12対応GPU
 
 ## フォルダ構成
-- `application/`: この作品固有のゲームロジック
-- `application/EngineApp.*`: 現行ゲームの起動、Scene管理、作品用資産の初期化
+- `application/`: 最小の起動アプリと編集ホスト
+- `application/EngineApp.*`: 空文書または指定文書の起動・更新・終了
 - `engine/base/`: DirectX 12初期化、Window、フレームワーク、EngineContext
 - `engine/render/`: Renderer、RenderGraph、RenderPass、Pipeline、PostEffect、描画Resource管理
 - `engine/graphics/`: Sprite、Particle、Object3D、Skybox、Cloud、Trail、Lineなどの描画機能
@@ -28,7 +28,7 @@ DirectX 12を用いた自作ゲームエンジンです。
 - `engine/input/`: Keyboard、Mouse、GamePad入力
 - `engine/audio/`: 音声再生、音声管理
 - `engine/integration/`: Windows APIや外部機能との連携処理
-- `scene/`: Scene遷移、Scene基底、各Scene実装
+- `application/editor/`: 編集文書の実体・保存・読込・再生と起動引数
 - `resources/`: Shader、Texture、Model、Sound、Config
 - `tests/`: 既存の検証ソース（独立したTestプロジェクトは作成しない）
 - `docs/`: 設計資料、分析レポート、使用ガイド
@@ -45,7 +45,7 @@ Game.exe → MagEngine.lib → 外部ライブラリ
 ```
 
 - **MagEngine**：エンジンの静的ライブラリ。engine/と既存ImGuiソースをビルドします。
-- **Game**：現行ゲームの実行アプリ。application/、scene/、main.cppをビルドし、MagEngineを参照します。
+- **Game**：エンジンの最小実行アプリ。application/、main.cppをビルドし、MagEngineを参照します。
 
 Core・Minimal・Test・ImGui用の独立プロジェクトはありません。DirectXTexはMagEngineが参照する既存の外部依存であり、ソリューションには追加しません。外部ライブラリの原本は変更していません。
 
@@ -64,7 +64,7 @@ msbuild MagEngine.sln /m /p:Configuration=Debug /p:Platform=x64
 # エンジン単独
 msbuild MagEngine.vcxproj /m /p:Configuration=Debug /p:Platform=x64
 
-# ゲームを起動
+# 空の制作画面を起動（Debug）
 & ..\generated\outputs\Game\Debug\Game.exe
 
 # 2プロジェクト構成と層の逆依存を検査
@@ -109,3 +109,7 @@ Gpu指定ではWindowを作らず、実D3D12のPSO・Resource・DescriptorとMap
 - 初期の制作エディターをDebug構成へ追加しました。`Game.exe --editor --project <制作ルートの絶対パス>`で起動します。配置・設定・保存・Undo・再生調整の操作と未確認事項は[エディター操作ガイド](docs/MagEngine/MagEngine_07_エディター操作ガイド.md)を参照してください。
 - ShaderとResourceは実行アプリのフォルダを基準に相対パス（例: `resources/shader/...`）で参照されます。
 - ビルド生成物は`generated/`および各構成別出力フォルダに生成されるため、提出物には含めていません。
+
+## 新作制作の開始点（2026-11-11）
+
+旧ゲームのPlayer・Enemy・シーン・専用UIを削除しました。Debugの引数なし起動は空の制作画面、Releaseは制作UIなしの空文書で起動します。資産はresources/にそのまま保持し、旧ゲームの設定やレベルは自動で読み込みません。制作元を編集する場合は --editor --project <制作ルートの絶対パス> を指定してください。引数なしでは実行ファイル側へ配置された資産を使います。

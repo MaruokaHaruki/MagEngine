@@ -4,6 +4,16 @@
  *********************************************************************/
 #include "EditorLaunchOptions.h"
 namespace MagEngine {
+	///=============================================================================
+	/// 空文書の制作起動とUIなしの実行起動を解決する
+	bool ResolveEngineLaunchOptions(EditorLaunchOptions &options, const std::filesystem::path &runtimeRoot, bool editorAvailable, std::string &error) {
+		if (!runtimeRoot.is_absolute()) { error = "実行資産ルートには絶対パスが必要です"; return false; }
+		if (options.editor && !editorAvailable) { error = "編集画面はDebug構成で起動してください"; return false; }
+		auto candidate = options;
+		if (candidate.projectRoot.empty()) candidate.projectRoot = runtimeRoot;
+		if (candidate.scene.empty()) candidate.editor = editorAvailable;
+		options = std::move(candidate); error.clear(); return true;
+	}
 	bool ParseEditorLaunchOptions(std::span<const std::wstring> args, EditorLaunchOptions &options, std::string &error) {
 		EditorLaunchOptions candidate;
 		for (size_t i = 0; i < args.size(); ++i) {
