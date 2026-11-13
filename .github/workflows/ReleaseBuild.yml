@@ -65,25 +65,21 @@ jobs:
             /p:PlatformToolset=$env:TOOLSET `
             /p:WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION
 
-      # ゲーム層からEngineへの一方向依存と2プロジェクト構成を確認する
-      - name: Verify engine boundary
-        run: ./scripts/VerifyEngineBoundary.ps1
-
       # Artifact保存
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Game-Release
           path: |
-            ../generated/outputs/Game/Release/
-            !../generated/outputs/**/*.pdb
+            bin/Release/
+            !bin/**/*.pdb
           if-no-files-found: error
 
 
       - name: Package game
         run: |
-          New-Item -ItemType Directory -Force ../generated/packages | Out-Null
-          Compress-Archive -Path ../generated/outputs/Game/Release/* -DestinationPath ../generated/packages/Game-Release.zip -Force
+          New-Item -ItemType Directory -Force bin/packages | Out-Null
+          Compress-Archive -Path bin/Release/* -DestinationPath bin/packages/Game-Release.zip -Force
 
       # GitHub Release作成
       - name: Create GitHub Release
@@ -93,4 +89,4 @@ jobs:
           generate_release_notes: true
 
           files: |
-            ../generated/packages/Game-Release.zip
+            bin/packages/Game-Release.zip

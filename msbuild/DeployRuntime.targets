@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- NOTE: Gameの実行フォルダへ作品資産と実行時DLLを配置する。 -->
+  <!-- NOTE: MagEngineの実行フォルダへ作品資産と実行時DLLを配置する。 -->
   <Target Name="DeployRuntime" AfterTargets="Build">
     <ItemGroup>
-      <RuntimeAsset Include="$(ProjectDir)resources\**\*" Condition="'$(ProjectName)'=='Game'" />
+      <RuntimeAsset Include="$(ProjectDir)resources\**\*" />
       <CompilerDll Include="$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll;$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(RuntimeAsset)" DestinationFiles="@(RuntimeAsset->'$(OutDir)resources\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'$(ProjectName)'=='Game'" />
+    <Copy SourceFiles="@(RuntimeAsset)" DestinationFiles="@(RuntimeAsset->'$(OutDir)resources\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(CompilerDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
 </Project>

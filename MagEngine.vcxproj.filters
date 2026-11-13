@@ -610,4 +610,15 @@
     <ClInclude Include="engine\editor\EditorViewport.h"><Filter>engine\editor</Filter></ClInclude>
     <ClCompile Include="engine\editor\EditorViewport.cpp"><Filter>engine\editor</Filter></ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="application" />
+    <Filter Include="application\editor" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="application\EngineApp.cpp"><Filter>application</Filter></ClCompile>
+    <ClInclude Include="application\EngineApp.h"><Filter>application</Filter></ClInclude>
+    <ClCompile Include="application\editor\EditorHost.cpp"><Filter>application\editor</Filter></ClCompile>
+    <ClInclude Include="application\editor\EditorHost.h"><Filter>application\editor</Filter></ClInclude>
+    <ClCompile Include="application\editor\EditorLaunchOptions.cpp"><Filter>application\editor</Filter></ClCompile>
+    <ClInclude Include="application\editor\EditorLaunchOptions.h"><Filter>application\editor</Filter></ClInclude>
+  </ItemGroup>
 </Project>

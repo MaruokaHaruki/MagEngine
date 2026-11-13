@@ -17,7 +17,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
@@ -25,9 +25,14 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="msbuild\EngineSettings.props" />
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <LocalDebuggerCommandArguments>--editor --project "$(ProjectDir)."</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="engine\**\*.cpp" />
-    <ClInclude Include="engine\**\*.h" />
+    <ClCompile Include="engine\**\*.cpp;application\**\*.cpp;main.cpp" />
+    <ClInclude Include="engine\**\*.h;application\**\*.h" />
   </ItemGroup>
   <!-- NOTE: ImGuiは別プロジェクトを作らず、外部ソースをそのまま利用する。 -->
   <ItemGroup>
@@ -41,17 +46,18 @@
   </ItemGroup>
   <!-- NOTE: 外部依存はソリューションに追加せず、x64を明示してビルドする。 -->
   <PropertyGroup>
-    <DirectXTexOutputDir>$(ProjectDir)..\generated\dependencies\DirectXTex\$(Configuration)\</DirectXTexOutputDir>
+    <DirectXTexOutputDir>$(IntDir)DirectXTex\</DirectXTexOutputDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <Lib>
+    <Link><SubSystem>Windows</SubSystem>
       <AdditionalDependencies>$(DirectXTexOutputDir)DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Lib>
+    </Link>
   </ItemDefinitionGroup>
   <Target Name="BuildDirectXTex" BeforeTargets="PrepareForBuild">
     <MSBuild Projects="$(ProjectDir)externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj"
              Targets="Build"
-             Properties="Configuration=$(Configuration);Platform=x64;SolutionDir=$(ProjectDir);OutDir=$(DirectXTexOutputDir)" />
+             Properties="Configuration=$(Configuration);Platform=x64;SolutionDir=$(ProjectDir);OutDir=$(DirectXTexOutputDir);IntDir=$(DirectXTexOutputDir)obj\" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="msbuild\DeployRuntime.targets" />
 </Project>

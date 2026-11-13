@@ -6,9 +6,9 @@
             "type": "shell",
             "command": "msbuild",
             "args": [
-                "${workspaceFolder}/GE3_DirectXGame.sln",
+                "${workspaceFolder}/MagEngine.sln",
                 "/property:GenerateFullPaths=true",
-                "/t:build",
+                "/t:build", "/p:Platform=x64",
                 "/p:Configuration=Debug"
             ],
             "group": {
@@ -22,9 +22,9 @@
             "type": "shell",
             "command": "msbuild",
             "args": [
-                "${workspaceFolder}/GE3_DirectXGame.sln",
+                "${workspaceFolder}/MagEngine.sln",
                 "/property:GenerateFullPaths=true",
-                "/t:build",
+                "/t:build", "/p:Platform=x64",
                 "/p:Configuration=Release"
             ],
             "group": "build",

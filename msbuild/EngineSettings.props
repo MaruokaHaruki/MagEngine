@@ -2,8 +2,8 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- NOTE: Engineと利用側でABI・言語設定を揃え、作品用includeパスは共有しない。 -->
   <PropertyGroup>
-    <IntDir>$(ProjectDir)..\generated\obj\$(ProjectName)\$(Configuration)\</IntDir>
-    <OutDir>$(ProjectDir)..\generated\outputs\$(ProjectName)\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)obj\$(Configuration)\</IntDir>
+    <OutDir>$(ProjectDir)bin\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

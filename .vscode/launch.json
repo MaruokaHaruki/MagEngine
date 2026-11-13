@@ -2,11 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "GE3_DirectXGame Debug",
+            "name": "MagEngine Debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Generated/outputs/Debug/GE3_DirectXGame.exe",
-            "args": [],
+            "program": "${workspaceFolder}/bin/Debug/MagEngine.exe",
+            "args": ["--editor", "--project", "${workspaceFolder}"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -14,10 +14,10 @@
             "preLaunchTask": "build"
         },
         {
-            "name": "GE3_DirectXGame Release",
+            "name": "MagEngine Release",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Generated/outputs/Release/GE3_DirectXGame.exe",
+            "program": "${workspaceFolder}/bin/Release/MagEngine.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
